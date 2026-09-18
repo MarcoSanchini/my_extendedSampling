@@ -28,16 +28,69 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../customs")))
 
+import math
 import torch
 
 from classes.rate_sampler import ExtendedProteinRateSampler
 from classes.ExtendedProtein import ExtendedProtein
+from utils.proposals import log_pointing_prob
 import custom_esm.utils.constants.esm3 as C
 
 
 REF_SEQ = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
 N_SITES_TESTED = 10
 SEED = 0
+
+# dt sweep for the exploration-budget report below. Includes 2.0, the
+# current default in monte_carlo/rate_inputs/pars.txt.
+DT_SWEEP = [0.5, 1.0, 2.0, 3.0, 5.0, 8.0, 12.0, 20.0]
+
+
+def report_exploration_budget(sampler, grad_A, sites_info, pars, dt_values=DT_SWEEP):
+	"""
+	Uses ONLY the gradient already computed by main() (no new ESM3 calls) to
+	answer: at a given dt, how likely is the actual stochastic proposal
+	a_{cur->j} to land on "stay" vs. on the true best target identified by
+	main()'s brute-force scan, and how many independent moves would it take
+	(in expectation) for this site's own target alone to land on the true
+	best purely by chance?
+
+	This bounds how fast the *proposal* mechanism could plausibly discover
+	a known-missed improvement at a given site; it says nothing about
+	whether the resulting JOINT move (every site proposes simultaneously)
+	would actually get accepted -- that needs a real run.
+	"""
+	M = pars['M']
+	print("\n=== exploration budget vs dt (T fixed at {:.1f}) ===".format(pars['T']))
+	print("a[stay]      : probability the proposal re-picks the current amino acid")
+	print("a[true_best] : probability the proposal picks the site's true-best amino acid")
+	print("E[#moves]    : expected number of independent moves before this site's own")
+	print("               target lands on true_best at least once (~1/a[true_best])\n")
+
+	header = "".join(f"{dt:>9.2f}" for dt in dt_values)
+	for s, info in sites_info.items():
+		cur, true_best, true_dU_best = info['cur'], info['true_best'], info['true_dU_best']
+		print(f"site {s:3d} (cur={C.SEQUENCE_USED_VOCAB[cur]}, true best={C.SEQUENCE_USED_VOCAB[true_best]}, true dU={true_dU_best:+.4f}):")
+		print(f"   dt:        {header}")
+
+		a_stay_row, a_best_row, exp_row = [], [], []
+		for dt in dt_values:
+			sigma = dt*math.sqrt(pars['T']/M)
+			step_coef = dt**2 / (2.*M)
+			mu = -step_coef*grad_A[s]
+			mu = sampler._penalize_noncanonical(mu)
+
+			a_stay = log_pointing_prob(mu, sigma, torch.tensor(cur, device=mu.device), pars['n_quad']).exp().item()
+			a_best = log_pointing_prob(mu, sigma, torch.tensor(true_best, device=mu.device), pars['n_quad']).exp().item()
+
+			a_stay_row.append(a_stay)
+			a_best_row.append(a_best)
+			exp_row.append(1./a_best if a_best > 1e-12 else float('inf'))
+
+		print("   a[stay]:   " + "".join(f"{v:>9.4f}" for v in a_stay_row))
+		print("   a[best]:   " + "".join(f"{v:>9.4f}" for v in a_best_row))
+		print("   E[#moves]: " + "".join(f"{v:>9.1f}" if v != float('inf') else f"{'inf':>9}" for v in exp_row))
+		print()
 
 
 def main():
@@ -88,6 +141,7 @@ def main():
 
 	top1_hits = 0
 	dU_star_list, dU_other_list = [], []
+	sites_info = {}
 
 	for s in test_sites:
 		cur = vocab.index(seq_A[s])
@@ -115,6 +169,7 @@ def main():
 		top1_hits += hit
 		dU_star_list.append(dU_star)
 		dU_other_list.extend(dU_others)
+		sites_info[s] = {'cur': cur, 'true_best': true_best, 'true_dU_best': true_dU[true_best]-U_A_exact}
 
 		print(f"  site {s:3d} (cur={vocab[cur]}): gradient-predicted={vocab[j_star]} "
 			  f"(true dU={dU_star:+.4f})  true best={vocab[true_best]} (true dU={true_dU[true_best]-U_A_exact:+.4f})  "
@@ -129,6 +184,8 @@ def main():
 	print(f"Mean true dU at all other candidate classes:  {mean_dU_other:+.4f}")
 	print(f"(gradient-predicted class should be markedly lower than the random/other average;")
 	print(f" it need not hit the true optimum every time -- that's the linearization-quality tradeoff.)")
+
+	report_exploration_budget(sampler, grad_A, sites_info, pars)
 
 
 if __name__ == "__main__":
