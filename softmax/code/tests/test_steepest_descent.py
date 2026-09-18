@@ -42,8 +42,16 @@ N_SITES_TESTED = 10
 SEED = 0
 
 # dt sweep for the exploration-budget report below. Includes 2.0, the
-# current default in monte_carlo/rate_inputs/pars.txt.
-DT_SWEEP = [0.5, 1.0, 2.0, 3.0, 5.0, 8.0, 12.0, 20.0]
+# current default in monte_carlo/rate_inputs/pars.txt. Widened past the
+# original [0.5, 20] range: a first run at T=20 showed a[best] pinned at
+# ~1/K across that whole range for every site, including ones with a clear
+# deterministic (p=0) preference -- i.e. alpha=(mu_best-mu_stay)/sigma was
+# still ~0 even at dt=20. Since alpha ~ dt*grad_gap/(2*sqrt(M*T)), working
+# back from how little a[best] moved implies grad_gap ~0.02 at these sites,
+# which would need dt ~ 2*sqrt(M*T)/grad_gap ~ 400 (at T=20) to reach
+# alpha~1. This sweep brackets that estimate to confirm it directly instead
+# of trusting the back-of-envelope number.
+DT_SWEEP = [0.5, 2.0, 10.0, 50.0, 100.0, 200.0, 400.0, 800.0, 1600.0]
 
 
 def report_exploration_budget(sampler, grad_A, sites_info, pars, dt_values=DT_SWEEP):
