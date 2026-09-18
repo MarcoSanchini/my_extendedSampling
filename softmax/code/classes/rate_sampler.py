@@ -24,6 +24,22 @@ from utils.proposals import log_pointing_prob
 
 
 
+# Non-canonical / ambiguous residue codes at the tail of SEQUENCE_USED_VOCAB
+# (X=unknown, B=Asx, Z=Glx, U=selenocysteine, O=pyrrolysine). Excluded from
+# the proposal competition below: empirically (see tests/test_steepest_descent.py)
+# the gradient-informed direction was observed to point at 'X' even when doing
+# so *increased* the true energy relative to staying -- these aren't real
+# single-residue substitutions and are an unreliable target for a first-order
+# proposal. The penalty is a large FINITE value (not -inf) so that a site
+# that is already sitting on one of these codes (e.g. via a reference
+# sequence or a random init_muts draw) doesn't produce nan in
+# log_pointing_prob; its "stay" option is simply also strongly discouraged
+# in that (unusual) case, which is an accepted limitation, not a crash.
+_NONCANONICAL_RESIDUES = ('X', 'B', 'U', 'Z', 'O')
+_NONCANONICAL_PENALTY = -1.0e6
+
+
+
 # -------------------------------------------------------------------------- #
 # Locally-Balanced Rate ExtendedProtein Sampler                              #
 #                                                                             #
@@ -126,10 +142,12 @@ class ExtendedProteinRateSampler():
 		sigma = pars['dt'] * math.sqrt(pars['T']/pars['M'])
 		step_coef = pars['dt']**2. / (2.*pars['M'])
 		mu_A = -step_coef*grad_A
+		mu_A = self._penalize_noncanonical(mu_A)
 
 		momentum = self._extract_momenta(grad_A.shape, pars['T'], pars['M'])
 		delta_x = pars['dt']*momentum/pars['M'] - step_coef*grad_A
 		delta_x = delta_x - delta_x.mean(dim=-1, keepdim=True)
+		delta_x = self._penalize_noncanonical(delta_x)
 
 		cur_idx = eprot.logits.argmax(dim=-1)
 		tgt_idx = delta_x.argmax(dim=-1)
@@ -153,6 +171,7 @@ class ExtendedProteinRateSampler():
 		eprot_B = self._collapse_to(eprot, tgt_idx)
 		grad_B = self._grad_pass(eprot_B, pars)
 		mu_B = -step_coef*grad_B
+		mu_B = self._penalize_noncanonical(mu_B)
 		log_a_BA = log_pointing_prob(mu_B, sigma, cur_idx, pars['n_quad']).sum().item()
 
 		U_B, U_am_B, eprot_B = self._exact_energy(eprot_B, pars)
@@ -208,6 +227,14 @@ class ExtendedProteinRateSampler():
 		eprot_B = ExtendedProtein(sequence=new_seq, requires_grad=True, device=eprot.device)
 		eprot_B.expand()
 		return eprot_B
+
+	def _penalize_noncanonical(self, x: torch.Tensor) -> torch.Tensor:
+		if self._noncanonical_idx.numel() == 0:
+			return x
+		idx = self._noncanonical_idx.to(x.device)
+		x = x.clone()
+		x[..., idx] = x[..., idx] + _NONCANONICAL_PENALTY
+		return x
 
 	def _extract_momenta(self, shape, T, M):
 		p = torch.randn(*shape, device=self.generator.device, generator=self.generator.get()) * math.sqrt(T*M)
@@ -483,6 +510,11 @@ class ExtendedProteinRateSampler():
 
 	def _init_attributes(self):
 		self.buffer = StringIO()
+
+		self._noncanonical_idx = torch.tensor(
+			[i for i, c in enumerate(C.SEQUENCE_USED_VOCAB) if c in _NONCANONICAL_RESIDUES],
+			dtype=torch.long,
+		)
 
 		self.defpars = {
 				"moves":(None, int),
