@@ -70,10 +70,16 @@ def main():
 	step_coef = pars['dt']**2 / (2.*pars['M'])
 	mu_A = -step_coef*grad_A
 
-	# check 1: steepest-descent direction, by construction
+	# check 1: steepest-descent direction, by construction (before the
+	# non-canonical penalty, which is a proposal-shaping choice, not physics)
 	dot = (mu_A * grad_A).sum(dim=-1)
 	assert (dot <= 1e-8).all(), f"mu_A should be a descent direction everywhere; max dot={dot.max().item()}"
 	print("[OK] mu_A . grad_A <= 0 at every site (deterministic displacement is a descent direction)")
+
+	# check 2 (below) compares against what the sampler can actually propose,
+	# so apply the same non-canonical exclusion it uses.
+	mu_A = sampler._penalize_noncanonical(mu_A)
+	canonical_idx = [i for i in range(len(C.SEQUENCE_USED_VOCAB)) if i not in sampler._noncanonical_idx.tolist()]
 
 	vocab = C.SEQUENCE_USED_VOCAB
 	L = len(seq_A)
@@ -88,12 +94,16 @@ def main():
 		j_star = mu_A[s].argmax().item()
 
 		true_dU = {}
-		for j in range(len(vocab)):
+		for j in canonical_idx:
 			cand_seq = seq_A[:s] + vocab[j] + seq_A[s+1:]
 			eprot_c = ExtendedProtein(sequence=cand_seq, requires_grad=False, device=device)
 			eprot_c.expand()
 			U_c, _, _ = sampler._exact_energy(eprot_c, pars)
 			true_dU[j] = U_c
+		if cur not in true_dU:
+			eprot_c = ExtendedProtein(sequence=seq_A, requires_grad=False, device=device)
+			eprot_c.expand()
+			true_dU[cur], _, _ = sampler._exact_energy(eprot_c, pars)
 
 		U_A_exact = true_dU[cur]
 		true_best = min(true_dU, key=true_dU.get)
