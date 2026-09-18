@@ -158,6 +158,7 @@ class ExtendedProteinRateSampler():
 			"U_B": U_A, "U_am_B": None,
 			"dU": 0., "log_a_AB": 0., "log_a_BA": 0., "log_ratio": 0.,
 			"accepted": None,
+			"proposed_sequence": None,
 		}
 
 		# Nothing proposed: every site's own amino acid already wins its
@@ -186,6 +187,7 @@ class ExtendedProteinRateSampler():
 			"U_B": U_B, "U_am_B": U_am_B,
 			"dU": dU, "log_a_AB": log_a_AB, "log_a_BA": log_a_BA, "log_ratio": log_ratio,
 			"accepted": int(accepted),
+			"proposed_sequence": eprot_B.sequence,
 		})
 
 		return (eprot_B, info) if accepted else (eprot, info)
