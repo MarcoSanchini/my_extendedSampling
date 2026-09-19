@@ -26,44 +26,54 @@ from utils.proposals import log_pointing_prob
 
 # Non-canonical / ambiguous residue codes at the tail of SEQUENCE_USED_VOCAB
 # (X=unknown, B=Asx, Z=Glx, U=selenocysteine, O=pyrrolysine). Excluded from
-# the proposal competition below: empirically (see tests/test_steepest_descent.py)
-# the gradient-informed direction was observed to point at 'X' even when doing
-# so *increased* the true energy relative to staying -- these aren't real
-# single-residue substitutions and are an unreliable target for a first-order
-# proposal. The penalty is a large FINITE value (not -inf) so that a site
-# that is already sitting on one of these codes (e.g. via a reference
-# sequence or a random init_muts draw) doesn't produce nan in
-# log_pointing_prob; its "stay" option is simply also strongly discouraged
-# in that (unusual) case, which is an accepted limitation, not a crash.
+# the proposal competition below, same as the current amino acid is (see
+# class docstring): neither is a real target to propose. The penalty is a
+# large FINITE value (not -inf) so that a site already sitting on one of
+# these codes doesn't produce nan in log_pointing_prob.
 _NONCANONICAL_RESIDUES = ('X', 'B', 'U', 'Z', 'O')
-_NONCANONICAL_PENALTY = -1.0e6
+_EXCLUSION_PENALTY = -1.0e6
 
 
 
 # -------------------------------------------------------------------------- #
-# Locally-Balanced Rate ExtendedProtein Sampler                              #
+# Single-Site Locally-Balanced Rate ExtendedProtein Sampler                  #
 #                                                                             #
-# Each move draws one gradient-informed displacement per site (a single      #
-# leapfrog half-step, no trajectory/isteps) and reads off, per site, which   #
-# amino acid (possibly the current one) the displacement points at. The full #
-# joint multi-site candidate is then accepted/rejected with an exact         #
-# Metropolis-Hastings correction that uses the true (recomputed) energy of   #
-# the candidate and the true reverse-proposal probability, so the target     #
-# distribution is exp(-U/T) exactly, not merely to first order.             #
+# Each move: (1) picks ONE site uniformly at random -- this is a symmetric,  #
+# state-independent choice, so it cancels exactly out of the Metropolis-     #
+# Hastings ratio and needs no correction term; (2) at that site only, draws  #
+# a gradient-informed displacement and proposes a substitution EXCLUDING the #
+# site's current amino acid from the competition (product over k != i,j, the #
+# original per-site formula this sampler started from -- once a site is      #
+# chosen to change, "staying" is not a candidate any more, only which OTHER  #
+# amino acid to move to is); (3) accepts/rejects with an exact Metropolis-   #
+# Hastings correction using the true (recomputed) energy of the candidate    #
+# and the true reverse-proposal probability, so the target distribution is   #
+# exp(-U/T) exactly, not merely to first order.                             #
 #                                                                             #
-# Per move this costs 2 backward passes (grad at A, grad at B) + 1 forward   #
-# pass (exact U at B) through ESM3, versus `isteps` (default 100) in the     #
-# leapfrog-based ExtendedProteinSampler.                                     #
+# This replaces an earlier version of this sampler that proposed all sites   #
+# jointly every move (each site voting to stay or change via a K-way         #
+# competition that included "stay"). That design was found, empirically, to  #
+# touch ~all sites simultaneously regardless of dt/T (the K-way-including-   #
+# stay competition has no small-dt limit that favors staying -- see          #
+# ../../DEVLOG.txt), and U_am is strongly non-separable across simultaneously #
+# -changed sites (test_joint_coupling.py measured coupling terms of the same #
+# order as, or larger than, the individual site effects), so joint moves     #
+# produced dU in the hundreds and were essentially always rejected. Fixing   #
+# "how many sites change" to exactly one per move removes that failure mode  #
+# by construction: with only one site changing, there is nothing for it to   #
+# couple with. See DEVLOG.txt for the full history.                          #
 #                                                                             #
-# Note on `dt`: unlike a diffusive/Langevin step size, here dt should be     #
-# picked in the "informed" regime (not too small). The standardized          #
-# gap driving each site's choice scales as ~dt*(grad_j-grad_k)/sqrt(M*T), so #
-# dt -> 0 does NOT concentrate the per-site choice on "stay": it makes it    #
-# uniform over all K classes (mean and std of the displacement both scale    #
-# with dt, but at different powers, so their ratio -> 0). A dt too small     #
-# will therefore propose changes at most/all sites every move and be        #
-# rejected almost always; dt large enough that the gradient signal          #
-# dominates lets already-good sites confidently vote to stay.               #
+# The gradient used for a given site is computed by relaxing ONLY that site  #
+# (softmax(logits/T_sftm), differentiable) while every OTHER site is held    #
+# at its exact discrete (hard one-hot) value -- not a whole-sequence         #
+# softened relaxation. This costs the same (attention/embedding cost does    #
+# not depend on how many positions are "soft" vs "hard") and is a more       #
+# faithful partial derivative: it matches the exact discrete context used    #
+# everywhere else (accept/reject, the reverse-probability pass).            #
+#                                                                             #
+# Per move: 2 backward passes (grad at A, grad at B, each over just one      #
+# relaxed site) + 1 forward pass (exact U at B) through ESM3 -- same order   #
+# as the joint-move version, but now with a real (not ~0) acceptance rate.   #
 # -------------------------------------------------------------------------- #
 class ExtendedProteinRateSampler():
 
@@ -109,7 +119,9 @@ class ExtendedProteinRateSampler():
 				data["entropy"] = compute_entropy(eprot.get_probs(pars["T_sftm"]), pars["eps"]).item()
 
 			data["move"] = move
-			data["muts_move"] = info["muts_move"]
+			data["site"] = info["site"]
+			data["cur_aa"] = info["cur_aa"]
+			data["proposed_aa"] = info["proposed_aa"]
 			data["dU"] = info["dU"]
 			data["log_a_AB"] = info["log_a_AB"]
 			data["log_a_BA"] = info["log_a_BA"]
@@ -132,48 +144,41 @@ class ExtendedProteinRateSampler():
 
 
 	# ------------------------------------------------------------------ #
-	# One Monte Carlo move: propose a joint multi-site candidate and     #
-	# accept/reject it exactly. Returns (eprot, info), where eprot is    #
-	# either the accepted candidate or the (unchanged) input.            #
+	# One Monte Carlo move: pick one site, propose a substitution at it  #
+	# (current amino acid excluded from the competition), accept/reject  #
+	# it exactly. Returns (eprot, info), where eprot is either the       #
+	# accepted candidate or the (unchanged) input.                      #
 	# ------------------------------------------------------------------ #
 	def _step(self, eprot: ExtendedProtein, U_A: float, pars: dict):
-		grad_A = self._grad_pass(eprot, pars)
+		L = len(eprot.sequence)
+		site = int(torch.randint(0, L, (1,), generator=self.generator.get(), device=self.generator.device).item())
+
+		grad_A = self._grad_pass_site(eprot, site, pars)
+		cur_idx = eprot.logits[site].argmax(dim=-1)
 
 		sigma = pars['dt'] * math.sqrt(pars['T']/pars['M'])
 		step_coef = pars['dt']**2. / (2.*pars['M'])
 		mu_A = -step_coef*grad_A
-		mu_A = self._penalize_noncanonical(mu_A)
+
+		excl_A = torch.unique(torch.cat([self._noncanonical_idx, cur_idx.reshape(1)]))
+		mu_A_masked = self._penalize_indices(mu_A, excl_A)
 
 		momentum = self._extract_momenta(grad_A.shape, pars['T'], pars['M'])
 		delta_x = pars['dt']*momentum/pars['M'] - step_coef*grad_A
 		delta_x = delta_x - delta_x.mean(dim=-1, keepdim=True)
-		delta_x = self._penalize_noncanonical(delta_x)
+		delta_x = self._penalize_indices(delta_x, excl_A)
 
-		cur_idx = eprot.logits.argmax(dim=-1)
-		tgt_idx = delta_x.argmax(dim=-1)
-		muts_move = int((tgt_idx != cur_idx).sum().item())
+		tgt_idx = delta_x.argmax(dim=-1)  # guaranteed != cur_idx and not non-canonical
 
-		info = {
-			"muts_move": muts_move,
-			"U_B": U_A, "U_am_B": None,
-			"dU": 0., "log_a_AB": 0., "log_a_BA": 0., "log_ratio": 0.,
-			"accepted": None,
-			"proposed_sequence": None,
-		}
+		log_a_AB = log_pointing_prob(mu_A_masked, sigma, tgt_idx, pars['n_quad']).item()
 
-		# Nothing proposed: every site's own amino acid already wins its
-		# competition. This is a legitimate outcome (see dt note above),
-		# not a bug -- it's an identity move, no Hastings correction needed.
-		if muts_move == 0:
-			return eprot, info
+		eprot_B = self._substitute(eprot, site, int(tgt_idx.item()))
 
-		log_a_AB = log_pointing_prob(mu_A, sigma, tgt_idx, pars['n_quad']).sum().item()
-
-		eprot_B = self._collapse_to(eprot, tgt_idx)
-		grad_B = self._grad_pass(eprot_B, pars)
+		grad_B = self._grad_pass_site(eprot_B, site, pars)
 		mu_B = -step_coef*grad_B
-		mu_B = self._penalize_noncanonical(mu_B)
-		log_a_BA = log_pointing_prob(mu_B, sigma, cur_idx, pars['n_quad']).sum().item()
+		excl_B = torch.unique(torch.cat([self._noncanonical_idx, tgt_idx.reshape(1)]))
+		mu_B_masked = self._penalize_indices(mu_B, excl_B)
+		log_a_BA = log_pointing_prob(mu_B_masked, sigma, cur_idx, pars['n_quad']).item()
 
 		U_B, U_am_B, eprot_B = self._exact_energy(eprot_B, pars)
 
@@ -183,32 +188,39 @@ class ExtendedProteinRateSampler():
 		u = torch.rand(1, device=self.generator.device, generator=self.generator.get()).item()
 		accepted = math.log(max(u, 1e-300)) <= min(0., log_ratio)
 
-		info.update({
+		vocab = C.SEQUENCE_USED_VOCAB
+		info = {
+			"site": site,
+			"cur_aa": vocab[int(cur_idx.item())],
+			"proposed_aa": vocab[int(tgt_idx.item())],
+			"proposed_sequence": eprot_B.sequence,
 			"U_B": U_B, "U_am_B": U_am_B,
 			"dU": dU, "log_a_AB": log_a_AB, "log_a_BA": log_a_BA, "log_ratio": log_ratio,
 			"accepted": int(accepted),
-			"proposed_sequence": eprot_B.sequence,
-		})
+		}
 
 		return (eprot_B, info) if accepted else (eprot, info)
 
 
 
 	# ------------------------------------------------------------------ #
-	# Differentiable pass: U evaluated on the softmax-relaxed (T_sftm)   #
-	# probabilities, used only to extract grad w.r.t. eprot.logits.      #
+	# Differentiable pass, restricted to ONE site: every OTHER site is   #
+	# held at its exact discrete (hard one-hot) value; only `site`'s     #
+	# logits are relaxed through softmax(./T_sftm) and differentiated.   #
 	# ------------------------------------------------------------------ #
-	def _grad_pass(self, eprot: ExtendedProtein, pars: dict) -> torch.Tensor:
-		probs = eprot.get_probs(pars['T_sftm'])
+	def _grad_pass_site(self, eprot: ExtendedProtein, site: int, pars: dict) -> torch.Tensor:
+		hard = eprot.get_probs()  # exact one-hot for the whole sequence, no grad
+		site_logits = eprot.logits[site].detach().clone().requires_grad_(True)
+		soft_row = torch.softmax(site_logits/pars['T_sftm'], dim=-1).unsqueeze(0)
+		probs = torch.cat([hard[:site], soft_row, hard[site+1:]], dim=0)
+
 		am = self.model.predict_attention(sequence_probs=probs)
 		U_am = compute_U_am(am, self.ref_eprot.am)
-		entropy = compute_entropy(probs, pars['eps'])
+		entropy = compute_entropy(soft_row, pars['eps'])
 		U = pars['lambda_am']*U_am + pars['lambda_S']*entropy
 
-		eprot.logits.grad = None
 		U.backward()
-		grad = eprot.logits.grad.detach().clone()
-		eprot.logits.grad = None
+		grad = site_logits.grad.detach().clone()
 		return grad
 
 	# ------------------------------------------------------------------ #
@@ -223,20 +235,23 @@ class ExtendedProteinRateSampler():
 		eprot.am = am.detach().clone().to("cpu")
 		return U.item(), U_am.item(), eprot
 
-	def _collapse_to(self, eprot: ExtendedProtein, tgt_idx: torch.Tensor) -> ExtendedProtein:
+	def _substitute(self, eprot: ExtendedProtein, site: int, new_idx: int) -> ExtendedProtein:
 		vocab = C.SEQUENCE_USED_VOCAB
-		new_seq = "".join(vocab[t] for t in tgt_idx.tolist())
-		eprot_B = ExtendedProtein(sequence=new_seq, requires_grad=True, device=eprot.device)
-		eprot_B.expand()
-		return eprot_B
+		new_seq = eprot.sequence[:site] + vocab[new_idx] + eprot.sequence[site+1:]
+		eprot_new = ExtendedProtein(sequence=new_seq, requires_grad=True, device=eprot.device)
+		eprot_new.expand()
+		return eprot_new
+
+	def _penalize_indices(self, x: torch.Tensor, idx: torch.Tensor) -> torch.Tensor:
+		if idx.numel() == 0:
+			return x
+		idx = idx.to(x.device)
+		x = x.clone()
+		x[..., idx] = x[..., idx] + _EXCLUSION_PENALTY
+		return x
 
 	def _penalize_noncanonical(self, x: torch.Tensor) -> torch.Tensor:
-		if self._noncanonical_idx.numel() == 0:
-			return x
-		idx = self._noncanonical_idx.to(x.device)
-		x = x.clone()
-		x[..., idx] = x[..., idx] + _NONCANONICAL_PENALTY
-		return x
+		return self._penalize_indices(x, self._noncanonical_idx)
 
 	def _extract_momenta(self, shape, T, M):
 		p = torch.randn(*shape, device=self.generator.device, generator=self.generator.get()) * math.sqrt(T*M)
@@ -350,7 +365,9 @@ class ExtendedProteinRateSampler():
 				'U_am': 0.,
 				'entropy': 0.,
 				'Hd_to_ref': 0,
-				'muts_move': 0,
+				'site': 0,
+				'cur_aa': '',
+				'proposed_aa': '',
 				'dU': 0.,
 				'log_a_AB': 0.,
 				'log_a_BA': 0.,
@@ -396,12 +413,14 @@ class ExtendedProteinRateSampler():
 				"# U_am        : attention-map contribution to U\n"
 				"# entropy     : Shannon entropy of the softmax probabilities\n"
 				"# Hd_to_ref   : Hamming distance between current accepted sequence and reference sequence\n"
-				"# muts_move   : number of sites proposed to change in this move (0 = identity move, no Hastings step run)\n"
-				"# dU          : U(proposed) - U(current), only meaningful when muts_move>0\n"
-				"# log_a_AB    : log-probability of proposing B from A (sum over sites)\n"
-				"# log_a_BA    : log-probability of proposing A back from B (sum over sites)\n"
+				"# site        : sequence position proposed this move (0-indexed)\n"
+				"# cur_aa      : amino acid at that site before this move\n"
+				"# proposed_aa : amino acid proposed at that site this move\n"
+				"# dU          : U(proposed) - U(current)\n"
+				"# log_a_AB    : log-probability of proposing this substitution\n"
+				"# log_a_BA    : log-probability of proposing the reverse substitution from the candidate\n"
 				"# log_ratio   : log Metropolis-Hastings ratio, -dU/T + log_a_BA - log_a_AB\n"
-				"# accepted    : 1 if proposed move is accepted, 0 if rejected, None if muts_move==0\n"
+				"# accepted    : 1 if proposed move is accepted, 0 if rejected\n"
 				"# acc_moves   : cumulative number of accepted Monte Carlo moves\n"
 				"# acc_rate    : cumulative Monte Carlo acceptance rate, acc_moves / move\n"
 				"#\n"
@@ -500,7 +519,7 @@ class ExtendedProteinRateSampler():
 					'move',
 					'acc_moves',
 					'Hd_to_ref',
-					'muts_move',
+					'site',
 				])
 			]
 
@@ -549,7 +568,7 @@ class ExtendedProteinRateSampler():
 				['U_am',             'U_am',             5],
 				['entropy',          'entropy',          5],
 				['Hd_to_ref',		 'Hd_to_ref',        0],
-				['muts_move',        'muts_move',        0],
+				['site',             'site',             0],
 			],
 			'efficiency': [
 				['dU',               'dU',               5],

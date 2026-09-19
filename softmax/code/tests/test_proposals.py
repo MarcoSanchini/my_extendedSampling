@@ -50,12 +50,16 @@ def check_normalization_and_mc(K, sigma, scale, n_nodes=40, seed=1, tol_sum=1e-4
 
 def check_dt_regime():
 	"""
-	Confirms the sampler's operating-regime note: as dt -> 0, mu and sigma
-	both shrink (mu ~ dt^2, sigma ~ dt) so the standardized gap -> 0 and the
-	per-site choice becomes UNIFORM over all K classes (not concentrated on
-	"stay") -- while as dt grows, the choice concentrates on the true
-	gradient-favored class. This is the opposite of typical
-	small-step-size intuition and is the main tuning knob for this sampler.
+	Demonstrates the underlying dt-dependence of log_pointing_prob itself
+	(not literally what _step() computes today, since the current sampler
+	excludes the site's current class from the competition via masking --
+	see check_exclusion_masking below -- rather than including "stay" as a
+	class): as dt -> 0, mu and sigma both shrink (mu ~ dt^2, sigma ~ dt) so
+	the standardized gap -> 0 and the choice among competing classes becomes
+	UNIFORM -- while as dt grows, the choice concentrates on the
+	gradient-favored class. This is the opposite of typical small-step-size
+	intuition, and dt remains the main tuning knob for how sharply the
+	single chosen site's substitution is picked.
 	"""
 	grad = torch.tensor([-2.0, -0.3, 0.1, 0.05, 1.5])  # class 0 has most negative grad
 	M, T, K = 1.0, 1.0, len(grad)
@@ -76,6 +80,57 @@ def check_dt_regime():
 
 	print(f"  dt={dt_small}: a={a_small.tolist()} (uniform, as expected)")
 	print(f"  dt={dt_large}: a={a_large.tolist()} (concentrated on class 0, as expected)")
+
+
+def mc_pointing_probs_excluding(mu, sigma, exclude_idx, n_samples=2_000_000, seed=0):
+	g = torch.Generator().manual_seed(seed)
+	K = mu.shape[-1]
+	others = [k for k in range(K) if k != exclude_idx]
+	X = mu[others] + sigma*torch.randn(n_samples, len(others), generator=g)
+	winners_local = X.argmax(dim=-1)
+	winners = torch.tensor(others)[winners_local]
+	counts = torch.zeros(K)
+	for k in others:
+		counts[k] = (winners == k).sum()
+	return counts / n_samples
+
+
+def check_exclusion_masking(K=10, sigma=1.3, scale=2.0, exclude_idx=0, n_nodes=80, seed=3, tol_sum=1e-4):
+	"""
+	classes/rate_sampler.py:ExtendedProteinRateSampler excludes the site's
+	current amino acid from the competition entirely (product over k != i,j,
+	the original per-site formula this sampler is built on -- once a site is
+	chosen to change, "staying" isn't a candidate) by adding a large finite
+	penalty to mu[i] before calling log_pointing_prob, rather than by
+	deriving a separate K-1-class formula. This checks that trick actually
+	reproduces P(j = max over k != i) (equivalently P(x_j > x_k for all
+	k != i,j)), cross-checked against a direct Monte Carlo draw over only
+	the K-1 non-excluded classes (i is never sampled at all, not just
+	discarded after the fact).
+	"""
+	torch.manual_seed(seed)
+	mu = torch.randn(K) * scale
+	mu_masked = mu.clone()
+	mu_masked[exclude_idx] = mu_masked[exclude_idx] - 1.0e6
+
+	total = 0.
+	max_diff = 0.
+	a_mc = mc_pointing_probs_excluding(mu, sigma, exclude_idx, n_samples=2_000_000, seed=seed+100)
+	for j in range(K):
+		if j == exclude_idx:
+			continue
+		a_j = log_pointing_prob(mu_masked, sigma, torch.tensor(j), n_nodes).exp().item()
+		total += a_j
+		max_diff = max(max_diff, abs(a_j - a_mc[j].item()))
+
+	assert abs(total - 1.0) < tol_sum, f"excluded-i probabilities don't sum to 1 over the remaining K-1 classes (got {total})"
+	assert max_diff < 5e-3, f"exclusion-masking probability disagrees with direct Monte Carlo by {max_diff}"
+
+	# the excluded index itself should have ~zero probability of "winning"
+	a_excluded = log_pointing_prob(mu_masked, sigma, torch.tensor(exclude_idx), n_nodes).exp().item()
+	assert a_excluded < 1e-6, f"excluded index should never win, got a={a_excluded}"
+
+	print(f"  K={K}, exclude_idx={exclude_idx}: sum over j!=i = {total:.6f}, max|GH-MC| = {max_diff:.5f}, a[excluded]={a_excluded:.2e}, OK")
 
 
 def check_deterministic_argmax_matches_pointing_argmax(n_trials=200, K=20, seed=2):
@@ -113,5 +168,9 @@ if __name__ == "__main__":
 
 	print("\n=== p=0 / steepest-descent consistency (proposal math only) ===")
 	check_deterministic_argmax_matches_pointing_argmax()
+
+	print("\n=== exclusion masking (excludes the site's current class, as _step() does) ===")
+	for K in [5, 10, 25]:
+		check_exclusion_masking(K=K, sigma=1.3, scale=2.0, exclude_idx=0)
 
 	print("\nAll checks passed.")

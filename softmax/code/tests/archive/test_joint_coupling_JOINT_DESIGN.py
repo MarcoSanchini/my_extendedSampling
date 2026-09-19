@@ -1,4 +1,15 @@
 """
+ARCHIVED -- tests the earlier JOINT multi-site batch design of
+ExtendedProteinRateSampler. Its own findings are exactly why that design
+was superseded: real joint moves touched ~51-56 of 58 sites regardless of
+dt (1e-5 to 1600 tested), and the measured coupling term was routinely as
+large as, or larger than, the within-site nonlinearity term (e.g. one
+trial: sum_isolated=-16.5 but dU_joint=+401.2 for the same 15-site move).
+The sampler now proposes exactly one site per move, which removes this
+failure mode by construction (nothing for a single change to couple with).
+See ../../../DEVLOG.txt for the full history. Kept for reference; will not
+run correctly against the current _step() (single-site) interface.
+
 Tests whether an ACTUAL joint multi-site move (as
 classes/rate_sampler.py:ExtendedProteinRateSampler proposes it -- many sites
 changing simultaneously) behaves like the sum of its individual single-site

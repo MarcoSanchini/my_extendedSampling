@@ -1,0 +1,275 @@
+================================================================================
+DEVLOG -- gradient/HMC-informed rate sampler for sequence space
+================================================================================
+Living record of what was tried, what worked, what didn't, and why, across
+the various implementations of classes/rate_sampler.py:ExtendedProteinRateSampler.
+Update this file (append, don't rewrite history) whenever the design changes
+or a test reveals something that changes the plan. Newest entries at the
+bottom of the file.
+
+Context: the existing classes/ep_sampler.py:ExtendedProteinSampler does HMC
+in the continuous (softmax-relaxed) sequence space, using `isteps` (default
+100) leapfrog integration steps per Monte Carlo move before collapsing to a
+discrete sequence and doing a single Metropolis accept/reject. That's slow.
+The goal of this sampler is to replace the many-small-steps trajectory with
+a single gradient-informed jump per move, using an explicit rate/Hastings
+correction (since a one-shot discretized jump, unlike a full leapfrog
+trajectory, isn't automatically reversible/volume-preserving) so the target
+distribution stays exp(-U/T) exactly.
+
+================================================================================
+2026-09-17 -- initial derivation
+================================================================================
+Starting point: sequence represented per-site as one-hot logits (mean-
+centered, gauge-fixing the softmax translation invariance). One leapfrog
+half-step gives:
+    delta_x_i = dt*p_i/m_i - dt^2/(2m_i)*grad_i(U)|_A
+with p_i ~ N(0, m_i*T) (HMC momentum). This makes delta_x_i Gaussian:
+    delta_x_i ~ N(-dt^2/(2m_i)*grad_i(U), dt^2*T/m_i)
+-- confirmed this matches classes/ep_sampler.py's leapfrog position update
+exactly (one HMC leapfrog step with fresh momentum == one MALA/Langevin
+step, standard result).
+
+Proposed reading off, per site, which amino acid e_j the noisy displacement
+"points at" (component x_j is the largest among competitors), and using a
+locally-balanced/Zanella-style rate:
+    r_ij = a_ij * min(1, exp(-dU_ji/T) * a_ji/a_ij)
+Verified this satisfies detailed balance: pi_i*r_ij = min(pi_i*a_ij,
+pi_j*a_ji) = pi_j*r_ji, the standard Metropolis-rate construction (same
+family as Zanella 2020 locally-balanced proposals / Gibbs-With-Gradients /
+Path-Auxiliary samplers).
+
+Original a_ij definition: "pointing at e_j" means x_j > x_k for every k
+!= i,j (i = current site, j = candidate target; i itself excluded from the
+comparison, since it represents "not moving"). Derived a closed form:
+    a_ij = integral f_{0,1}(u) * prod_{k!=i,j} Phi(alpha_kj + beta_kj*u) du
+    alpha_kj = (mu_j - mu_k)/sigma_k,  beta_kj = sigma_j/sigma_k
+(corrected a subscript error in an intermediate derivation: alpha_kj's
+denominator is sigma_k, the std of the competitor being compared against,
+not sigma_j). Confirmed this is the correct "independent, non-identical
+Gaussian is the max" formula, and noted it's a Thurstone/probit choice
+model when sigma is constant across classes (which it is here, since dt/T/M
+are global scalars) -- the probit analogue of the softmax-based proposal
+used in Gibbs-With-Gradients.
+
+Flagged design risks at this stage (before any code): (1) exact detailed
+balance requires the REVERSE proposal probability a_ji to be evaluated
+using the gradient AT the proposed point B, not reused from A -- an
+approximation either way trades exactness for cost; (2) the mean-centering
+gauge-fix technically correlates the K components of the noise (pairwise
+correlation -1/(K-1)), so treating them as independent (as the closed form
+above does) is a deliberate, small approximation, not exact; (3) a single
+gradient at A is only a first-order approximation of the effect of a large
+(non-infinitesimal) discrete jump -- U_am runs through several nonlinear
+self-attention layers, so this could be a poor approximation (this turned
+out to be the central issue investigated over the following days).
+
+================================================================================
+2026-09-17/18 -- repo setup, first implementation (JOINT multi-site design)
+================================================================================
+Found the existing codebase: classes/ep_sampler.py (the leapfrog HMC
+sampler), utils/energies.py:compute_U_am (squared log-diff of attention
+maps between current and reference sequence, upper-triangular sum), and the
+customs/custom_esm package providing ESM3.predict_attention(sequence_probs)
+-- a differentiable forward pass through the real attention computation,
+confirmed end-to-end differentiable via customs/differentiability.txt (a
+real gradient log: finite, well-scaled, SoftmaxBackward0 in the graph).
+
+Implemented:
+  - utils/proposals.py: log_pointing_prob(mu, sigma, target, n_nodes) --
+    Gauss-Hermite quadrature evaluation of the a_ij formula. Independently
+    validated in a scratchpad (numpy/scipy, since no torch was available in
+    the sandbox) against brute-force Monte Carlo across K=3..25 and a range
+    of gradient scales: exact normalization, agreement with MC within
+    noise, and quadrature converged to ~6 significant figures by 20 nodes
+    even in the steepest case tested (n_quad=40 default judged safe).
+  - classes/rate_sampler.py (v1, JOINT design): every site simultaneously
+    drew a displacement and voted (via a K-way argmax competition that
+    included "stay" as one of the K classes, after an earlier version's
+    bug where excluding "stay" forced every site to propose a change every
+    move -- fixed by including the current class in the competition on
+    equal footing) on whether/what to change to; the whole joint candidate
+    was accepted/rejected with the true joint dU and the true reverse
+    probability (using a second backward pass at the candidate B).
+  - tests/test_proposals.py, tests/test_steepest_descent.py,
+    tests/test_joint_coupling.py (see below), monte_carlo/main_rate.py +
+    rate_inputs/.
+
+Bug found via tests/test_steepest_descent.py (real model run): the
+gradient-informed direction sometimes pointed at 'X' (and could point at
+B/U/Z/O), the ambiguity/non-standard residue codes at the tail of
+SEQUENCE_USED_VOCAB -- even when doing so INCREASED the true energy
+relative to staying. Fixed by permanently excluding these 5 codes from the
+competition (classes/rate_sampler.py:_NONCANONICAL_RESIDUES, a large but
+FINITE penalty so a site already sitting on one of these codes doesn't
+produce nan in log_pointing_prob). This measurably improved things (top-1
+accuracy and mean dU both improved) but did not fix the deeper problem
+below.
+
+tests/test_steepest_descent.py (after the X fix) still showed the gradient
+badly mispredicting the true single-site optimum: top-1 accuracy 1/10,
+and critically 4/10 sites showed the gradient confidently predicting "stay"
+(dU=+0.0000) while a large true improvement (dU -20 to -27) sat one hop
+away, completely invisible to the gradient.
+
+Built tests/test_steepest_descent.py's "exploration budget" extension:
+swept dt (reusing the already-computed gradient, no new ESM3 calls) and
+found a[best] pinned at ~1/K (uniform) across the ENTIRE dt range tested
+(0.5 to 20, then widened to 1600), for every one of the 10 tested sites,
+including ones with clear deterministic (p=0) preference. Traced this to
+the actual gradient gaps at these sites being tiny (~0.02), implying
+(via alpha ~ dt*grad_gap/(2*sqrt(M*T))) that dt~400 would be needed for
+real concentration at T=20 -- two orders of magnitude past what was tested.
+
+Real run with the widened sweep (dt 0.5..1600) gave a different, more
+important result than expected: for 4 of 10 sites, INCREASING dt made
+finding the true best MORE unlikely (a[best] -> 0, E[#moves to hit it] ->
+literal inf), not less -- the local gradient at those sites is not just
+uninformative, it's confidently WRONG (favors staying when a large true
+improvement exists elsewhere). No dt fixes this; it strictly worsens with
+dt at those specific sites. For the sites where dt did help, it only
+helped modestly (E[#moves] ~20 -> ~12 even at dt=1600, an already
+impractical step size), and 2 of those sites were non-monotonic (a[best]
+rises then falls past a certain dt, because the gradient's true favorite
+isn't the global true-best class).
+
+tests/test_joint_coupling.py: built to test the user's hypothesis that the
+single-site brute-force ground truth (test_steepest_descent.py, holding
+every OTHER site fixed at the CURRENT sequence) might not be a fair proxy
+for the sampler, since it proposes MANY sites changing simultaneously and
+U_am (through self-attention) need not be separable across sites. Decomposed
+real joint moves into sum_linear (first-order Taylor, no coupling),
+sum_isolated (true single-site effects applied one at a time, still no
+coupling), and dU_joint (true effect with all analyzed sites changed at
+once). Result: coupling (dU_joint - sum_isolated) was frequently AS LARGE
+OR LARGER than the within-site nonlinearity term, e.g. one trial:
+sum_isolated=-16.5 (mildly favorable) but dU_joint=+401.2 (strongly
+unfavorable) for the same 15-site move. U is strongly non-separable across
+simultaneously-changed sites for this energy.
+
+Combined with a critical, simpler fact from the same runs: EVERY trial
+across dt=1e-5 to dt=1600 touched ~51-56 of 58 sites simultaneously. At
+T=20, a dU of +500 to +1000 (routinely observed) means essentially exactly
+zero acceptance probability. The joint design was, in practice, proposing
+to rewrite almost the entire sequence every move and being rejected nearly
+always.
+
+Root cause identified (not just "needs more tuning"): the K-way-including-
+stay competition has NO small-dt limit that favors staying. Since mu ~
+dt^2 and sigma ~ dt, their ratio (which is all that matters for the argmax
+outcome) -> dt -> 0 as dt -> 0, giving a UNIFORM competition (each of K
+classes ~1/K), not a stay-concentrated one -- unlike a true continuous
+Langevin/MALA step, which naturally stays close to its starting point at
+small step size because it never has to make a discrete argmax decision.
+Nothing in delta_x = dt*momentum/M - step_coef*grad references the CURRENT
+identity at all; "stay" only wins by having a favorable relative mu, which
+requires a large dt exactly where coupling then destroys the move. There is
+no dt that gives "few sites change, and the few that do are well chosen."
+
+Side investigation (sum_linear consistently small-but-positive across 18
+independent trials, spanning 5 orders of magnitude in dt): resolved, not a
+bug. Two combined reasons: (1) at low dt the target is chosen by momentum
+noise, not the gradient, so no per-site "descent" guarantee holds; (2) the
+test sequence (5 random mutations from REF_SEQ) is IDENTICAL to the
+reference at 53 of 58 positions (verified directly: differing positions
+are 5, 17, 33, 36, 55), and U_am is by definition minimized at the
+reference -- so those 53 positions are already at/near a local optimum,
+and a broad, largely-random perturbation away from a mostly-already-good
+sequence is expected, on average and to first order, to increase U. This
+is the model behaving sensibly, not a red flag, and it gives a good
+sanity check for the next version: proposals landing on one of the 5
+genuinely-suboptimal sites should have a much higher acceptance rate than
+proposals landing on one of the 53 reference-matching sites.
+
+A secondary, more technical point was raised in the same discussion and is
+worth keeping in mind (not yet acted on): grad_A is d(U)/d(logits), not
+d(U)/d(probs), and because softmax is translation-invariant, d(U)/d(logits)
+sums to exactly zero across the K classes at every site. That makes the
+"current" class's component an aggregate/residual quantity (= -sum of all
+other classes' components), not a component on the same independent
+footing as any single "other" class -- so comparing grad[cur] against
+grad[some specific other class] directly (as the joint design's K-way
+competition did) is not quite the clean two-point comparison it looks
+like. Did not end up mattering for the diagnosis above (which was driven
+by the coupling/all-sites-touched finding), but worth remembering if
+calibration issues resurface.
+
+================================================================================
+2026-09-19 -- pivot to single-site-per-move (M=1)
+================================================================================
+Decision: fix "how many sites change per move" directly instead of trying
+to control it indirectly via dt/T (which the evidence above shows doesn't
+work -- dt/T controls confidence, not headcount, and the headcount is
+dominated by how many sites have ANY directional preference at all, which
+was found to be most of them). Simplest, safest choice: exactly one site
+per move (M=1), chosen uniformly at random -- uniform selection is
+state-independent, so its probability is identical forward and backward
+and cancels exactly out of the Hastings ratio, no correction term needed.
+This removes the coupling failure mode by construction: with only one site
+changing, there's nothing for it to couple with.
+
+Considered and rejected (for now) two alternatives:
+  - Bernoulli(p) per site independently (variable number of sites touched,
+    Binomial(L,p)/~Poisson(L*p) distributed): correctness is fine (same
+    cancellation argument as uniform single-site), but it reintroduces a
+    fat-tailed, uncontrolled version of exactly the risk just fixed (~1-in-4
+    moves would touch 2+ sites simultaneously at E[N]=1, and we don't yet
+    know how fast coupling degrades between N=1 and the already-measured
+    catastrophic N~54), plus wastes ~37% of moves on N=0 identity moves
+    that M=1 never produces. Worth revisiting once a real N-sweep
+    (extending test_joint_coupling.py's method to a few small FIXED N
+    instead of dt) maps out the coupling-vs-N curve.
+  - Informed (gradient-weighted) site selection: valid in principle (needs
+    an extra q(s|B)/q(s|A) term using grad_B, which is already computed for
+    the reverse pass, so not a new ESM3 call) but deferred until the
+    uniform version is validated, since it also needs a first, cheap,
+    whole-sequence pass to rank sites before the expensive single-site
+    relaxed gradient -- premature complexity before knowing if M=1 alone is
+    enough.
+
+Direction-choice, given a site is chosen: returned to the ORIGINAL formula
+from the initial derivation (2026-09-17 section above) -- product over
+k != i,j, i.e. "stay" (i) is excluded from the competition entirely, not
+included as in the (now superseded) joint design. This is the natural
+formulation once site selection is a separate, prior step: having already
+committed to changing this site, "stay" isn't a candidate any more, only
+which OTHER amino acid to move to is. Implemented via the same
+large-finite-penalty masking trick already used for the non-canonical
+residues (classes/rate_sampler.py:_penalize_indices, now also given the
+site's current index), which was verified numerically to exactly reproduce
+P(x_j > x_k for all k != i,j) against direct Monte Carlo restricted to the
+K-1 classes excluding i (i is never sampled at all, not discarded after
+the fact) -- see tests/test_proposals.py:check_exclusion_masking.
+
+Gradient computation also changed: instead of relaxing the WHOLE sequence
+through softmax(logits/T_sftm) and reading off one site's row of a big
+(L,K) gradient (as the joint design did), the new _grad_pass_site relaxes
+ONLY the one chosen site; every other site is held at its exact discrete
+(hard one-hot) value. This costs the same (attention/embedding cost does
+not depend on how many positions are soft vs hard -- a hard one-hot is
+just a degenerate probability row through the same embedding lookup) and
+is a more faithful partial derivative: it matches the exact discrete
+context used everywhere else (the exact-dU forward pass, the reverse-
+probability pass), rather than evaluating the gradient with every other
+site also slightly blurred by T_sftm.
+
+Old joint-design test files (tests/test_steepest_descent.py and
+tests/test_joint_coupling.py) moved to tests/archive/*_JOINT_DESIGN.py,
+each annotated with why they were superseded; their findings are the
+2026-09-17/18 section above. New tests/test_steepest_descent.py rebuilt
+for the single-site design: same p=0 (mu_A . grad_A <= 0) construction
+check, plus the true-best brute-force comparison, now correctly excluding
+"stay" from both the prediction and the candidate set (matching what
+_step() can actually propose).
+
+Status at time of writing: implementation complete
+(classes/rate_sampler.py rewritten, tests updated/added), NOT YET RUN
+against the real model (no torch/ESM3/weights available in this sandbox --
+same limitation as every prior round; static review + independent math
+validation only). Next: run tests/test_proposals.py (pure torch, cheap)
+and tests/test_steepest_descent.py (live model) to confirm the single-site
+version behaves as expected before a real monte_carlo/main_rate.py run.
+Open question to check once real numbers are in: does dt need retuning
+now that it only controls one site's competition sharpness rather than
+global coupling risk (raising it should now be safe in a way it wasn't
+before, since there's no longer a "too many sites at once" failure mode)?
