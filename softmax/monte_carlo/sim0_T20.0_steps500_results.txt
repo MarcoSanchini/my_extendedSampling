@@ -1,0 +1,61 @@
+Loaded 501 rows from tests_rate/sim0/data.dat
+Reference length: 56
+
+Reconstructed initial sequence: MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYQODNGVDGEWVYDDATKTFTVLE
+Initially mutated sites (vs reference): [33, 34, 43, 54] (4 sites)
+Reconstructed Hd_to_ref at move 0: 4  (logged: 4)  OK
+
+=== U trajectory ===
+  move 0: U=61.075   move 500: U=267.768   min=42.378  max=367.720
+  moves    0-  49: mean U =   87.245
+  moves   50-  99: mean U =  140.555
+  moves  100- 149: mean U =  138.446
+  moves  150- 199: mean U =  192.462
+  moves  200- 249: mean U =  246.135
+  moves  250- 299: mean U =  282.557
+  moves  300- 349: mean U =  267.805
+  moves  350- 399: mean U =  341.008
+  moves  400- 449: mean U =  335.984
+  moves  450- 499: mean U =  305.566
+  moves  500- 500: mean U =  267.768
+
+=== Hd_to_ref trajectory ===
+  move 0: Hd=4   move 500: Hd=46   min=4  max=47
+  moves    0-  49: mean Hd =  10.54
+  moves   50-  99: mean Hd =  17.42
+  moves  100- 149: mean Hd =  22.50
+  moves  150- 199: mean Hd =  32.22
+  moves  200- 249: mean Hd =  37.78
+  moves  250- 299: mean Hd =  42.14
+  moves  300- 349: mean Hd =  43.82
+  moves  350- 399: mean Hd =  46.52
+  moves  400- 449: mean Hd =  46.90
+  moves  450- 499: mean Hd =  46.70
+  moves  500- 500: mean Hd =  46.00
+
+=== windowed acceptance rate (block-local, not cumulative) ===
+  moves    1-  50: local acc_rate = 0.300
+  moves   51- 100: local acc_rate = 0.280
+  moves  101- 150: local acc_rate = 0.340
+  moves  151- 200: local acc_rate = 0.360
+  moves  201- 250: local acc_rate = 0.500
+  moves  251- 300: local acc_rate = 0.340
+  moves  301- 350: local acc_rate = 0.280
+  moves  351- 400: local acc_rate = 0.240
+  moves  401- 450: local acc_rate = 0.180
+  moves  451- 500: local acc_rate = 0.340
+  overall: 158/500 = 0.316
+
+=== dU statistics ===
+  accepted (n=158): mean=  +1.308  median=  +0.788  min= -68.194  max= +59.293
+  rejected (n=342): mean=+128.420  median= +73.867  min= -37.058  max=+496.035
+
+=== accept rate: initially-mutated sites vs initially-reference-matching sites ===
+  initially-mutated     ( 4 sites):   16/  43 proposals accepted = 0.372
+  initially ref-matching(52 sites):  142/ 457 proposals accepted = 0.311
+  (if the energy is behaving sensibly, the reference-matching group's rate should be
+   noticeably LOWER -- those sites are already at a local optimum and should mostly
+   resist being proposed away from it.)
+
+=== net drift ===
+  Hd_to_ref: 4 (start) -> 46 (end), net change of +42 over 500 moves

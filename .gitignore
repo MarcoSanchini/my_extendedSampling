@@ -22,3 +22,5 @@ softmax/code/steepest_descent_M1.txt
 softmax/code/compare_grad.txt
 
 softmax/monte_carlo/tests_rate/sim0/eprot/
+
+softmax/monte_carlo/old_sampling/

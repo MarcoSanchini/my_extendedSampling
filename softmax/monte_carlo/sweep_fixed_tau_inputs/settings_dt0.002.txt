@@ -1,8 +1,0 @@
-# settings
-
-results_dir tests/sweep_fixed_tau/dt0.002
-log_step    1			#number of moves after which to save checkpoint (log) of the simulation (and the sampled data)
-print_step  1			#number of moves after which to print the system status
-restart     0			#boolean variable, whether to restart or not the previous simulation
-device      cuda:0		#device on which to load weights and data
-num_threads 1			#maximum number of threads
