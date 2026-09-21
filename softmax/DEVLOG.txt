@@ -354,4 +354,47 @@ itself (U=0 already, nothing to improve) unless changed -- everything
 validated in this file so far (test_steepest_descent.py,
 compare_grad_methods.py, the earlier joint-design diagnostics) used 5
 random initial mutations instead. Recommended setting init_muts=5 to match
-before drawing conclusions from a real run's acc_rate/U trend.
+before drawing conclusions from a real run's acc_rate/U trend. Set to 5.
+
+--------------------------------------------------------------------------------
+2026-09-21 -- first successful 500-move main_rate.py run (T=20, dt=2, seed=42)
+--------------------------------------------------------------------------------
+First real run to complete without crashing: 500 moves, init_muts=5 (4
+actually changed the sequence vs reference -- one of the 5 random draws
+coincidentally picked the residue already there), T=20, dt=2, results in
+monte_carlo/tests_rate/sim0/.
+
+Built monte_carlo/analyze_run.py (pure Python stdlib, no torch/numpy
+needed) to analyze data.dat: reconstructs the initial sequence purely from
+the log (for each site, cur_aa the first time it's touched records what
+was there before any move touched it -- confirmed exactly against the
+logged Hd_to_ref=4 at move 0), then reports U/Hd_to_ref trajectories in
+blocks, windowed (not just cumulative) acceptance rate, dU stats split by
+accepted/rejected, and the per-site accept-rate sanity check noted
+earlier in this file (initially-mutated sites vs initially-reference-
+matching sites).
+
+Findings from the real run:
+  - The accept/reject mechanics themselves are working correctly: rejected
+    moves have mean dU=+128.4 (clearly bad), accepted moves have mean
+    dU=+1.3 (near-neutral) -- a large, sensible separation. This is not a
+    correctness problem.
+  - But T=20 looks too hot for this design's move granularity (one hard
+    substitution per move, dU routinely tens to hundreds, vs ep_sampler.py's
+    many-small-leapfrog-steps-then-one-accept/reject, where T=20 was
+    presumably tuned/inherited from). Symptoms: U never reached a stable
+    plateau over 500 moves (61 -> peak ~341 around move 350-400 -> ~268 by
+    move 500, still relaxing, not equilibrated); Hd_to_ref drifted from 4
+    to 46 of 56 positions (the chain ended up almost entirely different
+    from the reference, not staying near it); and the per-site accept-rate
+    gap between initially-mutated (0.372) and initially-reference-matching
+    (0.311) sites, while in the right direction, is weak -- consistent
+    with a temperature too high to sharply discriminate between favorable
+    and unfavorable substitutions at this energy scale.
+
+Next: rerun with a substantially lower T (try T=1 or T=2) and compare --
+does Hd_to_ref stabilize near the initial value instead of drifting away,
+does U visibly plateau within the same move budget? Note T also enters
+sigma=dt*sqrt(T/M) (the proposal's std), so lowering it should sharpen the
+proposal too, as a side effect of the same physically-motivated parameter
+rather than a second knob fighting the first.
