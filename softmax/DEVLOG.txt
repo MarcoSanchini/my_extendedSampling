@@ -273,3 +273,47 @@ Open question to check once real numbers are in: does dt need retuning
 now that it only controls one site's competition sharpness rather than
 global coupling risk (raising it should now be safe in a way it wasn't
 before, since there's no longer a "too many sites at once" failure mode)?
+
+--------------------------------------------------------------------------------
+2026-09-21 -- real run: single-site design, gradient relaxation check
+--------------------------------------------------------------------------------
+tests/test_proposals.py: all checks passed against the real torch build,
+including the new check_exclusion_masking (a[excluded]=0.00e+00 at every K
+tested) -- confirms the exclude-i-and-j masking trick is exact in practice,
+not just in the independent numpy/scipy validation.
+
+tests/test_steepest_descent.py (single-site, _grad_pass_site): top-1
+accuracy improved slightly vs. the last joint-design run (2/10 vs 1/10).
+One result looked alarming at first: site 4's gradient-predicted
+substitution had a true dU of +356.5, far larger in magnitude than
+anything seen in any previous test (worst previously ~-93), which dragged
+the headline "mean dU at predicted" to +17.2 (looks like the prediction is
+now worse than random). Checked this specifically: excluding that single
+outlier, the other 9 sites averaged dU~-20.5, nearly identical to the
+-21.5 seen before the _grad_pass_site change -- so the aggregate mean was
+being dominated by one point in a small (N=10) sample, not a real
+regression.
+
+Built tests/compare_grad_methods.py to isolate whether that outlier was a
+genuine property of site 4 or an artifact of relaxing only one site
+(_grad_pass_site) instead of the whole sequence (the older, removed
+_grad_pass). Result: cosine similarity between the two gradient methods
+was >=0.9995 (effectively +1.0000) at every one of the 10 tested sites,
+including site 4, and both methods picked the exact same substitution at
+every site. The two methods agree almost perfectly in direction; they only
+differ slightly in magnitude. Conclusion: the site-4 outlier is a real,
+if extreme, instance of the known linearization-quality limit (the local
+gradient is confidently wrong there) -- not a bug or an artifact introduced
+by the site-only relaxation. _grad_pass_site is validated as behaving
+equivalently to the (more expensive, less faithful-in-context) whole-
+sequence method it replaced, while being strictly more faithful to the
+exact discrete context used everywhere else. No further action needed on
+the gradient computation itself.
+
+Status: single-site design considered validated at the unit/diagnostic
+level (math checks, p=0 construction check, brute-force single-site
+comparison, gradient-method cross-check). Next: an actual
+monte_carlo/main_rate.py run, to see real acc_rate and whether U trends
+down over many moves -- the thing none of the diagnostics so far can
+actually tell us, since they all evaluate one proposed move at a time
+against a fixed starting sequence rather than a moving chain.
