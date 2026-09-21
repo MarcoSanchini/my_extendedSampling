@@ -317,3 +317,41 @@ monte_carlo/main_rate.py run, to see real acc_rate and whether U trends
 down over many moves -- the thing none of the diagnostics so far can
 actually tell us, since they all evaluate one proposed move at a time
 against a fixed starting sequence rather than a moving chain.
+
+--------------------------------------------------------------------------------
+2026-09-21 -- first real main_rate.py run: device-mismatch bug, fixed
+--------------------------------------------------------------------------------
+First real monte_carlo/main_rate.py run (GPU, cuda:0) crashed on move 1:
+    RuntimeError: Expected all tensors to be on the same device, but got
+    tensors is on cuda:0, different from other tensors on cpu
+    (classes/rate_sampler.py:_step, the excl_A = torch.unique(torch.cat(...))
+    line).
+
+Cause: self._noncanonical_idx is built in _init_attributes() (called from
+__init__, before any device is known) via a plain torch.tensor(...), which
+defaults to CPU. _step concatenates it directly with cur_idx/tgt_idx (which
+live on eprot.device, cuda:0 on a GPU run) via torch.cat, which requires
+matching devices -- crash. This was NOT caught by
+tests/test_steepest_descent.py or tests/compare_grad_methods.py, run
+earlier on the same GPU machine, because those scripts build their
+exclusion sets from plain Python ints (via .item()) into fresh CPU tensors
+rather than reusing the device-carrying cur_idx/tgt_idx tensors directly --
+so they happened to sidestep the bug rather than exercise the code path
+that has it. A reminder that a diagnostic script that reimplements a piece
+of logic instead of calling the real method under test can pass while the
+real method still has a bug.
+
+Fix: move self._noncanonical_idx onto settings["device"] once inside
+_setup(), right after that device is fully resolved (string -> torch.device,
+with the cuda-unavailable -> cpu fallback already applied) and before it's
+used anywhere. _penalize_indices() already had a per-call .to(x.device) as
+a second line of defense, which is why only the raw torch.cat calls in
+_step (before _penalize_indices runs) were actually broken.
+
+Also noted while looking at the run's output: rate_inputs/pars.txt's
+default init_muts=0 means main_rate.py's starting sequence is the reference
+itself (U=0 already, nothing to improve) unless changed -- everything
+validated in this file so far (test_steepest_descent.py,
+compare_grad_methods.py, the earlier joint-design diagnostics) used 5
+random initial mutations instead. Recommended setting init_muts=5 to match
+before drawing conclusions from a real run's acc_rate/U trend.

@@ -319,6 +319,7 @@ class ExtendedProteinRateSampler():
 		if ("cuda" in settings["device"].type) and (not torch.cuda.is_available()):
 			settings["device"] = torch.device("cpu")
 
+		self._noncanonical_idx = self._noncanonical_idx.to(settings["device"])
 		self.model.to(settings["device"])
 		self.generator = CustomGenerator(
 				seed=pars["seed"],
