@@ -1,0 +1,20 @@
+# data.dat column definitions:
+# move        : Monte Carlo move number
+# time        : CPU time elapsed since simulation start [s]
+# U           : potential energy of the current accepted sequence
+# U_am        : attention-map contribution to U
+# entropy     : Shannon entropy of the softmax probabilities
+# Hd_to_ref   : Hamming distance between current accepted sequence and reference sequence
+# site        : sequence position proposed this move (0-indexed)
+# cur_aa      : amino acid at that site before this move
+# proposed_aa : amino acid proposed at that site this move
+# dU          : U(proposed) - U(current)
+# log_a_AB    : log-probability of proposing this substitution
+# log_a_BA    : log-probability of proposing the reverse substitution from the candidate
+# log_ratio   : log Metropolis-Hastings ratio, -dU/T + log_a_BA - log_a_AB
+# accepted    : 1 if proposed move is accepted, 0 if rejected
+# acc_moves   : cumulative number of accepted Monte Carlo moves
+# acc_rate    : cumulative Monte Carlo acceptance rate, acc_moves / move
+#
+move	time	U	U_am	entropy	Hd_to_ref	site	cur_aa	proposed_aa	dU	log_a_AB	log_a_BA	log_ratio	accepted	acc_moves	acc_rate
+0	0.0	61.075252532958984	61.075252532958984	0.6704990863800049	4	0			0.0	0.0	0.0	0.0	0	0	1.0

@@ -13,6 +13,6 @@ T_sftm    0.1			#temperature of the softmax
 lambda_am 1.0			#Lagrange multiplier for the attention energy
 lambda_S  0.0			#Lagrange multiplier for the entropy
 n_quad    40			#number of Gauss-Hermite quadrature nodes for the pointing probability
-init_muts 0			#number of initial random mutations w.r.t. the reference sequence
+init_muts 5			#number of initial random mutations w.r.t. the reference sequence
 eps       1.0e-9		#minimum probability value
 seed      42			#generator seed
