@@ -15,3 +15,8 @@ softmax/code/classes/ep_sampler_am_backup.py
 softmax/code/joint_coupling_test.txt
 softmax/code/joint_coupling_test_smalldt_no_max_sites.txt
 softmax/code/steepest_descent_test.txt
+
+
+softmax/code/proposal_test.txt
+softmax/code/steepest_descent_M1.txt
+softmax/code/compare_grad.txt
