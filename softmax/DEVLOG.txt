@@ -398,3 +398,56 @@ does U visibly plateau within the same move budget? Note T also enters
 sigma=dt*sqrt(T/M) (the proposal's std), so lowering it should sharpen the
 proposal too, as a side effect of the same physically-motivated parameter
 rather than a second knob fighting the first.
+
+--------------------------------------------------------------------------------
+2026-09-21/22 -- T=2, 5000-move run: equilibration fixed, drift/selectivity not
+--------------------------------------------------------------------------------
+Second run (tests_rate/sim1): T=2 (down from 20), dt=2 (unchanged), 5000
+moves (up from 500), same init_muts=5/seed=42. Analyzed with
+monte_carlo/analyze_run.py (user ran it independently and pushed the
+output as sim1_T2.0_steps5000_muts5_results.txt -- good, the tool is
+being used as intended).
+
+Comparison to the T=20 run:
+  - U: T=20 was still climbing without bound at move 500 (61->267, peak
+    341, no plateau). T=2 reaches a rough plateau around 70-83 after
+    move ~2000 -- lowering T fixed the equilibration problem.
+  - accepted-move dU: T=20 mean +1.3, range [-68,+59]. T=2 mean +0.03,
+    range [-12,+12] -- much tighter, as expected from a stricter Boltzmann
+    filter at lower T.
+  - Hd_to_ref: still drifted heavily either way (T=20: 4->46/56, T=2:
+    4->48/56, over 10x more moves). Lowering T did not stop the drift.
+  - mutated-site vs reference-matching-site accept rate: T=20 showed a
+    real (if weak) gap, 0.372 vs 0.311. T=2 showed NO gap at all, 0.149 vs
+    0.152 -- statistically indistinguishable. This is the important
+    result: a colder T makes the accept/reject filter STRICTER but not
+    SMARTER. It doesn't help the proposal preferentially find good
+    substitutions at the genuinely-improvable sites; it just rejects more
+    of everything roughly uniformly.
+
+Diagnosis: this reconnects to the exploration-budget finding from
+2026-09-17/18 above -- the standardized gap driving a site's proposal
+choice scales as alpha ~ dt/sqrt(T), and at T=20 real concentration was
+found to need dt in the hundreds (vs dt=2 used throughout every run so
+far). Dropping T from 20 to 2 only buys back a factor of sqrt(10)~3.16 in
+that ratio -- nowhere near enough to make the proposal actually informed.
+So the sampler is currently behaving close to "propose a near-random
+substitution at a uniformly random site, then filter by an increasingly
+strict energy criterion" rather than "intelligently suggest good
+substitutions" -- a stricter filter (lower T) stabilizes U but can't make
+the proposal itself smarter, which is exactly why the site-type
+selectivity gap flattened instead of sharpening.
+
+Next: raise dt substantially (try dt=20, 50, 100) at the same T=2. This is
+now safe to push hard on, unlike in the old joint-multi-site design --
+there is no coupling-blowup risk from a large dt here, since only one site
+changes per move regardless of how confidently it's chosen. Expected
+signature of success: the accept rate at the 4 originally-mutated sites
+should rise clearly ABOVE the reference-matching sites' rate (a real,
+growing gap), since an actually gradient-informed proposal should more
+often land on genuinely favorable substitutions there specifically, while
+the reference-matching sites' rate should stay low and roughly flat (no
+substitution is genuinely better than staying there, regardless of how
+well-informed the proposal is -- their protection comes from the
+accept/reject step, which is already confirmed working, not from the
+proposal avoiding them).
