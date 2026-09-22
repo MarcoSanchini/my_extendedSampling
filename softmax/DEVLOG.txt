@@ -915,3 +915,57 @@ Not yet decided: whether to push the closed-form dt sweep further (cheap,
 no GPU sampler run needed, would show where the slowest real sites
 actually saturate) or treat the reversal as sufficiently established
 already. Asked the user.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- investigating compute_U_am directly: floor argument + reference-anchored scan
+--------------------------------------------------------------------------------
+Per user request, moving from sampler diagnostics to the energy function
+itself. Checked utils/energies.py directly:
+
+  compute_U_am(am, ref_am) = triu((log(am) - log(ref_am))**2).sum()
+
+Strictly non-negative (sum of squares), zero iff am == ref_am elementwise
+(upper triangle) -- essentially only true at seq==ref, since matching a
+complex nonlinear attention map exactly for a genuinely different sequence
+is measure-zero. classes/rate_sampler.py:_exact_energy computes
+U = lambda_am * compute_U_am(am, ref_am) with NO entropy term (a hard,
+non-relaxed sequence has ~0 entropy anyway -- consistent with the
+differentiable _grad_pass_site's U = lambda_am*U_am + lambda_S*entropy,
+not a discrepancy). With lambda_am=1.0 everywhere so far, U IS this
+distance exactly -- so U(reference) = 0 is the (essentially unique) GLOBAL
+minimum over the ENTIRE sequence space: U(any sequence) >= 0 is a hard
+floor, not a heuristic.
+
+This makes some of test_informedness_vs_dt.py's reported dU values
+directly checkable: site 55's dU=-92.9918 (relative to that run's seq_A,
+Hd=4 from ref) requires seq_A's own U_A_exact >= 92.9918 to be
+mathematically possible -- that baseline wasn't printed in the run, so
+this can't be confirmed from the existing output alone.
+
+Also checked what's ALREADY available with no new GPU computation: bucketed
+the completed dt=8000/seed42 sweep trajectory (5000 real moves) by
+Hd_to_ref. U is NOT simply a function of Hd -- e.g. at Hd=40 (704 logged
+moves) U ranges from 58.3 to 92.2, a 34-unit spread among sequences that
+all differ from the reference by exactly 40 sites. Direct, already-in-hand
+evidence of epistasis/context-dependence: WHICH sites are mutated (and to
+what) matters far more than how many, consistent with (and reinforcing)
+the "reference isn't a context-independent local optimum once the
+sequence has drifted" read from the accept-rate-gap investigation.
+
+Added code/tests/scan_U_am_landscape.py to settle the rest directly on
+the GPU:
+  (1) floor consistency check -- confirms compute_U_am(ref_am,ref_am)==0,
+      then recomputes the EXACT seq_A test_informedness_vs_dt.py used
+      (same mutate() call, SEED=0) and prints its own U_A_exact, checked
+      against the >=92.9918 requirement above. A failure here would be a
+      real pipeline bug to chase, not a landscape-interpretation question.
+  (2) reference-anchored scan -- at the SAME 10 sites already tested,
+      scans every canonical single-point mutant DIRECTLY FROM THE
+      REFERENCE (Hd=1, no prior drift), which the floor argument
+      guarantees are all >= 0; reports the typical cost-from-ref per site,
+      to compare site-by-site against test_informedness_vs_dt.py's
+      cost-from-seq_A (Hd=4) numbers -- a site that's clearly expensive
+      from ref but was found improving from seq_A is direct, site-matched
+      evidence for the epistasis explanation.
+
+Not yet run (needs the GPU). py_compile clean.
