@@ -1129,3 +1129,50 @@ repeats one from the original device-mismatch bug entry: a script that
 doesn't exercise the exact code path in question can't validate a device-
 placement fix for it, however similar the two scripts otherwise look.
 py_compile clean.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- validate_boltzmann_toy.py real result: no evidence of bias
+--------------------------------------------------------------------------------
+Ran on the real GPU (FREE_SITES=[30,52], background=reference, T=2, dt=1300,
+20000 moves, 16000 post-burn-in). Result:
+
+  state    p_exact   p_empirical   n
+  (K,T)    0.3246    0.3085        4936
+  (E,T)    0.0709    0.0767        1228
+  (K,V)    0.0651    0.0628        1004
+  (K,K)    0.0618    0.0524        838
+  (N,T)    0.0329    0.0357        572
+  (T,E)    0.0312    0.0401        641
+  (Q,T)    0.0298    0.0281        450
+  (R,T)    0.0242    0.0225        360
+  (S,E)    0.0225    0.0276        442
+  (T,V)    0.0216    0.0227        364
+
+  KL(empirical||exact)=0.0231 nats (vs ln(400)=5.99 scale)
+  Total variation distance=0.0642
+  Mean U: exact=+3.9620, empirical=+4.0608
+  Overall acceptance rate 0.1386. 135/400 states visited post-burn-in.
+
+Top-4 states match in rank order both ways ((K,T)>(E,T)>(K,V)>(K,K)); KL
+and TV are small relative to the space's scale; mean U differs by only
+2.5%. No evidence of a systematic, directional bias -- the deviations look
+consistent with ordinary Monte Carlo noise at this sample size (16000
+correlated MCMC samples, effective sample size smaller than that due to
+autocorrelation, especially given ~14% acceptance rate), not with a
+correctness bug in the acceptance-ratio machinery.
+
+This is a real, positive result for the concern raised when this test was
+designed: the documented independence approximation in log_pointing_prob
+does not appear to introduce a meaningfully biased stationary distribution,
+at least in this tested regime (2 sites, background fixed at reference,
+dt=1300). Honest scope, unchanged from the design: this doesn't test
+whether the approximation's error grows in a heavily-epistatic, far-from-
+reference background (only "background=reference" was tested), and doesn't
+touch the separate, still-open equilibration-time question on the full
+56-site problem (this 400-state sub-problem mixes far faster than the full
+~20^56 space ever could, so nothing here speaks to whether 5000-move sweep
+runs reach anything close to their true equilibrium).
+
+Conclusion so far: no reason to distrust the core per-move mechanism;
+the open question going forward is equilibration/mixing time on the real
+problem, not the correctness of the acceptance math itself.
