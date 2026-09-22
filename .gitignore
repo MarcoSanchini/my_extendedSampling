@@ -31,3 +31,10 @@ softmax/monte_carlo/tests_rate_sweep_dt/dt50/sim0/eprot/
 softmax/monte_carlo/tests_rate_sweep_dt/dt150/sim0/eprot/
 softmax/monte_carlo/tests_rate_sweep_dt/dt20/sim0/eprot/
 softmax/monte_carlo/tests_rate_sweep_dt/dt100/sim0/eprot/
+
+softmax/monte_carlo/tests_rate_sweep_dt/dt300/sim0/eprot/
+softmax/monte_carlo/tests_rate_sweep_dt/dt600/sim0/eprot/
+softmax/monte_carlo/tests_rate_sweep_dt/dt1000/sim0/eprot/
+softmax/monte_carlo/tests_rate_sweep_dt/dt1300/sim0/eprot/
+
+
