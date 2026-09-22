@@ -26,3 +26,8 @@ softmax/monte_carlo/tests_rate/sim1/eprot/
 
 
 softmax/monte_carlo/old_sampling/
+
+softmax/monte_carlo/tests_rate_sweep_dt/dt50/sim0/eprot/
+softmax/monte_carlo/tests_rate_sweep_dt/dt150/sim0/eprot/
+softmax/monte_carlo/tests_rate_sweep_dt/dt20/sim0/eprot/
+softmax/monte_carlo/tests_rate_sweep_dt/dt100/sim0/eprot/
