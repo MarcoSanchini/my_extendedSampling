@@ -692,3 +692,86 @@ smoke-tested against real (already-committed) data as described above --
 the sweep script itself still only verified by sed dry-run against the
 real pars.txt/settings.txt (no GPU here), same as every sweep script so
 far.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- accept-rate-gap SIGN REVERSAL at dt=2000-8000; diagnostic replaced
+--------------------------------------------------------------------------------
+sweep_dt_seeds.sh results (dt=2000,4000,8000,16000 x seeds 42,43,44,45,
+pooled with aggregate_seeds.py):
+
+  dt      overall acc   mutated acc (n)      ref-matching acc (n)   gap      gap/SE
+  2000    0.160         0.138 (207/1501)     0.162 (2995/18499)     -0.024   -2.58
+  4000    0.186         0.161 (242/1501)     0.188 (3479/18499)     -0.027   -2.71
+  8000    0.176         0.149 (223/1501)     0.178 (3290/18499)     -0.029   -3.05
+  16000*  0.148         0.136 (135/996)      0.149 (1812/12192)     -0.013   -1.16
+
+*dt=16000: all 4 seeds truncated early (seeds 43/44/45 stopped within one
+logged row of each other around move ~3238; seed 42 around move ~3468).
+Independent trajectories that diverge from each other within ~8 moves (see
+the earlier "identical trajectories" entry) stopping this tightly
+synchronized points to an external interrupt (kill/timeout) mid-run, not 4
+coincidental numerical failures -- flagged as preliminary, worth rerunning.
+
+This is the OPPOSITE of the dt=(300,600,1000,1300) sweep's trend (which
+was weakly positive, peaking at gap/SE=+1.84 at dt=1300). Three fully-
+completed, 4-seed-pooled points (2000, 4000, 8000) all agree in sign and
+grow MORE significant with dt -- not noise. Overall acceptance also jumps
+substantially in this range (0.13-0.15 -> 0.16-0.19), confirming the
+sampler did cross further into genuinely informed territory here; it's
+just that once informed, it finds improving single-site substitutions
+MORE efficiently at the 52 reference-matching sites than at the 4
+deliberately-mutated ones -- backwards from what the diagnostic assumed.
+
+Root cause: the accept-rate-gap diagnostic's premise -- that the reference
+sequence sits at (or near) a local minimum of compute_U_am at each site,
+so mutated sites should be more "improvable" -- was never independently
+verified, and this result is direct evidence against it (at least not
+uniformly true for this attention-map-derived energy). This is NOT a
+sampler bug: the proposal mechanism was already independently verified
+correct via two dt-independent checks unrelated to this diagnostic
+(test_steepest_descent.py's p=0 descent-direction check, by construction;
+compare_grad_methods.py's site-only-vs-whole-sequence gradient agreement).
+The diagnostic itself was just measuring the wrong thing.
+
+Replacement diagnostic: added code/tests/test_informedness_vs_dt.py.
+Key realization: mu_A = -step_coef*grad_A, step_coef=dt^2/(2M) is a
+POSITIVE SCALAR, so the gradient's fixed argmax pick over competitors
+(the deterministic, p=0 proposal direction) is completely INDEPENDENT of
+dt -- dt never changes which class the gradient favors, only how reliably
+a single REALIZED stochastic proposal (mu_A plus momentum noise) lands on
+that fixed pick. This splits the old single confounded metric into two
+clean ones:
+  (A) dt-independent: does the gradient's fixed pick match the true
+      brute-force-best substitution? (same brute-force scan
+      test_steepest_descent.py already does, computed once per site)
+  (B) dt-dependent, CLOSED FORM: P(realized proposal == gradient's pick)
+      = log_pointing_prob(mu_A[competitors], sigma(dt), target=j_star),
+      evaluated at mu_A's own argmax instead of whatever one Monte Carlo
+      draw happened to realize. No brute-force energy evaluation needed,
+      no new main_rate.py runs, no GPU sweep scheduler -- once grad_A is
+      known (one real forward+backward pass per site), this sweeps
+      arbitrarily many dt values for free.
+
+Verified the core math with a standalone numpy/scipy reimplementation of
+log_pointing_prob (torch unavailable in this sandbox, same limitation as
+every script here) before trusting the new test script: confirmed the
+argmax really is dt-invariant across dt=20..128000, confirmed
+numerical stability (no NaN/inf) across that whole range for both a
+typical-gap synthetic gradient (p_match saturates ~dt=600-1000) and an
+adversarial near-tied-competitor case (gap=0.001, p_match saturates more
+slowly, ~dt=16000-32000, but still smooth and finite throughout).
+
+Notably, the typical-gap synthetic case saturating by dt~600-1000 lines
+up with dt=2000-8000 already being well past most sites' informedness
+crossover -- meaning the negative accept-rate-gap trend growing across
+that range is unlikely to reflect "still-increasing informedness" (which
+this new diagnostic can check directly on the real gradients) and more
+likely reflects a genuine, dt-independent property of compute_U_am's
+landscape relative to the reference sequence, consistent with the root-
+cause read above. This needs the real per-site grad_A values (GPU) to
+confirm -- the synthetic check only establishes that the tool itself
+behaves correctly, not what the real crossover value is.
+
+Next step (decided by user): run test_informedness_vs_dt.py on the GPU to
+get the real p_match(dt) curve and top-1-vs-ground-truth numbers, in place
+of further accept-rate-gap sweeping.
