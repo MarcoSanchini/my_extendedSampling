@@ -500,3 +500,72 @@ success as before: the accept-rate gap between the 4 originally-mutated
 sites and the 52 reference-matching sites should now actually open up if
 gradient-informedness is the missing piece; if it still doesn't, that
 would point at something else entirely (worth knowing either way).
+
+--------------------------------------------------------------------------------
+2026-09-22 -- refactor: exclusion by slicing instead of penalty, before the dt=(300,600,1000,1300) sweep
+--------------------------------------------------------------------------------
+Prompted by a question about the previous sweep entry's own caveat above
+(step_coef*grad could start overwhelming the fixed -1e6 exclusion penalty
+around dt>1400): why penalize non-canonical residues and the current
+amino acid at all, instead of just never letting them compete? The
+per-site formula this sampler is built on is
+P(delta_x_j = max_{k!=i,j} delta_x_k), a product over k != i,j from the
+start -- "i" (current class) and non-canonical residues were never
+supposed to be in the competition, so masking them with a large negative
+constant was doing extra, riskier work to get the same result a smaller
+candidate set gives for free.
+
+Replaced the additive penalty with physical slicing in
+classes/rate_sampler.py:
+  - Removed module constant _EXCLUSION_PENALTY (-1.0e6) and the methods
+    _penalize_indices / _penalize_noncanonical.
+  - Renamed self._noncanonical_idx (indices of X/B/U/Z/O, set in
+    _init_attributes, moved to settings["device"] in _setup after device
+    resolution -- see the 2026-09-19-ish device-mismatch fix entry above)
+    to self._canonical_idx: now stores the indices NOT in
+    _NONCANONICAL_RESIDUES, i.e. the full candidate universe, computed
+    once and reused every step.
+  - New method _competition_indices(exclude_idx): returns
+    self._canonical_idx with exclude_idx (typically the site's current
+    amino acid) masked out -- a plain boolean-masked slice, no constant,
+    no fixed-size tensor with penalized entries sitting in it.
+  - _step() rewritten around this: mu_A/mu_B and delta_x are still
+    computed over the FULL vocab (gauge-fixing delta_x -= delta_x.mean()
+    still happens over the full space, before any slicing -- doing it
+    after would change the fixed point), but the argmax that picks the
+    proposed class, and both directions of log_pointing_prob (forward
+    log_a_AB, reverse log_a_BA), now index into competitors_A /
+    competitors_B, so log_pointing_prob only ever sees the reduced
+    (K-1-or-fewer) canonical competitor set for that call, plus a
+    local-index -> global-vocab-index mapping step. Also handles the edge
+    case where the reverse move's target (cur, the original amino acid)
+    is itself non-canonical: impossible for the CURRENT design since cur
+    always comes from an ExtendedProtein's argmax over canonical-only
+    proposals, but the code path (log_a_BA = -inf if cur is not found in
+    competitors_B) is there defensively rather than assumed away.
+
+Updated tests/test_steepest_descent.py and tests/compare_grad_methods.py
+to call sampler._competition_indices(cur) and index into it (local argmax
+-> global vocab index) instead of the removed
+_penalize_indices/_noncanonical_idx calls. tests/test_proposals.py needed
+no logic changes (check_exclusion_masking tests the general-purpose
+penalty-masking trick inside utils/proposals.py:log_pointing_prob
+directly, which is still correct, general code -- just no longer what the
+sampler itself calls); only its docstring and the __main__ banner were
+updated so they don't misdescribe current production behavior.
+
+All four files verified via py_compile (no torch in this environment, so
+this is static-only, same as every other change in this file -- real
+verification happens on the user's GPU machine). grep confirmed no
+remaining references anywhere to _noncanonical_idx, _penalize_indices,
+_penalize_noncanonical, or _EXCLUSION_PENALTY outside
+tests/archive/test_steepest_descent_JOINT_DESIGN.py (the archived
+joint-design test, kept as history, intentionally untouched).
+
+Net effect on sampler behavior: none intended -- same candidate set, same
+math, just computed by slicing instead of adding a large negative number
+to a fixed-size tensor. The point was removing the -1e6-vs-step_coef*grad
+race condition entirely (no numeric constant to be overwhelmed, at any
+dt) before running the next sweep at dt=(300,600,1000,1300), which pushes
+step_coef well past where the old penalty's safety margin was getting
+thin.

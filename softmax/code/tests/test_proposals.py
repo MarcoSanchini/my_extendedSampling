@@ -97,16 +97,23 @@ def mc_pointing_probs_excluding(mu, sigma, exclude_idx, n_samples=2_000_000, see
 
 def check_exclusion_masking(K=10, sigma=1.3, scale=2.0, exclude_idx=0, n_nodes=80, seed=3, tol_sum=1e-4):
 	"""
-	classes/rate_sampler.py:ExtendedProteinRateSampler excludes the site's
-	current amino acid from the competition entirely (product over k != i,j,
-	the original per-site formula this sampler is built on -- once a site is
-	chosen to change, "staying" isn't a candidate) by adding a large finite
-	penalty to mu[i] before calling log_pointing_prob, rather than by
-	deriving a separate K-1-class formula. This checks that trick actually
-	reproduces P(j = max over k != i) (equivalently P(x_j > x_k for all
-	k != i,j)), cross-checked against a direct Monte Carlo draw over only
-	the K-1 non-excluded classes (i is never sampled at all, not just
-	discarded after the fact).
+	Checks the large-finite-penalty masking trick for log_pointing_prob
+	itself: does adding a large penalty to mu[i] before calling
+	log_pointing_prob(j) actually reproduce P(j = max over k != i)
+	(equivalently P(x_j > x_k for all k != i,j)), cross-checked against a
+	direct Monte Carlo draw over only the K-1 non-excluded classes (i is
+	never sampled at all, not just discarded after the fact)?
+
+	NOTE: classes/rate_sampler.py:ExtendedProteinRateSampler no longer uses
+	this penalty-masking trick in production -- it excludes the site's
+	current amino acid (and non-canonical residues) by physically slicing
+	them out of the competitor tensor before ever calling log_pointing_prob
+	(see _competition_indices), since the additive -1e6 penalty risked being
+	numerically overwhelmed at large dt (step_coef*grad grows ~dt^2). See
+	DEVLOG.txt. This check remains valid and useful as a standalone
+	validation of the masking primitive in log_pointing_prob, which is still
+	general-purpose code even though the sampler itself no longer calls it
+	this way.
 	"""
 	torch.manual_seed(seed)
 	mu = torch.randn(K) * scale
@@ -169,7 +176,8 @@ if __name__ == "__main__":
 	print("\n=== p=0 / steepest-descent consistency (proposal math only) ===")
 	check_deterministic_argmax_matches_pointing_argmax()
 
-	print("\n=== exclusion masking (excludes the site's current class, as _step() does) ===")
+	print("\n=== exclusion masking (standalone check of the masking primitive; _step() now")
+	print("    excludes via slicing instead -- see check_exclusion_masking docstring) ===")
 	for K in [5, 10, 25]:
 		check_exclusion_masking(K=K, sigma=1.3, scale=2.0, exclude_idx=0)
 

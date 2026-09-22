@@ -88,15 +88,15 @@ def main():
 		cur = int(eprot_A.logits[s].argmax(dim=-1).item())
 		mu_A = -step_coef*grad_A
 
-		# check 1: steepest-descent direction, by construction (before exclusion masking)
+		# check 1: steepest-descent direction, by construction (before restricting to competitors)
 		dot = (mu_A * grad_A).sum().item()
 		max_descent_dot = max(max_descent_dot, dot)
 
-		excl = torch.unique(torch.cat([sampler._noncanonical_idx, torch.tensor([cur])]))
-		mu_A_masked = sampler._penalize_indices(mu_A, excl)
-		j_star = int(mu_A_masked.argmax(dim=-1).item())
+		competitors = sampler._competition_indices(cur)  # global vocab indices: canonical minus cur
+		local_tgt = mu_A[competitors].argmax(dim=-1)
+		j_star = int(competitors[local_tgt].item())
 
-		canonical_idx = [i for i in range(len(vocab)) if i not in sampler._noncanonical_idx.tolist() and i != cur]
+		canonical_idx = competitors.tolist()
 
 		true_dU = {}
 		for j in canonical_idx:

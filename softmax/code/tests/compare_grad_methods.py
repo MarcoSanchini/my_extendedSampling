@@ -116,17 +116,17 @@ def main():
 
 	for s in test_sites:
 		cur = int(eprot_A.logits[s].argmax(dim=-1).item())
-		excl = torch.unique(torch.cat([sampler._noncanonical_idx, torch.tensor([cur])]))
+		competitors = sampler._competition_indices(cur)  # global vocab indices: canonical minus cur
 
 		grad_site = sampler._grad_pass_site(eprot_A, s, pars)          # (K,), current production method
 		grad_whole = grad_whole_full[s]                                 # (K,), old (removed) method
 
 		cos = cosine_sim(grad_site, grad_whole)
 
-		mu_site = sampler._penalize_indices(-step_coef*grad_site, excl)
-		mu_whole = sampler._penalize_indices(-step_coef*grad_whole, excl)
-		j_site = int(mu_site.argmax(dim=-1).item())
-		j_whole = int(mu_whole.argmax(dim=-1).item())
+		mu_site = -step_coef*grad_site
+		mu_whole = -step_coef*grad_whole
+		j_site = int(competitors[mu_site[competitors].argmax(dim=-1)].item())
+		j_whole = int(competitors[mu_whole[competitors].argmax(dim=-1)].item())
 		agree = (j_site == j_whole)
 
 		# true dU for whichever candidate(s) the two methods actually picked

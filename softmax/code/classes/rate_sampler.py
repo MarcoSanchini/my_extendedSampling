@@ -25,13 +25,19 @@ from utils.proposals import log_pointing_prob
 
 
 # Non-canonical / ambiguous residue codes at the tail of SEQUENCE_USED_VOCAB
-# (X=unknown, B=Asx, Z=Glx, U=selenocysteine, O=pyrrolysine). Excluded from
-# the proposal competition below, same as the current amino acid is (see
-# class docstring): neither is a real target to propose. The penalty is a
-# large FINITE value (not -inf) so that a site already sitting on one of
-# these codes doesn't produce nan in log_pointing_prob.
+# (X=unknown, B=Asx, Z=Glx, U=selenocysteine, O=pyrrolysine). Never valid
+# proposal targets, same as the site's own current amino acid isn't once
+# it's been chosen to change (see class docstring): both are excluded from
+# the competition by SLICING them out of the candidate set entirely (see
+# _competition_indices below), not by penalizing them in a fixed-size
+# tensor. That's a deliberate change from an earlier version, which used a
+# large-but-finite additive penalty (-1e6) for both exclusions: correct,
+# but it left a latent risk that step_coef*grad (which grows with dt^2)
+# could eventually approach that constant's scale at large dt and weaken
+# the exclusion. Slicing removes that risk entirely -- excluded classes
+# are structurally absent from the tensor being maximized over, not just
+# very unlikely to win.
 _NONCANONICAL_RESIDUES = ('X', 'B', 'U', 'Z', 'O')
-_EXCLUSION_PENALTY = -1.0e6
 
 
 
@@ -160,25 +166,40 @@ class ExtendedProteinRateSampler():
 		step_coef = pars['dt']**2. / (2.*pars['M'])
 		mu_A = -step_coef*grad_A
 
-		excl_A = torch.unique(torch.cat([self._noncanonical_idx, cur_idx.reshape(1)]))
-		mu_A_masked = self._penalize_indices(mu_A, excl_A)
-
 		momentum = self._extract_momenta(grad_A.shape, pars['T'], pars['M'])
 		delta_x = pars['dt']*momentum/pars['M'] - step_coef*grad_A
-		delta_x = delta_x - delta_x.mean(dim=-1, keepdim=True)
-		delta_x = self._penalize_indices(delta_x, excl_A)
+		delta_x = delta_x - delta_x.mean(dim=-1, keepdim=True)   # gauge-fix over the FULL space, before any slicing
 
-		tgt_idx = delta_x.argmax(dim=-1)  # guaranteed != cur_idx and not non-canonical
+		# Candidates at A: canonical residues, minus the site's own current one.
+		# delta_x/mu_A are computed over the full 25-dim space above (that's what
+		# the physics/gauge-fixing needs); only the final argmax/probability is
+		# restricted to this slice -- non-canonical classes never entered the
+		# competition to begin with, and cur_idx is structurally absent from it,
+		# not merely disfavored.
+		competitors_A = self._competition_indices(int(cur_idx.item()))
+		local_tgt = delta_x[competitors_A].argmax(dim=-1)     # index into competitors_A
+		tgt_idx = competitors_A[local_tgt]                    # global vocab index, guaranteed != cur_idx
 
-		log_a_AB = log_pointing_prob(mu_A_masked, sigma, tgt_idx, pars['n_quad']).item()
+		log_a_AB = log_pointing_prob(mu_A[competitors_A], sigma, local_tgt, pars['n_quad']).item()
 
 		eprot_B = self._substitute(eprot, site, int(tgt_idx.item()))
 
 		grad_B = self._grad_pass_site(eprot_B, site, pars)
 		mu_B = -step_coef*grad_B
-		excl_B = torch.unique(torch.cat([self._noncanonical_idx, tgt_idx.reshape(1)]))
-		mu_B_masked = self._penalize_indices(mu_B, excl_B)
-		log_a_BA = log_pointing_prob(mu_B_masked, sigma, cur_idx, pars['n_quad']).item()
+
+		# Reverse direction: candidates at B are canonical residues minus B's own
+		# current one (tgt_idx). If cur_idx isn't canonical (rare -- e.g. an
+		# init_muts draw landed on an ambiguity code), it can never legally be
+		# proposed by this kernel at all, so the reverse move is structurally
+		# unreachable: reject exactly (-inf), not approximately, to preserve
+		# detailed balance rather than fake it with a large finite penalty.
+		competitors_B = self._competition_indices(int(tgt_idx.item()))
+		local_cur_matches = (competitors_B == cur_idx).nonzero(as_tuple=True)[0]
+		if local_cur_matches.numel() == 0:
+			log_a_BA = float('-inf')
+		else:
+			local_cur = local_cur_matches[0]
+			log_a_BA = log_pointing_prob(mu_B[competitors_B], sigma, local_cur, pars['n_quad']).item()
 
 		U_B, U_am_B, eprot_B = self._exact_energy(eprot_B, pars)
 
@@ -242,16 +263,13 @@ class ExtendedProteinRateSampler():
 		eprot_new.expand()
 		return eprot_new
 
-	def _penalize_indices(self, x: torch.Tensor, idx: torch.Tensor) -> torch.Tensor:
-		if idx.numel() == 0:
-			return x
-		idx = idx.to(x.device)
-		x = x.clone()
-		x[..., idx] = x[..., idx] + _EXCLUSION_PENALTY
-		return x
-
-	def _penalize_noncanonical(self, x: torch.Tensor) -> torch.Tensor:
-		return self._penalize_indices(x, self._noncanonical_idx)
+	def _competition_indices(self, exclude_idx: int) -> torch.Tensor:
+		"""Canonical vocab indices eligible to compete for a given site, minus
+		exclude_idx if it's among them (typically the site's own current amino
+		acid). Non-canonical residues are never in self._canonical_idx at all,
+		so they're never candidates -- not penalized, structurally absent."""
+		mask = self._canonical_idx != exclude_idx
+		return self._canonical_idx[mask]
 
 	def _extract_momenta(self, shape, T, M):
 		p = torch.randn(*shape, device=self.generator.device, generator=self.generator.get()) * math.sqrt(T*M)
@@ -319,7 +337,7 @@ class ExtendedProteinRateSampler():
 		if ("cuda" in settings["device"].type) and (not torch.cuda.is_available()):
 			settings["device"] = torch.device("cpu")
 
-		self._noncanonical_idx = self._noncanonical_idx.to(settings["device"])
+		self._canonical_idx = self._canonical_idx.to(settings["device"])
 		self.model.to(settings["device"])
 		self.generator = CustomGenerator(
 				seed=pars["seed"],
@@ -533,8 +551,8 @@ class ExtendedProteinRateSampler():
 	def _init_attributes(self):
 		self.buffer = StringIO()
 
-		self._noncanonical_idx = torch.tensor(
-			[i for i, c in enumerate(C.SEQUENCE_USED_VOCAB) if c in _NONCANONICAL_RESIDUES],
+		self._canonical_idx = torch.tensor(
+			[i for i, c in enumerate(C.SEQUENCE_USED_VOCAB) if c not in _NONCANONICAL_RESIDUES],
 			dtype=torch.long,
 		)
 
