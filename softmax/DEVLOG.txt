@@ -969,3 +969,64 @@ the GPU:
       evidence for the epistasis explanation.
 
 Not yet run (needs the GPU). py_compile clean.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- scan_U_am_landscape.py results: epistasis confirmed directly, investigation closed
+--------------------------------------------------------------------------------
+Ran on the real GPU. Both checks came back clean and decisive.
+
+(1) Floor consistency: compute_U_am(ref_am, ref_am) = 0 exactly.
+seq_A (Hd=5 from ref, same mutate() call as test_steepest_descent.py /
+test_informedness_vs_dt.py, SEED=0) has U_A_exact=165.4261 -- comfortably
+above the 92.9918 required for site 55's earlier dU=-92.9918 to be
+possible. CONSISTENT: no pipeline bug, the floor holds as derived.
+
+(2) Reference-anchored scan: all 190 single mutants of the reference
+(19 candidates x 10 sites) came back with dU >= 0 (mean +31.4405, 0
+violations) -- the reference genuinely is a strong, floor-respecting local
+optimum FOR ITSELF, exactly as the compute_U_am floor argument requires.
+
+The decisive comparison is site-by-site against test_informedness_vs_dt.py's
+seq_A-context (Hd=5) numbers at the SAME 10 sites:
+
+  site  ref-context best (Hd=1)   seq_A-context best (Hd=5)
+  4     I  +9.07                  F  -19.99
+  30    E  +3.04                  R  -3.55
+  49    R  +2.66                  A  -4.04
+  24    V  +5.62                  F  -27.19
+  55    Q  +2.74                  K  -92.99
+  5     V  +2.41                  M  -62.79
+  33    V  +6.78                  A  -76.10
+  52    V  +3.21                  E  -26.71
+  6     I  +5.40                  V  -24.41
+  14    N  +7.28                  F  -72.33
+
+ALL 10/10 sites flip sign between contexts, AND the identity of the best
+substitution changes every time too (not just its cost) -- a complete,
+exceptionless pattern, not a partial or occasional effect. Just 5
+background mutations (out of 56 sites) are enough to completely reshape
+which amino acid is locally preferred at an otherwise-untouched site.
+
+CONCLUSION, closing this investigation thread: the accept-rate-gap sign
+reversal (dt=2000-8000 sweep) was never a sampler bug or an incomplete-
+informedness artifact. It is a direct, now-demonstrated consequence of
+compute_U_am being strongly epistatic: "reference-matching site = locally
+optimal site" was never a safe assumption for this energy function, and
+this scan shows concretely why, at the same sites the sampler itself
+flagged. Chain of evidence, in order: (i) sampler mechanism verified
+correct via two dt-independent checks unrelated to any of this
+(test_steepest_descent.py's p=0 descent-direction check,
+compare_grad_methods.py's cross-method gradient agreement); (ii) real
+informedness-vs-dt curve confirmed genuine and gradual, not saturated at
+the dt values where the reversal appeared, ruling out "not informed
+enough" (test_informedness_vs_dt.py); (iii) the U>=0 floor confirmed
+mathematically and empirically, ruling out a pipeline inconsistency
+(scan_U_am_landscape.py, check 1); (iv) direct site-matched reference-vs-
+seq_A comparison shows the epistatic reversal concretely, at the exact
+sites in question (scan_U_am_landscape.py, check 2).
+
+Also worth keeping in mind going forward, from the dt=8000/seed42
+trajectory bucketing done earlier (free, no new GPU work): U is not a
+simple function of Hd_to_ref even later in a run (34-unit spread at
+Hd=40 alone) -- consistent with, and a larger-scale echo of, the same
+epistasis this scan demonstrates directly at Hd=1 vs Hd=5.
