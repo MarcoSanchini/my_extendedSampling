@@ -1030,3 +1030,68 @@ trajectory bucketing done earlier (free, no new GPU work): U is not a
 simple function of Hd_to_ref even later in a run (34-unit spread at
 Hd=40 alone) -- consistent with, and a larger-scale echo of, the same
 epistasis this scan demonstrates directly at Hd=1 vs Hd=5.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- validate_boltzmann_toy.py: does this actually sample exp(-U/T)?
+--------------------------------------------------------------------------------
+User question, stepping back from all the diagnostics so far: none of them
+actually tested whether this sampler converges to the correct Boltzmann
+distribution -- they validated pieces of the machinery (gradient
+correctness, dt-informedness, the energy floor, epistasis), never the
+statistical claim itself. Two concrete reasons this isn't a given:
+
+1. utils/proposals.py:log_pointing_prob's own docstring documents an
+   independence approximation -- the K proposal classes are treated as
+   independent Gaussians, but the real displacement (mean-centered for
+   gauge-fixing) has a small but real induced correlation (~-1/(K-1)
+   pairwise, ~-5% for K=20). Metropolis-Hastings is only exactly correct
+   when the acceptance ratio uses the EXACT probability of the mechanism
+   that generated the proposal; here it's a documented approximation.
+   Per-move small; cumulative effect on the stationary distribution
+   untested.
+2. Every sweep run so far (any dt) shows U still drifting after 5000 moves
+   with no clear plateau -- no existing evidence of equilibration at any
+   timescale tested.
+
+Ergodicity itself isn't in question (single-site moves with full support
+reach any sequence eventually).
+
+Since exactly enumerating the full 56-site Boltzmann distribution is
+impossible (~20^56 states), added code/tests/validate_boltzmann_toy.py:
+restricts the sampler's site choice to 2 fixed sites (FREE_SITES=[30,52],
+chosen for continuity with the sites already characterized in
+test_informedness_vs_dt.py / scan_U_am_landscape.py), everything else held
+at the reference identity. This makes the TARGET exactly enumerable
+(20^2=400 states) and -- since uniform selection over a fixed site set is
+still symmetric/state-independent, exactly the same argument
+rate_sampler.py's class docstring gives for the full 56-site case -- makes
+the correct stationary distribution of the resulting chain EXACTLY the
+conditional Boltzmann distribution over those 2 sites given the fixed
+background. restricted_step() is a near-verbatim copy of the real _step()
+(as of commit a7e7c34/current), with the ONLY change being the site drawn
+uniformly from FREE_SITES instead of range(L) -- everything else calls the
+real sampler methods (_grad_pass_site, _competition_indices, _substitute,
+_exact_energy, _extract_momenta) unmodified, so this tests the real
+acceptance-ratio code path (independence approximation included) against a
+known-exact target. Scope, stated plainly in the script's docstring: this
+validates the core per-move mechanism, not a full proof the joint 56-site
+sampler is unbiased (that target is intractable to enumerate at all) -- but
+the acceptance-ratio math doesn't change based on how many other sites
+exist, so this is the most decisive test available.
+
+Design choices: dt=1300 (moderate -- low enough to explore broadly across
+all 20 classes per site rather than concentrating on the gradient's fixed
+favorite, per test_informedness_vs_dt.py's p_match curve, since broad
+coverage matters more than speed for this specific test). MOVES=20000,
+BURN_IN=4000 -- adjustable constants; smaller MOVES gives a faster but
+noisier first look, still enough to catch a gross discrepancy even if not
+a subtle bias. Reports: exact vs. empirical top-10/top-5 states,
+KL(empirical||exact) (well-defined everywhere since the U>=0 floor means
+no state has exactly zero exact probability), total variation distance,
+and mean U under each distribution.
+
+py_compile clean. Not yet run (needs GPU). The other existing test scripts
+don't move _canonical_idx to device manually despite also bypassing
+_setup() (checked via grep) and have run successfully on the real GPU
+several times already, so this script follows that same already-proven
+pattern rather than adding an untested "fix."
