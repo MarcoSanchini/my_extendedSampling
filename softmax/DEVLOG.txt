@@ -1095,3 +1095,37 @@ don't move _canonical_idx to device manually despite also bypassing
 _setup() (checked via grep) and have run successfully on the real GPU
 several times already, so this script follows that same already-proven
 pattern rather than adding an untested "fix."
+
+--------------------------------------------------------------------------------
+2026-09-22 -- validate_boltzmann_toy.py crash: fix, and correction to earlier reasoning
+--------------------------------------------------------------------------------
+First real run crashed: RuntimeError, "Expected all tensors to be on the
+same device, but found at least two devices, cuda:0 and cpu" at
+restricted_step()'s `competitors_B == cur_idx` line. (Exact enumeration
+ran fine first -- U at (ref,ref)=0 confirmed again, top state (K,T) i.e.
+reference/reference at p_exact=0.3246, meaningfully peaked but not
+degenerate, a reasonable target for this test.)
+
+Root cause: the earlier claim (previous DEVLOG entry) that dropping the
+_canonical_idx.to(device) move was safe "because the other test scripts
+don't do it and ran fine" was wrong -- it generalized from scripts that
+never actually exercised the code path that needs it. None of
+test_steepest_descent.py / compare_grad_methods.py / scan_U_am_landscape.py
+/ test_informedness_vs_dt.py ever call the reverse-direction matching
+logic (_step()'s `competitors_B == cur_idx`) -- they only ever pass
+_competition_indices() a plain Python int (via .item()), and comparing a
+CPU tensor against a Python int never triggers a device mismatch (torch
+broadcasts the scalar). validate_boltzmann_toy.py's restricted_step() is
+the first script to copy AND run that specific line, with cur_idx left as
+a raw CUDA tensor (matching the real _step()) -- that's what needs
+_canonical_idx on the same device. Production runs never hit this either,
+since _setup() (bypassed by every test script here, same as before) does
+this move already.
+
+Fixed: restored `sampler._canonical_idx = sampler._canonical_idx.to(device)`
+in main(), with a comment explaining specifically why THIS script needs it
+when the others don't (rather than just re-adding it silently). Lesson
+repeats one from the original device-mismatch bug entry: a script that
+doesn't exercise the exact code path in question can't validate a device-
+placement fix for it, however similar the two scripts otherwise look.
+py_compile clean.

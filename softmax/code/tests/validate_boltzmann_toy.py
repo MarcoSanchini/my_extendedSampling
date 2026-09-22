@@ -153,6 +153,15 @@ def main():
 
 	sampler = ExtendedProteinRateSampler(config_settings={})
 	sampler.model.to(device)
+	# Needed here, unlike in the other test scripts: this is the first one
+	# that actually runs _step()'s reverse-direction logic
+	# (competitors_B == cur_idx), which compares self._canonical_idx
+	# against a raw CUDA tensor (cur_idx isn't .item()'d there). The other
+	# scripts only ever pass _competition_indices() a plain Python int, so
+	# a CPU _canonical_idx never mismatched a CUDA tensor. Production runs
+	# never hit this either, since _setup() (which this bypasses, same as
+	# every other test script here) does this move already.
+	sampler._canonical_idx = sampler._canonical_idx.to(device)
 
 	from generator.custom_generator import CustomGenerator
 	sampler.generator = CustomGenerator(seed=SEED, device=device)
