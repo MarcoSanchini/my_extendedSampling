@@ -863,3 +863,55 @@ at 8000, pulls back some at 16000) -- but the persistence of the sign
 across a ~3x range of measured informedness is the strongest evidence yet
 that this is a real property of the energy landscape rather than a
 transient effect of the sampler still ramping up.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- test_informedness_vs_dt.py real results: informedness NOT saturated through dt=32000
+--------------------------------------------------------------------------------
+Ran on the real GPU (10 sites, same seed/REF_SEQ as test_steepest_descent.py).
+
+(A) dt-independent: top1=2/10 (sites 30, 52), mean dU at gradient-predicted
+class +17.1975, mean dU at other candidates +20.9858 -- EXACTLY reproduces
+test_steepest_descent.py's and compare_grad_methods.py's numbers (site 4:
+predicted T, true dU=+356.4977, true best F at -19.9868; site 30: R hit,
+-3.5485; site 52: E hit, -26.7100) -- expected, since this quantity never
+depended on dt, and confirms the rewrite didn't change anything it
+shouldn't have.
+
+(B) dt-dependent, closed form -- this is the important correction to the
+2026-09-22 "gap reversal" entry's interpretation:
+
+  dt        mean p_match   min      max
+  300       0.0725         0.0603   0.0986
+  600       0.0954         0.0684   0.1601
+  1000      0.1280         0.0799   0.2563
+  1300      0.1524         0.0889   0.3305
+  2000      0.2047         0.1109   0.4829
+  4000      0.3197         0.1779   0.7430
+  8000      0.4669         0.3001   0.9479
+  16000     0.6266         0.3908   0.9995
+  32000     0.7691         0.4716   1.0000
+
+The synthetic sanity check (numpy/scipy reimplementation, previous entry)
+used a per-component gradient scale that turned out to be far more
+"resolved" than the real per-site competitor fields -- real sites are NOT
+saturated anywhere in the swept range; mean p_match is still climbing at
+dt=32000, and the slowest sites (30, 4, 52, 24) are still under 60% there.
+This means the real crossover is much higher than dt~600-1000 as the
+synthetic check suggested -- likely because the real 24-way competitor
+field has many components clustered near the top gap, not a simple
+two-horse race, so ALL of them need to simultaneously fall behind in a
+given noisy draw, a much harder constraint than the adversarial-but-
+two-competitor synthetic example.
+
+Revised read on the accept-rate-gap sign reversal (dt=2000-8000, see
+previous entry): it happened at mean p_match~0.20-0.47, i.e. well BEFORE
+saturation, not after. That's actually a stronger point for the "this is
+a genuine compute_U_am landscape property, not a sampler-informedness
+artifact" conclusion, not a weaker one -- the reversal shows up across a
+wide partial-informedness range, not only once the sampler becomes fully
+greedy, so it's not specific to some edge-of-determinism regime.
+
+Not yet decided: whether to push the closed-form dt sweep further (cheap,
+no GPU sampler run needed, would show where the slowest real sites
+actually saturate) or treat the reversal as sufficiently established
+already. Asked the user.
