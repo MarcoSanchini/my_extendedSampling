@@ -639,3 +639,56 @@ Alternatively, repeated seeds at a fixed large dt would shrink the SE on
 the gap directly, which a single wider dt sweep does not by itself fix
 (342 mutated-site proposals per run is the limiting sample size, driven
 by having only 4 initially-mutated sites out of 56, not by dt).
+
+--------------------------------------------------------------------------------
+2026-09-22 -- sweep_dt_seeds.sh: dt=(2000,4000,8000,16000) x 4 seeds, plus aggregate_seeds.py
+--------------------------------------------------------------------------------
+Follow-up to the dt=(300,600,1000,1300) sweep's inconclusive gap/SE
+(peaked at +1.84 at dt=1300, see entry above). Two changes:
+
+1. dt pushed to (2000,4000,8000,16000), several x past 1300. Before
+   trusting this range, re-checked utils/proposals.py:log_pointing_prob
+   for the kind of numeric ceiling the old -1e6 penalty had: it's fully
+   log-space (torch.special.log_ndtr for the tail, torch.logsumexp for the
+   quadrature sum), no additive constant anywhere. log_ndtr stays finite
+   for very negative z until z^2 itself overflows (~1e19 in float32); at
+   dt=16000, T=2 and the gradient magnitudes seen so far (~0.01-0.08), z
+   reaches at most the low thousands -- nowhere close. No ceiling here,
+   confirmed rather than assumed.
+
+   One thing to watch, not fixed by anything: at large dt the *reverse*
+   proposal probability (log_a_BA) can legitimately shrink whenever the
+   return move isn't itself gradient-favored from the new state -- correct
+   Hastings-correction behavior. Overall acceptance could plateau or drop
+   at the top of this range instead of climbing forever; that would be a
+   real finding, not a bug, if it happens.
+
+2. Added sweep_dt_seeds.sh: same dt-override sed pattern as sweep_dt.sh
+   (whitespace-boundary matches, same GPU scheduler, MAX_RUNNING=4, own
+   results_dir per run), now also overriding `seed` (4 seeds: 42,43,44,45)
+   per dt, so each dt gets 4 independent runs -- independent init_muts
+   pattern each, not just a different downstream random stream from one
+   start. 16 runs total (vs the previous sweep's 4); at MAX_RUNNING=4 this
+   is 4 launch waves, ~4x the previous sweep's wall-clock.
+
+   Reason: the previous sweep's gap/SE was limited by sample size, not dt
+   resolution -- only ~342 proposals land on the 4 initially-mutated sites
+   per 5000-move run (init_muts=5 -> 4 sites actually differ). Pooling 4
+   seeds per dt roughly triples-to-quadruples that.
+
+   Added aggregate_seeds.py to do the pooling (sums mutated/ref-matching
+   accept counts across however many results_dirs are passed, reports
+   pooled rate + binomial SE + gap/SE, plus each run's own numbers for
+   transparency) -- reuses analyze_run.py's load_rows/
+   reconstruct_initial_sequence directly rather than reimplementing the
+   parsing. Validated by running it against the already-pushed dt300/dt600
+   single-seed results: per-run numbers reproduced the by-hand
+   gap/gap-SE table from the previous DEVLOG entry exactly, and the pooled
+   sums (89/684 mutated, 1270/9316 ref, 1359/10000 overall) check out
+   against simple addition of the two runs' counts.
+
+Both scripts are bash -n / py_compile clean; aggregate_seeds.py additionally
+smoke-tested against real (already-committed) data as described above --
+the sweep script itself still only verified by sed dry-run against the
+real pars.txt/settings.txt (no GPU here), same as every sweep script so
+far.
