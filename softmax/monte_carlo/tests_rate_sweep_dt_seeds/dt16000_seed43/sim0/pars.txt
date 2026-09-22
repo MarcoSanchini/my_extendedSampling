@@ -1,0 +1,18 @@
+# parameters
+
+## protein
+ref_code  sod1_chainA	#code of the studied protein
+pdb_dir   ../../../pdbs	#pdbs directory
+
+## sampler
+moves     5000        # number of moves
+T         2.0            # sampled temperature
+dt        16000            # single-site step size
+M         1.0			#mass of the logits
+T_sftm    0.1			#temperature of the softmax
+lambda_am 1.0			#Lagrange multiplier for the attention energy
+lambda_S  0.0			#Lagrange multiplier for the entropy
+n_quad    40			#number of Gauss-Hermite quadrature nodes for the pointing probability
+init_muts 5            # initial random mutations
+eps       1.0e-9		#minimum probability value
+seed      43            # generator seed
