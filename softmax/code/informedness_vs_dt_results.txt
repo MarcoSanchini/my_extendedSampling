@@ -1,0 +1,45 @@
+Reference: MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+Current A: MTYKLFLNGKTLKGETTYEAVDAATAEKVFKQYENDOGVDGEWTYDDATKTFTVTW
+T=2.0, M=1.0  (fixed; dt is the swept axis)
+
+  site   4 (cur=L): gradient-predicted=T (true dU=+356.4977)  true best=F (true dU=-19.9868)  top1=miss
+      p_match(dt): dt=300:0.070  dt=600:0.090  dt=1000:0.118  dt=1300:0.139  dt=2000:0.185  dt=4000:0.277  dt=8000:0.352  dt=16000:0.401  dt=32000:0.472
+  site  30 (cur=K): gradient-predicted=R (true dU=-3.5485)  true best=R (true dU=-3.5485)  top1=HIT
+      p_match(dt): dt=300:0.067  dt=600:0.082  dt=1000:0.103  dt=1300:0.118  dt=2000:0.153  dt=4000:0.224  dt=8000:0.305  dt=16000:0.391  dt=32000:0.473
+  site  49 (cur=K): gradient-predicted=I (true dU=+22.8421)  true best=A (true dU=-4.0389)  top1=miss
+      p_match(dt): dt=300:0.065  dt=600:0.079  dt=1000:0.100  dt=1300:0.116  dt=2000:0.155  dt=4000:0.265  dt=8000:0.454  dt=16000:0.714  dt=32000:0.946
+  site  24 (cur=T): gradient-predicted=E (true dU=+11.3973)  true best=F (true dU=-27.1905)  top1=miss
+      p_match(dt): dt=300:0.064  dt=600:0.076  dt=1000:0.092  dt=1300:0.104  dt=2000:0.131  dt=4000:0.199  dt=8000:0.300  dt=16000:0.419  dt=32000:0.561
+  site  55 (cur=W): gradient-predicted=P (true dU=-79.3216)  true best=K (true dU=-92.9918)  top1=miss
+      p_match(dt): dt=300:0.071  dt=600:0.090  dt=1000:0.116  dt=1300:0.135  dt=2000:0.178  dt=4000:0.297  dt=8000:0.510  dt=16000:0.798  dt=32000:0.975
+  site   5 (cur=F): gradient-predicted=K (true dU=+4.1762)  true best=M (true dU=-62.7916)  top1=miss
+      p_match(dt): dt=300:0.088  dt=600:0.129  dt=1000:0.183  dt=1300:0.219  dt=2000:0.288  dt=4000:0.440  dt=8000:0.657  dt=16000:0.881  dt=32000:0.993
+  site  33 (cur=E): gradient-predicted=F (true dU=-40.6453)  true best=A (true dU=-76.1019)  top1=miss
+      p_match(dt): dt=300:0.068  dt=600:0.085  dt=1000:0.109  dt=1300:0.128  dt=2000:0.172  dt=4000:0.275  dt=8000:0.389  dt=16000:0.544  dt=32000:0.786
+  site  52 (cur=T): gradient-predicted=E (true dU=-26.7100)  true best=E (true dU=-26.7100)  top1=HIT
+      p_match(dt): dt=300:0.060  dt=600:0.068  dt=1000:0.080  dt=1300:0.089  dt=2000:0.111  dt=4000:0.178  dt=8000:0.315  dt=16000:0.541  dt=32000:0.752
+  site   6 (cur=L): gradient-predicted=H (true dU=-9.4346)  true best=V (true dU=-24.4091)  top1=miss
+      p_match(dt): dt=300:0.073  dt=600:0.095  dt=1000:0.125  dt=1300:0.146  dt=2000:0.192  dt=4000:0.300  dt=8000:0.439  dt=16000:0.577  dt=32000:0.733
+  site  14 (cur=E): gradient-predicted=A (true dU=-63.2788)  true best=F (true dU=-72.3288)  top1=miss
+      p_match(dt): dt=300:0.099  dt=600:0.160  dt=1000:0.256  dt=1300:0.330  dt=2000:0.483  dt=4000:0.743  dt=8000:0.948  dt=16000:0.999  dt=32000:1.000
+
+=== (A) dt-independent: is the gradient's fixed pick any good? ===
+Top-1 accuracy (gradient pick == true best, among candidates excluding 'stay'): 2/10
+Mean true dU at gradient-predicted class:     +17.1975
+Mean true dU at all other candidate classes:  +20.9858
+(This number does NOT change with dt -- dt only affects how reliably a single
+ realized move follows this fixed pick, see (B) below.)
+
+=== (B) dt-dependent, closed form: mean P(realized proposal == gradient's pick), pooled over sites ===
+  dt=   300: mean p_match=0.0725  (min=0.0603  max=0.0986 across the 10 tested sites)
+  dt=   600: mean p_match=0.0954  (min=0.0684  max=0.1601 across the 10 tested sites)
+  dt=  1000: mean p_match=0.1280  (min=0.0799  max=0.2563 across the 10 tested sites)
+  dt=  1300: mean p_match=0.1524  (min=0.0889  max=0.3305 across the 10 tested sites)
+  dt=  2000: mean p_match=0.2047  (min=0.1109  max=0.4829 across the 10 tested sites)
+  dt=  4000: mean p_match=0.3197  (min=0.1779  max=0.7430 across the 10 tested sites)
+  dt=  8000: mean p_match=0.4669  (min=0.3001  max=0.9479 across the 10 tested sites)
+  dt= 16000: mean p_match=0.6266  (min=0.3908  max=0.9995 across the 10 tested sites)
+  dt= 32000: mean p_match=0.7691  (min=0.4716  max=1.0000 across the 10 tested sites)
+(As dt -> infinity this should -> 1.0 at every site; the crossover dt where it
+ leaves the momentum-dominated ~uniform regime is exactly the number the old
+ accept-rate-gap sweep was trying to locate indirectly and noisily.)

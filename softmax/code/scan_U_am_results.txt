@@ -1,0 +1,29 @@
+=== (1) floor consistency check ===
+compute_U_am(ref_am, ref_am) = 0.00000000e+00  (should be exactly/near-exactly 0)
+Current A (Hd=5 from ref): MTYKLFLNGKTLKGETTYEAVDAATAEKVFKQYENDOGVDGEWTYDDATKTFTVTW
+U_A_exact = 165.4261
+(test_informedness_vs_dt.py's most negative reported dU at this seq_A
+ was -92.9918 at site 55; that requires U_A_exact >= 92.9918 to be possible.
+ CONSISTENT: U_A_exact=165.4261 >= 92.9918)
+
+=== (2) reference-anchored scan (Hd=1 from ref, no prior drift) ===
+  site   4 (ref=L): best=I (dU=+9.0733)  worst=D (dU=+224.2637)  mean=+58.3072  n_negative=0/19
+  site  30 (ref=K): best=E (dU=+3.0434)  worst=P (dU=+58.5722)  mean=+13.6934  n_negative=0/19
+  site  49 (ref=K): best=R (dU=+2.6599)  worst=I (dU=+91.1323)  mean=+22.7346  n_negative=0/19
+  site  24 (ref=T): best=V (dU=+5.6236)  worst=H (dU=+108.9731)  mean=+32.1870  n_negative=0/19
+  site  55 (ref=E): best=Q (dU=+2.7403)  worst=W (dU=+30.8326)  mean=+10.8616  n_negative=0/19
+  site   5 (ref=I): best=V (dU=+2.4078)  worst=P (dU=+123.7394)  mean=+38.2881  n_negative=0/19
+  site  33 (ref=A): best=V (dU=+6.7753)  worst=P (dU=+255.3196)  mean=+56.1795  n_negative=0/19
+  site  52 (ref=T): best=V (dU=+3.2132)  worst=P (dU=+42.1766)  mean=+11.5953  n_negative=0/19
+  site   6 (ref=L): best=I (dU=+5.4008)  worst=W (dU=+171.5367)  mean=+39.2782  n_negative=0/19
+  site  14 (ref=E): best=N (dU=+7.2849)  worst=F (dU=+58.4015)  mean=+31.2800  n_negative=0/19
+
+Across all 190 single mutants of the reference tested: 0 negative (should be 0, up to float precision -- the floor argument
+guarantees every one of these is >= 0 since U(ref)=0 is the global minimum).
+Mean dU-from-ref across all tested single mutants: +31.4405
+(This is the typical 'cost' of one mutation evaluated with NO other drift --
+ compare by eye to test_informedness_vs_dt.py's true_dU values at the SAME sites,
+ which were evaluated from seq_A (Hd=4). A site whose cost-from-ref is clearly
+ positive but whose cost-from-seq_A went negative is direct, site-matched evidence
+ of epistasis/context-dependence -- not a landscape-optimality violation, since
+ seq_A's own baseline U_A_exact already accounts for its own Hd=4 distance from ref.)
