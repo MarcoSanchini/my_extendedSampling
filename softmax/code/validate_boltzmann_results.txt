@@ -1,0 +1,77 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 70170.87it/s]
+Reference: MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+Free sites: 30 (ref=K), 52 (ref=T)  -- 20^2=400 states, background fixed at reference elsewhere
+T=2.0, dt=1300.0, MOVES=20000, BURN_IN=4000
+
+=== exact enumeration ===
+U at (ref,ref) = 0.000000  (should be exactly/near-exactly 0)
+sum(p_exact) = 1.000000  (should be 1.0)
+
+Top 10 states by exact Boltzmann probability:
+  (K,T): p_exact=0.3246  U=+0.0000
+  (E,T): p_exact=0.0709  U=+3.0434
+  (K,V): p_exact=0.0651  U=+3.2132
+  (K,K): p_exact=0.0618  U=+3.3181
+  (N,T): p_exact=0.0329  U=+4.5780
+  (T,E): p_exact=0.0312  U=+4.6864
+  (Q,T): p_exact=0.0298  U=+4.7785
+  (R,T): p_exact=0.0242  U=+5.1885
+  (S,E): p_exact=0.0225  U=+5.3347
+  (T,V): p_exact=0.0216  U=+5.4232
+
+=== running 20000 restricted moves (site in [30, 52] only) ===
+  move   1000/20000  acc_rate so far=0.150  distinct states visited post-burn-in=0
+  move   2000/20000  acc_rate so far=0.145  distinct states visited post-burn-in=0
+  move   3000/20000  acc_rate so far=0.141  distinct states visited post-burn-in=0
+  move   4000/20000  acc_rate so far=0.131  distinct states visited post-burn-in=0
+  move   5000/20000  acc_rate so far=0.130  distinct states visited post-burn-in=44
+  move   6000/20000  acc_rate so far=0.130  distinct states visited post-burn-in=65
+  move   7000/20000  acc_rate so far=0.132  distinct states visited post-burn-in=78
+  move   8000/20000  acc_rate so far=0.132  distinct states visited post-burn-in=90
+  move   9000/20000  acc_rate so far=0.137  distinct states visited post-burn-in=105
+  move  10000/20000  acc_rate so far=0.138  distinct states visited post-burn-in=111
+  move  11000/20000  acc_rate so far=0.136  distinct states visited post-burn-in=114
+  move  12000/20000  acc_rate so far=0.135  distinct states visited post-burn-in=114
+  move  13000/20000  acc_rate so far=0.136  distinct states visited post-burn-in=118
+  move  14000/20000  acc_rate so far=0.134  distinct states visited post-burn-in=119
+  move  15000/20000  acc_rate so far=0.134  distinct states visited post-burn-in=122
+  move  16000/20000  acc_rate so far=0.135  distinct states visited post-burn-in=126
+  move  17000/20000  acc_rate so far=0.135  distinct states visited post-burn-in=128
+  move  18000/20000  acc_rate so far=0.137  distinct states visited post-burn-in=130
+  move  19000/20000  acc_rate so far=0.138  distinct states visited post-burn-in=133
+  move  20000/20000  acc_rate so far=0.139  distinct states visited post-burn-in=135
+
+Overall acceptance rate: 0.1386
+Moves counted toward the histogram (post burn-in): 16000
+Distinct states visited: 135 / 400
+
+=== exact vs. empirical ===
+Top 10 exact states, with empirical count/frequency alongside:
+  (K,T): p_exact=0.3246  p_empirical=0.3085  (n=4936)
+  (E,T): p_exact=0.0709  p_empirical=0.0767  (n=1228)
+  (K,V): p_exact=0.0651  p_empirical=0.0628  (n=1004)
+  (K,K): p_exact=0.0618  p_empirical=0.0524  (n=838)
+  (N,T): p_exact=0.0329  p_empirical=0.0357  (n=572)
+  (T,E): p_exact=0.0312  p_empirical=0.0401  (n=641)
+  (Q,T): p_exact=0.0298  p_empirical=0.0281  (n=450)
+  (R,T): p_exact=0.0242  p_empirical=0.0225  (n=360)
+  (S,E): p_exact=0.0225  p_empirical=0.0276  (n=442)
+  (T,V): p_exact=0.0216  p_empirical=0.0227  (n=364)
+
+Top 5 empirical states (for comparison, in case they differ from the exact top 5):
+  (K,T): p_empirical=0.3085 (n=4936)  p_exact=0.3246
+  (E,T): p_empirical=0.0767 (n=1228)  p_exact=0.0709
+  (K,V): p_empirical=0.0628 (n=1004)  p_exact=0.0651
+  (K,K): p_empirical=0.0524 (n=838)  p_exact=0.0618
+  (T,E): p_empirical=0.0401 (n=641)  p_exact=0.0312
+
+KL(empirical || exact):     0.0231  (0 = perfect match; compare to log(400)=5.99 as a rough scale)
+Total variation distance:   0.0642  (0 = perfect match, 1 = no overlap at all)
+Mean U under p_exact:       +3.9620
+Mean U under p_empirical:   +4.0608
+
+(With only 20000 moves and 16000 post-burn-in samples over 400 states, expect real
+ Monte Carlo noise even for a perfectly correct sampler -- this is a first-pass, not a
+ high-precision bias measurement. A large, systematic gap (e.g. empirical concentrated on
+ states the exact distribution says are unlikely, or missing the true top few states
+ entirely) would be the decisive signal; run longer for a finer read.)
