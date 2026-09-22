@@ -1176,3 +1176,80 @@ runs reach anything close to their true equilibrium).
 Conclusion so far: no reason to distrust the core per-move mechanism;
 the open question going forward is equilibration/mixing time on the real
 problem, not the correctness of the acceptance math itself.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- dispersed-start equilibration test: genuine equilibrium vs. distant basin
+--------------------------------------------------------------------------------
+User question: could the U/Hd_to_ref drift seen in every sweep run so far
+(no clear plateau within 5000 moves, any dt) be caused by the near-
+reference start (Hd~4-5) sitting in a basin separated by large energy
+barriers from wherever the T=2 equilibrium actually lives -- would
+starting more conservatively (closer to, or at, the reference) drift less?
+
+Two genuinely distinct explanations, both consistent with everything seen
+so far, that make different testable predictions:
+  1. Kinetic trapping: the near-reference start is stuck behind barriers;
+     starting closer to (or at) the reference would stay near it much
+     longer.
+  2. Genuine T=2 equilibrium behavior: the far-from-reference bulk of
+     sequence space (~20^56) is astronomically larger than the tiny
+     near-reference neighborhood, so even with real per-mutation costs
+     (confirmed by the reference-anchored scan: mean +31.44 per single
+     mutation from pure reference), the entropy of the bulk wins at T=2.
+     Any start eventually reaches the same regime; starting conservatively
+     only delays arrival.
+
+Standard MCMC diagnostic to distinguish them: run chains from DISPERSED
+starting points and check whether their long-run U/Hd_to_ref statistics
+converge to the same regime (supports 2) or stay in visibly different,
+non-overlapping regimes (supports 1).
+
+Added monte_carlo/run_equilibration.py: standalone driver (bypasses
+main_rate.py's pipeline, which only supports init_muts-based starts or the
+bare reference) supporting three starting conditions -- reference (Hd=0),
+moderate (Hd~5, matching every prior run), far (fully independent random
+canonical sequence, Hd~53/56 expected). Calls the REAL, unmodified,
+full-56-site _step() in a loop (not a restricted version like
+validate_boltzmann_toy.py's) so results are directly comparable to every
+other production run in this project. Logs in a format deliberately
+compatible with analyze_run.py's columns, so that script works unmodified
+on the output.
+
+Found and worked around a real bug while building the "far" condition:
+utils/operations.py:mutate() draws its replacement amino acid from the
+FULL 25-symbol vocab, not canonical-only. Checked the actual sequences
+already used throughout this project -- BOTH test_steepest_descent.py's
+seq_A (position 36: N->O) AND the real sweep_dt.sh/sweep_dt_seeds.sh
+production runs' seed=42 starting sequence (position 34: N->O) landed a
+non-canonical residue this way, confirmed by direct inspection, not
+hypothetical. Per _step()'s own reverse-probability logic, competitors_B
+is always canonical-only, so log_a_BA is always -inf whenever the current
+state at a proposed site isn't canonical -- meaning a site holding a
+non-canonical residue can NEVER be moved away from again for the rest of
+that run. Minor for one frozen site (~1/56 of proposals), but the "far"
+condition here implies many more mutations, risking several frozen sites
+at once -- large enough to distort exactly the comparison this script
+exists to make. Added mutate_canonical() / random_canonical_sequence()
+(canonical-only draws) as a local fix; utils/operations.py:mutate() itself
+is left untouched (shared with the older ep_sampler.py -- a separate,
+deliberate fix if wanted later, not bundled into this diagnostic).
+
+Added sweep_equilibration.sh (same GPU scheduler pattern as
+sweep_dt_seeds.sh, no pars.txt/settings.txt templating needed since
+run_equilibration.py takes CLI args directly): 3 start_modes x 2 seeds = 6
+runs, dt=2000/T=2.0 fixed across all of them (moderate/informed, already
+characterized, so proposal sharpness doesn't confound the comparison),
+moves=15000 (3x a standard sweep run, to give a real chance of observing
+convergence or persistent divergence rather than just extending the same
+still-transient regime).
+
+Added compare_equilibration.py: reuses analyze_run.py's load_rows/
+block_stats directly. Reports per-run U/Hd block trajectories side by
+side, plus a pooled tail-window (last 30% of moves) comparison across the
+three modes -- overlapping tail U/Hd bands would support genuine
+convergence; a persistently lower, non-overlapping "reference" band would
+support a distant, barrier-separated basin.
+
+All three files py_compile / bash -n clean. Not yet run (needs GPU;
+expect roughly 6x a single prior 5000-move sweep wave's wall-clock, given
+15000 moves x 6 runs at MAX_RUNNING=4 = 2 launch waves).
