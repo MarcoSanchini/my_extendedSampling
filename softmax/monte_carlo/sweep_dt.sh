@@ -7,16 +7,36 @@ set -u
 #
 # Unlike the old ep_sampler.py sweep (fixed tau=dt*isteps), this sampler
 # has no isteps/trajectory -- dt is a single, standalone knob controlling
-# how sharply the ONE proposed site's substitution is chosen each move
-# (see DEVLOG.txt: T=2 fixed U's equilibration but the mutated-site vs
-# reference-matching-site accept-rate gap flattened, consistent with dt
-# still being too small for the proposal to be meaningfully gradient-
-# informed -- estimated dt~100-150 needed at T=2). These values bracket
-# that estimate. T, moves, init_muts, seed are held fixed across the
-# sweep (only dt varies) so the runs are directly comparable.
+# how sharply the ONE proposed site's substitution is chosen each move.
+#
+# A first sweep at dt=(20,50,100,150) came back with the first ~8 moves
+# BIT-FOR-BIT IDENTICAL across all four dt values (same site, same
+# proposed_aa, same dU to the last float digit) -- not a bug, a provable
+# consequence of the math: the argmax deciding the proposed substitution
+# only depends on p_k - (dt/2)*grad_k per class (the common positive
+# factor dt/M cancels out of the argmax). Momentum p_k has a dt-
+# INDEPENDENT scale (~sqrt(T*M)), while the gradient term only grows
+# linearly with dt, so with the tiny gradient gaps measured earlier
+# (~0.02) the crossover dt* ~ 2*sqrt(T*M)/grad_gap ~ 141 at T=2 -- right
+# at dt=150, which is why it showed only marginal differences and
+# dt=20/50/100 (well below the crossover) gave literally identical
+# trajectories. See DEVLOG.txt for the full derivation and the raw-row
+# comparison that confirmed it.
+#
+# These values go several times past that crossover instead of sitting
+# right on it, to get a decisive (not marginal) test of an actually
+# gradient-informed proposal. Caution: step_coef=dt^2/(2M) grows
+# quadratically, and the fixed -1e6 exclusion penalty (keeps non-canonical
+# residues and the current amino acid out of the competition, see
+# rate_sampler.py:_EXCLUSION_PENALTY) could start being overwhelmed once
+# step_coef*grad approaches that scale, roughly dt>1400 for typical
+# gradient magnitudes -- these values stay under that.
+#
+# T, moves, init_muts, seed are held fixed across the sweep (only dt
+# varies) so the runs are directly comparable.
 # ============================================================
 
-DTS=(20 50 100 150)
+DTS=(300 600 1000 1300)
 
 BASE_PARS="rate_inputs/pars.txt"
 BASE_SETTINGS="rate_inputs/settings.txt"

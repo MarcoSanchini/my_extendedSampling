@@ -451,3 +451,52 @@ substitution is genuinely better than staying there, regardless of how
 well-informed the proposal is -- their protection comes from the
 accept/reject step, which is already confirmed working, not from the
 proposal avoiding them).
+
+--------------------------------------------------------------------------------
+2026-09-22 -- dt sweep (20/50/100/150, T=2): identical trajectories, not a bug
+--------------------------------------------------------------------------------
+Added monte_carlo/sweep_dt.sh (adapted from the user's ep_sampler.py
+fixed-tau sweep template; GPU-parallel, MAX_RUNNING=4). Important
+correctness fix made before trusting it: the sed override for T used
+`s/^T[[:space:]]*.*/.../`, and since [[:space:]]* also matches zero
+characters, ^T alone matches "T_sftm ..." too -- this would have silently
+clobbered T_sftm on every sweep run. Fixed by requiring a real whitespace
+boundary ([[:space:]] without the *) for all four overridden keys (dt, T,
+moves, init_muts), and verified the actual sed substitutions against the
+real rate_inputs/pars.txt and settings.txt before trusting it. Also:
+each dt gets its own dedicated results_dir (tests_rate_sweep_dt/dt<DT>)
+rather than sharing tests_rate/sim<N>'s auto-incrementing counter.txt (that
+counter lives inside whatever raw_path is passed to find_path, so
+simultaneous runs sharing one raw_path would race on it -- separate
+raw_paths avoid that by construction).
+
+First sweep: dt=(20,50,100,150), T=2, moves=5000, init_muts=5, seed=42.
+Result looked like a null finding at first (U/Hd_to_ref/accept-rate
+numbers nearly identical across all four dt) -- but checking the raw
+data.dat rows directly showed the first ~8 moves are BIT-FOR-BIT IDENTICAL
+across all four dt values, same site, same proposed_aa, same dU to the
+last float digit (e.g. 53.16386795043945 exactly, in all four). Not a bug:
+a provable consequence of the math. The argmax that picks the proposed
+substitution only depends on p_k - (dt/2)*grad_k per class (the common
+positive factor dt/M cancels out of any argmax comparison). Momentum p_k
+has a dt-INDEPENDENT scale (~sqrt(T*M), drawn the same way regardless of
+dt), while the gradient term grows only linearly with dt. With the tiny
+gradient gaps measured earlier (~0.02), the crossover where the gradient
+term starts to matter is dt* ~ 2*sqrt(T*M)/grad_gap ~ 2*sqrt(2)/0.02 ~ 141
+at T=2 -- almost exactly dt=150, which is why that run showed only
+marginal differences (a few site/momentum combinations happened to cross
+the threshold) while dt=20/50/100 (well below it) reproduced the
+momentum-only trajectory exactly.
+
+Conclusion: none of dt=20/50/100/150 actually tested a meaningfully
+gradient-informed proposal -- dt=150 sits right ON the marginal crossover,
+not decisively past it. Updated sweep_dt.sh's default DTS to
+(300, 600, 1000, 1300): several times past the crossover instead of
+sitting on it, while staying under the point (roughly dt>1400 for typical
+gradient magnitudes) where step_coef=dt^2/(2M) could start overwhelming
+the fixed -1e6 exclusion penalty used to keep non-canonical residues and
+the current amino acid out of the competition. Same expected signature of
+success as before: the accept-rate gap between the 4 originally-mutated
+sites and the 52 reference-matching sites should now actually open up if
+gradient-informedness is the missing piece; if it still doesn't, that
+would point at something else entirely (worth knowing either way).
