@@ -569,3 +569,30 @@ race condition entirely (no numeric constant to be overwhelmed, at any
 dt) before running the next sweep at dt=(300,600,1000,1300), which pushes
 step_coef well past where the old penalty's safety margin was getting
 thin.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- slicing refactor validated on GPU (all three test scripts re-run)
+--------------------------------------------------------------------------------
+Ran all three tests against the refactored code on the real GPU machine:
+  - test_proposals.py: all checks pass, including check_exclusion_masking
+    (the general log_pointing_prob masking primitive is still correct --
+    this test was never exercising the sampler's own mechanism, see its
+    updated docstring above).
+  - compare_grad_methods.py: cosine(grad_site, grad_whole) ~1.0 at every
+    tested site, both methods agree on the picked class everywhere,
+    nothing flagged -- including site 4, the previously-flagged outlier,
+    which reproduces the exact same true dU=+356.4977 as before the
+    refactor. Confirms the slicing rewrite is behaviorally identical to
+    the old penalty mechanism, as intended.
+  - test_steepest_descent.py: p=0 descent-direction check passes at every
+    site (mu_A . grad_A <= 0, by construction). Top-1 accuracy 2/10 and
+    mean dU at the gradient-predicted class only marginally better than
+    the candidate average at this test's fixed pars (dt=2, T=20) -- not a
+    regression, this test was never meant to be run at the sweep's pars;
+    dt=2 is far below any informedness crossover, so a close-to-random
+    top-1 rate here is expected (see the linearization-quality caveat in
+    the test's own docstring/output).
+
+No behavioral regressions found. Proceeding to launch the
+dt=(300,600,1000,1300), T=2 sweep (sweep_dt.sh) against this refactored
+code.
