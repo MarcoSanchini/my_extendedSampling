@@ -817,3 +817,49 @@ by a growing margin) -- but this is not the same as confirming it directly,
 and needs dt pushed to where p_match actually saturates everywhere (or
 per-site p_match correlated against each site's individual accept-rate
 contribution) to fully decouple the two effects with real data.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- dt=16000 completed (restarted), full picture, synthesis
+--------------------------------------------------------------------------------
+The 4 dt=16000 seeds were resumed via the `restart` mechanism and finished
+their remaining moves after the earlier interrupt; pushed and merged
+(merge commit, branch had diverged). All four now reach move 5000/5020
+lines as expected. Full dt=16000 pooled result:
+
+  dt=16000: mutated_acc=0.141 (211/1501)  ref_acc=0.159 (2934/18499)  gap=-0.018  gap/SE=-1.93
+
+Complete accept-rate-gap picture across every dt tested so far:
+
+  dt      gap/SE
+  300     +0.17
+  600     -0.86
+  1000    +1.38
+  1300    +1.84
+  2000    -2.58
+  4000    -2.71
+  8000    -3.05
+  16000   -1.93
+
+Cross-referenced against test_informedness_vs_dt.py's real p_match curve
+(mean across 10 sites: 0.21 @dt=2000, 0.32 @dt=4000, 0.47 @dt=8000, 0.63
+@dt=16000 -- still climbing, not saturated even by dt=32000's 0.77): the
+gap stays reliably negative (roughly -2 to -3 SE) across the ENTIRE
+dt=2000-16000 range even though mean p_match rises by close to 3x across
+that same range. If the negative gap were primarily an artifact of
+still-incomplete informedness (i.e. converging back toward the original
+positive-gap hypothesis as informedness -> 1), it should trend back
+toward zero/positive as dt increases through this range -- instead it
+stays persistently negative throughout. This dissociation (informedness
+climbing steadily, gap NOT trending back toward the original hypothesis)
+is better evidence for the landscape-based explanation (previous entries:
+compute_U_am's local minimum does not coincide with the reference residue
+at every site, so genuinely informed proposals find improving moves more
+often at reference-matching sites than at the deliberately-mutated ones)
+than the single dt=8000 point alone gave.
+
+Not fully conclusive -- p_match hasn't saturated everywhere even at
+dt=32000, and the gap/SE trend within 2000-16000 isn't monotonic (peaks
+at 8000, pulls back some at 16000) -- but the persistence of the sign
+across a ~3x range of measured informedness is the strongest evidence yet
+that this is a real property of the energy landscape rather than a
+transient effect of the sampler still ramping up.
