@@ -775,3 +775,45 @@ behaves correctly, not what the real crossover value is.
 Next step (decided by user): run test_informedness_vs_dt.py on the GPU to
 get the real p_match(dt) curve and top-1-vs-ground-truth numbers, in place
 of further accept-rate-gap sweeping.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- test_informedness_vs_dt.py real results: p_match not yet saturated by dt=32000
+--------------------------------------------------------------------------------
+Ran on the GPU. Confirms the tool works correctly against the real model:
+the dt-independent numbers (top-1 accuracy 2/10, mean dU at gradient's
+pick +17.1975, mean dU at other candidates +20.9858) are bit-for-bit
+identical to the earlier test_steepest_descent.py run -- exactly as
+expected, since REF_SEQ/N_SITES_TESTED/SEED are unchanged and grad_A (and
+therefore its argmax) never depends on dt.
+
+The dt-dependent part corrects something claimed in the previous entry.
+Real mean p_match, pooled over the 10 tested sites:
+
+  dt=300: 0.073   dt=600: 0.095   dt=1000: 0.128   dt=1300: 0.152
+  dt=2000: 0.205  dt=4000: 0.320  dt=8000: 0.467  dt=16000: 0.627  dt=32000: 0.769
+
+Still climbing at dt=32000, nowhere near saturated -- the earlier
+standalone numpy sanity check (typical-gap synthetic gradient saturating
+by dt~600-1000) used gaps far more generous than the real per-site
+gradients. Per-site spread is large: site 14 is essentially saturated by
+dt=16000 (p_match=0.999), but sites 30 and 52 are only at 0.39-0.54 by
+dt=16000 and still just 0.47-0.75 by dt=32000 -- roughly an order of
+magnitude difference in the effective crossover dt across sites, as
+expected from heterogeneous gradient gaps, but the low end is further out
+than assumed.
+
+This means the dt=2000-8000 accept-rate-gap reversal (previous entry)
+happened WHILE informedness was still substantially incomplete (mean
+p_match only 0.21-0.47 across that range), not after it saturated --
+informedness and the landscape effect are still confounded across that
+whole range in the real data, correcting the "already saturated, so this
+must be a pure landscape effect" claim in the previous entry. What still
+supports a landscape (not just incomplete-informedness) explanation: if
+both site groups were becoming informed at the same underlying rate, the
+gap would not keep drifting MORE negative as dt increases (informedness
+increasing should just make the RIGHT direction increasingly likely to be
+proposed everywhere, not asymmetrically favor one group over the other
+by a growing margin) -- but this is not the same as confirming it directly,
+and needs dt pushed to where p_match actually saturates everywhere (or
+per-site p_match correlated against each site's individual accept-rate
+contribution) to fully decouple the two effects with real data.
