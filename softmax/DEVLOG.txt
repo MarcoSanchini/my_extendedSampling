@@ -596,3 +596,46 @@ Ran all three tests against the refactored code on the real GPU machine:
 No behavioral regressions found. Proceeding to launch the
 dt=(300,600,1000,1300), T=2 sweep (sweep_dt.sh) against this refactored
 code.
+
+--------------------------------------------------------------------------------
+2026-09-22 -- dt=(300,600,1000,1300) sweep results (post-refactor, T=2, moves=5000)
+--------------------------------------------------------------------------------
+First sweep run against the slicing-refactored sampler (commit 373c4b9).
+Same init (init_muts=5 -> 4 sites actually differ from reference at move 0:
+[33,34,43,54], seed=42) and T=2 across all four dt.
+
+Accept rate at the 4 originally-mutated sites vs the 52 initially
+reference-matching sites (the "is this actually gradient-informed" signal
+this sweep was designed to detect -- see the 2026-09-19-ish exploration-
+budget entry above for why this is the metric, not raw acceptance rate):
+
+  dt      overall acc   mutated-site acc (n=342)   ref-matching acc (n=4658)   gap      gap/SE
+  300     0.137         0.140 (48)                 0.137 (638)                 +0.003   +0.17
+  600     0.135         0.120 (41)                 0.136 (632)                 -0.016   -0.86
+  1000    0.132         0.158 (54)                 0.130 (605)                 +0.028   +1.38
+  1300    0.147         0.184 (63)                 0.144 (673)                 +0.040   +1.84
+
+Gap grows with dt (300->1300), as hoped, but non-monotonically -- dt=600
+dips negative, well within 1-sigma noise for n=342 Bernoulli counts at
+this base rate, not evidence of anything wrong. dt=1300 is the first point
+even mildly persuasive (1.84 SE); dt=1000 is suggestive but weak (1.38
+SE). None of these individually clear a real significance bar -- this is
+one run per dt, one seed, so the "trend" is directional, not confirmed.
+Overall acceptance rate stays flat ~0.13-0.15 across all four dt, as
+expected (T governs the Boltzmann step, not dt).
+
+U and Hd_to_ref both drift up substantially over the 5000 moves in every
+run here (U: 61->73-78, Hd_to_ref: 4->41-45 out of 56 sites) -- consistent
+across dt=20 through dt=1300 (i.e. a T=2 equilibration property of
+starting near the reference's local minimum, not something specific to
+this sweep or a refactor regression).
+
+Next-step options (not yet decided/run): now that the slicing refactor
+removed the -1e6-vs-step_coef*grad ceiling that capped how far dt could
+safely go (~1400 with the old penalty), there's no numerical reason to
+stay under 1300 -- pushing dt substantially further (several x higher)
+would give a more decisive test than another point in the 300-1300 range.
+Alternatively, repeated seeds at a fixed large dt would shrink the SE on
+the gap directly, which a single wider dt sweep does not by itself fix
+(342 mutated-site proposals per run is the limiting sample size, driven
+by having only 4 initially-mutated sites out of 56, not by dt).
