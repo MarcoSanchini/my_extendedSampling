@@ -1,0 +1,29 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 209715.20it/s]
+Reference: MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+ref_structure_tokens shape=(56,)  dtype=torch.int64  min=10  max=3769
+
+=== (1) plumbing sanity: U_structure_ce(ref, ref) ===
+U_structure_ce(ref, ref) = 2.828125  (no proven floor -- small-but-nonzero is expected and fine, see module docstring)
+finite: True
+
+=== (2) gradient sanity: p=0 descent direction ===
+Current A: MTYKLFLNGKTLKGETTYEAVDAATAEKVFKQYENDOGVDGEWTYDDATKTFTVTW
+  site   4: mu_A.grad_A = -3.048868e-04  |grad_A|=0.0000
+  site  30: mu_A.grad_A = -8.254862e-03  |grad_A|=0.0001
+  site  49: mu_A.grad_A = -3.882814e-04  |grad_A|=0.0000
+  site  24: mu_A.grad_A = -9.813978e-02  |grad_A|=0.0003
+  site  55: mu_A.grad_A = -6.256804e-02  |grad_A|=0.0003
+[OK] mu_A . grad_A <= 0 at every tested site
+
+=== (3) reference-anchored scan (Hd=1 from ref, no prior drift) ===
+  site   4 (ref=L): best=I (dU=-0.0312)  worst=D (dU=+1.5156)  mean=+0.4219  n_negative=2/19
+  site  30 (ref=K): best=Q (dU=-0.0469)  worst=P (dU=+0.7812)  mean=+0.1102  n_negative=3/19
+  site  49 (ref=K): best=Q (dU=+0.0000)  worst=P (dU=+0.4219)  mean=+0.1653  n_negative=0/19
+  site  24 (ref=T): best=R (dU=+0.0000)  worst=W (dU=+0.4531)  mean=+0.1768  n_negative=0/19
+  site  55 (ref=E): best=D (dU=+0.0312)  worst=I (dU=+0.2812)  mean=+0.1595  n_negative=0/19
+
+Across all 95 single mutants of the reference tested: 5 negative (unlike U_am, this is NOT guaranteed to be 0 -- report only, no assertion).
+Mean dU-from-ref: +0.2067
+(Compare by eye to scan_U_am_landscape.py's own reference-anchored scan at the same sites,
+ if run with the same test_sites, to see whether the two energies agree on which mutations
+ are cheap/costly, or diverge -- that comparison is the point of supporting both.)
