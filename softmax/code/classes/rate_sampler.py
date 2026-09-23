@@ -18,7 +18,7 @@ from .ExtendedProtein import ExtendedProtein
 from generator.custom_generator import CustomGenerator
 from utils.general import create_path
 from utils.predictions import init_structure_config
-from utils.energies import compute_U_am, compute_entropy
+from utils.energies import compute_U_am, compute_U_structure_ce, compute_entropy
 from utils.operations import compute_Hd, mutate, is_subset, merge_dict
 from utils.proposals import log_pointing_prob
 
@@ -80,6 +80,21 @@ _NONCANONICAL_RESIDUES = ('X', 'B', 'U', 'Z', 'O')
 # Per move: 2 backward passes (grad at A, grad at B, each over just one      #
 # relaxed site) + 1 forward pass (exact U at B) through ESM3 -- same order   #
 # as the joint-move version, but now with a real (not ~0) acceptance rate.   #
+#                                                                             #
+# The total energy U is lambda_am*U_am + lambda_structure_ce*U_structure_ce  #
+# + lambda_S*entropy. U_am (utils/energies.py:compute_U_am) is a squared     #
+# log-space distance between attention maps. U_structure_ce                  #
+# (compute_U_structure_ce) is a cross-entropy between a candidate's          #
+# predicted structure-token distribution and the reference's own (argmax)   #
+# structure tokens -- closer in spirit to Zambon et al 2024's contact-map    #
+# effective energy than U_am is, at the cost of needing its own separate    #
+# characterization (it does NOT share U_am's provable U(ref)=0 floor: cross- #
+# entropy against a discrete target has no such guarantee). Both terms come  #
+# from the SAME differentiable ESM3 forward pass on soft sequence_probs      #
+# (custom_esm/models/esm3.py:predict_attention / predict_structure_logits),  #
+# so both remain usable in the gradient-informed proposal. lambda_am is the  #
+# only one enabled by default (lambda_structure_ce defaults to 0.0); set     #
+# either or both to compare how they behave, per DEVLOG.txt.                #
 # -------------------------------------------------------------------------- #
 class ExtendedProteinRateSampler():
 
@@ -119,6 +134,7 @@ class ExtendedProteinRateSampler():
 				accepted_total += 1
 				data["U"] = info["U_B"]
 				data["U_am"] = info["U_am_B"]
+				data["U_structure_ce"] = info["U_structure_ce_B"]
 				data["Hd_to_ref"] = compute_Hd(eprot.logits, self.ref_eprot.logits)
 
 			with torch.no_grad():
@@ -215,7 +231,7 @@ class ExtendedProteinRateSampler():
 			"cur_aa": vocab[int(cur_idx.item())],
 			"proposed_aa": vocab[int(tgt_idx.item())],
 			"proposed_sequence": eprot_B.sequence,
-			"U_B": U_B, "U_am_B": U_am_B,
+			"U_B": U_B, "U_am_B": U_am_B, "U_structure_ce_B": eprot_B.U_structure_ce,
 			"dU": dU, "log_a_AB": log_a_AB, "log_a_BA": log_a_BA, "log_ratio": log_ratio,
 			"accepted": int(accepted),
 		}
@@ -240,6 +256,15 @@ class ExtendedProteinRateSampler():
 		entropy = compute_entropy(soft_row, pars['eps'])
 		U = pars['lambda_am']*U_am + pars['lambda_S']*entropy
 
+		lambda_structure_ce = pars.get('lambda_structure_ce', 0.)
+		if lambda_structure_ce > 0.:
+			structure_logits = self.model.predict_structure_logits(sequence_probs=probs)
+			U_structure_ce = compute_U_structure_ce(
+				structure_logits[1:-1].unsqueeze(0),
+				self.ref_structure_tokens.unsqueeze(0),
+			)
+			U = U + lambda_structure_ce*U_structure_ce
+
 		U.backward()
 		grad = site_logits.grad.detach().clone()
 		return grad
@@ -247,12 +272,29 @@ class ExtendedProteinRateSampler():
 	# ------------------------------------------------------------------ #
 	# Exact pass: U evaluated on the true discrete sequence (no softmax  #
 	# relaxation, no entropy term), used for the Metropolis ratio.       #
+	# Return signature is unchanged (U, U_am, eprot) for backward        #
+	# compatibility with every existing caller; U_structure_ce, when in  #
+	# use, is stashed on eprot itself (eprot.U_structure_ce), same       #
+	# pattern as eprot.am below -- read it via getattr(eprot, ...) if    #
+	# you need it, it defaults to 0. when lambda_structure_ce is unused. #
 	# ------------------------------------------------------------------ #
 	def _exact_energy(self, eprot: ExtendedProtein, pars: dict):
 		with torch.no_grad():
 			am = self.model.predict_attention(sequence_probs=eprot.get_probs())
 			U_am = compute_U_am(am, self.ref_eprot.am)
 			U = pars['lambda_am']*U_am
+
+			lambda_structure_ce = pars.get('lambda_structure_ce', 0.)
+			if lambda_structure_ce > 0.:
+				structure_logits = self.model.predict_structure_logits(sequence_probs=eprot.get_probs())
+				U_structure_ce = compute_U_structure_ce(
+					structure_logits[1:-1].unsqueeze(0),
+					self.ref_structure_tokens.unsqueeze(0),
+				)
+				U = U + lambda_structure_ce*U_structure_ce
+				eprot.U_structure_ce = U_structure_ce.item()
+			else:
+				eprot.U_structure_ce = 0.
 		eprot.am = am.detach().clone().to("cpu")
 		return U.item(), U_am.item(), eprot
 
@@ -298,11 +340,12 @@ class ExtendedProteinRateSampler():
 					except ValueError:
 						raise ValueError(f"{self.name}.setup(): pars '{key}' type should be {typ}, but found {type(pars[key])}.")
 
-		assert all([v>=0. for k,v in pars.items() if k in ["lambda_am", "lambda_S", "init_muts"]]), (
-			f'{self.name}._setup(): invalid value for one of the following keys ("lambda_am", "lambda_S", "init_muts"). Allowed values: v>=0.'
+		assert all([v>=0. for k,v in pars.items() if k in ["lambda_am", "lambda_structure_ce", "lambda_S", "init_muts"]]), (
+			f'{self.name}._setup(): invalid value for one of the following keys ("lambda_am", "lambda_structure_ce", "lambda_S", "init_muts"). Allowed values: v>=0.'
 		)
-		assert (pars["lambda_am"]>0.) or (pars["lambda_S"]>0.), (
-			f'{self.name}._setup(): invalid value for the keys "lambda_am" ({pars["lambda_am"]}) and "lambda_S" ({pars["lambda_S"]}). At least one must be positive.'
+		assert (pars["lambda_am"]>0.) or (pars["lambda_structure_ce"]>0.) or (pars["lambda_S"]>0.), (
+			f'{self.name}._setup(): invalid value for the keys "lambda_am" ({pars["lambda_am"]}), "lambda_structure_ce" ({pars["lambda_structure_ce"]}) '
+			f'and "lambda_S" ({pars["lambda_S"]}). At least one must be positive.'
 		)
 		assert all([v>0. for k,v in pars.items() if k in ["moves", "T", "dt", "M", "T_sftm", "eps", "n_quad"]]), (
 			f'{self.name}._setup(): invalid value for one of the following keys ("moves", "T", "dt", "M", "T_sftm", "eps", "n_quad"). Allowed values: v>0.'
@@ -347,6 +390,11 @@ class ExtendedProteinRateSampler():
 		self.ref_eprot.expand()
 		self.ref_eprot.am = self.model.predict_attention(sequence_probs=self.ref_eprot.get_probs())
 
+		if pars['lambda_structure_ce'] > 0.:
+			with torch.no_grad():
+				ref_structure_logits = self.model.predict_structure_logits(sequence_probs=self.ref_eprot.get_probs())
+				self.ref_structure_tokens = ref_structure_logits.argmax(dim=-1)[1:-1]  # drop BOS/EOS
+
 		# 3. CLEAN / RESTART
 		if settings["restart"]:
 			check_rdir = all([f in os.listdir(settings['results_dir']) for f in ['data.dat', 'pars.txt', 'generator.npy', 'log.pt']])
@@ -382,6 +430,7 @@ class ExtendedProteinRateSampler():
 				'time': 0.,
 				'U': 0.,
 				'U_am': 0.,
+				'U_structure_ce': 0.,
 				'entropy': 0.,
 				'Hd_to_ref': 0,
 				'site': 0,
@@ -399,7 +448,7 @@ class ExtendedProteinRateSampler():
 			U, U_am, eprot = self._exact_energy(eprot, pars)
 			data = merge_dict(
 				{
-					'U': U, 'U_am': U_am,
+					'U': U, 'U_am': U_am, 'U_structure_ce': eprot.U_structure_ce,
 					'entropy': compute_entropy(eprot.get_probs(pars["T_sftm"]), pars["eps"]).item(),
 					'Hd_to_ref': compute_Hd(eprot.logits, self.ref_eprot.logits),
 				},
@@ -430,6 +479,7 @@ class ExtendedProteinRateSampler():
 				"# time        : CPU time elapsed since simulation start [s]\n"
 				"# U           : potential energy of the current accepted sequence\n"
 				"# U_am        : attention-map contribution to U\n"
+				"# U_structure_ce : structure-token cross-entropy contribution to U (0 if lambda_structure_ce=0)\n"
 				"# entropy     : Shannon entropy of the softmax probabilities\n"
 				"# Hd_to_ref   : Hamming distance between current accepted sequence and reference sequence\n"
 				"# site        : sequence position proposed this move (0-indexed)\n"
@@ -511,6 +561,7 @@ class ExtendedProteinRateSampler():
 		lines.append(f'# softmax temperature:        {pars["T_sftm"]:.2f}')
 		lines.append(f'# Gauss-Hermite nodes:        {pars["n_quad"]:.0f}')
 		lines.append(f'# attention multiplier:       {pars["lambda_am"]:.1e}')
+		lines.append(f'# structure_ce multiplier:    {pars["lambda_structure_ce"]:.1e}')
 		lines.append(f'# entropy multiplier:         {pars["lambda_S"]:.1e}')
 		lines.append(f'# ')
 		lines.append(f'# results directory: {settings["results_dir"]}')
@@ -563,6 +614,7 @@ class ExtendedProteinRateSampler():
 				"M": (1.0, float),
 				"T_sftm": (0.1, float),
 				"lambda_am": (1.0, float),
+				"lambda_structure_ce": (0.0, float),
 				"lambda_S": (0.0, float),
 				"n_quad": (40, int),
 				"init_muts": (0, int),
@@ -585,6 +637,7 @@ class ExtendedProteinRateSampler():
 				['move',             'move',             0],
 				['U',                'U',                5],
 				['U_am',             'U_am',             5],
+				['U_structure_ce',   'U_ce',             5],
 				['entropy',          'entropy',          5],
 				['Hd_to_ref',		 'Hd_to_ref',        0],
 				['site',             'site',             0],

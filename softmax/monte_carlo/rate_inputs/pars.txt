@@ -10,7 +10,8 @@ T         2.0			#sampled temperature
 dt        2.0			#single-site step size (see rate_sampler.py note; NOT comparable to the leapfrog dt in ep_sampler.py; now only controls how sharply the ONE proposed site's substitution is chosen -- retune once real acc_rate/dU numbers are in, no coupling-blowup risk anymore since only one site changes per move)
 M         1.0			#mass of the logits
 T_sftm    0.1			#temperature of the softmax
-lambda_am 1.0			#Lagrange multiplier for the attention energy
+lambda_am 1.0			#Lagrange multiplier for the attention-map energy (U_am)
+lambda_structure_ce 0.0	#Lagrange multiplier for the structure-token cross-entropy energy (U_structure_ce); 0.0 = unused (default, matches every run so far). Does NOT share U_am's proven U(ref)=0 floor -- needs its own characterization before trusting at face value, see DEVLOG.txt
 lambda_S  0.0			#Lagrange multiplier for the entropy
 n_quad    40			#number of Gauss-Hermite quadrature nodes for the pointing probability
 init_muts 0			#number of initial random mutations w.r.t. the reference sequence

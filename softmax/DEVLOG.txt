@@ -1384,3 +1384,131 @@ its own tractable sub-problem), there is now real, converging evidence
 that this sampler's stationary behavior is a genuine, shared property of
 the T=2 Boltzmann distribution under compute_U_am, not an artifact of the
 sampler's mechanics or of how a run happens to be started.
+
+--------------------------------------------------------------------------------
+2026-09-23 -- final aim: replicate Zambon et al 2024, structure-token energy added
+--------------------------------------------------------------------------------
+User shared the target paper: Zambon, Zecchina, Tiana, "Structure of the
+space of folding protein sequences defined by large language models," Phys.
+Biol. 21 (2024) 026002. Goal: replicate its approach but with this project's
+faster gradient-informed sampler, for a ~200-residue target protein where
+plain Metropolis-Hastings (what the paper itself uses) is too slow.
+
+Read the full paper. Key alignments and gaps found:
+  - Studies protein G, N=56 -- the EXACT SAME reference sequence
+    (MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE) used
+    throughout this whole project. Their proposal is also single-site,
+    uniform-a-priori Metropolis-Hastings -- the "classic MH" baseline this
+    project's sampler is meant to outrun.
+  - Even at their coldest simulated temperature (near-perfect structural
+    match to the reference), sequences diverge 63% from the wild-type
+    (q=0.37) -- they note this matches the experimental fact that real
+    proteins tolerate up to ~75% sequence change while keeping function.
+    Directly consistent with (and independent confirmation of) this
+    project's own T=2 equilibration finding (Hd~43/56, ~77% divergence) --
+    substantial drift from reference is expected/correct behavior at
+    reasonable sampling temperatures, not something to engineer away.
+  - GAP: their effective energy (eq 1) is a normalized [0,1] contact-map
+    difference from ESMFold-PREDICTED 3D STRUCTURE, not compute_U_am
+    (attention-map log-squared distance). Different energy, different
+    scale, different T units entirely -- everything characterized in this
+    project so far (the floor, epistasis magnitude, T=2 equilibrium
+    location) is specific to compute_U_am, not necessarily representative
+    of the paper's actual energy.
+
+Checked before assuming a swap was simple: predict_attention is
+differentiable because it comes from ESM3's internal custom_forward pass on
+soft sequence_probs -- that differentiability is why gradient-informed
+proposals work at all. Real 3D structure decoding (predict_protein /
+custom_decode) goes through a discrete generate() step, almost certainly
+not differentiable the same way. But utils/energies.py already has an
+unused compute_U_structure_ce (cross-entropy against a reference's
+structure TOKENS), and structure_logits (which it needs) comes from the
+SAME differentiable custom_forward pass as attention (confirmed:
+OutputHeads.structure_head(x) in esm3.py, x from the transformer stack
+fed by custom_forward on sequence_probs) -- a structure-token energy,
+closer in spirit to the paper's contact-map approach, that should still
+support gradient-informed proposals.
+
+Asked the user which energy to target. Answer: "structure logits is
+something i came up with and is what i prefer. attention map is what my
+supervisors came up with... maybe we really could support both and see
+how they behave." Decision: support both via a new lambda_structure_ce
+parameter, matching the existing lambda_am/lambda_S pattern exactly.
+
+Found via investigation (an Explore subagent, then verified directly):
+classes/ep_sampler_ce_backup.py is a working-but-messy PRIOR PROTOTYPE of
+exactly this energy term, built for the OLD, now-abandoned joint/leapfrog
+sampler design (isteps-based HMC integration, not the current single-site
+M=1 design). Useful as a reference for the plumbing (how to call
+custom_forward + the full transformer stack + output_heads.structure_head,
+how to get a reference's structure tokens via one-shot argmax, no
+generate()/decode needed), NOT reusable as-is (wrong sampler class
+entirely, and its manual bfloat16 casts turned out to be unnecessary --
+predict_attention's own established pattern, torch.autocast with no manual
+casts, is proven sufficient and was used instead; verified by reading
+_last_attention directly, which does zero manual dtype work).
+
+Implementation:
+  1. customs/custom_esm/models/esm3.py: added _structure_logits/
+     predict_structure_logits, mirroring _last_attention/predict_attention
+     exactly -- same dims-check, same _default(L,device) call, same
+     torch.autocast(...)/nullcontext() wrapper -- except it runs the FULL
+     self.transformer(...) forward (not .last_attention()) to get the
+     post-norm hidden state needed for output_heads.structure_head(x).
+     Confirmed via transformer_stack.py that TransformerStack.forward
+     returns (post_norm, pre_norm, hiddens) and last_attention only runs
+     the final block's attention, not the full block -- so this really is
+     a second, more expensive pass, not something shareable with the
+     existing attention computation without hand-rolling shared partial
+     compute across blocks[:-1] (not done here -- simplicity over that
+     optimization for now).
+  2. classes/rate_sampler.py: added lambda_structure_ce to defpars
+     (default 0.0, so every existing pars.txt/test script keeps its exact
+     prior behavior unless it opts in). Backward-compatible design
+     throughout: every read of pars['lambda_structure_ce'] outside
+     _setup()'s own defpars-filling logic uses pars.get(..., 0.) instead
+     of direct indexing, since ~15 existing test-script call sites build
+     their own pars dicts by hand without this key and would otherwise
+     KeyError. _exact_energy's return signature is UNCHANGED (still the
+     3-tuple (U, U_am, eprot) every caller already expects) -- U_structure_ce
+     is instead stashed on eprot itself (eprot.U_structure_ce), the same
+     pattern eprot.am already uses. ref_structure_tokens is computed once
+     in _setup() (mirroring ref_eprot.am), gated on lambda_structure_ce>0
+     to avoid the extra full-transformer pass when unused; computed from
+     the EXACT one-hot reference (get_probs(), no T_sftm arg) rather than
+     the softmax-relaxed version the old backup file used -- that looked
+     like a copy-paste oversight from the differentiable code path, since
+     the reference is fixed/hard everywhere else in this codebase
+     (ref_eprot.am follows the same exact-probs convention).
+     _grad_pass_site and _exact_energy both add
+     lambda_structure_ce*U_structure_ce into the total U when enabled.
+     data.dat logging, _print_pars, and the live _print_status formatter
+     all gained a U_structure_ce column/line.
+  3. monte_carlo/rate_inputs/pars.txt: documented the new key, default 0.0.
+  4. Added tests/scan_U_structure_ce_landscape.py: mirrors the validation
+     already done for U_am (scan_U_am_landscape.py's floor/self-check +
+     reference-anchored scan, test_steepest_descent.py's p=0
+     descent-direction check) so the two energies get a directly
+     comparable first look. IMPORTANT DIFFERENCE flagged explicitly in the
+     script and here: compute_U_structure_ce has NO proven floor the way
+     U_am does -- U_am(ref)=0 is a mathematical certainty (non-negative
+     squared self-distance); U_structure_ce is cross-entropy between a
+     continuous prediction and a discrete argmax-derived target, so even
+     U_structure_ce(ref,ref) is only small-but-nonzero, not guaranteed 0,
+     and there's no proof no other sequence could score lower. This energy
+     needs its own empirical characterization from scratch -- nothing
+     about compute_U_am's floor argument, epistasis findings, or T=2
+     equilibrium location transfers to it automatically.
+
+Known limitation, not fixed: restarting a run that was started before this
+change would KeyError on the old saved data dict's missing 'U_structure_ce'
+key. Not defended against -- no production run so far has used restart,
+and this is a narrow, easily-diagnosed edge case if it ever comes up.
+
+All four touched/added files py_compile clean. Not yet run on the GPU --
+the new predict_structure_logits path has never been exercised for real
+(the old backup file it was informed by was itself full of debug prints
+suggesting its own development wasn't fully smooth), so the very first
+thing to check is whether it runs at all without a dtype/shape error,
+which is exactly what scan_U_structure_ce_landscape.py's check (1) is for.

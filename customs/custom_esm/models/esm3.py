@@ -807,6 +807,77 @@ class ESM3(nn.Module, ESM3InferenceClient):
         return clean_and_symm(attention).squeeze(0)
 
 
+    def _structure_logits(
+            self,
+            sequence_probs: torch.Tensor,
+            chain_id: torch.Tensor | None = None,
+            sequence_id: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        """
+        Performs a forward pass through the ESM3 model, using the FULL
+        TransformerStack (not just up to the last attention, cf
+        _last_attention above) to obtain structure_logits: the model's
+        per-residue prediction over the 4096-token discrete structure
+        vocabulary. Differentiable w.r.t. sequence_probs, same as
+        _last_attention/predict_attention.
+
+        Args:
+            sequence_probs (torch.Tensor): The amino acid probability distribution.
+            chain_id (torch.Tensor, optional): The chain ID.
+            sequence_id (torch.Tensor, optional): The sequence ID.
+
+        Returns:
+            structure_logits: shape (batch_size, sequence_length, 4096),
+            including the BOS/EOS positions (caller slices them off).
+        """
+        # Check sequence_probs dimensions
+        if sequence_probs.ndim == 2:
+            sequence_probs.unsqueeze(0)
+        elif sequence_probs.ndim == 3:
+            assert sequence_probs.shape[0] == 1, "Structure logits can be computed only for single sequences (multi-sequence prediction not yet implemented)."
+        else:
+            raise ValueError(f"Unexpected number of dimensions for sequence_probs. Found {sequence_probs.ndim}, expected 2 or 3.")
+
+        # Extract L and device
+        L, device = sequence_probs.shape[1], sequence_probs.device
+        L += 2 # adding BOS and EOS tokens
+
+        # Remaining (default) tokens and affine/affine_mask
+        default_tokens, affine, affine_mask = self._default(L, device)
+
+        x = self.encoder.custom_forward(
+            sequence_probs,
+            *default_tokens,
+        )
+        # Full stack forward (not last_attention): need the final, post-norm
+        # hidden state to feed the structure head. TransformerStack.forward
+        # returns (post_norm, pre_norm, hiddens); post_norm is what every
+        # OutputHeads projection (structure included) is meant to consume.
+        x, _, _ = self.transformer(
+            x, sequence_id, affine, affine_mask, chain_id
+        )
+        return self.output_heads.structure_head(x)
+
+
+    def predict_structure_logits(
+            self,
+            sequence_probs: torch.Tensor,
+            chain_id: torch.Tensor | None = None,
+            sequence_id: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        with (
+                torch.autocast(enabled=True, device_type=sequence_probs.device.type, dtype=torch.bfloat16)
+                if sequence_probs.device.type == "cuda"
+                else contextlib.nullcontext(),
+        ):
+            structure_logits = self._structure_logits(
+                    sequence_probs=sequence_probs.unsqueeze(0),
+                    chain_id=chain_id,
+                    sequence_id=sequence_id
+            )
+        return structure_logits.squeeze(0)
+
+
     def custom_decode(
             self,
             tensor: ESMProteinTensor,
