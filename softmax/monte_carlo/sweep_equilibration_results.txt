@@ -1,0 +1,566 @@
+
+============================================================
+Preparing start_mode=reference seed=42
+============================================================
+GPU free memory: 21609 MB
+Running simulations: 0 / 4
+Launching start_mode=reference seed=42
+  dt:       2000.0
+  T:        2.0
+  moves:    15000
+  results:  tests_rate_equilibration/reference_seed42
+  log:      logs_equilibration/reference_seed42.log
+  GPU free: 21609 MB
+  PID: 603726
+  Running now: 1 / 4
+
+============================================================
+Preparing start_mode=reference seed=43
+============================================================
+GPU free memory: 21609 MB
+Running simulations: 1 / 4
+Launching start_mode=reference seed=43
+  dt:       2000.0
+  T:        2.0
+  moves:    15000
+  results:  tests_rate_equilibration/reference_seed43
+  log:      logs_equilibration/reference_seed43.log
+  GPU free: 21609 MB
+  PID: 603732
+  Running now: 2 / 4
+
+============================================================
+Preparing start_mode=moderate seed=42
+============================================================
+GPU free memory: 21609 MB
+Running simulations: 2 / 4
+Launching start_mode=moderate seed=42
+  dt:       2000.0
+  T:        2.0
+  moves:    15000
+  results:  tests_rate_equilibration/moderate_seed42
+  log:      logs_equilibration/moderate_seed42.log
+  GPU free: 21609 MB
+  PID: 603738
+  Running now: 3 / 4
+
+============================================================
+Preparing start_mode=moderate seed=43
+============================================================
+GPU free memory: 21609 MB
+Running simulations: 3 / 4
+Launching start_mode=moderate seed=43
+  dt:       2000.0
+  T:        2.0
+  moves:    15000
+  results:  tests_rate_equilibration/moderate_seed43
+  log:      logs_equilibration/moderate_seed43.log
+  GPU free: 21609 MB
+  PID: 603744
+  Running now: 4 / 4
+
+============================================================
+Preparing start_mode=far seed=42
+============================================================
+GPU free memory: 21609 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+GPU free memory: 8028 MB
+Running simulations: 4 / 4
+Waiting 30s...
+PID 603726 finished.
+PID 603732 finished.
+PID 603738 finished.
+PID 603744 finished.
+GPU free memory: 21609 MB
+Running simulations: 0 / 4
+Launching start_mode=far seed=42
+  dt:       2000.0
+  T:        2.0
+  moves:    15000
+  results:  tests_rate_equilibration/far_seed42
+  log:      logs_equilibration/far_seed42.log
+  GPU free: 21609 MB
+  PID: 605133
+  Running now: 1 / 4
+
+============================================================
+Preparing start_mode=far seed=43
+============================================================
+GPU free memory: 21609 MB
+Running simulations: 1 / 4
+Launching start_mode=far seed=43
+  dt:       2000.0
+  T:        2.0
+  moves:    15000
+  results:  tests_rate_equilibration/far_seed43
+  log:      logs_equilibration/far_seed43.log
+  GPU free: 21609 MB
+  PID: 605139
+  Running now: 2 / 4
+
+All simulations have been launched.
+Waiting for remaining simulations...
+PID 605133 finished.
+PID 605139 finished.
+
+============================================================
+All equilibration runs completed.
+Results in tests_rate_equilibration/<mode>_seed<seed>/data.dat
+
+Per-run detail (analyze_run.py works directly on these logs):
+  for MODE in reference moderate far; do for SEED in 42 43; do
+    echo "--- $MODE seed=$SEED ---"
+    python analyze_run.py tests_rate_equilibration/${MODE}_seed${SEED}
+  done; done
+
+Cross-condition comparison:
+  python compare_equilibration.py
+============================================================
