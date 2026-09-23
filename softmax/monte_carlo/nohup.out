@@ -1,0 +1,26 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 140022.29it/s]
+PID: 611642
+start_mode=far  seed=43  dt=2000.0  T=2.0  moves=45000
+start_seq (Hd=53 from ref): SQDVWFAEVVKHLFNDSTVVPVAPQIIARYTFGWQCFRLFHHYHMLDQFDGYEMIL
+  move   2250/45000  U=501.352  Hd=52  acc_rate=0.073
+  move   4500/45000  U=405.774  Hd=54  acc_rate=0.059
+  move   6750/45000  U=387.270  Hd=55  acc_rate=0.045
+  move   9000/45000  U=380.674  Hd=53  acc_rate=0.038
+  move  11250/45000  U=389.886  Hd=50  acc_rate=0.034
+  move  13500/45000  U=383.293  Hd=52  acc_rate=0.030
+  move  15750/45000  U=357.585  Hd=51  acc_rate=0.027
+  move  18000/45000  U=364.748  Hd=53  acc_rate=0.024
+  move  20250/45000  U=352.289  Hd=52  acc_rate=0.027
+  move  22500/45000  U=230.207  Hd=50  acc_rate=0.033
+  move  24750/45000  U=171.514  Hd=45  acc_rate=0.042
+  move  27000/45000  U=91.748  Hd=47  acc_rate=0.047
+  move  29250/45000  U=75.983  Hd=45  acc_rate=0.050
+  move  31500/45000  U=70.788  Hd=42  acc_rate=0.060
+  move  33750/45000  U=75.205  Hd=44  acc_rate=0.070
+  move  36000/45000  U=78.368  Hd=38  acc_rate=0.077
+  move  38250/45000  U=65.850  Hd=41  acc_rate=0.084
+  move  40500/45000  U=65.725  Hd=42  acc_rate=0.089
+  move  42750/45000  U=66.278  Hd=43  acc_rate=0.095
+  move  45000/45000  U=77.739  Hd=44  acc_rate=0.098
+
+Done. Log at tests_rate_equilibration/far_seed43_extended45000/data.dat
