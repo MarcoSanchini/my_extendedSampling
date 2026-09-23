@@ -1337,3 +1337,50 @@ many more moves it needs, since its own approach is presumably decelerating
 too. New results directory (not overwriting far_seed43) so the existing,
 already-analyzed 15000-move data is never at risk if anything goes wrong
 partway through the longer run.
+
+--------------------------------------------------------------------------------
+2026-09-23 -- far/seed43 extension CONFIRMS shared equilibrium: investigation closed
+--------------------------------------------------------------------------------
+Extended far/seed43 to 45000 moves (30000 new, results in
+tests_rate_equilibration/far_seed43_extended45000). First verified the
+determinism claim directly: `diff` against the original far_seed43's
+15000-move log showed the first 15001 rows (header + moves 0-15000) are
+BIT-FOR-BIT IDENTICAL -- confirms this was a true extension of the same
+trajectory, not an approximate restart.
+
+Result, in 20 blocks of 2250 moves over the full 45000:
+  moves      0-20249: mean U stays in a tight ~355-460 band the whole
+                       time (543,460,400,384,387,378,361,361,355) -- a
+                       long, genuinely metastable plateau, ~20000 moves.
+  moves  20250-26999: RAPID, punctuated collapse -- 288 -> 235 -> 94
+                       across just 3 blocks (~6750 moves).
+  moves  27000-45000: settles into ~73-82 and stays there for the
+                       remaining ~18000 moves (82,72,77,76,76,75,77,73,78).
+
+Tail window (last 30%, moves ~31500-45000): U=75.756+/-7.860,
+Hd=42.832+/-2.313 -- compare directly to the earlier reference tail
+(U=77.943+/-6.189, Hd=43.07+/-2.28) and moderate tail
+(U=78.218+/-7.854, Hd=43.30+/-2.25): statistically indistinguishable.
+far/seed42 had already reached ~91-105 by its own move 15000. All four
+chains (reference x2, moderate x2, far x2) now agree on the same
+equilibrium regime.
+
+CONCLUSION, closing this investigation: confirms the entropy-vs-energy
+explanation over kinetic trapping in a PERMANENTLY separate basin. There
+IS real metastability in this energy landscape at intermediate timescales
+-- far/seed43 genuinely sat at U~355-390 for 20000 moves, not a trivial
+delay -- but it is not a hard, disconnected barrier: given enough moves,
+every tested starting condition (Hd=0, Hd=5, Hd~53 x2 seeds) reaches the
+same ~75-80 U / ~43 Hd_to_ref regime. Starting more conservatively does
+not reduce where the chain ends up, only (for the very far, unlucky-seed
+case) how long it can take to get there, and that delay can be substantial
+and non-monotonic (long plateau, then a punctuated escape) rather than a
+smooth approach.
+
+This settles the equilibration-vs-basin question raised at the start of
+this whole investigation thread. Combined with validate_boltzmann_toy.py's
+earlier result (no evidence of bias in the core acceptance mechanism on
+its own tractable sub-problem), there is now real, converging evidence
+that this sampler's stationary behavior is a genuine, shared property of
+the T=2 Boltzmann distribution under compute_U_am, not an artifact of the
+sampler's mechanics or of how a run happens to be started.
