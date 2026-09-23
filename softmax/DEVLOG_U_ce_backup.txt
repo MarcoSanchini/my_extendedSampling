@@ -1,0 +1,148 @@
+================================================================================
+U_structure_ce backup branch -- paused, not the main line
+================================================================================
+This file tracks the structure-token cross-entropy energy (U_structure_ce)
+as a SEPARATE, backup idea -- not the primary direction. The primary
+project direction follows the supervisors' plan: U_am (attention-map
+energy), aimed at replicating Zambon, Zecchina, Tiana 2024 (Phys. Biol. 21
+026002) with a faster sampler. U_structure_ce was the user's own idea,
+explored in parallel to keep as a ready alternative "if something should
+not work" with U_am -- explicitly paused as of 2026-09-23 to refocus on
+U_am. This file exists so that branch's work is preserved and findable
+without cluttering the main DEVLOG.txt, which now continues on U_am/
+Zambon-replication only.
+
+Full detail for everything up to and including the AttributeError fix
+lives in the main softmax/DEVLOG.txt (dated entries, 2026-09-22 through
+2026-09-23 -- search that file for "structure_ce"/"structure logits" to
+find them in full; not duplicated here at length, only summarized).
+Quick index of that prior work, in order:
+
+  1. User shared Zambon et al 2024 as the project's final aim: replicate
+     its approach (protein G, N=56 -- same reference sequence used
+     throughout this whole project) with a faster sampler, for a
+     ~200-residue target where classic Metropolis-Hastings (which the
+     paper itself uses) is too slow.
+  2. Noted the paper's actual effective energy is a normalized [0,1]
+     contact-map difference from ESMFold-predicted 3D structure -- NOT
+     U_am, and not U_structure_ce either. Different scale, different
+     units, different definition entirely from both energies implemented
+     in this codebase so far.
+  3. Checked predict_attention's differentiability requirement (why
+     gradient-informed proposals work at all) and found
+     utils/energies.py already had an unused compute_U_structure_ce
+     (cross-entropy against a reference's structure TOKENS) built on
+     structure_logits, which comes from the same differentiable
+     custom_forward pass as attention -- closer in spirit to the paper's
+     contact-map approach than U_am, while still being
+     gradient-compatible, in principle.
+  4. User: "structure logits is something i came up with and is what i
+     prefer. attention map is what my supervisors came up with... maybe
+     we really could support both and see how they behave." Decision:
+     support both via a new lambda_structure_ce parameter.
+  5. Found (via subagent investigation, then verified directly) a working
+     -but-messy prior prototype, classes/ep_sampler_ce_backup.py, built
+     for the OLD abandoned joint/leapfrog sampler design -- useful for the
+     plumbing pattern, not reusable as-is.
+  6. Implemented: customs/custom_esm/models/esm3.py gained
+     predict_structure_logits/_structure_logits (mirrors
+     predict_attention/_last_attention exactly, full transformer stack
+     instead of last_attention). classes/rate_sampler.py gained
+     lambda_structure_ce wiring, backward-compatible throughout
+     (pars.get(..., 0.) everywhere outside _setup's own defpars-filling,
+     since ~15 existing test scripts build pars dicts by hand;
+     _exact_energy's return signature unchanged, U_structure_ce stashed
+     on eprot instead).
+  7. First real run crashed: AttributeError, ExtendedProtein is an attrs
+     @define (slotted-by-default) class, so the planned dynamic
+     eprot.U_structure_ce = ... assignment could never have worked.
+     Fixed by declaring it as a proper field -- which surfaced a SECOND
+     issue (ExtendedProtein.save() assumes every field but sequence is a
+     tensor and calls .to("cpu") on it), fixed by storing U_structure_ce
+     as a tensor throughout, matching eprot.am's own convention, with
+     .item() at read sites.
+  8. First successful run (scan_U_structure_ce_landscape.py):
+     - Plumbing fully works, no dtype/shape errors.
+     - U_structure_ce(ref,ref) = 2.828125 (finite, small-but-nonzero,
+       no floor -- as expected, since cross-entropy against a discrete
+       target has no self-distance-is-zero guarantee the way U_am's
+       symmetric squared-distance does).
+     - p=0 descent-direction check passes at all 5 tested sites.
+     - |grad_A| ~ 0.0000-0.0003, roughly 100-1000x SMALLER than U_am's
+       (~0.01-0.08).
+     - Reference-anchored scan at the SAME 5 sites scan_U_am_landscape.py
+       tested (same seed/site-selection code): agree on the top pick at
+       only 1/5 sites (site 4: both prefer L->I); U_ce's dU magnitudes
+       are ~100x smaller than U_am's at the same sites; 5/95 mutants
+       scored NEGATIVE directly from the pure reference (versus U_am's
+       provably-impossible 0/190) -- direct empirical confirmation
+       U_structure_ce genuinely lacks U_am's floor, not just in theory.
+     - Practical consequence flagged: naively combining both energies
+       with equal lambdas, or reusing U_am's own dt range for U_ce,
+       would not give a fair comparison (U_ce would be either invisible
+       under U_am's ~100x larger scale, or essentially uninformed under
+       a dt tuned for U_am's gradient scale).
+
+--------------------------------------------------------------------------------
+2026-09-23 -- test_informedness_vs_dt_ce.py result: real transition captured, but a yellow flag on gradient quality
+--------------------------------------------------------------------------------
+Ran the U_ce analog of test_informedness_vs_dt.py (dt swept 1e4-1e8, same
+(A) dt-independent gradient-quality / (B) dt-dependent closed-form
+p_match(dt) decomposition, isolated to lambda_am=0/lambda_structure_ce=1).
+
+(B) dt-dependent: a full, clean transition WAS captured within the swept
+range -- mean p_match climbs from 0.0543 at dt=1e4 (essentially the
+~1/19 uniform baseline, i.e. uninformed) to 0.9346 at dt=1e8. Individual
+sites show the same qualitative shape (some saturate faster -- sites 30,
+49, 24, 5, 6, 14 all reach ~1.0 by dt=1e7-3e7; others lag, e.g. site 55
+only reaches 0.606 by dt=1e8). Not fully saturated at the very top of the
+range for every site, but the transition itself is unambiguous and well
+inside the swept window -- a much cleaner first result than U_am's own
+first attempt (dt=20-150), which showed no transition at all.
+
+(A) dt-independent -- this is the more important, and more concerning,
+result: top-1 accuracy 2/10 (same rate as U_am's own 2/10, not worse
+there), BUT mean true dU at the gradient-predicted class (+0.1531) is
+WORSE than the mean at other candidate classes (+0.1047). For U_am, the
+same check showed the gradient-predicted class was clearly BETTER on
+average than the alternatives (+17.1975 vs +20.9858 at T_sftm=0.1, dt=2,
+T=20 in that original run). Here the direction is reversed (or at best
+noise-dominated) -- the linearized gradient signal for U_structure_ce
+does not show the same clear "genuinely informative direction" property
+U_am's gradient did.
+
+Read together with the user's own stated doubt ("i'm not even sure
+defining U_ce as crossentropy is a good choice, maybe it would be better
+to use a definition [closer] to the article"): this result is at least
+consistent with that doubt. Cross-entropy against a discrete argmax-
+derived target may simply be a less faithful "foldability" proxy than a
+true structural/contact-map distance (which is what the paper's own
+effective energy actually is) -- not proven by one run at N_SITES_TESTED
+=10, but a concrete, evidence-backed reason to prefer the paper's actual
+definition if this branch gets picked back up later, rather than
+continuing to iterate on the cross-entropy formulation specifically.
+
+--------------------------------------------------------------------------------
+STATUS: PAUSED as of 2026-09-23
+--------------------------------------------------------------------------------
+Per explicit user decision: "i don't want to get lost in this idea of
+mine, i'd rather follow my supervisors' plan and have mine as a ready
+backup if something should not work... let's keep going with U_am."
+
+Everything above is preserved and working (code committed, not reverted):
+- customs/custom_esm/models/esm3.py: predict_structure_logits/
+  _structure_logits (harmless, unused unless lambda_structure_ce>0).
+- classes/rate_sampler.py: lambda_structure_ce wiring (defaults to 0.0,
+  zero effect on any U_am-only run).
+- classes/ExtendedProtein.py: U_structure_ce field (defaults to None
+  until _exact_energy sets it; harmless for U_am-only runs).
+- tests/scan_U_structure_ce_landscape.py,
+  tests/test_informedness_vs_dt_ce.py: standalone diagnostics, don't
+  affect production runs.
+
+Nothing here needs to be reverted or cleaned up to resume U_am work --
+the two energies coexist via the lambda_am/lambda_structure_ce switch by
+design, and lambda_structure_ce=0.0 (the default) makes this whole branch
+a no-op. If picked back up later: start from the (A) result above (the
+CE-vs-article-definition question) before spending more time on the
+current cross-entropy formulation specifically.

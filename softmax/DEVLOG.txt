@@ -1632,3 +1632,29 @@ crowded/slower-saturating than random synthetic examples suggested) --
 DTS_TO_SWEEP may need to shift once real numbers are in.
 
 py_compile clean. Not yet run on GPU.
+
+--------------------------------------------------------------------------------
+2026-09-23 -- U_structure_ce branch paused, refocusing on U_am / Zambon replication
+--------------------------------------------------------------------------------
+Explicit decision: follow the supervisors' plan (U_am) as the primary
+direction; keep U_structure_ce as a ready backup idea, not pursued further
+for now. Reasoning included a real data point -- test_informedness_vs_dt_ce.py's
+(A) check showed the gradient-predicted class scoring WORSE on average than
+other candidates (+0.1531 vs +0.1047), the opposite of U_am's own result --
+consistent with the user's independent doubt that cross-entropy against a
+discrete argmax target may be a less faithful energy than the paper's actual
+contact-map-based definition.
+
+All U_structure_ce work (from the 2026-09-23 "final aim" entry through this
+one) is now summarized and continued in softmax/DEVLOG_U_ce_backup.txt
+rather than here, to keep this log focused on U_am going forward. Nothing
+was reverted -- lambda_structure_ce defaults to 0.0 and the whole branch is
+a no-op for any U_am-only run, so it's safe to leave in place.
+
+Restarting the U_am line of work from here: aim is reproducing results that
+resemble Zambon et al 2024's own findings for protein G (wide/flat major
+basin containing natural homologs, K-sites, specific-heat/transition-
+temperature structure, etc.) using this project's faster gradient-informed
+sampler in place of their plain Metropolis-Hastings, on the SAME reference
+sequence already used throughout this project -- before eventually scaling
+to the real ~200-residue target.
