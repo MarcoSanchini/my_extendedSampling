@@ -1566,3 +1566,69 @@ scan_U_structure_ce_landscape.py, already-committed esm3.py unaffected)
 py_compile clean. Re-run scan_U_structure_ce_landscape.py to continue
 checking (1)'s self-distance value and (2)/(3), which never got reached
 before this crash.
+
+--------------------------------------------------------------------------------
+2026-09-23 -- first real U_structure_ce run + full characterization kicked off
+--------------------------------------------------------------------------------
+scan_U_structure_ce_landscape.py's real run (post AttributeError fix):
+plumbing fully works. U_structure_ce(ref,ref)=2.828125 (finite, small-but-
+nonzero as expected, no floor). p=0 descent-direction check passes at all
+5 tested sites. |grad_A| ~ 0.0000-0.0003 -- roughly 100-1000x SMALLER than
+U_am's (~0.01-0.08 measured throughout earlier work).
+
+Reference-anchored scan directly comparable to scan_U_am_landscape.py's
+own (same seed/site-selection code -> identical first 5 sites: 4,30,49,
+24,55):
+
+  site  ref   U_am best (dU)      U_ce best (dU)
+  4     L     I (+9.07)           I (-0.03)        <- SAME top pick
+  30    K     E (+3.04)           Q (-0.05)
+  49    K     R (+2.66)           Q (0.00)
+  24    T     V (+5.62)           R (0.00)
+  55    E     Q (+2.74)           D (+0.03)
+
+Agree at 1/5 sites; U_ce's dU range here (~-0.05 to +1.5) is ~100x smaller
+in magnitude than U_am's (+2.6 to +224) at the same sites -- consistent
+with the gradient-magnitude gap. U_ce also showed 5/95 NEGATIVE dU values
+directly from the pure reference (U_am showed 0/190) -- direct empirical
+confirmation that U_structure_ce genuinely lacks U_am's floor, not just in
+theory.
+
+Practical consequence: at current defaults (lambda_am=1, lambda_ce=0)
+nothing changes. But naively combining both with equal lambdas, or reusing
+U_am's own dt=(300-32000) sweep range for U_ce, would NOT give a fair
+comparison -- U_ce would be either invisible (dominated ~100x by U_am) or
+essentially uninformed (a dt tuned for U_am's gradient scale is
+~100-1000x too small for U_ce's).
+
+Asked the user how to proceed given this mismatch. Chose to characterize
+U_structure_ce properly first, mirroring the full U_am validation
+(informedness-vs-dt, then presumably a Boltzmann toy-test + equilibration
+check once a working dt range is known) -- rather than a quick pragmatic
+calibration or an immediate rescaling attempt.
+
+Added tests/test_informedness_vs_dt_ce.py: direct analog of
+test_informedness_vs_dt.py (same (A) dt-independent gradient-quality /
+(B) dt-dependent closed-form p_match(dt) decomposition -- that argument is
+energy-agnostic, carries over unchanged), isolating lambda_am=0,
+lambda_structure_ce=1. DTS_TO_SWEEP=(1e4...1e8), ~5 orders of magnitude,
+deliberately wide to bracket the real crossover rather than assume a
+single scale factor from one gradient-magnitude estimate -- U_am's own
+characterization needed several rounds of range-widening before landing on
+a decisive dt window, so starting broad here on purpose.
+
+Verified before trusting this range: (1) log_pointing_prob's numerical
+safety argument (fully log-space, torch.special.log_ndtr + logsumexp) is
+completely energy-agnostic, so the earlier verification up to dt=128000
+for U_am carries over; (2) step_coef=dt^2/(2M) reaches ~5e15 at the top of
+this sweep, times grad_A~1e-4 gives mu_A~1e11-1e12, nowhere near float32
+overflow (~3.4e38); (3) a standalone numpy/scipy reimplementation at this
+scale (grad components ~N(0, 1e-4), matching the real measured magnitude)
+stays finite throughout dt=1e4-1e9 and saturates smoothly from ~0.17 to
+1.0 within the swept range -- confirms no numerical landmine, though real
+per-site data may saturate slower than this synthetic check, same pattern
+as U_am's own investigation (real 24-way competitor fields turned out more
+crowded/slower-saturating than random synthetic examples suggested) --
+DTS_TO_SWEEP may need to shift once real numbers are in.
+
+py_compile clean. Not yet run on GPU.
