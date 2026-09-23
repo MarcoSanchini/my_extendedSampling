@@ -1741,3 +1741,52 @@ Both files py_compile / bash -n clean. Not yet run (needs GPU; this is a
 real ask -- 10 runs x 50000 moves, comparable in per-run scale to the
 longest single run so far (far/seed43's 45000-move extension), so expect
 substantial wall-clock even at MAX_RUNNING=4).
+
+--------------------------------------------------------------------------------
+2026-09-23 -- widened temperature sweep to 12 points, T=1e-9 to 1e2, hunting for a transition
+--------------------------------------------------------------------------------
+User pushback, correctly: the original T=0.1-17 range was anchored on
+T=2.0 for no principled reason -- it was just the value already
+characterized in earlier dt/informedness/equilibration work, not evidence
+anything special happens there specifically. Explicit goal restated: hunt
+for a possible transition analogous to Zambon et al 2024's T_s^c/T_s^n,
+sweeping a much wider range (1e-8 to 1e1, one decade per step) rather than
+assuming where it sits. With MAX_RUNNING=4, 10 runs leaves 2 free slots in
+the last wave -- widened to 12 points to fill it exactly, extending one
+decade past each of the user's stated endpoints: T=1e-9 through 1e2, still
+pure decade steps (the simple version explicitly preferred over an
+iterative/adaptive narrowing pass, given this is committed as one batch).
+
+One real data point shared before committing to the range (not a reason
+to override the request, just context): the dispersed-start equilibration
+test's "far" random-sequence start began at U~560-600 (a genuinely random
+sequence's typical energy) and decayed down to the SAME U~75-80
+equilibrium T=2 reaches from any start -- T=2 sits well below that ~560
+ceiling, so it's not deep in a disordered phase, and (~43/56 sites still
+differ from reference there) not frozen near-native either. Extrapolated
+from one energy scale, not a derivation -- exactly why sweeping wide
+rather than assuming makes sense here.
+
+dt=8000 stays fixed across the widened range: mu_A does not depend on T
+at all (only sigma does), so informedness (~1/sqrt(T)) only grows as T
+drops -- no correctness risk at the cold end (validate_boltzmann_toy.py's
+result doesn't depend on dt/T), only mild loosening at the hot end (1e2
+vs the previous ceiling of 17). No new numerical-overflow concern in
+either direction (checked: mu_A's scale is T-independent, sigma just
+shrinks/grows with sqrt(T)).
+
+sweep_temperature.sh's TS array updated to
+(1e-9,1e-8,1e-7,1e-6,1e-5,1e-4,1e-3,1e-2,1e-1,1e0,1e1,1e2); moves=50000,
+log_step=100, init_muts=0, seed=42, dt=8000 all unchanged. Re-verified
+via bash -n, a sed dry-run at the new T=1e-9 extreme against the real
+pars.txt, and confirmed Python's float() parses "1e-9"/"1e2" correctly
+(both needed since _setup()'s defpars-filling does typ(pars[key]) with
+typ=float for T) before trusting it. 12 runs, MAX_RUNNING=4, exactly 3
+full waves -- same wall-clock as the original 10-run version, just fully
+packing the slack in the last wave.
+
+Expect several of the coldest points (very roughly T <~ 1e-2, given the
+~2-31 energy-unit per-mutation cost scale measured earlier) to show
+Hd~0/no real dynamics for the whole 50000-move run -- not a bug if so,
+a real, useful confirmation of where the frozen regime's boundary is,
+directly bounding one side of wherever the transition turns out to sit.

@@ -10,21 +10,31 @@ set -u
 # the rest free to vary, and a unimodal sequence-similarity distribution
 # p(q) that sharpens as T decreases. See DEVLOG.txt, 2026-09-23 entries.
 #
-# T=(0.1,0.2,0.4,0.7,1.2,2.0,3.5,6.0,10.0,17.0), log-spaced, anchored at
-# T=2.0 (already characterized extensively: dispersed starts converge to
-# U~75-80, Hd~43/56 at T=2, dt=2000-8000). Meant to bracket a cold,
-# near-native regime (mean single-mutation cost from the reference is
-# ~31 energy units per scan_U_am_landscape.py, so T~0.1-0.4 should
-# strongly suppress drift) through a hot, disordered regime (T=2 already
-# gives substantial divergence; 10-17 should push well past it).
+# T=(1e-9 .. 1e2), 12 points, one full decade per step -- widened from an
+# original T=0.1-17 range anchored on T=2.0 (which had no principled
+# origin: it was just the value already characterized in earlier dt/
+# informedness/equilibration work, not evidence anything special happens
+# there specifically). Explicitly hunting for a possible transition
+# analogous to Zambon et al 2024's T_s^c/T_s^n, rather than assuming one
+# sits near T=2. One data point that DOES inform where to look: the
+# "far" random-sequence starting condition in the dispersed-start
+# equilibration test began at U~560-600 (a genuinely random sequence's
+# typical energy) and decayed down to the SAME U~75-80 equilibrium T=2
+# reaches from any start -- T=2 is already far below that ~560 "fully
+# random" ceiling, so it's not deep in a disordered phase, and (~43/56
+# sites still differ from the reference there) not frozen near-native
+# either. This is a guess extrapolated from one energy scale, not a
+# derivation -- hence sweeping wide rather than assuming.
 #
-# dt=8000 FIXED across the whole sweep -- characterized at T=2 (mean
-# p_match~0.47 there); informedness scales roughly as 1/sqrt(T), so this
-# stays informed (more so, in fact) at colder T and only gradually
-# loosens at the hottest points, never fully uninformed. Same spirit as
-# the paper itself: one fixed proposal mechanism across every T, no
-# per-T retuning -- a pragmatic choice for a first pass, not a claim that
-# dt=8000 is equally well-tuned at every T in this range.
+# dt=8000 FIXED across the whole sweep, same as the narrower version of
+# this sweep before it was widened. mu_A does not depend on T at all
+# (only sigma does), so informedness (~1/sqrt(T)) only ever grows as T
+# drops -- no correctness risk at the very cold end (per
+# validate_boltzmann_toy.py, correctness doesn't depend on dt/T), and
+# only mild loosening at the hot end (T=100 vs the previous ceiling of
+# T=17). No new numerical-overflow concern either direction. Same spirit
+# as the paper itself: one fixed proposal mechanism across every T, no
+# per-T retuning.
 #
 # init_muts=0 (start exactly at the reference, per explicit request).
 # moves=50000: comfortably past the ~27000+ moves the slowest chain
@@ -42,7 +52,7 @@ set -u
 # batches regardless of log_step.
 # ============================================================
 
-TS=(0.1 0.2 0.4 0.7 1.2 2.0 3.5 6.0 10.0 17.0)
+TS=(1e-9 1e-8 1e-7 1e-6 1e-5 1e-4 1e-3 1e-2 1e-1 1e0 1e1 1e2)
 
 BASE_PARS="rate_inputs/pars.txt"
 BASE_SETTINGS="rate_inputs/settings.txt"
