@@ -231,7 +231,7 @@ class ExtendedProteinRateSampler():
 			"cur_aa": vocab[int(cur_idx.item())],
 			"proposed_aa": vocab[int(tgt_idx.item())],
 			"proposed_sequence": eprot_B.sequence,
-			"U_B": U_B, "U_am_B": U_am_B, "U_structure_ce_B": eprot_B.U_structure_ce,
+			"U_B": U_B, "U_am_B": U_am_B, "U_structure_ce_B": eprot_B.U_structure_ce.item(),
 			"dU": dU, "log_a_AB": log_a_AB, "log_a_BA": log_a_BA, "log_ratio": log_ratio,
 			"accepted": int(accepted),
 		}
@@ -274,9 +274,13 @@ class ExtendedProteinRateSampler():
 	# relaxation, no entropy term), used for the Metropolis ratio.       #
 	# Return signature is unchanged (U, U_am, eprot) for backward        #
 	# compatibility with every existing caller; U_structure_ce, when in  #
-	# use, is stashed on eprot itself (eprot.U_structure_ce), same       #
-	# pattern as eprot.am below -- read it via getattr(eprot, ...) if    #
-	# you need it, it defaults to 0. when lambda_structure_ce is unused. #
+	# use, is stashed on eprot itself (eprot.U_structure_ce, a formally  #
+	# declared ExtendedProtein field -- it's an attrs slotted class, so  #
+	# a plain dynamic eprot.foo = ... assignment would AttributeError),  #
+	# same pattern as eprot.am below. Always a CPU tensor (torch.tensor  #
+	# (0.) when lambda_structure_ce is unused) so eprot.save()'s         #
+	# unconditional .to("cpu") over every field keeps working; call      #
+	# .item() at read sites that want a plain float.                    #
 	# ------------------------------------------------------------------ #
 	def _exact_energy(self, eprot: ExtendedProtein, pars: dict):
 		with torch.no_grad():
@@ -292,9 +296,9 @@ class ExtendedProteinRateSampler():
 					self.ref_structure_tokens.unsqueeze(0),
 				)
 				U = U + lambda_structure_ce*U_structure_ce
-				eprot.U_structure_ce = U_structure_ce.item()
+				eprot.U_structure_ce = U_structure_ce.detach().clone().to("cpu")
 			else:
-				eprot.U_structure_ce = 0.
+				eprot.U_structure_ce = torch.tensor(0.)
 		eprot.am = am.detach().clone().to("cpu")
 		return U.item(), U_am.item(), eprot
 
@@ -448,7 +452,7 @@ class ExtendedProteinRateSampler():
 			U, U_am, eprot = self._exact_energy(eprot, pars)
 			data = merge_dict(
 				{
-					'U': U, 'U_am': U_am, 'U_structure_ce': eprot.U_structure_ce,
+					'U': U, 'U_am': U_am, 'U_structure_ce': eprot.U_structure_ce.item(),
 					'entropy': compute_entropy(eprot.get_probs(pars["T_sftm"]), pars["eps"]).item(),
 					'Hd_to_ref': compute_Hd(eprot.logits, self.ref_eprot.logits),
 				},

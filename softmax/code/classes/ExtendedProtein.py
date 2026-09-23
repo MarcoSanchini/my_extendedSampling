@@ -15,6 +15,7 @@ class ExtendedProtein:
 	logits: torch.Tensor | None = None
 
 	am: torch.Tensor | None = None
+	U_structure_ce: torch.Tensor | None = None
 	#cm: torch.Tensor | None = None
 	#plddt: torch.Tensor | None = None
 

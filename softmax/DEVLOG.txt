@@ -1512,3 +1512,57 @@ the new predict_structure_logits path has never been exercised for real
 suggesting its own development wasn't fully smooth), so the very first
 thing to check is whether it runs at all without a dtype/shape error,
 which is exactly what scan_U_structure_ce_landscape.py's check (1) is for.
+
+--------------------------------------------------------------------------------
+2026-09-23 -- fix: ExtendedProtein.U_structure_ce AttributeError on first real run
+--------------------------------------------------------------------------------
+First real run of scan_U_structure_ce_landscape.py crashed immediately:
+AttributeError: 'ExtendedProtein' object has no attribute 'U_structure_ce',
+at eprot.U_structure_ce = U_structure_ce.item() inside _exact_energy.
+(Everything before that ran cleanly: model loaded, predict_structure_logits
+ran without a dtype/shape error, ref_structure_tokens came back sane --
+shape (56,), dtype int64, values in [10, 3769], well within the 4096-token
+vocab. So the actual new model-API surface was fine; the bug was in how
+the result got stashed.)
+
+Root cause: ExtendedProtein (classes/ExtendedProtein.py) is decorated with
+attrs' @define, which is SLOTTED BY DEFAULT -- unlike a plain Python
+object, it rejects any attribute not formally declared as a field, full
+stop, no dynamic eprot.foo = ... assignment possible. .am works because
+it's declared (`am: torch.Tensor | None = None`); the plan to stash
+U_structure_ce on eprot the same way, without declaring it, could never
+have worked. (Grepping the source for "__slots__" found nothing because
+attrs generates the slots mechanism from the decorator itself, not from
+literal __slots__ text -- a real gap in how that was checked beforehand.)
+
+Fixed by declaring U_structure_ce as a proper field
+(`U_structure_ce: torch.Tensor | None = None`, right after `am`) --
+but this surfaced a SECOND problem before it could even be tested:
+ExtendedProtein.save() iterates over every declared field except
+"sequence"/"requires_grad"/"device" and unconditionally calls .to("cpu")
+on each one, assuming they're all tensors. Storing U_structure_ce as a
+plain float (my original plan) would have broken save() for every future
+run, not just ones using this energy. Fixed by storing it as a tensor
+throughout (`eprot.U_structure_ce = U_structure_ce.detach().clone().to
+("cpu")`, or `torch.tensor(0.)` when lambda_structure_ce is unused),
+matching eprot.am's own exact storage convention -- and adding .item()
+at every READ site instead (_step()'s info dict, _setup()'s merge_dict
+call, and the three read sites in scan_U_structure_ce_landscape.py).
+
+Verified before trusting this: grepped every ExtendedProtein(...)
+constructor call across the whole repo (active and legacy/.backup) to
+confirm none use positional arguments -- inserting a new field into an
+attrs class is only safe for all-keyword construction, and it checked out
+everywhere.
+
+Known, deliberately-not-fixed consequence (same category as the earlier
+'restarting an old run' caveat): eprot.save()/load() now read/write a
+U_structure_ce_<N>.pt file that didn't exist before this change, so
+restarting a checkpoint saved by an OLDER version of this code will
+FileNotFoundError. No production run has used restart so far.
+
+All four touched files (ExtendedProtein.py, rate_sampler.py,
+scan_U_structure_ce_landscape.py, already-committed esm3.py unaffected)
+py_compile clean. Re-run scan_U_structure_ce_landscape.py to continue
+checking (1)'s self-distance value and (2)/(3), which never got reached
+before this crash.

@@ -95,9 +95,10 @@ def main():
 	eprot_ref = ExtendedProtein(sequence=REF_SEQ, requires_grad=False, device=device)
 	eprot_ref.expand()
 	U_ref_exact, _, eprot_ref = sampler._exact_energy(eprot_ref, pars)
-	print(f"U_structure_ce(ref, ref) = {eprot_ref.U_structure_ce:.6f}  "
+	U_ce_ref = eprot_ref.U_structure_ce.item()  # eprot.U_structure_ce is a CPU tensor (see rate_sampler.py's _exact_energy)
+	print(f"U_structure_ce(ref, ref) = {U_ce_ref:.6f}  "
 		  f"(no proven floor -- small-but-nonzero is expected and fine, see module docstring)")
-	print(f"finite: {torch.isfinite(torch.tensor(eprot_ref.U_structure_ce)).item()}\n")
+	print(f"finite: {torch.isfinite(eprot_ref.U_structure_ce).item()}\n")
 
 	# ================================================================
 	# (2) p=0 descent-direction check (same construction as
@@ -141,7 +142,7 @@ def main():
 			eprot_c = ExtendedProtein(sequence=cand_seq, requires_grad=False, device=device)
 			eprot_c.expand()
 			_, _, eprot_c = sampler._exact_energy(eprot_c, pars)
-			dU_from_ref[j] = eprot_c.U_structure_ce - eprot_ref.U_structure_ce
+			dU_from_ref[j] = eprot_c.U_structure_ce.item() - U_ce_ref
 
 		best_j = min(dU_from_ref, key=dU_from_ref.get)
 		worst_j = max(dU_from_ref, key=dU_from_ref.get)
