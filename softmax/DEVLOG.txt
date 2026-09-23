@@ -1303,3 +1303,37 @@ Not fully airtight yet for far/seed43 specifically -- it's still moving in
 the right direction but hasn't visibly plateaued at the shared target the
 way seed 42 has. Extending that one chain further (or all far chains) would
 close out the remaining ambiguity if wanted.
+
+--------------------------------------------------------------------------------
+2026-09-23 -- extending far/seed43 to confirm convergence
+--------------------------------------------------------------------------------
+Requested: extend the one chain that hadn't visibly caught up yet
+(far/seed43, U~358-380 in its last block vs. the ~78 target reference/
+moderate/far-seed42 all converge toward) to confirm whether it eventually
+reaches the same regime or genuinely stalls short of it.
+
+No new code needed. run_equilibration.py's only randomness comes from
+CustomGenerator(seed=43, ...)'s seeded calls inside _step() (momentum
+draw, accept/reject draw), made in a fixed order every iteration --
+re-running the exact same command with a larger --moves reproduces the
+first 15000 moves bit-for-bit identically (same seed, same call sequence,
+same code), then continues into genuinely new moves. A true extension,
+not a restart from an approximate reconstruction -- which mattered here
+since the current log format doesn't record proposed_aa, so the exact
+final sequence at move 15000 isn't otherwise recoverable from the log for
+the ~15% of sites whose last touch happened to be an accepted move
+(checked this before deciding how to extend it, rather than assuming a
+reconstruction would be exact).
+
+Command given to the user:
+  python run_equilibration.py --start-mode far --seed 43 --moves 45000 \
+      --dt 2000.0 --T 2.0 --results-dir tests_rate_equilibration/far_seed43_extended45000
+
+45000 total (30000 new moves) rather than the minimum plausibly-needed
+amount: seed 42's clearly-decelerating approach curve (603->91 over 15000
+moves, most of the drop in the first half) means a naive linear
+extrapolation of seed 43's current, slower rate would underestimate how
+many more moves it needs, since its own approach is presumably decelerating
+too. New results directory (not overwriting far_seed43) so the existing,
+already-analyzed 15000-move data is never at risk if anything goes wrong
+partway through the longer run.
