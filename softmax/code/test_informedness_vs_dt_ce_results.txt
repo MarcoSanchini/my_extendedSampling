@@ -1,0 +1,47 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 206431.07it/s]
+Reference: MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+Current A: MTYKLFLNGKTLKGETTYEAVDAATAEKVFKQYENDOGVDGEWTYDDATKTFTVTW
+T=2.0, M=1.0  (fixed; dt is the swept axis)  [lambda_am=0, lambda_structure_ce=1]
+
+  site   4 (cur=L): gradient-predicted=D (true dU=+2.0156)  true best=F (true dU=-0.0156)  top1=miss
+      p_match(dt): dt=1e+04:0.054  dt=3e+04:0.057  dt=1e+05:0.066  dt=3e+05:0.095  dt=1e+06:0.173  dt=3e+06:0.277  dt=1e+07:0.416  dt=3e+07:0.559  dt=1e+08:0.740
+  site  30 (cur=K): gradient-predicted=C (true dU=-0.1250)  true best=C (true dU=-0.1250)  top1=HIT
+      p_match(dt): dt=1e+04:0.054  dt=3e+04:0.055  dt=1e+05:0.062  dt=3e+05:0.081  dt=1e+06:0.147  dt=3e+06:0.328  dt=1e+07:0.803  dt=3e+07:1.000  dt=1e+08:1.000
+  site  49 (cur=K): gradient-predicted=I (true dU=+0.0625)  true best=V (true dU=+0.0000)  top1=miss
+      p_match(dt): dt=1e+04:0.054  dt=3e+04:0.056  dt=1e+05:0.066  dt=3e+05:0.095  dt=1e+06:0.199  dt=3e+06:0.441  dt=1e+07:0.942  dt=3e+07:1.000  dt=1e+08:1.000
+  site  24 (cur=T): gradient-predicted=H (true dU=+0.1250)  true best=M (true dU=+0.0000)  top1=miss
+      p_match(dt): dt=1e+04:0.054  dt=3e+04:0.057  dt=1e+05:0.069  dt=3e+05:0.110  dt=1e+06:0.300  dt=3e+06:0.764  dt=1e+07:0.998  dt=3e+07:1.000  dt=1e+08:1.000
+  site  55 (cur=W): gradient-predicted=K (true dU=-0.3594)  true best=E (true dU=-0.3594)  top1=miss
+      p_match(dt): dt=1e+04:0.054  dt=3e+04:0.058  dt=1e+05:0.072  dt=3e+05:0.118  dt=1e+06:0.270  dt=3e+06:0.472  dt=1e+07:0.511  dt=3e+07:0.532  dt=1e+08:0.606
+  site   5 (cur=F): gradient-predicted=T (true dU=+0.0625)  true best=L (true dU=-0.1406)  top1=miss
+      p_match(dt): dt=1e+04:0.055  dt=3e+04:0.060  dt=1e+05:0.081  dt=3e+05:0.148  dt=1e+06:0.350  dt=3e+06:0.632  dt=1e+07:0.954  dt=3e+07:1.000  dt=1e+08:1.000
+  site  33 (cur=E): gradient-predicted=F (true dU=-0.2344)  true best=A (true dU=-0.3750)  top1=miss
+      p_match(dt): dt=1e+04:0.055  dt=3e+04:0.061  dt=1e+05:0.081  dt=3e+05:0.150  dt=1e+06:0.362  dt=3e+06:0.533  dt=1e+07:0.641  dt=3e+07:0.861  dt=1e+08:1.000
+  site  52 (cur=T): gradient-predicted=E (true dU=-0.0312)  true best=E (true dU=-0.0312)  top1=HIT
+      p_match(dt): dt=1e+04:0.053  dt=3e+04:0.055  dt=1e+05:0.060  dt=3e+05:0.077  dt=1e+06:0.147  dt=3e+06:0.340  dt=1e+07:0.755  dt=3e+07:1.000  dt=1e+08:1.000
+  site   6 (cur=L): gradient-predicted=H (true dU=+0.0156)  true best=V (true dU=-0.0781)  top1=miss
+      p_match(dt): dt=1e+04:0.055  dt=3e+04:0.059  dt=1e+05:0.074  dt=3e+05:0.128  dt=1e+06:0.362  dt=3e+06:0.810  dt=1e+07:0.999  dt=3e+07:1.000  dt=1e+08:1.000
+  site  14 (cur=E): gradient-predicted=A (true dU=+0.0000)  true best=M (true dU=-0.1406)  top1=miss
+      p_match(dt): dt=1e+04:0.055  dt=3e+04:0.059  dt=1e+05:0.074  dt=3e+05:0.127  dt=1e+06:0.364  dt=3e+06:0.762  dt=1e+07:0.998  dt=3e+07:1.000  dt=1e+08:1.000
+
+=== (A) dt-independent: is the gradient's fixed pick any good? ===
+Top-1 accuracy (gradient pick == true best, among candidates excluding 'stay'): 2/10
+Mean true dU at gradient-predicted class:     +0.1531
+Mean true dU at all other candidate classes:  +0.1047
+(This number does NOT change with dt -- dt only affects how reliably a single
+ realized move follows this fixed pick, see (B) below.)
+
+=== (B) dt-dependent, closed form: mean P(realized proposal == gradient's pick), pooled over sites ===
+  dt=1.0e+04: mean p_match=0.0543  (min=0.0534  max=0.0552 across the 10 tested sites)
+  dt=3.0e+04: mean p_match=0.0577  (min=0.0548  max=0.0606 across the 10 tested sites)
+  dt=1.0e+05: mean p_match=0.0706  (min=0.0602  max=0.0813 across the 10 tested sites)
+  dt=3.0e+05: mean p_match=0.1128  (min=0.0770  max=0.1495 across the 10 tested sites)
+  dt=1.0e+06: mean p_match=0.2675  (min=0.1470  max=0.3636 across the 10 tested sites)
+  dt=3.0e+06: mean p_match=0.5359  (min=0.2769  max=0.8100 across the 10 tested sites)
+  dt=1.0e+07: mean p_match=0.8018  (min=0.4160  max=0.9993 across the 10 tested sites)
+  dt=3.0e+07: mean p_match=0.8952  (min=0.5322  max=1.0000 across the 10 tested sites)
+  dt=1.0e+08: mean p_match=0.9346  (min=0.6061  max=1.0000 across the 10 tested sites)
+(As dt -> infinity this should -> 1.0 at every site. If the whole swept range still
+ reads near 0 or near 1 with no visible transition, DTS_TO_SWEEP needs to shift further
+ down or up respectively -- rerun with an adjusted range centered on wherever the
+ transition actually showed signs of starting.)
