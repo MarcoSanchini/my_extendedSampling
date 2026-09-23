@@ -1658,3 +1658,86 @@ temperature structure, etc.) using this project's faster gradient-informed
 sampler in place of their plain Metropolis-Hastings, on the SAME reference
 sequence already used throughout this project -- before eventually scaling
 to the real ~200-residue target.
+
+--------------------------------------------------------------------------------
+2026-09-23 -- temperature sweep scoped and built: site entropy + q-distribution
+--------------------------------------------------------------------------------
+First concrete step toward reproducing Zambon et al 2024's results with
+U_am. Per user direction: start with the two cheapest target results
+(site entropy S(i) / K-sites structure, and the pairwise similarity
+distribution p(q)), not the full multi-histogram-reweighted thermodynamics
+(Ē(T)/Cv(T)) yet -- that needs real reweighting code and is deferred until
+these two look sane.
+
+Sweep design (all explicit user choices except where noted):
+  T = (0.1, 0.2, 0.4, 0.7, 1.2, 2.0, 3.5, 6.0, 10.0, 17.0), log-spaced,
+  anchored at T=2.0 (already extensively characterized: dispersed starts
+  converge to U~75-80, Hd~43/56). Meant to bracket a cold, near-native
+  regime (mean single-mutation cost from the reference is ~31 energy
+  units per scan_U_am_landscape.py, so T~0.1-0.4 should strongly suppress
+  drift) through hot/disordered (T=2 already gives substantial
+  divergence; 10-17 should push well past it).
+  dt=8000 FIXED across the whole sweep (my proposal, not asked for
+  explicitly but justified and not objected to): characterized at T=2
+  (mean p_match~0.47); informedness scales ~1/sqrt(T), so this stays
+  informed (more so) at colder T and only gradually loosens at the
+  hottest points -- same spirit as the paper itself using one fixed
+  proposal mechanism across every T, no per-T retuning.
+  init_muts=0 (start exactly at the reference), moves=50000 (comfortably
+  past the ~27000+ moves the slowest chain needed in the earlier
+  dispersed-start test), 1 seed per T for this first pass, 10 runs total,
+  MAX_RUNNING=4 -> 3 launch waves. Full machine budget committed now per
+  the user (no cheap-first-look version).
+
+Real gap found while scoping this: data.dat alone can't support site-
+entropy/q-distribution analysis -- it only has move-0 and the running
+trajectory columns, not full intermediate sequences. The fix already
+existed in the codebase, just unused at a useful frequency:
+classes/rate_sampler.py:_save_log checkpoints the FULL discrete state
+(sequence_<move>.pt et al, via ExtendedProtein.save()) every
+settings['log_step'] moves -- default log_step=1 would mean 50000 files
+per run. Set log_step=100 in the sweep's settings template instead (500
+checkpoints/run, ~100-150MB total across the sweep) -- this loses nothing
+from data.dat itself, which is flushed in batches regardless of log_step
+(_extend_buffer is called every move unconditionally; only the disk flush
++ eprot checkpoint are log_step-gated).
+
+Added monte_carlo/sweep_temperature.sh: same GPU-scheduler pattern as the
+prior dt/seed sweeps, using main_rate.py directly (init_muts=0 is natively
+supported, no custom driver needed this time, unlike the dispersed-start
+equilibration test's run_equilibration.py). Sed substitutions dry-run
+verified against the real pars.txt/settings.txt before trusting them
+(same discipline as every prior sweep script).
+
+Added monte_carlo/analyze_ensemble.py: reads the eprot/sequence_<move>.pt
+checkpoints for one T, applies a burn-in cutoff (default: discard
+checkpoints before 50% of the run's final move -- adjustable via
+--burn-in-frac, with a first-half-vs-second-half sanity check printed to
+flag if it isn't enough), then computes:
+  - site entropy S(i) = -sum_alpha p_i(alpha) log p_i(alpha) per site,
+    natural log, matching the paper's own definition exactly (0 = fully
+    conserved, log(20)=2.9957 = uniform over the 20 canonical aminos).
+    Reports the 10 most/least conserved sites as a first K-sites look.
+  - pairwise sequence similarity q (fraction of identical sites) over all
+    post-burn-in checkpoint pairs, or a random 200k-pair subsample if
+    there are more than that -- full histogram + summary stats, no
+    plotting dependency needed.
+Reuses analyze_run.py's load_rows/block_stats for U/Hd_to_ref trajectory
+context alongside the new analysis, same as every other analysis script
+in this project.
+
+Verified the core (site_entropy, q_distribution) logic against hand-
+computed synthetic examples before trusting it on real data (torch isn't
+available in this sandbox, same limitation as everywhere else in this
+project, so the pure-Python analysis logic was extracted and tested
+standalone): a 5-site synthetic ensemble with one perfectly-conserved
+site, one uniform-over-20 site, and three identical-across-all-sequences
+sites gave EXACTLY the expected entropies (0, log(20)=2.9957, 0, 0, 0) and
+the expected mean q (0.8101 measured vs 0.8100 analytically expected).
+Also verified the checkpoint-filename regex and burn-in cutoff filtering
+against synthetic move-number lists.
+
+Both files py_compile / bash -n clean. Not yet run (needs GPU; this is a
+real ask -- 10 runs x 50000 moves, comparable in per-run scale to the
+longest single run so far (far/seed43's 45000-move extension), so expect
+substantial wall-clock even at MAX_RUNNING=4).
