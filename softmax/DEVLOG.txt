@@ -1253,3 +1253,53 @@ support a distant, barrier-separated basin.
 All three files py_compile / bash -n clean. Not yet run (needs GPU;
 expect roughly 6x a single prior 5000-move sweep wave's wall-clock, given
 15000 moves x 6 runs at MAX_RUNNING=4 = 2 launch waves).
+
+--------------------------------------------------------------------------------
+2026-09-23 -- dispersed-start equilibration result: genuine equilibrium, not a distant basin
+--------------------------------------------------------------------------------
+Ran on the real GPU (3 start_modes x 2 seeds, dt=2000, T=2.0, 15000 moves
+each). Clear, differentiated result:
+
+Tail window (last 30% of moves, pooled across seeds per mode):
+  reference: U= 77.943 +/-  6.189   Hd= 43.07 +/- 2.28
+  moderate : U= 78.218 +/-  7.854   Hd= 43.30 +/- 2.25
+  far      : U=236.711 +/-137.939   Hd= 49.86 +/- 1.66
+
+reference and moderate are statistically indistinguishable in their tail
+window -- starting EXACTLY at the reference (Hd=0) does not keep the chain
+near it; by 15000 moves it reaches the same U~78, Hd~43 regime as the
+Hd=5 start. This directly answers the user's question: no, starting more
+conservatively does not reduce the drift. There is no separate basin near
+the reference that a gentler start protects the chain from leaving.
+
+far's large pooled std dev (137.9) hides a very informative split between
+its two seeds' block trajectories (11 blocks each, first->last):
+  far seed=42: 603 -> 462 -> 381 -> 310 -> 214 -> 192 -> 130 -> 99 -> 105 -> 93 -> 91
+  far seed=43: 563 -> 503 -> 438 -> 403 -> 390 -> 384 -> 388 -> 382 -> 378 -> 363 -> 358
+Both monotonically decrease toward the SAME ~78-80 target the light starts
+already settled into (never overshooting below it, never plateauing at
+some other, different level) -- seed 42 has nearly arrived (~91-105 in its
+last 3 blocks); seed 43 is still en route, much more slowly, at ~358-380.
+This is the signature of slow, seed/path-dependent relaxation toward a
+shared equilibrium, not permanent barrier-trapping in a separate regime --
+if the far starts were stuck in a genuinely disconnected basin, both seeds
+would be expected to plateau at a similarly elevated level and stay there,
+not have one nearly catch up while the other lags far behind.
+
+Secondary finding: the light-start (reference/moderate) chains show a
+CLEAR plateau by roughly block 3 of 11 (~30% into the 15000-move run,
+~4500 moves) and then fluctuate around that same level for the remaining
+~10500 moves -- something no prior 5000-move sweep run ever showed. Part
+of the earlier "U never plateaus" puzzle (noted across every dt sweep so
+far) looks like it was simply a too-short move budget for those runs, not
+a genuine absence of equilibration.
+
+Conclusion: consistent with the entropy-vs-energy explanation over the
+kinetic-trapping one -- the T=2 equilibrium distribution's mass genuinely
+lives around U~78-80, Hd~43ish regardless of where a chain starts; a
+conservative start only delays arrival (or, for "far", delays it by a lot,
+since 15000 moves wasn't quite enough for seed 43 to fully catch up).
+Not fully airtight yet for far/seed43 specifically -- it's still moving in
+the right direction but hasn't visibly plateaued at the shared target the
+way seed 42 has. Extending that one chain further (or all far chains) would
+close out the remaining ambiguity if wanted.
