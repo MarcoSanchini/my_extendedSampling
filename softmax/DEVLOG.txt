@@ -1940,3 +1940,59 @@ No code changes from this entry -- purely a documentation clarification,
 prompted by wanting to accurately describe this history in a message to
 the supervisor explaining why multi-site joint proposals are not being
 pursued for the ~200-residue scale-up.
+
+--------------------------------------------------------------------------------
+2026-09-24 -- refinement sweep (T=0.1585-0.6310) results: transition's steepest part sits BELOW T=1, not at it; repo hygiene fix
+--------------------------------------------------------------------------------
+Repo hygiene, dealt with first: the refinement sweep's push included its
+eprot/ checkpoint directories (~10,020 files, ~106MB) -- the .gitignore
+rule for tests_rate_sweep_temperature_refine/T*/sim0/eprot/ was added in
+a commit AFTER the checkpoints were already committed, so it didn't catch
+them in time, and ended up duplicated in .gitignore besides. Untracked
+with `git rm -r --cached` (local files untouched, nothing deleted) and
+deduped .gitignore -- every other sweep in this project keeps these
+local-only, this restores that convention going forward. The already-
+pushed blobs still occupy space in git history; not addressed here since
+that needs a history rewrite (force-push), out of scope for a routine fix.
+
+Results (sweep_T_refine_results.txt, run locally by the user, same
+analyze_ensemble.py used for the original 12-point sweep):
+
+  T        mean S(i)   frac log(20)   q mean   1-q(mean)   burn-in gap
+  0.1      0.0000        0.000%       1.0000    0.0000      (n/a, exact 0)
+  0.1585   0.0005        0.02%        0.9999    0.0001      100.0% (tiny abs.)
+  0.2512   0.0048        0.16%        0.9975    0.0025       42.6%
+  0.3981   0.1853        6.2%         0.9095    0.0905       33.4%
+  0.6310   0.4716        15.7%        0.7710    0.2290       20.5%
+  1.0      1.7929        59.9%        0.2634    0.7366        2.4%
+
+Reading the "distance from frozen" order parameter (1-q) in log-log space
+(log10(1-q) vs log10(T), using the 5 new+bracketing points 0.1585
+through 1.0) shows the transition's STEEPEST part is not where the
+original coarse 12-point sweep's single T=1 active point suggested --
+the log-log slope between T=0.1585->0.2512 and T=0.2512->0.3981 is ~7,
+between T=0.3981->0.6310 and T=0.6310->1.0 it drops to ~2-2.5, and by
+T=1->10 (from the original sweep) it's already down to ~0.07 (near-
+saturated growth toward full disorder). So the crossover's sharpest rise
+is concentrated around T~0.25-0.4, with T=0.63-1.0 already past the
+steepest part and into the slower approach to the T=10-100 disordered
+ceiling -- T=1 looked like "the transition" in the 12-point sweep mainly
+because it was the first point sampled past the steep part, not because
+it sits AT the steepest part itself.
+
+Burn-in check (now meaningful after the fix earlier today): every one of
+the 4 new points still reads "still trending" at the 50% cutoff, with the
+relative gap shrinking monotonically as T rises (100% -> 42.6% -> 33.4%
+-> 20.5%) -- at T=0.1585/0.2512 the gap is a large fraction of a tiny
+absolute number (0.0005, 0.0048), not itself concerning; at T=0.3981/
+0.6310 the ABSOLUTE gap is real (0.123->0.185, 0.347->0.437) and both are
+still rising, not oscillating around a plateau. This is consistent with
+genuine critical slowing down near a transition (equilibration/
+decorrelation time growing as the system approaches the crossover) rather
+than a burn-in-fraction bug -- expected physically, not a red flag, but
+means the T=0.3981-0.6310 numbers specifically should be read as directional
+(confirms real, substantial activity already present there) rather than
+fully converged; a longer run (or higher burn_in_frac) in just this
+narrower window would tighten them if more precision is wanted later.
+
+No code changes beyond the .gitignore/tracking fix above.
