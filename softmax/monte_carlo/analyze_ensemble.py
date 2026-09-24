@@ -173,8 +173,19 @@ def main():
 		S1, _ = site_entropy(sequences[:half], L)
 		S2, _ = site_entropy(sequences[half:], L)
 		mean_S1, mean_S2 = statistics.mean(S1), statistics.mean(S2)
+		denom = max(mean_S1, mean_S2, 1e-9)
+		rel_gap = abs(mean_S2 - mean_S1) / denom
+		# 10% relative change between halves is an arbitrary but reasonable
+		# threshold for "still trending" vs "settled" -- not calibrated
+		# against anything beyond eyeballing the 12-point T-sweep's own
+		# results (T=10 showed ~3.5% and looked like the one point among
+		# the active T's still trending; T=1/T=100 showed <1%).
+		trending = rel_gap > 0.10
+		note = (f"(gap is {rel_gap:.1%} of the mean -- still trending, "
+				f"the {args.burn_in_frac:.0%} cutoff may not be enough yet)" if trending
+				else f"(gap is only {rel_gap:.1%} of the mean -- looks settled)")
 		print(f"\nBurn-in check: mean S(i) in first half of kept window={mean_S1:.4f}, "
-			  f"second half={mean_S2:.4f}  (large gap suggests the {args.burn_in_frac:.0%} cutoff isn't enough yet)")
+			  f"second half={mean_S2:.4f}  {note}")
 
 
 if __name__ == "__main__":

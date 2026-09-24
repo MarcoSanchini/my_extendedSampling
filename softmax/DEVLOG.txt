@@ -1790,3 +1790,74 @@ Expect several of the coldest points (very roughly T <~ 1e-2, given the
 Hd~0/no real dynamics for the whole 50000-move run -- not a bug if so,
 a real, useful confirmation of where the frozen regime's boundary is,
 directly bounding one side of wherever the transition turns out to sit.
+
+--------------------------------------------------------------------------------
+2026-09-24 -- 12-point sweep results: site entropy/q-distribution confirm a sharp transition inside 0.1-1; refinement sweep built
+--------------------------------------------------------------------------------
+User ran analyze_ensemble.py locally on all 12 completed runs (pushed
+earlier as sweep_T_results.txt) and pasted the full output. This is the
+ensemble-level (site entropy + q-distribution) view that the eprot/
+checkpoints are needed for -- gitignored, so only runnable on the user's
+machine -- complementing the data.dat-only view already computed directly
+in this environment beforehand. The two views agree exactly and the
+ensemble view adds real structure the trajectory-only numbers couldn't
+show:
+
+  T        mean S(i)   frac of log(20)   q mean   q std   notes
+  1e-9..1e-1   0.0000        0.000%       1.0000  0.0000  EVERY site 0.0000, ALL
+                                                            31375 pairs in [0.9,1.0)
+                                                            -- 8 full decades, fully
+                                                            frozen, not just "mostly"
+  1e0          1.7929        59.9%        0.2634  0.1103  first real activity
+  1e1          2.3424        78.2%        0.1333    --    still rising
+  1e2          2.9385        98.1%        0.0519    --    ~uniform/fully disordered
+
+This is a stronger confirmation than the data.dat-only pass gave: not just
+"acc_rate/U_tail is flat across 1e-9..1e-1", but literally zero per-site
+variability across the ENTIRE post-burn-in ensemble at every one of the 56
+sites, for all 8 cold decades. The whole frozen-to-60%-disordered
+transition is compressed into the single T=0.1->1.0 decade, which a
+one-point-per-decade sweep cannot resolve any further -- confirms the
+refinement sweep proposed before this data arrived is the right next
+step, now with direct ensemble-level (not just trajectory-level) evidence
+pinpointing where to aim it.
+
+Early K-sites signal (informal, from T=1 and T=10's "most conserved"
+lists, not a formal K-sites procedure yet): site 8 ('G') and site 45
+('D') show low entropy at BOTH T=1 (0.483, off top-10 but low) and T=10
+(0.997, 1.329 -- both in the most-conserved-10 list), a candidate
+consistent conservation signal worth tracking as the sweep refines,
+though N=2 temperatures is far too little to call this real yet.
+
+Burn-in check, read qualitatively against the sweep's own actual gaps
+(T=1: 1.6087 vs 1.5708, ~2.4% relative; T=10: 2.1514 vs 2.2281, ~3.5%
+relative and still increasing; T=100: 2.8705 vs 2.8818, ~0.4%, near the
+entropy ceiling so little room to trend regardless; all 10 frozen T's:
+0.0000 vs 0.0000 exactly): T=10 is the one point among the three active
+T's that looks the least settled within the 50%-burn-in window, worth a
+longer burn-in or more moves if it stays in scope. Also found and fixed a
+real bug in analyze_ensemble.py while checking this: the burn-in-check
+print statement was unconditional -- it printed the same "(large gap
+suggests the cutoff isn't enough yet)" text for every T regardless of the
+actual gap size, including the fully-frozen points where both halves are
+EXACTLY 0.0000 (not remotely a "large gap"). Fixed: the message now
+computes the actual relative gap between halves and only warns above a
+10% threshold (chosen by eyeballing this sweep's own numbers above, not
+independently calibrated) -- T=10 is now the only point that would print
+the "still trending" warning; the rest correctly read as settled.
+
+Built monte_carlo/sweep_temperature_refine.sh: 4 points evenly spaced in
+log space strictly between the last-frozen (T=0.1) and first-active (T=1)
+endpoints -- 10^(-1+i/5) for i=1..4, i.e. T=(0.1585, 0.2512, 0.3981,
+0.6310) -- filling exactly one MAX_RUNNING=4 wave. Same fixed dt=8000,
+moves=50000, init_muts=0, log_step=100, seed=42 as the original sweep, so
+results drop directly alongside the existing 12 points (T=0.1 and T=1.0
+themselves are reused from the original sweep, not rerun). Sed
+substitutions dry-run verified against the real rate_inputs/pars.txt and
+settings.txt (both T and results_dir/log_step lines) before trusting it,
+same verification standard as every prior sweep script.
+
+Analysis for this refinement sweep: monte_carlo/analyze_ensemble.py
+unchanged in its core logic, just point it at each new results_dir --
+same command pattern the original sweep's completion banner already
+prints.
