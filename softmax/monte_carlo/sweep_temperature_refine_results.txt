@@ -1,0 +1,82 @@
+T=0.1585, dt=8000.0, moves=50000, init_muts=0, seed=42
+T=0.2512, dt=8000.0, moves=50000, init_muts=0, seed=42
+T=0.3981, dt=8000.0, moves=50000, init_muts=0, seed=42
+T=0.6310, dt=8000.0, moves=50000, init_muts=0, seed=42
+
+============================================================
+Preparing T=0.1585
+============================================================
+GPU free memory: 21329 MB
+Running simulations: 0 / 4
+Launching T=0.1585
+  dt:       8000.0
+  moves:    50000
+  log_step: 100
+  results:  tests_rate_sweep_temperature_refine/T0.1585
+  log:      logs_temperature_refine/T0.1585.log
+  GPU free: 21329 MB
+  PID: 628571
+  Running now: 1 / 4
+
+============================================================
+Preparing T=0.2512
+============================================================
+GPU free memory: 21329 MB
+Running simulations: 1 / 4
+Launching T=0.2512
+  dt:       8000.0
+  moves:    50000
+  log_step: 100
+  results:  tests_rate_sweep_temperature_refine/T0.2512
+  log:      logs_temperature_refine/T0.2512.log
+  GPU free: 21329 MB
+  PID: 628578
+  Running now: 2 / 4
+
+============================================================
+Preparing T=0.3981
+============================================================
+GPU free memory: 21329 MB
+Running simulations: 2 / 4
+Launching T=0.3981
+  dt:       8000.0
+  moves:    50000
+  log_step: 100
+  results:  tests_rate_sweep_temperature_refine/T0.3981
+  log:      logs_temperature_refine/T0.3981.log
+  GPU free: 21329 MB
+  PID: 628585
+  Running now: 3 / 4
+
+============================================================
+Preparing T=0.6310
+============================================================
+GPU free memory: 21329 MB
+Running simulations: 3 / 4
+Launching T=0.6310
+  dt:       8000.0
+  moves:    50000
+  log_step: 100
+  results:  tests_rate_sweep_temperature_refine/T0.6310
+  log:      logs_temperature_refine/T0.6310.log
+  GPU free: 21329 MB
+  PID: 628592
+  Running now: 4 / 4
+
+All simulations have been launched.
+Waiting for remaining simulations...
+PID 628571 finished.
+PID 628578 finished.
+PID 628585 finished.
+PID 628592 finished.
+
+============================================================
+All refinement sweep simulations completed.
+Results in tests_rate_sweep_temperature_refine/T<T>/sim0/{data.dat,eprot/}
+
+Per-T ensemble analysis (site entropy + q-distribution):
+  for T in 0.1585 0.2512 0.3981 0.6310; do
+    echo "--- T=$T ---"
+    python analyze_ensemble.py tests_rate_sweep_temperature_refine/T$T/sim0
+  done
+============================================================

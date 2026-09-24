@@ -40,3 +40,4 @@ softmax/monte_carlo/tests_rate_sweep_dt/dt1300/sim0/eprot/
 softmax/monte_carlo/tests_rate_sweep_dt_seeds/dt*/sim0/eprot/
 
 softmax/monte_carlo/tests_rate_sweep_temperature/T*/sim0/eprot/
+softmax/monte_carlo/tests_rate_sweep_temperature_refine/T*/sim0/eprot/
