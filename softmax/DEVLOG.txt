@@ -1996,3 +1996,38 @@ fully converged; a longer run (or higher burn_in_frac) in just this
 narrower window would tighten them if more precision is wanted later.
 
 No code changes beyond the .gitignore/tracking fix above.
+
+--------------------------------------------------------------------------------
+2026-09-24 -- longer-window follow-up sweep at T=0.2512/0.3981/0.6310, plus a general eprot/ .gitignore safety net
+--------------------------------------------------------------------------------
+Per explicit request, built monte_carlo/sweep_temperature_refine_long.sh
+to tighten the burn-in on the 3 refinement points that showed a real,
+still-rising ABSOLUTE burn-in gap (T=0.2512, 0.3981, 0.6310 -- T=0.1585
+excluded, its 100% relative gap was noted in the previous entry as an
+artifact of a still-tiny absolute signal, not genuine unsettledness).
+
+moves raised from 50000 to 150000 (3x): reasoning is the same "critical
+slowing down near a transition" read already used to explain why the
+burn-in gap was largest close to the crossover in the first place --
+equilibration time is expected to grow there, so more total moves at a
+FIXED 50%-burn-in-fraction both (a) discards a longer absolute stretch of
+any initial transient and (b) leaves proportionally more post-cutoff data
+to average over, both pushing the relative gap down. Everything else
+(dt=8000, init_muts=0, log_step=100, seed=42) unchanged from every sweep
+in this family -- one fixed proposal mechanism, no per-run retuning.
+Only 3 T's this time (fits in one MAX_RUNNING=4 wave with room to spare).
+Verified via bash -n and a sed dry-run against the real pars.txt/
+settings.txt (T/dt/moves/init_muts/seed and results_dir/log_step lines),
+same standard as every other sweep script.
+
+Also fixed the root cause of the earlier eprot/-got-committed incident so
+it can't recur silently: added the new directory's specific .gitignore
+line (matching the existing per-sweep convention) PLUS a general
+safety-net pattern, `tests_rate*/**/eprot/`, covering any future sweep's
+checkpoint directory even if a specific line is forgotten or added too
+late again (exactly what happened with the refine sweep -- the specific
+rule was added one commit after the data, not before).
+
+Results not yet in -- sweep to be run by the user; this entry records
+the setup/reasoning before results land, consistent with every other
+sweep script's own scoping entry being written before its results.

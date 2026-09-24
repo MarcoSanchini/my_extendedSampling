@@ -41,3 +41,12 @@ softmax/monte_carlo/tests_rate_sweep_dt_seeds/dt*/sim0/eprot/
 
 softmax/monte_carlo/tests_rate_sweep_temperature/T*/sim0/eprot/
 softmax/monte_carlo/tests_rate_sweep_temperature_refine/T*/sim0/eprot/
+softmax/monte_carlo/tests_rate_sweep_temperature_refine_long/T*/sim0/eprot/
+
+# General safety net: an eprot/ checkpoint dir under any tests_rate* sweep
+# results dir should always be local-only, per every sweep in this project
+# (see DEVLOG.txt). Added after the refine sweep's checkpoints briefly got
+# committed because the specific rule above was added one commit too late
+# -- this catches any future sweep directory even if a specific line is
+# forgotten again.
+softmax/monte_carlo/tests_rate*/**/eprot/
