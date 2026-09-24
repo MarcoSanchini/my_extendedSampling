@@ -1861,3 +1861,82 @@ Analysis for this refinement sweep: monte_carlo/analyze_ensemble.py
 unchanged in its core logic, just point it at each new results_dir --
 same command pattern the original sweep's completion banner already
 prints.
+
+--------------------------------------------------------------------------------
+2026-09-24 -- multi-site gradients considered for the ~200-residue target: why it's the wrong direction (clarification of the old JOINT design's gradient computation)
+--------------------------------------------------------------------------------
+Prompted by a question about speeding up the sampler for the eventual
+~200-residue target by computing gradients over multiple sites per move,
+instead of the current single-site _grad_pass_site. Two separate points
+came out of this, worth recording since they weren't written down clearly
+anywhere before.
+
+(1) Multi-site GRADIENT computation doesn't save wall-clock the way it
+sounds like it should: the dominant per-move cost is the whole-sequence
+forward pass through predict_attention, which runs over all L residues
+regardless of how many of them are soft (differentiable) vs hard
+(one-hot) in the probs tensor passed in -- relaxing 10 sites instead of 1
+doesn't shrink or skip that pass. The one genuinely cheap thing a
+whole-sequence relaxation buys is that ONE backward call yields gradients
+for every site at once (autograd backward cost barely depends on how many
+leaves are in the graph) -- but that's a NEW observation about backward-pass
+cost, not something the original JOINT design was built around; it was
+built around actually PROPOSING many sites at once per move, which point
+(2) explains failed for an unrelated reason.
+
+(2) Went back to verify exactly how the ORIGINAL (now-removed) JOINT
+design computed its gradient, since it wasn't remembered precisely and
+there are two structurally different possibilities: (a) one softmax
+relaxation applied to every site SIMULTANEOUSLY, one backward pass, full
+(L,K) gradient tensor read off in one shot; or (b) a series of separate
+per-site passes (site s soft, every other site held hard), i.e. exactly
+today's _grad_pass_site called L times and stacked. Checked the actual
+archived code rather than answer from memory:
+tests/archive/test_joint_coupling_JOINT_DESIGN.py calls
+`sampler._grad_pass(eprot_A, pars)` ONCE (not in a per-site loop), and
+tests/compare_grad_methods.py's whole_sequence_grad -- an explicit,
+labeled reimplementation of that removed method, built specifically to
+diagnose the JOINT design after the fact -- confirms it directly:
+    probs = eprot.get_probs(pars['T_sftm'])   # every site relaxed at once
+    am = sampler.model.predict_attention(sequence_probs=probs)
+    U = lambda_am*compute_U_am(am, ref_am) + lambda_S*compute_entropy(probs, eps)
+    U.backward()
+    grad = eprot.logits.grad   # full (L,K), all sites, one backward pass
+So it was case (a): the whole sequence was relaxed simultaneously, ONE
+predict_attention/backward pass, and grad_A[s] for each site was just a
+row read off the same (L,K) tensor -- never a series of L independent
+single-site passes. (Confirms and corrects an earlier back-and-forth in
+conversation, not in this file, where this was briefly misremembered as
+possibly being closer to today's per-site design; it was not -- the
+per-site design (_grad_pass_site) came LATER, specifically as part of the
+2026-09-19 pivot away from the joint design.)
+
+This matters because it sharpens WHY test_joint_coupling.py's dU_joint
+could land so far from what the gradient seemed to predict (e.g. one
+trial: sum_isolated=-16.5 but dU_joint=+401.2 for a 15-site move, see the
+2026-09-17/18 section above) -- it is not an artifact of computing the
+gradient piecemeal or inconsistently across sites (it wasn't computed
+that way at all); the whole-sequence gradient is a single, internally
+consistent linear (first-order Taylor) snapshot of the energy surface at
+point A. The failure is exactly what a first-order approximation predicts
+badly: the move applied is not an infinitesimal step, it's dozens of
+full discrete one-hot flips applied simultaneously, and the decomposition
+already in this file separates the two reasons that goes wrong --
+sum_isolated-sum_linear (within-site nonlinearity: even ONE large flip
+can be badly mispredicted by a linear gradient, already documented at the
+single-site level via the site-4 outlier, dU=+356.5 vs a gradient that
+looked favorable there) and dU_joint-sum_isolated (cross-site coupling:
+self-attention makes every site's effective contribution depend on every
+other site's current identity, so the true joint effect of many
+simultaneous flips is not the sum of their individually-true isolated
+effects, and this coupling term was measured to be routinely as large as
+or larger than the within-site term). Both effects apply regardless of
+whether the gradient behind them came from one whole-sequence pass or
+many single-site passes -- the failure mode is about the SIZE and
+SIMULTANEITY of the proposed step relative to the model's nonlinearity,
+not about which method computed the slope at the starting point.
+
+No code changes from this entry -- purely a documentation clarification,
+prompted by wanting to accurately describe this history in a message to
+the supervisor explaining why multi-site joint proposals are not being
+pursued for the ~200-residue scale-up.
