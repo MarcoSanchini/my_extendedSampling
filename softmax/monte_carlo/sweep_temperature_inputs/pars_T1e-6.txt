@@ -1,0 +1,19 @@
+# parameters
+
+## protein
+ref_code  sod1_chainA	#code of the studied protein
+pdb_dir   ../../../pdbs	#pdbs directory
+
+## sampler
+moves     50000        # number of moves
+T         1e-6            # sampled temperature
+dt        8000.0            # single-site step size
+M         1.0			#mass of the logits
+T_sftm    0.1			#temperature of the softmax
+lambda_am 1.0			#Lagrange multiplier for the attention-map energy (U_am)
+lambda_structure_ce 0.0	#Lagrange multiplier for the structure-token cross-entropy energy (U_structure_ce); 0.0 = unused (default, matches every run so far). Does NOT share U_am's proven U(ref)=0 floor -- needs its own characterization before trusting at face value, see DEVLOG.txt
+lambda_S  0.0			#Lagrange multiplier for the entropy
+n_quad    40			#number of Gauss-Hermite quadrature nodes for the pointing probability
+init_muts 0            # initial random mutations
+eps       1.0e-9		#minimum probability value
+seed      42            # generator seed
