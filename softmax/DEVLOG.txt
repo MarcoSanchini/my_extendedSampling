@@ -2421,3 +2421,88 @@ session's context, only the DEVLOG's own prior summary of it (site
 entropy/K-sites, p(q), and the deferred Ē(T)/Cv(T) multi-histogram
 reweighting), so nothing beyond what's already scoped was added on that
 basis. Flagged to the user directly rather than guessed.
+
+--------------------------------------------------------------------------------
+2026-09-25 -- Zambon et al 2024 re-read in full: K-sites definition corrected, other paper content not yet covered
+--------------------------------------------------------------------------------
+User re-attached the PDF. Read all 13 pages properly this time (the
+earlier "final aim" entry was a read-through too, but this pass was
+specifically to check identify_k_sites.py's invented threshold and look
+for anything else the new plotting suite should cover.
+
+CORRECTED: identify_k_sites.py's K-sites definition. The paper (p.6,
+quoted directly): "there are some sites, i.e. 5, 14, 26, 30, 41, 43 and
+54, that are completely conserved at the lowest temperature T_s=8e-4 ...
+and are remarkably conserved at all T_s<T_s^c. We call them K-sites."
+Exactly 7 sites for protein G, defined by near-ZERO entropy (not a loose
+fraction of log(20) the way the previous entry's script had it -- that
+threshold, 10% of log(20)=0.2996, was ~6x looser than "completely
+conserved" actually means) persisting across the whole T_s<T_s^c regime.
+The paper separately reports 9 more sites with entropy "lower than 1" at
+the same coldest T -- a softer tier they explicitly do NOT call K-sites.
+Rewrote the script to use two absolute (not fraction-of-log(20)) natural-
+log thresholds -- --k-site-threshold (default 0.05) and
+--secondary-threshold (default 1.0, matching the paper's own number) --
+each required at every passed-in --active-t, reporting the two tiers
+separately rather than merging them. Not independently verified that our
+own sweep reproduces the paper's specific 7 sites (5,14,26,30,41,43,54)
+-- that needs a real run with this corrected script; also flagged that
+this repo can't currently confirm whether the paper's site numbering is
+0- or 1-indexed relative to our own reference-sequence indexing, so a
+direct site-by-site comparison needs a manual visual check against the
+paper's figure 4 before trusting an exact positional match.
+
+OTHER THINGS FOUND IN THE PAPER, not yet acted on -- flagged to the user
+rather than silently added, since several are substantial enough to need
+an explicit decision:
+
+  1. TWO distinct transition temperatures, not one: T_s^c (~2.4e-3 for
+     their system) is a STRUCTURAL transition (specific heat Cv shows a
+     broad shoulder there; contact-map similarity to the reference drops
+     below 50%) -- separate from T_s^n (~1.1e-2, higher) which is where
+     the SEQUENCE-DISORDER transition happens (p(q)'s binomial fit gives
+     n_aa->20, i.e. fully uniform amino acid choice at every site). This
+     project's own sweep work so far has talked about "the transition"
+     as one crossover (see 2026-09-24/25 entries on the T=0.1-1 refine
+     sweep) -- worth checking, once the deferred multi-histogram Cv(T)
+     stage happens, whether our own data shows two distinguishable
+     features the same way, not just one.
+
+  2. Local entropy / replica-coupled sampling (paper sections 2.3-2.4,
+     3.5-3.6, figures 1c/1d, 6, 7): a SEPARATE, larger algorithm from
+     plain MCMC -- multiple replicas coupled by a PAM-distance potential,
+     annealed in a Lagrange multiplier gamma, specifically built to find
+     WIDE energy basins (high local entropy) rather than just sample the
+     Boltzmann distribution. This is explicitly presented in the paper as
+     an ADDITIONAL method beyond canonical-ensemble MCMC (which is what
+     this project's own sampler replaces/accelerates) -- a real, much
+     bigger future direction if wide-basin-finding specifically (not just
+     faster canonical sampling) becomes a goal, not something to fold
+     into the current plotting-suite work.
+
+  3. K-sites-vs-PFAM-homologs comparison (table 2, q_K similarity metric,
+     figure 7d): needs an actual PFAM database query for protein G
+     homologs, external data this repo doesn't have -- a real, separate
+     addition if wanted, not implemented.
+
+  4. Amino-acid composition check (hydrophobic/charged residue fractions
+     vs natural proteins, mentioned p.5, their fig S6): cheap, could be
+     added to the existing per-run analysis without new capability --
+     not implemented yet, flagged as a small, in-scope option if wanted.
+
+  5. Radius of gyration is NOT anywhere in this paper -- their only
+     structural observables are the contact-map-based effective energy
+     itself (eq 1) and pLDDT (decode confidence). Rg was the user's own
+     request, not a paper replication target -- worth being clear this
+     is a complementary view, not literally reproducing a Zambon figure.
+     Their pLDDT-vs-T_s IS a real paper figure (fig 2, lower panel) that
+     compute_structural_metrics.py's existing per-checkpoint mean_plddt
+     output can reproduce cheaply -- added monte_carlo/plot_plddt_vs_T.py
+     (reads several structural_metrics.csv files across T's, no new model
+     calls) to do exactly that, with the paper's own cited pLDDT
+     thresholds (70=good prediction, 40=mark of disorder) drawn as
+     reference lines.
+
+Nothing else changed in this entry -- compute_structural_metrics.py,
+plot_run.py, plot_structural_metrics.py, and the .gitignore additions
+from the previous entry stand as they were.
