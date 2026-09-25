@@ -77,10 +77,22 @@ CA_IDX = 1  # atom_types.index("CA") in customs/custom_esm/utils/residue_constan
 def decode_structure_with_mask(model, eprot, config, infer_cbeta=True):
 	"""Reimplements custom_esm.utils.decoding.custom_decode_structure, ONLY
 	to additionally keep atom37_mask (the existing wrapper discards it) --
-	see module docstring."""
+	see module docstring.
+
+	NOTE: model.generate() returns output.structure with NO batch dimension
+	(shape (L+2,)), but StructureTokenDecoder.decode() indexes it as
+	structure_tokens[:, 0] internally, i.e. expects a batch dim -- the
+	original custom_decode_structure handles this with an explicit
+	unsqueeze(0) before calling decode() (its own is_singleton check),
+	which this reimplementation must do too. Missing this raised
+	IndexError: too many indices for tensor of dimension 1 on the first
+	real run (see DEVLOG.txt) -- fixed here, not a hypothetical concern."""
 	tensor = ESMProteinTensor(sequence=eprot.tokens)
 	output = model.generate(input=tensor, config=config)
-	decoder_output = model.get_structure_decoder().decode(output.structure)
+	structure_tokens = output.structure
+	if structure_tokens.dim() == 1:
+		structure_tokens = structure_tokens.unsqueeze(0)
+	decoder_output = model.get_structure_decoder().decode(structure_tokens)
 	bb_coords = decoder_output["bb_pred"][0, 1:-1, ...].detach().cpu()
 	plddt = decoder_output["plddt"][0, 1:-1].detach().cpu() if "plddt" in decoder_output else None
 

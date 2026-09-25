@@ -2506,3 +2506,37 @@ an explicit decision:
 Nothing else changed in this entry -- compute_structural_metrics.py,
 plot_run.py, plot_structural_metrics.py, and the .gitignore additions
 from the previous entry stand as they were.
+
+--------------------------------------------------------------------------------
+2026-09-25 -- first real run of compute_structural_metrics.py: missed unsqueeze bug, fixed
+--------------------------------------------------------------------------------
+smoke_test_plots.sh's first real GPU run crashed immediately in
+compute_structural_metrics.py:decode_structure_with_mask:
+    IndexError: too many indices for tensor of dimension 1
+    (customs/custom_esm/models/vqvae.py:385, structure_tokens[:, 0])
+
+Cause: decode_structure_with_mask was written as a reimplementation of
+custom_esm.utils.decoding.custom_decode_structure (needed only to keep
+atom37_mask, which that wrapper discards -- see the 2026-09-25 "K-sites
+formalized" entry) but DROPPED one real step from the original while
+trimming it down: the original does
+    is_singleton = len(structure_tokens.size()) == 1
+    if is_singleton: structure_tokens = structure_tokens.unsqueeze(0)
+before calling structure_decoder.decode(...), because model.generate()
+returns output.structure with NO batch dimension (shape (L+2,)) for this
+single-sequence call pattern, while StructureTokenDecoder.decode()
+internally indexes structure_tokens[:, 0] assuming a batch dim exists.
+My copy called decode() directly on the un-unsqueezed 1D tensor -- caught
+immediately on the first real GPU run, exactly the kind of gap static
+review (py_compile only, no torch in this sandbox) can't catch.
+
+Fixed: added the same dim-check + unsqueeze(0) back, with a comment
+explaining why it's needed (not just restoring silently) so it doesn't
+get trimmed away again in some future edit. Everything else in the
+reimplementation (bb_coords/plddt extraction, ProteinChain.
+from_backbone_atom_coordinates().infer_oxygen()[.infer_cbeta()], keeping
+atom37_mask) was unaffected -- the missing step was strictly upstream of
+all of that, at the very first decode() call.
+
+Not yet re-run -- fix pushed, waiting on the user to re-run
+smoke_test_plots.sh.
