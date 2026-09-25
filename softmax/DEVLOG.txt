@@ -2290,3 +2290,29 @@ might have been small-sample luck (a "coupling eases off by N~3-8"
 impression) and replaces it with a flatter, more persistent picture --
 if anything a MORE decisive case that there is no safe small-N regime
 for a multi-site design with this energy.
+
+Follow-up question raised, worth recording precisely: N=1's mean
+dU_joint (41.25) is LARGER than N=2's (15.13) and N=3's (32.00) -- does
+that undermine the argument, if even the "no coupling" baseline looks
+worse than small multi-site moves? Traced it to the raw per-trial N=1
+rows: 2 of the 20 trials landed on site 4, which has shown a gradient-
+predicted dU=+356.4977 since the very FIRST real diagnostic run in this
+project (test_steepest_descent.py, 2026-09-21 entry) -- a known case
+where the linear gradient confidently picks a substitution that's
+actually badly wrong. Those two trials alone sum to ~713 of the total
+825 behind the mean of 41.25; excluding them, the other 18 average 6.23,
+in line with N=2's scale. Confirmed this is not new evidence about
+coupling: N=1 has coupling=0 by construction (that's what its sanity
+check verifies) -- its dU_joint reflects the PRE-EXISTING, already-
+documented gradient-linearization quality at whichever random site got
+drawn, not anything about coupling or design safety. Also flagged
+explicitly: this script never runs the real M=1 sampler (no stochastic
+proposal, no accept/reject -- every pick is forced through
+unconditionally), so none of its dU_joint numbers, N=1 included, are a
+fair stand-in for "how well does the production M=1 sampler perform" --
+that comparison already exists (accepted-move dU averaging near 0 at
+T=2, from the much earlier real main_rate.py runs, see the 2026-09-21/22
+entries) and remains favorable. This table's only job is comparing
+coupling severity ACROSS N, for which N=1's absolute dU_joint scale was
+never used as the reference (mean dU_joint at the SAME N is what's
+compared against mean |coupling| throughout).
