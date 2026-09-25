@@ -2113,3 +2113,78 @@ same 3x), and the qualitative picture (steepest part near T~0.3-0.4,
 T=0.6310 already past it and heading toward the T=1-100 disordered
 regime already characterized) doesn't depend on pinning that one point
 exactly.
+
+--------------------------------------------------------------------------------
+2026-09-25 -- N-sweep coupling diagnostic (multi-site request from the supervisor); GPU scheduler: memory-gated instead of a fixed headcount
+--------------------------------------------------------------------------------
+Supervisor is pushing for multiple-mutations-per-move again (same
+direction the 2026-09-24 "multi-site gradients considered" entry argued
+against for the ~200-residue scale-up). Rather than re-litigate from the
+old (N~54) evidence alone, or reopen the removed JOINT design outright,
+built the specific follow-up flagged and never run back at the
+2026-09-19 pivot: "worth revisiting once a real N-sweep ... maps out the
+coupling-vs-N curve." The catastrophic coupling evidence so far (dU_joint
+=+401.2 vs sum_isolated=-16.5) is ALL from moves touching ~51-56 of 58
+sites -- never measured at small, controlled N.
+
+Added tests/test_joint_coupling_N.py. Cannot reuse the old JOINT _step()
+to draw real multi-site moves (removed, single-site-only production
+sampler has no such API any more) -- instead constructs a synthetic
+N-site move directly: one whole-sequence relaxed gradient (grad_whole,
+same reimplementation of the removed _grad_pass that
+tests/compare_grad_methods.py already uses, see the 2026-09-24 entry for
+why this is the historically correct method to reuse here), then for N
+randomly-chosen sites, each site's OWN deterministic gradient-greedy
+target (same j_star construction as test_informedness_vs_dt.py) --
+applying every site's individually-best-looking choice simultaneously,
+which isolates the coupling question from proposal-sampling noise
+entirely: if coupling is already severe when every site picks its own
+locally-best option, that's the strongest, least confounded version of
+the question.
+
+Same sum_linear/sum_isolated/dU_joint/nonlin/coupling decomposition as
+the archived script, now aggregated per N (mean/std coupling, mean
+|coupling|, mean dU_joint) across TRIALS_PER_N=5 random site-subsets per
+N in N_VALUES=[1,2,3,5,8,12,20] -- a real sweep, not one dt-confounded
+trial per point the way the old script was. N=1 doubles as a built-in
+correctness check (coupling must be ~0 exactly with nothing to couple
+with, printed as a per-trial OK/MISMATCH flag). Total cost is cheap: one
+backward pass (grad_whole, computed once, reused across all N/trials
+since seq_A is fixed throughout) plus ~290 forward-only _exact_energy
+calls total across the whole sweep -- comparable to
+compare_grad_methods.py or test_informedness_vs_dt.py, both already run
+without issue. Verified via py_compile only (no torch in this sandbox,
+same limitation as every script here); to run:
+    python tests/test_joint_coupling_N.py
+
+Separately: user pointed out the MAX_RUNNING=4 cap used by every sweep
+script so far (sweep_dt.sh through sweep_temperature_refine_long.sh) was
+"highly conservative" -- the refine-long sweep's own launch log showed
+21451 MB still free with only 3 jobs running, nowhere near a real
+memory ceiling. Added monte_carlo/gpu_scheduler.sh: a shared, sourceable
+scheduler (wait_for_gpu_slot/cleanup_finished/gpu_free_mb) that gates NEW
+launches primarily on live free GPU memory (MIN_FREE_MB, default 5000)
+rather than a small fixed process count -- MAX_RUNNING still exists but
+only as a generous (default 16) soft safety rail against a runaway loop,
+not the real limiter any more. This also directly covers the "what if a
+colleague starts a job on the same GPU" case without any colleague-
+specific logic: nvidia-smi's free-memory reading reflects every process
+on the card, so a colleague's job eating memory naturally slows new
+launches from this scheduler; nothing already running is ever paused or
+killed (not feasible without the job's own checkpoint/resume support,
+and not attempted here -- only new launches are gated).
+
+Caveat written directly into the new file's header, not just here:
+MIN_FREE_MB is only a real safety margin if it's actually >= one job's
+true peak memory footprint, which has never been directly measured in
+this project -- only the fact that the old 4000-4999 MB gate never once
+blocked a launch. If that gets measured later and turns out close to or
+above 5000 MB, MIN_FREE_MB (and/or the soft MAX_RUNNING) should be
+revisited before trusting much higher concurrency.
+
+Not retrofitted into any already-completed sweep script (sweep_dt.sh
+through sweep_temperature_refine_long.sh all keep their original,
+already-run, already-documented scheduler copy unchanged) -- this is the
+new default pattern for the NEXT sweep script built, source'd rather than
+copy-pasted, per the same "general safety net over per-file duplication"
+reasoning already used for the eprot/ .gitignore fix earlier today.
