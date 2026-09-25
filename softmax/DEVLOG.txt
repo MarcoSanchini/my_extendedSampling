@@ -2188,3 +2188,56 @@ already-run, already-documented scheduler copy unchanged) -- this is the
 new default pattern for the NEXT sweep script built, source'd rather than
 copy-pasted, per the same "general safety net over per-file duplication"
 reasoning already used for the eprot/ .gitignore fix earlier today.
+
+--------------------------------------------------------------------------------
+2026-09-25 -- test_joint_coupling_N.py results: coupling is already severe at N=2, no safe small-N regime found
+--------------------------------------------------------------------------------
+Ran on the real GPU (test_joint_coupling_N_results.txt). N=1 sanity check
+passes exactly at every trial (coupling=0.00000, as required by
+construction). The real result, coupling-vs-N summary (5 trials/N):
+
+  N    mean coupling   std coupling   mean |coupling|   mean dU_joint
+  1         0.0000         0.0000           0.0000           -0.08
+  2        -3.60           16.67           12.12             7.90
+  3        15.75           26.75           23.51            23.72
+  5        45.87           50.28           50.26            68.98
+  8        46.57           97.27           81.72            97.45
+  12      140.31          163.92          192.85           202.98
+  20      252.94          188.65          252.94           444.08
+
+This is a sharper, more immediate answer than expected: mean |coupling|
+already EXCEEDS mean dU_joint at N=2 (12.12 vs 7.90) -- i.e. on average,
+even the smallest non-trivial multi-site move (just TWO sites, each
+independently choosing its own gradient-greedy "best" substitution) has a
+cross-site interaction term that is, on average, LARGER than the net
+energy change the joint move actually produces. This isn't a large-N
+pathology that only appears once a design (like the old JOINT one)
+happens to touch most of the sequence -- it's present essentially as
+soon as any two sites are coupled together at all. By N=12, mean
+|coupling| (192.85) is nearly equal to mean dU_joint (202.98) -- coupling
+has become almost the ENTIRE story, not a correction to it.
+
+Also important: at low N, mean coupling is small relative to its own std
+(N=2: mean=-3.60, std=16.67; individual trials range from -29.77 to
++11.97) -- coupling is not a fixed, subtractable bias, it flips sign
+between trials/site-pairs. There is no simple correction (like "always
+add back X energy units per additional site") that would rescue a
+multi-site design; each specific combination of sites has its own
+idiosyncratic, apparently large interaction, consistent with the
+non-separability already established qualitatively at N~54.
+
+Caveat: TRIALS_PER_N=5 is small, so exact numbers are noisy (this was
+designed as a first, cheap directional sweep, not a publication-grade
+statistical test) -- but the qualitative pattern (coupling magnitude
+climbing monotonically and without any sign of a plateau from N=2 through
+N=20, already comparable to dU_joint at the very smallest N tested) is
+unambiguous and consistent with, and considerably sharper than, the
+original N~54 evidence. No safe "small multi-site" regime was found in
+this sweep.
+
+This directly answers the question the supervisor's multi-site push
+raised: the earlier concern (multi-site coupling from the abandoned
+JOINT design) is not an artifact of that design's specific choice to
+touch ~54 sites at once -- coupling this severe shows up already at N=2,
+strengthening rather than weakening the case in the message drafted for
+the supervisor on 2026-09-24.
