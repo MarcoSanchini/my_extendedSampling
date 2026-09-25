@@ -65,7 +65,15 @@ import custom_esm.utils.constants.esm3 as C
 REF_SEQ = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
 SEED = 0
 N_VALUES = [1, 2, 3, 5, 8, 12, 20]
-TRIALS_PER_N = 5
+# Raised from 5 to 20 after the first run (test_joint_coupling_N_results.txt,
+# see DEVLOG.txt 2026-09-25): the qualitative result (coupling already
+# comparable to dU_joint at N=2, growing with no plateau through N=20) was
+# unambiguous, but per-N std was large relative to the mean at low N (e.g.
+# N=2: mean=-3.60, std=16.67 from 5 trials), so the summary table's exact
+# numbers were noisy. 20 trials/N halves the standard error on the mean
+# vs. 5 (SE ~ std/sqrt(n)) at ~4x the (still cheap) cost -- see the
+# module docstring's cost estimate, which scales linearly in TRIALS_PER_N.
+TRIALS_PER_N = 20
 CONSISTENCY_TOL = 1.0e-2
 
 
