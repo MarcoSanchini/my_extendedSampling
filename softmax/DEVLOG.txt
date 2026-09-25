@@ -2031,3 +2031,85 @@ rule was added one commit after the data, not before).
 Results not yet in -- sweep to be run by the user; this entry records
 the setup/reasoning before results land, consistent with every other
 sweep script's own scoping entry being written before its results.
+
+--------------------------------------------------------------------------------
+2026-09-25 -- refine-long (150000-move) results: T=0.3981 was genuinely under-equilibrated at 50000 moves; T=0.6310 still isn't settled even at 3x
+--------------------------------------------------------------------------------
+Repo hygiene: this push correctly kept eprot/ out of git (confirmed: 23
+files changed, no eprot/ paths, vs the refine sweep's 10k+-file mistake)
+-- the .gitignore fix from the previous entry held. Also removed a stray
+file named `bash` that came along with the push (looks like a shell
+redirect typo, e.g. `... > bash` instead of a real results filename;
+contents were just the launch-log text sweep_temperature_refine_long.sh
+already prints to stdout, nothing lost by deleting it).
+
+Results (sweep_T_refine_long_results.txt, moves=150000, else identical
+pars to the original refine sweep), compared against the earlier
+50000-move numbers for the same 3 T's:
+
+  T        mean S(i)          q mean           burn-in gap
+           50k  ->  150k       50k  ->  150k     50k  ->  150k
+  0.2512   0.0048  0.0058      0.9975  0.9975    42.6% -> 54.6% (still "trending")
+  0.3981   0.1853  0.3222      0.9095  0.8419    33.4% -> 4.6%  (NOW SETTLED)
+  0.6310   0.4716  0.6710      0.7710  0.6769    20.5% -> 20.2% (still "trending")
+
+Three different outcomes, worth separating out:
+
+- T=0.3981 is the real win this was built for: 3x the moves resolved the
+  burn-in check to "settled" (4.6% gap, under the 10% threshold), AND the
+  underlying number moved substantially, not just its uncertainty --
+  mean site entropy nearly doubled (0.1853 -> 0.3222) and q mean dropped
+  correspondingly (0.9095 -> 0.8419). The ORIGINAL 50000-move refinement
+  sweep's T=0.3981 point was a genuine, substantial underestimate of the
+  equilibrium value, not just noisy around the right number -- confirms
+  the "still trending" flag from that run was catching something real.
+
+- T=0.2512 barely moved (0.0048 -> 0.0058) and its burn-in gap got WORSE
+  in relative terms (42.6% -> 54.6%) despite 3x the moves. Read together
+  with the actual first/second-half numbers (0.0076 vs 0.0034 -- the
+  SECOND half is LOWER, i.e. relaxing toward MORE frozen, not drifting
+  toward more active), this is almost certainly the same noise-dominated-
+  by-a-tiny-signal artifact already flagged for T=0.1585 in the previous
+  entry, not genuine unsettledness: only 2 sites (39, 47) show any signal
+  at all at this T, so a handful of rare substitution events dominates
+  the split-half statistic by chance, not by a real systematic drift.
+  Both run lengths agree the true value is small (<0.01, ~0.2% of max) --
+  that conclusion is not in question, just the exact burn-in-check
+  percentage, which isn't a meaningful diagnostic in this near-zero-signal
+  regime.
+
+- T=0.6310 is the one still genuinely unresolved: the relative gap barely
+  moved (20.5% -> 20.2%) despite tripling the move budget, unlike
+  T=0.3981's clean resolution. This means its equilibration time is
+  longer than even 150000 moves -- consistent with critical slowing down
+  getting WORSE closer to the steepest part of the crossover (see below),
+  not a red flag. The 0.6710 mean-entropy number here should still be
+  read as a lower-bound/directional estimate, not a converged value.
+
+Revised transition-shape read: recomputing the log-log slope of (1-q) vs
+T with T=0.3981's corrected (settled) value swaps which segment looks
+steepest. Using the 5-point bracket 0.1585/0.2512/0.3981/0.6310/1.0 (the
+last from the original 12-point sweep):
+
+  log10(1-q):  -4.0(0.1585)  -2.60(0.2512)  -0.80(0.3981)  -0.49(0.6310)  -0.13(1.0)
+  slope (per 0.2 decade in T): 7.0 | 9.0 | 1.55 | 1.79
+
+The steepest rise is now even MORE concentrated around T~0.25-0.4 (slope
+~9, up from the ~7.8 estimate using the under-equilibrated T=0.3981
+number) than the previous entry suggested, with the T=0.4-1.0 stretch
+comparably LESS steep (~1.6-1.8, down from ~2.0-2.5) than previously
+read -- the under-equilibrated T=0.3981 point had been making that
+stretch of the curve look more gradual than it actually is. Net effect:
+this sharpens, not overturns, the previous entry's headline conclusion
+(the crossover's steepest part sits below T=1, roughly at T~0.3-0.4) --
+but the exact location moved slightly colder and the slope estimate
+there rose once the real equilibrium value was used instead of an
+under-equilibrated one.
+
+Not pursued further for now: getting T=0.6310 to a comparably settled
+state would need substantially more than 3x the original budget (150000
+moves already wasn't enough, unlike 0.3981's clean resolution at the
+same 3x), and the qualitative picture (steepest part near T~0.3-0.4,
+T=0.6310 already past it and heading toward the T=1-100 disordered
+regime already characterized) doesn't depend on pinning that one point
+exactly.
