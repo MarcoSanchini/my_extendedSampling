@@ -1,0 +1,66 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 203248.21it/s]
+Reference: MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+Current A: MTYKLFLNGKTLKGETTYEAVDAATAEKVFKQYENDOGVDGEWTYDDATKTFTVTW
+
+   N  trial   sum_linear  sum_isolated   dU_joint     nonlin   coupling
+-----------------------------------------------------------------------
+   1      0       0.0630        8.6872     8.6872     8.6242     0.0000
+         [N=1 sanity check: coupling should be ~0, got +0.00000 -- OK]
+   1      1       0.0027       10.0709    10.0709    10.0681     0.0000
+         [N=1 sanity check: coupling should be ~0, got +0.00000 -- OK]
+   1      2       0.0048        7.0484     7.0484     7.0436     0.0000
+         [N=1 sanity check: coupling should be ~0, got +0.00000 -- OK]
+   1      3      -0.0846        4.1762     4.1762     4.2608     0.0000
+         [N=1 sanity check: coupling should be ~0, got +0.00000 -- OK]
+   1      4      -0.0683      -30.3827   -30.3827   -30.3144     0.0000
+         [N=1 sanity check: coupling should be ~0, got +0.00000 -- OK]
+   2      0      -0.0526      -52.3161   -42.9798   -52.2635     9.3364
+   2      1      -0.0653      -21.5407    -9.5730   -21.4754    11.9678
+   2      2      -0.0158       19.0546    11.6542    19.0704    -7.4005
+   2      3       0.1212       99.2069    69.4396    99.0857   -29.7673
+   2      4       0.0209       13.0969    10.9785    13.0761    -2.1185
+   3      0      -0.0835      -97.6123   -76.9147   -97.5288    20.6975
+   3      1       0.1405      -56.8679   -55.8547   -57.0084     1.0132
+   3      2       0.0604       -0.4520    24.0765    -0.5125    24.5285
+   3      3       0.0629      136.6037   117.1863   136.5408   -19.4174
+   3      4       0.1750       58.2107   110.1212    58.0357    51.9105
+   5      0       0.1290       59.9709   163.4370    59.8419   103.4662
+   5      1       0.1660        7.1155    25.8875     6.9495    18.7721
+   5      2       0.0205       -8.8754    14.9581    -8.8959    23.8335
+   5      3       0.2116       30.3944    19.4137    30.1828   -10.9807
+   5      4       0.1173       26.9510   121.2232    26.8337    94.2722
+   8      0       0.0743       22.9094   -64.9543    22.8351   -87.8638
+   8      1       0.1248        4.8177   168.4521     4.6929   163.6345
+   8      2      -0.3953       18.5638    31.5504    18.9591    12.9866
+   8      3      -0.2260      334.2328   363.6092   334.4588    29.3763
+   8      4       0.0717     -126.1649   -11.4279  -126.2366   114.7369
+  12      0      -0.0341       -3.6859   212.2969    -3.6519   215.9829
+  12      1      -0.0911      -75.9463    33.0661   -75.8552   109.0124
+  12      2       0.1316       60.0753   290.1186    59.9437   230.0432
+  12      3       0.2000       21.2535   299.1030    21.0535   277.8495
+  12      4      -0.0800      311.6852   180.3300   311.7652  -131.3552
+  20      0      -0.3280      528.3671   536.1199   528.6950     7.7528
+  20      1       0.4218      112.6732   376.5125   112.2513   263.8394
+  20      2       0.3657       92.1161   544.9384    91.7505   452.8223
+  20      3      -0.3481      -59.3338   354.9922   -58.9858   414.3260
+  20      4      -0.2545      281.9073   407.8538   282.1618   125.9465
+
+nonlin   = sum_isolated - sum_linear  (within-site linearization error)
+coupling = dU_joint - sum_isolated    (0 => U separable across the touched sites; large |value|
+           => the isolated single-site 'best' targets shift once applied together)
+
+=== coupling-vs-N summary ===
+   N  mean coupling  std coupling  mean |coupling|  mean dU_joint
+   1         0.0000        0.0000           0.0000        -0.0800
+   2        -3.5964       16.6664          12.1181         7.9039
+   3        15.7465       26.7537          23.5134        23.7229
+   5        45.8726       50.2792          50.2649        68.9839
+   8        46.5741       97.2712          81.7196        97.4459
+  12       140.3066      163.9185         192.8486       202.9829
+  20       252.9374      188.6540         252.9374       444.0834
+
+Read this table looking for WHERE (if anywhere) mean |coupling| starts growing
+comparably to or faster than mean dU_joint itself -- that's the N at which a joint
+accept/reject would start being dominated by cross-site coupling rather than each
+site's own (correctly identified) locally-best choice, i.e. where a constrained
+multi-site design would stop being trustworthy.
