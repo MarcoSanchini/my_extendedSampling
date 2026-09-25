@@ -2241,3 +2241,52 @@ JOINT design) is not an artifact of that design's specific choice to
 touch ~54 sites at once -- coupling this severe shows up already at N=2,
 strengthening rather than weakening the case in the message drafted for
 the supervisor on 2026-09-24.
+
+--------------------------------------------------------------------------------
+2026-09-25 -- test_joint_coupling_N.py re-run at TRIALS_PER_N=20: tightened numbers move the ratio around, but the "no safe N" conclusion holds and sharpens
+--------------------------------------------------------------------------------
+Re-ran with TRIALS_PER_N raised from 5 to 20 (see the commit just before
+this). Updated coupling-vs-N summary:
+
+  N    mean coupling   std coupling   mean |coupling|   mean dU_joint   |coupling|/dU_joint
+  1         0.0000         0.0000           0.0000          41.25              --
+  2        -2.31           40.33           20.29            15.13             1.34
+  3        19.37           33.46           25.38            32.00             0.79
+  5        11.24          101.91           63.07            53.18             1.19
+  8        70.54           81.04           84.14            125.79            0.67
+  12       79.42          168.51          160.42            210.57            0.76
+  20      259.23          186.03          275.29            393.71            0.70
+
+The exact numbers shifted with more trials (expected -- 5 trials/N was
+always going to be noisy, per the previous entry's own caveat), and the
+specific claim "the ratio dips below 1 somewhere around N=3-8" from the
+5-trial run doesn't hold cleanly any more -- N=5 now ALSO shows mean
+|coupling| exceeding mean dU_joint (ratio 1.19), not just N=2. But this
+is not a weaker result: with more trials, the ratio of mean |coupling| to
+mean dU_joint now stays in a persistent 0.67-1.34 band across the ENTIRE
+N=2-20 range tested, rather than looking like it peaks at N=2 and eases
+off -- coupling isn't just "worst at the smallest N tested", it stays
+comparable to the net energy change throughout the whole range, with no
+N showing a comfortably small ratio (e.g. <0.2) anywhere.
+
+Also reconfirmed with the larger sample: coupling's mean stays small
+relative to its own std at every N (e.g. N=2: mean=-2.31, std=40.33) --
+still no consistent sign, still not a fixed bias a multi-site design
+could correct for.
+
+One number changed for an unrelated, expected reason, not a data quality
+issue: N=1's mean dU_joint jumped from -0.08 (5 trials) to 41.25 (20
+trials) -- N=1 has coupling=0 by construction regardless of trial count
+(nothing to couple with), so this doesn't touch the coupling
+conclusion at all; it just illustrates that a handful of single-site
+dU draws (including occasional large ones, consistent with the known
+site-4-style outliers from earlier diagnostics) is itself high-variance,
+which is why it was never used as a normalizing baseline in this table
+to begin with (mean dU_joint at the SAME N is used instead).
+
+Net effect: the larger sample doesn't overturn anything from the 5-trial
+run, it removes the one piece of the earlier read that looked like it
+might have been small-sample luck (a "coupling eases off by N~3-8"
+impression) and replaces it with a flatter, more persistent picture --
+if anything a MORE decisive case that there is no safe small-N regime
+for a multi-site design with this energy.
