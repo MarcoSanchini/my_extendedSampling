@@ -63,10 +63,20 @@ def main():
 
 	os.makedirs(args.out_dir, exist_ok=True)
 
+	# This ESM3 build's plddt is on a 0-1 scale (confirmed from a real run,
+	# see DEVLOG.txt 2026-09-25 "first real structural sweep" entry: actual
+	# values came back ~0.75-0.81), NOT the 0-100 scale the paper reports
+	# its own pLDDT numbers on (70/40 thresholds, ~80.1+/-12.6 for natural
+	# sequences) -- rescaling the paper's thresholds down by 100x rather
+	# than rescaling our data up, so structural_metrics.csv keeps storing
+	# whatever this ESM3 build naturally returns.
+	PLDDT_SCALE = 0.01
 	fig, ax = plt.subplots(figsize=(8, 4))
 	ax.errorbar(Ts, means, yerr=stds, marker='o', capsize=3)
-	ax.axhline(70, color='gray', linestyle='--', linewidth=1, label="paper's 'good prediction' threshold (70)")
-	ax.axhline(40, color='red', linestyle=':', linewidth=1, label="paper's 'mark of disorder' threshold (40)")
+	ax.axhline(70 * PLDDT_SCALE, color='gray', linestyle='--', linewidth=1,
+			   label="paper's 'good prediction' threshold (70/100)")
+	ax.axhline(40 * PLDDT_SCALE, color='red', linestyle=':', linewidth=1,
+			   label="paper's 'mark of disorder' threshold (40/100)")
 	ax.set_xscale("log")
 	ax.set_xlabel("T_s")
 	ax.set_ylabel("mean pLDDT")

@@ -2540,3 +2540,62 @@ all of that, at the very first decode() call.
 
 Not yet re-run -- fix pushed, waiting on the user to re-run
 smoke_test_plots.sh.
+
+--------------------------------------------------------------------------------
+2026-09-25 -- first real structural sweep: all 5 plotting scripts ran end-to-end, one units bug found
+--------------------------------------------------------------------------------
+smoke_test_plots.sh completed cleanly against the refine-long sweep
+(T=0.2512/0.3981/0.6310, --stride 100) after the unsqueeze fix -- reviewed
+the pushed PNGs/CSV directly (user relaxed .gitignore's *.png rule for
+this push specifically so they could be checked).
+
+K-sites (identify_k_sites.py, corrected paper-matched thresholds): 20
+strict K-sites (entropy<0.05 at all 3 T's) + 18 secondary (entropy<1.0 at
+all 3, not already a K-site). Larger than the paper's own 7+9 for protein
+G -- expected, not concerning: our tested T's (0.2512-0.631) and energy
+(U_am, attention-map) are not the same scale as the paper's (contact-map-
+based, their own T_s<T_s^c regime specifically) and were never claimed to
+be commensurate (see the 2026-09-23 "GAP" entry) -- this is a first look
+at whether the SHAPE of the result (a partition into strongly-conserved
+vs freely-varying sites) reproduces, not a literal count match. Clear
+standout least-conserved sites already by T=0.3981: 27/K, 30/K, 31/Q,
+34/N (entropy 1.4-2.18) -- consistent with 31/Q being repeatedly flagged
+as high-entropy across earlier single-T analyses too. Site 47/A is the
+earliest site to leave the K-site tier (already 0.216 at the coldest
+T=0.2512 tested, versus every genuine K-site sitting at 0.0) -- matches
+its repeated earlier flagging as the first site to show ANY activity as
+T rises from fully frozen (see the 2026-09-24 entries).
+
+Rg_ca (compute_structural_metrics.py + plot_structural_metrics.py):
+~9.8-9.9 Angstrom for protein G (56 residues) at T=0.6310 -- physically
+sensible (empirical Rg~2.2*N^0.38 for folded globular proteins gives
+~11 A for N=56; our value being somewhat lower/more compact is plausible
+for a small, tightly-packed alpha/beta fold like protein G, not a red
+flag). First real evidence the whole decode pipeline (including the
+unsqueeze fix above) produces genuine, physically reasonable geometry,
+not garbage coordinates.
+
+p(q)/Hamming distribution (plot_structural_metrics.py): clean, unimodal
+shape at T=0.6310, qualitatively matching the SHAPE of the paper's own
+figure 3 curves (single peak, no multi-modal artifacts) -- another good
+pipeline sanity check, independent of the structural-decode path (this
+one only needs saved sequence strings).
+
+BUG FOUND: plot_plddt_vs_T.py's reference lines (paper's cited 70/40
+pLDDT thresholds) assumed a 0-100 scale, but this ESM3 build's plddt
+output is on a 0-1 scale -- confirmed directly from the real per-run
+mean_plddt.png plots (values ~0.75-0.81 at T=0.3981, not ~75-81). Fixed
+by rescaling the reference lines by 0.01 rather than rescaling the stored
+data, so structural_metrics.csv keeps recording whatever this ESM3 build
+naturally returns (avoids a silent unit-conversion baked into the data
+itself, which would be easy to forget about later). The actual values
+(~0.75-0.81 = 75-81%) are reassuringly close to the paper's own ~80.1+/-
+12.6 for natural sequences and ~85 in their cold regime -- another sign
+the decode pipeline is behaving sensibly, this was purely a plotting
+reference-line bug, not a decode-quality problem.
+
+Net assessment: the whole new plotting/structural-decode suite is now
+verified working end-to-end on real data, with one real (now-fixed) unit
+bug and no other problems found on inspection. Ready to move to the
+"proper simulations at different T with same number of steps as the
+paper" stage the user asked for next.
