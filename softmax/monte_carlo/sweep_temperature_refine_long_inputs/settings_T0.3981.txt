@@ -1,0 +1,8 @@
+# settings
+
+results_dir tests_rate_sweep_temperature_refine_long/T0.3981
+log_step    100            # checkpoint every N moves, for site-entropy/q-distribution analysis
+print_step  1			#number of moves after which to print the system status
+restart     0			#boolean variable, whether to restart or not the previous simulation
+device      cuda:0		#device on which to load weights and data
+num_threads 1			#maximum number of threads
