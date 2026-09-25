@@ -2316,3 +2316,108 @@ entries) and remains favorable. This table's only job is comparing
 coupling severity ACROSS N, for which N=1's absolute dU_joint scale was
 never used as the reference (mean dU_joint at the SAME N is what's
 compared against mean |coupling| throughout).
+
+--------------------------------------------------------------------------------
+2026-09-25 -- K-sites formalized, plotting suite added (pandas/matplotlib), radius of gyration + Hamming distribution
+--------------------------------------------------------------------------------
+Multi-site question closed for now (message sent). Back to the main
+Zambon-replication line: formalize K-sites (only ever an informal "top-10
+overlap between two T's" signal so far) and build real plots -- everything
+analyzed so far (site entropy, q-distribution, U/Hd_to_ref trajectories)
+has only ever been printed as text/ASCII histograms.
+
+Added 4 new monte_carlo/ scripts, all requiring torch/pandas/matplotlib
+(none available in this sandbox -- static review + py_compile only, same
+limitation as every script in this project; real verification happens on
+the user's machine):
+
+  1. identify_k_sites.py -- takes several results_dirs + one T label each,
+     reuses analyze_ensemble.py's load_checkpoint_sequences/site_entropy
+     directly (no reimplementation), builds a site x T entropy table
+     (saved to CSV), and classifies K-sites: entropy < threshold-frac
+     (default 10%) of log(20) at EVERY passed-in "active" T. Also plots
+     per-site entropy (one line per T) with K-sites shaded red.
+
+     IMPORTANT CAVEAT, stated directly in the script's own docstring: this
+     threshold/definition is THIS PROJECT'S OWN operationalization, not a
+     transcription of Zambon et al 2024's actual statistical procedure --
+     the paper's exact K-sites criterion isn't recorded anywhere in this
+     repo (the PDF itself isn't in this session's context any more, only
+     the DEVLOG's summary of it from 2026-09-23), so this can't be
+     verified against the original without re-reading the paper. Flagged
+     for the user to check against the actual text if exactness matters.
+
+  2. plot_run.py -- pandas-based companion to analyze_run.py (which stays
+     text-only, untouched). For every numeric data.dat column (U, U_am,
+     U_structure_ce, entropy, Hd_to_ref, dU, log_a_AB, log_a_BA,
+     log_ratio, accepted, acc_moves, acc_rate, time), plots raw + expanding
+     (cumulative) mean + rolling-window mean on one figure, per user
+     request ("metrics both cumulated and with rolling window").
+
+  3. compute_structural_metrics.py -- the genuinely new capability: decodes
+     real 3D coordinates for a sampled sequence via ESM3's actual structure
+     generation + token decoder (model.generate on the "structure" track,
+     then the structure token decoder) -- the SAME mechanism
+     utils/predictions.py:predict_structure already wired up for the OLD,
+     abandoned ep_sampler.py, unused since this project's sampler pivoted
+     to the current single-site/U_am design. Computes:
+       - Rg_ca ("residue-residue"): standard Cα-only coarse-grained Rg.
+       - Rg_allatom ("atom-atom"): every RESOLVED atom in the decoded
+         atom37 representation (customs/custom_esm/utils/
+         residue_constants.py:atom_types -- confirmed by reading this file
+         directly: N, CA, C, CB, O, ... OXT, 37 heavy-atom slots, ZERO
+         hydrogens anywhere in the representation by construction, the
+         same convention AlphaFold/ESMFold use). So "excluding hydrogens"
+         needed NO special filtering -- there was nothing to filter;
+         atom37_mask is only used to drop genuinely-ABSENT slots for a
+         given residue's actual type (e.g. glycine has no CB), a different
+         concern from element exclusion.
+     Both Rg's are unweighted/geometric (Rg^2 = mean|r-r_mean|^2, no mass
+     weighting) -- a deliberate simplification, noted in case mass-
+     weighted Rg is wanted later.
+
+     One real implementation wrinkle: the existing
+     custom_esm.utils.decoding.custom_decode_structure wrapper discards
+     atom37_mask on return (positions only), which is exactly what's
+     needed to correctly exclude absent atom slots from Rg_allatom (using
+     raw unmasked positions would pull in placeholder/undefined coordinates
+     and badly bias the result). Fixed by reimplementing its last few lines
+     directly (decode_structure_with_mask()) rather than patching the
+     shared library function -- same pattern as tests/compare_grad_methods.py's
+     whole_sequence_grad (a small, deliberate, documented duplication of an
+     existing method's logic to recover one piece of information the
+     original wrapper drops), not a new pattern for this project.
+
+     COST WARNING, explicit in the script and here: this calls a REAL
+     structure-generation forward pass per sequence -- categorically more
+     expensive than every other analysis in this project (site entropy/
+     q-distribution never call the model at all, just read saved sequence
+     strings). NOT benchmarked (no GPU here) -- --stride defaults to 10
+     (decode 1 in 10 post-burn-in checkpoints) as a cost control the user
+     should tune once real per-call timing is known.
+
+  4. plot_structural_metrics.py -- cheap (no model calls), reads
+     compute_structural_metrics.py's CSV for Rg_ca/Rg_allatom/mean_plddt
+     trajectory plots (same raw+cumulative+rolling treatment as
+     plot_run.py), and separately plots the pairwise Hamming distance
+     distribution (paper's p(q) target, see the 2026-09-23 "temperature
+     sweep scoped" entry) as a real histogram -- reuses analyze_ensemble.py's
+     q_distribution() directly, needs only saved sequences, no model calls,
+     so this half runs even without structural_metrics.csv existing yet.
+
+.gitignore updated: *.png (repo-wide -- confirmed via `git ls-files
+"*.png"` that nothing tracked would be affected), plus
+structural_metrics.csv and k_sites_plots/ specifically. Same reasoning as
+every eprot/ rule already in this file: these are all cheaply
+regeneratable from data that's itself already gitignored (checkpoints),
+so committing them would only bloat the repo the way the refine sweep's
+accidental eprot/ commit did, for no benefit (nothing here can be
+meaningfully diffed/reviewed as source anyway).
+
+Explicitly NOT attempted: re-reading Zambon et al 2024 to check for any
+figure/analysis this doesn't already cover (per the user's "if I forgot
+something from the article, plot that as well") -- the PDF isn't in this
+session's context, only the DEVLOG's own prior summary of it (site
+entropy/K-sites, p(q), and the deferred Ē(T)/Cv(T) multi-histogram
+reweighting), so nothing beyond what's already scoped was added on that
+basis. Flagged to the user directly rather than guessed.

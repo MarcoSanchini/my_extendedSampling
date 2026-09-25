@@ -50,3 +50,15 @@ softmax/monte_carlo/tests_rate_sweep_temperature_refine_long/T*/sim0/eprot/
 # -- this catches any future sweep directory even if a specific line is
 # forgotten again.
 softmax/monte_carlo/tests_rate*/**/eprot/
+
+# Plots (plot_run.py, plot_structural_metrics.py, identify_k_sites.py) are
+# generated locally from data.dat/eprot checkpoints -- local-only for the
+# same reason eprot/ itself is: regeneratable from data already gitignored,
+# and PNGs would bloat the repo the same way the accidental eprot/ commit
+# did. Also covers structural_metrics.csv (compute_structural_metrics.py's
+# output) -- cheap to regenerate from a *.pt checkpoint set that's itself
+# never committed, so keeping the CSV out too avoids a committed artifact
+# whose source can't be reproduced from what's actually in the repo.
+*.png
+softmax/monte_carlo/**/structural_metrics.csv
+softmax/monte_carlo/k_sites_plots/
