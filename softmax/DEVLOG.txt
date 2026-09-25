@@ -2599,3 +2599,46 @@ verified working end-to-end on real data, with one real (now-fixed) unit
 bug and no other problems found on inspection. Ready to move to the
 "proper simulations at different T with same number of steps as the
 paper" stage the user asked for next.
+
+--------------------------------------------------------------------------------
+2026-09-25 -- paper-scale sweep built: moves=300000, T covering the already-mapped active zone
+--------------------------------------------------------------------------------
+Added sweep_temperature_paper_scale.sh: TS=(0.2512, 0.3981, 0.631, 1.0,
+1.585, 2.512), moves=300000 (matches Zambon et al 2024's own stated
+minimum, "each simulation lasted for at least ~3x10^5 steps" -- the one
+number that transfers directly from the paper without a units problem,
+unlike T itself). Same dt=8000/init_muts=0/log_step=100/seed=42 as every
+sweep in this family. T range deliberately reuses THIS system's own
+already-mapped active/transition zone (0.25-2.5, one 0.2-decade step at a
+time, same convention as sweep_temperature_refine.sh) rather than the
+paper's literal T_s values (8e-4 to 1.71e-2) -- their contact-map-based
+effective energy and this project's U_am share no common unit (see the
+2026-09-23 "GAP" entry), so copying their T numbers would not mean
+anything. Not re-sweeping T<0.25 (already fully characterized as frozen
+at 50000 moves; nothing changes there with more moves at genuine
+equilibrium-zero).
+
+First sweep script to source gpu_scheduler.sh (memory-gated launches)
+instead of carrying its own scheduler copy -- see the 2026-09-25 "GPU
+scheduler" entry for why. Sed substitutions (T/dt/moves/init_muts/seed
+and results_dir/log_step) dry-run verified against the real
+rate_inputs/pars.txt and settings.txt before trusting it, same standard
+as every sweep script so far. Confirmed via `git check-ignore -v` that
+the general eprot/ safety net (tests_rate*/**/eprot/, added 2026-09-25)
+already covers this new results directory without needing its own
+specific .gitignore line -- the exact gap that caused the refine sweep's
+accidental commit doesn't recur here.
+
+Also added run_plotting_suite.sh, generalizing smoke_test_plots.sh
+(which stays as-is, hardcoded to the refine-long sweep it was first
+tested against) to take any base_dir + T list as arguments, so this and
+future sweeps don't each need a hand-edited copy of the same 5-script
+sequence. Namespaces identify_k_sites.py/plot_plddt_vs_T.py's shared
+default --out-dir (k_sites_plots/) per base_dir
+(k_sites_plots_<basename>/) -- both scripts write there by default, so
+running the suite against a second sweep without this would have
+silently overwritten the refine-long sweep's per_site_entropy.png/csv
+and plddt_vs_T.png.
+
+Not yet run -- both scripts pushed, waiting on the user to launch
+sweep_temperature_paper_scale.sh.
