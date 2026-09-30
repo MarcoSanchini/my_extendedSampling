@@ -1,0 +1,41 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 201473.12it/s]
+Reference:  MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+Scrambled:  SCNLVCTVHVARMCWMMIFNRCKFSADDDLAQVLYEGCKIWVMDKHVYGKLDNAKL
+(scrambled shares 3/56 sites with reference, by chance)
+
+     label  num_steps  trial    Rg_ca  Rg_allatom  mean_plddt
+-------------------------------------------------------------
+ reference          1      0    9.918       9.896      0.7905
+ reference          1      1    9.918       9.896      0.7905
+ reference          1      2    9.918       9.896      0.7905
+ reference          4      0   10.000       9.975      0.8911
+ reference          4      1   10.000       9.975      0.8911
+ reference          4      2   10.000       9.975      0.8911
+ reference          8      0    9.984       9.958      0.9296
+ reference          8      1    9.984       9.958      0.9296
+ reference          8      2    9.984       9.958      0.9296
+ scrambled          1      0   14.410      14.415      0.6519
+ scrambled          1      1   14.410      14.415      0.6519
+ scrambled          1      2   14.410      14.415      0.6519
+ scrambled          4      0   14.492      14.490      0.8040
+ scrambled          4      1   14.492      14.490      0.8040
+ scrambled          4      2   14.492      14.490      0.8040
+ scrambled          8      0   24.346      24.269      0.9436
+ scrambled          8      1   24.346      24.269      0.9436
+ scrambled          8      2   24.346      24.269      0.9436
+
+=== summary: mean pLDDT by (label, num_steps), pooled over trials ===
+     label  num_steps   mean_plddt      std
+ reference          1       0.7905   0.0000
+ reference          4       0.8911   0.0000
+ reference          8       0.9296   0.0000
+ scrambled          1       0.6519   0.0000
+ scrambled          4       0.8040   0.0000
+ scrambled          8       0.9436   0.0000
+
+Read this looking for whether 'reference' and 'scrambled' mean_plddt separate at ANY
+num_steps -- if they stay close together even at num_steps=8, the flatness seen in the
+T-sweep is likely NOT fixable by more decode steps (points at explanation 2: ESM3's
+structure track itself, not the GenerationConfig). If they separate clearly once
+num_steps is high enough, the T-sweep should be re-run with that higher num_steps
+before trusting its existing Rg/pLDDT numbers.
