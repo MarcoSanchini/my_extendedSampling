@@ -2991,3 +2991,64 @@ RNG, is the only practical hook available here).
 
 Not yet run (needs the real model/GPU, same as every structural script
 in this project).
+
+--------------------------------------------------------------------------------
+2026-09-30 -- diagnose_structure_decode.py results: Rg differentiates (sharply), pLDDT does not (and gets worse with more steps); num_steps exposed as a CLI option
+--------------------------------------------------------------------------------
+Ran on the real GPU. Mixed, genuinely informative result -- not a clean
+"confirmed" or "ruled out" either way:
+
+  Rg_ca            num_steps=1   num_steps=4   num_steps=8
+    reference          9.918        10.000         9.984
+    scrambled         14.410        14.492        24.346
+    ratio (scr/ref)     1.45          1.45          2.44
+
+  mean_plddt       num_steps=1   num_steps=4   num_steps=8
+    reference         0.7905        0.8911        0.9296
+    scrambled         0.6519        0.8040        0.9436  <- HIGHER than ref
+
+Rg DOES differentiate, clearly, and MORE sharply with more steps: the
+scrambled sequence is 45% larger than the reference already at
+num_steps=1, growing to 2.44x by num_steps=8 -- the model increasingly
+commits to an extended, non-globular structure for the unfoldable
+sequence as it's given more steps, exactly the physically-sensible
+signal hoped for. mean pLDDT, however, does NOT reliably differentiate,
+and gets WORSE (backwards) with more steps: both sequences' confidence
+rises as steps increase (expected -- more steps, more committed
+prediction), but the scrambled sequence ends up MORE confident than the
+real reference at num_steps=8 (0.9436 vs 0.9296). Read as a likely
+calibration problem specific to pLDDT: it may track "how decisively did
+the model converge to SOME structure" rather than "is this structure
+actually right," especially for a uniformly-random sequence far outside
+anything ESM3 was plausibly trained on (a classic confidently-wrong
+failure mode under severe distribution shift) -- geometry (Rg) isn't
+subject to the same kind of learned-confidence miscalibration.
+
+Real open question raised, not resolved: if a synthetic scrambled
+sequence shows a clear 45% Rg gap already at num_steps=1 (the T-sweep's
+own setting), why did the ACTUAL paper-scale T-sweep -- where even
+T=2.512's sequences are arguably less extreme than pure uniform noise --
+show NO Rg differentiation at all (flat 9.9-10.1 across the entire
+range, previous entry)? One plausible, unconfirmed hypothesis: sampled
+sequences are proposed via gradients derived from the real attention
+model even at high T, so they may retain more statistical structure than
+literal uniform noise, regardless of how far their Hamming distance from
+the reference has drifted -- i.e. "high entropy" (per-site amino acid
+distribution) is not the same thing as "adversarially unfoldable." Not
+tested directly.
+
+Practical fix made: compute_structural_metrics.py silently hardcoded
+num_steps=1 via init_structure_config()'s own default -- never exposed
+as a CLI option, so the paper-scale sweep's flat Rg/pLDDT result was
+never actually tested at any other num_steps. Added --num-steps (default
+1, unchanged behavior unless overridden) to compute_structural_metrics.py,
+and threaded a matching NUM_STEPS env-var override through
+run_plotting_suite.sh (STRIDE=20 NUM_STEPS=8 bash run_plotting_suite.sh
+..., alongside the existing STRIDE override) so the real T-sweep can be
+re-decoded at a higher step count without editing any script.
+
+Next step (not yet run): re-run compute_structural_metrics.py against
+the real paper-scale sweep checkpoints at num_steps=8, see whether Rg
+differentiation reappears across T the way it did for the synthetic
+scrambled sequence -- this would directly test the hypothesis above
+rather than just asserting it.

@@ -27,9 +27,18 @@
 #
 # --stride below (100) is the same smoke-test-scale subsample
 # smoke_test_plots.sh used -- NOT necessarily right for a real analysis;
-# override by editing STRIDE below once you know the real per-decode
-# wall-clock time (see compute_structural_metrics.py's own cost-warning
-# docstring).
+# override via STRIDE=<n> once you know the real per-decode wall-clock
+# time (see compute_structural_metrics.py's own cost-warning docstring).
+#
+# NUM_STEPS defaults to 1 (compute_structural_metrics.py's own previous
+# hardcoded behavior, kept as the default here for continuity) -- but
+# diagnose_structure_decode.py showed num_steps=1 understates BOTH pLDDT
+# and Rg differentiation between a real and a scrambled sequence (see
+# DEVLOG.txt, 2026-09-30 entries). Override with e.g. NUM_STEPS=8 to
+# re-run a sweep's structural metrics at a higher step count; cost scales
+# roughly proportionally with it.
+#
+# Both overridable like: STRIDE=20 NUM_STEPS=8 bash run_plotting_suite.sh ...
 # ============================================================
 
 set -e
@@ -42,7 +51,8 @@ fi
 BASE_DIR="$1"
 shift
 TS=("$@")
-STRIDE=100
+STRIDE="${STRIDE:-100}"
+NUM_STEPS="${NUM_STEPS:-1}"
 
 RESULTS_DIRS=()
 for T in "${TS[@]}"; do
@@ -61,8 +71,8 @@ for i in "${!TS[@]}"; do
     echo "--- plot_run.py ---"
     python plot_run.py "$RESULTS_DIR"
 
-    echo "--- compute_structural_metrics.py (stride=$STRIDE) ---"
-    python compute_structural_metrics.py "$RESULTS_DIR" --stride "$STRIDE"
+    echo "--- compute_structural_metrics.py (stride=$STRIDE, num_steps=$NUM_STEPS) ---"
+    python compute_structural_metrics.py "$RESULTS_DIR" --stride "$STRIDE" --num-steps "$NUM_STEPS"
 
     echo "--- plot_structural_metrics.py ---"
     python plot_structural_metrics.py "$RESULTS_DIR"

@@ -116,13 +116,18 @@ def main():
 	parser.add_argument("--burn-in-frac", type=float, default=0.5)
 	parser.add_argument("--stride", type=int, default=10,
 						 help="decode every Nth post-burn-in checkpoint (cost control, see module docstring)")
+	parser.add_argument("--num-steps", type=int, default=1,
+						 help="structure GenerationConfig num_steps (was silently hardcoded to the "
+							  "default of 1 until diagnose_structure_decode.py showed num_steps=1 "
+							  "understates both pLDDT and Rg differentiation -- see DEVLOG.txt, "
+							  "2026-09-30 entries. Higher values cost proportionally more per decode.")
 	args = parser.parse_args()
 
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 	sampler = ExtendedProteinRateSampler(config_settings={})
 	sampler.model.to(device)
-	config = init_structure_config()
+	config = init_structure_config(num_steps=args.num_steps)
 
 	sequences, max_move, n_total = load_checkpoint_sequences(args.results_dir, args.burn_in_frac)
 	sequences = sequences[::args.stride]
