@@ -3052,3 +3052,45 @@ the real paper-scale sweep checkpoints at num_steps=8, see whether Rg
 differentiation reappears across T the way it did for the synthetic
 scrambled sequence -- this would directly test the hypothesis above
 rather than just asserting it.
+
+--------------------------------------------------------------------------------
+2026-09-30 -- CORRECTED READ: both "open questions" above are already-understood behavior, per user's own prior experimentation
+--------------------------------------------------------------------------------
+User has directly observed, in prior work outside this project, that
+ESM3's pLDDT is maximized by a single alpha helix more or less regardless
+of input sequence -- confirmed by sampling with -pLDDT as the energy
+directly and watching structures converge to a single helix from any
+starting point. This fully explains the previous entry's "pLDDT inverts
+at high num_steps" result, rather than leaving it as an open calibration
+mystery: the scrambled sequence has no real structural signal resisting
+that attractor, so it drifts toward it as num_steps increases; the
+reference sequence is a genuine mixed alpha/beta fold (protein G: one
+helix, two beta hairpins, per the paper itself) that actively resists
+collapsing into a pure helix, so it ends up LESS pLDDT-maximized than the
+"easier" scrambled sequence despite being the actually-foldable one.
+Not a new finding from this project -- a known ESM3 behavior the user
+already had direct evidence for, that this project's own diagnostic
+happened to reproduce a specific instance of.
+
+Also corrects the "why is the real T-sweep's Rg flat" open question from
+two entries ago: that framing implicitly compared the sweep's sampled
+sequences to the synthetic scrambled test's zero-selection-pressure
+uniform noise, which isn't the right comparison. Every sequence in the
+actual sweep, at EVERY T including the hottest, was accepted via the
+SAME U_am energy (attention-map similarity to the reference) -- T only
+controls how permissive that filter is, it never removes the underlying
+structural pull toward reference-like folds the way pure random scrambling
+does. So the sweep's flat, reference-like Rg across the whole T range is
+the sampler behaving as designed (attention-map-informed selection keeps
+pulling toward foldable, reference-similar structures even under weak
+filtering), not a sign the decode pipeline can't differentiate anything --
+the earlier "real open question raised, not resolved" framing was
+comparing against the wrong baseline.
+
+Net effect: the num_steps=8 re-run of the real T-sweep (queued at the end
+of the previous entry) is now optional/exploratory rather than needed to
+resolve a concerning discrepancy -- the discrepancy is explained. Rg
+staying flat across T "looks ok" (user's own assessment) given what the
+sampler actually selects for. pLDDT remains a signal to treat with
+caution generally (known helix-attractor bias), independent of anything
+about this specific sweep.
