@@ -60,6 +60,15 @@ softmax/monte_carlo/tests_rate*/**/eprot/
 # never committed, so keeping the CSV out too avoids a committed artifact
 # whose source can't be reproduced from what's actually in the repo.
 *.png
+# Keep paper-scale temperature-sweep plots tracked
+!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/
+!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/T*/
+!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/T*/sim0/
+!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/T*/sim0/plots/
+!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/T*/sim0/plots/*.png
+
+
+
 softmax/monte_carlo/**/structural_metrics.csv
 softmax/monte_carlo/k_sites_plots*/
 
