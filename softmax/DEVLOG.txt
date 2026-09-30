@@ -3164,3 +3164,88 @@ directly (no re-decode needed): re-run via
       0.2512 0.3981 0.631 1.0 1.585 2.512
 or per-T via plot_run.py <results_dir> / plot_structural_metrics.py <results_dir>
 directly, to regenerate PNGs with the fixes.
+
+--------------------------------------------------------------------------------
+2026-09-30 -- summarize_sweep.py added, plot_run.py final-value annotation, dU>0 explained
+--------------------------------------------------------------------------------
+User asked three follow-up questions after reviewing the visual-cleanup
+plots, plus new requests:
+
+1. "i want x3 number of points of rg and plddt graph" -- the actual
+   paper-scale sweep run used --stride 100 (16 decoded checkpoints/T, see
+   2026-09-30 "flat Rg/pLDDT" entry). 3x that density needs --stride ~33
+   (100/3, giving ~45 decoded checkpoints/T instead of ~15). This needs a
+   real GPU rerun of compute_structural_metrics.py (no GPU/torch in this
+   sandbox -- confirmed via `python3 -c "import torch"` failing with
+   ModuleNotFoundError here) -- command given to the user directly rather
+   than run here, via STRIDE=33 run_plotting_suite.sh override.
+
+2. "print final acceptance rate in acc_rate graphs" -- plot_run.py's
+   "raw_only" mode (time/acc_moves/acc_rate, added in the previous visual-
+   cleanup entry) now annotates the plot itself with its final value
+   (bottom-right corner text box), not just acc_rate specifically -- all
+   three raw_only columns are already-cumulative bookkeeping quantities
+   where the final value IS the single headline number (final acc_rate =
+   overall acceptance rate; final acc_moves = total accepted count; final
+   time = total wall-clock runtime).
+
+3. "dU is always > 0? shouldn't it be ~< 0?" -- checked directly against
+   two already-committed small data.dat files (tests_rate/sim0, sim1):
+   mean dU over ALL proposed moves (accepted+rejected) is strongly
+   positive (+105, +60.5), but restricted to ACCEPTED moves only it's
+   ~zero/slightly negative (-0.61, +0.015). This is not a bug -- data.dat's
+   "dU" column logs EVERY proposal's dU, and since the acceptance rate is
+   low (28%/18% in these two files), the raw column is numerically
+   dominated by REJECTED proposals, which were rejected specifically
+   because they had large positive dU -- that's the selection mechanism
+   itself, not a sign of anything wrong. This directly motivated request
+   4 below (a summary file that reports mean dU split by accepted/all,
+   rather than leaving this ambiguous in a single mixed plot).
+
+4. "single results file containing summaries for all T" -- added
+   monte_carlo/summarize_sweep.py: same --results-dirs/--active-t CLI
+   convention as identify_k_sites.py/plot_plddt_vs_T.py, one row per T,
+   written to <out-dir>/summary_by_T.csv (+ printed to stdout). Per T:
+   mean dU (all moves / accepted moves only), mean dU/T (both), mean U,
+   mean U/T, acceptance rate (post-burn-in window, matching this
+   project's usual burn-in-frac=0.5 convention -- AND the final cumulative
+   acc_rate column already in data.dat, both reported since they can
+   differ if the run hadn't fully equilibrated by the burn-in cutoff),
+   time per move (wall-clock, from data.dat's own time column), mean
+   entropy, mean Hd_to_ref, and -- when structural_metrics.csv already
+   exists for that T -- mean Rg_ca/Rg_allatom/mean_plddt too. Pure stdlib
+   (same philosophy as analyze_run.py -- no torch/pandas needed), so it
+   runs anywhere, including this sandbox: smoke-tested against
+   tests_rate/sim0 and sim1 directly, output verified above. Wired into
+   run_plotting_suite.sh as a 6th step (after plot_plddt_vs_T.py), writing
+   into the same namespaced k_sites_plots_<base_dir> directory as the
+   other cross-T outputs.
+
+   NOTE on "mean U and mean U/T per move range": interpreted as "mean over
+   the post-burn-in window this script already uses everywhere else", a
+   single number per T, not a further per-block breakdown within a T (that
+   granularity already exists per-run in analyze_run.py's own 10-block
+   report) -- flagged to the user in case a per-block breakdown across ALL
+   T's in one file was actually wanted instead.
+
+5. "are specific k-sites the same as zambon's paper?" -- compared our own
+   22 K-sites (cold-subset run, moves=300000, 0-indexed:
+   0,2,4,7,8,10,12,13,14,15,16,17,18,19,20,21,24,25,29,33,40,51) against
+   the paper's own 7 (1-indexed, p.6: 5,14,26,30,41,43,54). Assuming a
+   simple 1-indexed-to-0-indexed shift (paper site n -> our site n-1,
+   UNVERIFIED -- see the 2026-09-25 entry's own caveat that this repo
+   can't currently confirm the paper's indexing convention against our
+   reference-sequence indexing without a manual check against the paper's
+   figure 4): 5 of the paper's 7 K-sites (5,14,26,30,41 -> our 4,13,25,
+   29,40) land EXACTLY in our own K-site tier. The other 2 (43,54 -> our
+   42,53) land in our SECONDARY tier (entropy<1.0 but not <0.05) instead
+   -- still notably conserved, just not to the "completely conserved"
+   standard, rather than a miss. Reported to the user as a strong,
+   suggestive qualitative replication (5/7 exact + 2/7 near-miss) given
+   this project uses a materially different energy (U_am, attention-map-
+   based) and T-scale than the paper's own, with the indexing-alignment
+   caveat repeated since it's still not independently confirmed.
+
+Files: plot_run.py (final-value annotation), summarize_sweep.py (new),
+run_plotting_suite.sh (6th step wired in, header comment updated). All
+py_compile/bash -n clean.

@@ -112,7 +112,16 @@ def main():
 
 		if mode == "raw_only":
 			ax.plot(df["move"], series, linewidth=1.2)
-			summary = "raw (already a cumulative/running quantity, see module docstring)"
+			final_val = series.dropna().iloc[-1] if series.notna().any() else float("nan")
+			# raw_only columns are already-cumulative bookkeeping quantities
+			# (see comment above COLUMN_INFO), so the single most useful
+			# number for one of them IS its final value -- e.g. "what was
+			# the overall acceptance rate" -- printed directly on the plot
+			# instead of requiring a console re-run to find it.
+			ax.annotate(f"final: {final_val:.4g}", xy=(0.98, 0.02), xycoords="axes fraction",
+						ha="right", va="bottom", fontsize=9,
+						bbox=dict(boxstyle="round", fc="white", ec="gray", alpha=0.8))
+			summary = f"raw (already a cumulative/running quantity, see module docstring), final={final_val:.4g}"
 		else:
 			if mode != "no_raw":
 				ax.plot(df["move"], series, alpha=0.25, linewidth=0.5, color="gray", label="raw")

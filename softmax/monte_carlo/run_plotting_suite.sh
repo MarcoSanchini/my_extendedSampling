@@ -3,10 +3,10 @@
 # ============================================================
 # Generalization of smoke_test_plots.sh (which stays as-is, hardcoded to
 # the refine-long sweep it was first tested against -- see DEVLOG.txt
-# 2026-09-25 "first real structural sweep" entry) -- runs the same 5-
+# 2026-09-25 "first real structural sweep" entry) -- runs the same 6-
 # script sequence (plot_run.py, compute_structural_metrics.py,
-# plot_structural_metrics.py, identify_k_sites.py, plot_plddt_vs_T.py)
-# against ANY sweep's results directory, so a new sweep (e.g.
+# plot_structural_metrics.py, identify_k_sites.py, plot_plddt_vs_T.py,
+# summarize_sweep.py) against ANY sweep's results directory, so a new sweep (e.g.
 # sweep_temperature_paper_scale.sh) doesn't need its own hand-edited copy
 # of this script.
 #
@@ -96,8 +96,12 @@ python identify_k_sites.py --results-dirs "${RESULTS_DIRS[@]}" --active-t "${TS[
 echo "--- plot_plddt_vs_T.py ---"
 python plot_plddt_vs_T.py --results-dirs "${RESULTS_DIRS[@]}" --active-t "${TS[@]}" --out-dir "$OUT_DIR"
 
+echo "--- summarize_sweep.py ---"
+python summarize_sweep.py --results-dirs "${RESULTS_DIRS[@]}" --active-t "${TS[@]}" --out-dir "$OUT_DIR"
+
 echo
 echo "============================================================"
 echo "Plotting suite complete -- $(date)"
 echo "Plots: ${BASE_DIR}/T<T>/sim0/plots/*.png, ${OUT_DIR}/*.png"
+echo "Summary: ${OUT_DIR}/summary_by_T.csv"
 echo "============================================================"
