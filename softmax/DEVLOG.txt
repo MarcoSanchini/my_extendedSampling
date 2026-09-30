@@ -2814,3 +2814,30 @@ K-sites/entropy analysis for the paper-matched sweep is now on solid
 footing. Not yet done: the corresponding structural (Rg/pLDDT) plots and
 the "how fast does full disorder set in" view across the hot T's
 (1.0-2.512) flagged as outstanding in the earlier entry.
+
+--------------------------------------------------------------------------------
+2026-09-30 -- both outstanding items addressed: run_plotting_suite.sh vs. the full paper-scale sweep, plus a new entropy/q-vs-T summary plot
+--------------------------------------------------------------------------------
+User asked for both outstanding items. run_plotting_suite.sh already
+generalizes to any base_dir/T-list (2026-09-25 entry), so no new script
+needed there -- just needs to be pointed at
+tests_rate_sweep_temperature_paper_scale with all 6 T's this time
+(0.2512 through 2.512), not the 3-T cold subset identify_k_sites.py used.
+
+Added monte_carlo/plot_entropy_vs_T.py for the second item: nothing so
+far actually plotted a SUMMARY curve (one point per T) of mean site
+entropy / mean q across a sweep -- identify_k_sites.py plots per-site
+entropy (many lines, few T's), analyze_ensemble.py reports mean S(i)/q as
+text for one T at a time, and this project's own DEVLOG prose has been
+describing the frozen->disordered shape in words for weeks without ever
+rendering it as a plot. Cheap (only needs saved sequence strings, reuses
+analyze_ensemble.py's load_checkpoint_sequences/site_entropy/
+q_distribution directly, no model calls) -- meant to cover the FULL T
+range in one call, unlike identify_k_sites.py's cold-subset requirement,
+since showing the whole frozen-to-disordered shape is the entire point
+here. Closest thing to the paper's own figure 2 upper panel shape-wise,
+though it plots entropy/q rather than energy/specific heat (Ē(T)/Cv(T)
+still needs the deferred multi-histogram reweighting stage).
+
+Not yet run (needs the real eprot/ checkpoints, only on the user's
+machine, same as every plotting script in this project).
