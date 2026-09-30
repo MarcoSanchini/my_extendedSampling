@@ -2957,3 +2957,37 @@ directly, outside any T-sweep context, to check whether pLDDT/Rg can
 differentiate ANYTHING at all with the current one-step decode setup,
 isolating the question from this sweep's specific T range or
 --stride choice.
+
+--------------------------------------------------------------------------------
+2026-09-30 -- diagnose_structure_decode.py built: reference-vs-scrambled, sweeping num_steps
+--------------------------------------------------------------------------------
+Added monte_carlo/diagnose_structure_decode.py: decodes exactly two
+sequences directly (the real reference, and a fully-scrambled sequence
+of the same length via a fresh uniform-random draw over the canonical
+20-residue vocabulary, same exclusion set as _NONCANONICAL_RESIDUES) at
+several num_steps values for the structure GenerationConfig
+(default 1, 4, 8 -- the sweep's own runs all used the default num_steps=1),
+reusing compute_structural_metrics.py's decode_structure_with_mask/
+radius_of_gyration/CA_IDX directly rather than reimplementing them.
+
+Designed to cleanly distinguish the two live explanations from the
+previous entry: if reference and scrambled DON'T separate in mean pLDDT
+at ANY num_steps tested here, that points at ESM3's general-purpose
+structure track itself not being well-calibrated for foldability
+(explanation 2, not fixable by reconfiguring the sweep); if they DO
+separate once num_steps is high enough, that points at the sweep's own
+num_steps=1 default being the real problem (explanation 1, fixable by
+re-running with a working num_steps). Either outcome is informative and
+actionable -- not just "does it work," but "which of the two live
+theories does the sweep's flat result actually support."
+
+Noted directly in the script: --trials (default 3, repeats each
+sequence/num_steps combo) is a sanity check only, not a real stochasticity
+probe -- init_structure_config()'s default temperature=0.0 makes
+generation close to deterministic, and this codebase's model.generate()
+has no generator/seed argument to thread through the way CustomGenerator
+is used everywhere else in this project (torch.manual_seed(), the global
+RNG, is the only practical hook available here).
+
+Not yet run (needs the real model/GPU, same as every structural script
+in this project).
