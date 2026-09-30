@@ -2885,3 +2885,75 @@ done earlier in this project (2026-09-24/25 entries) carried the exact
 same risk and was never explicitly flagged this way either -- the user
 happened not to need any of those specific files back afterward, so it
 went unnoticed, not because the reasoning was actually correct.
+
+--------------------------------------------------------------------------------
+2026-09-30 -- full paper-scale plotting suite run: entropy/K-sites side confirms expectations, but Rg/pLDDT are flat across the ENTIRE T range -- a real, unexplained discrepancy from the paper
+--------------------------------------------------------------------------------
+run_plotting_suite.sh ran clean end-to-end across all 6 T's + cross-T
+plots (pushed as .txt logs since *.log is gitignored). Entropy/K-sites
+side behaved exactly as predicted:
+  - All-6-T K-sites call: 0/56 K-sites (paper-defined threshold),
+    3/56 secondary (8_G, 40_G, 45_D) -- confirms the earlier read that
+    including T>=1.0 washes the determination out entirely; the
+    cold-subset run's 22 K-sites (previous entries) remains the real
+    result, this all-T run was only ever meant to show the washing-out
+    effect, not to replace it.
+  - Burn-in gaps shrink monotonically with T: 9.0% (0.3981) -> 6.2%
+    (0.631) -> 3.0% (1.0) -> 1.6% (1.585) -> 1.1% (2.512) -- consistent
+    with faster mixing/decorrelation at higher T, a sensible physical
+    trend, not just noise.
+
+Rg_ca and mean pLDDT, however, are essentially FLAT across the entire
+sweep -- a real, substantive, NOT-yet-understood discrepancy, flagged
+directly rather than glossed over:
+  Rg_ca (Angstrom, mean across 16 decoded checkpoints per T):
+    T=0.2512: 9.92   T=0.3981: 9.89   T=0.631: 9.91
+    T=1.0:   10.09   T=1.585: 10.04   T=2.512: 9.98
+  mean pLDDT:
+    T=0.2512: 0.79   T=0.3981: 0.78   T=0.631: 0.78
+    T=1.0:    0.80   T=1.585: 0.80   T=2.512: 0.81
+Both vary by only ~2-3% across the WHOLE range, T=0.2512 (sequence is
+essentially the real, near-reference protein G) through T=2.512 (~75% of
+max entropy, mean q~0.18 -- a substantially randomized sequence). This is
+backwards from the paper's own result: their pLDDT drops from ~85 (cold)
+to ~40 (hot) across their T range, a large, clear, physically-expected
+signal (their own cited "mark of disorder" threshold at 40). Ours shows
+no real T-dependence at all, and if anything trends slightly the WRONG
+direction (T=0.2512's 0.79 is not higher than T=2.512's 0.81).
+
+Candidate explanations, none yet distinguished or ruled out:
+  1. init_structure_config()'s default num_steps=1 for the structure
+     GenerationConfig may not give the model enough to differentiate
+     structure quality by input sequence -- a single-step generation
+     might produce a generically confident-but-uniform output regardless
+     of how (un)foldable the actual input sequence is, rather than a
+     genuinely sequence-sensitive prediction. Untested: whether raising
+     num_steps changes this.
+  2. ESM3's general-purpose structure track (used here, via
+     model.generate + the structure token decoder) may simply not be as
+     well-calibrated for foldability-vs-disorder as ESMFold specifically
+     (what the paper actually uses) -- these are different models with
+     different training/architecture, and this project's structural
+     decode was never validated against a case with a KNOWN, large
+     foldability gap before now (only sanity-checked once, at a single
+     T, for "is the geometry physically reasonable at all" -- see the
+     2026-09-25 "first real structural sweep" entry -- not "does it
+     differentiate good from bad sequences").
+  3. --stride 100 (16 decodes/T, all from the post-burn-in second half of
+     a 300000-move run) might just not be sampling enough / the wrong
+     part of each trajectory to see a real difference -- though this
+     seems less likely to explain a T=0.2512-vs-T=2.512 gap specifically,
+     since those two T's genuinely differ enormously in Hd_to_ref/q by
+     construction, not just in decode-sampling luck.
+
+The paper's own discussion section explicitly flags a version of this
+risk in the abstract sense ("we cannot rule out the presence of
+artifacts when sequences are distant from natural ones") -- this may be
+a concrete instance of exactly that concern, now that it's been actually
+tested here rather than assumed away. Not resolved -- next diagnostic
+step (not yet built): decode a small number of DELIBERATELY extreme
+sequences (the exact reference, and a fully-random scrambled sequence)
+directly, outside any T-sweep context, to check whether pLDDT/Rg can
+differentiate ANYTHING at all with the current one-step decode setup,
+isolating the question from this sweep's specific T range or
+--stride choice.
