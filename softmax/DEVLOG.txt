@@ -2744,3 +2744,41 @@ identify_k_sites.py with just the cold subset (0.2512, 0.3981, 0.631)
 for the actual K-sites determination, keeping the full 6-T range as a
 separate, still-useful "how fast does this fully disorder" view (also
 worth its own plot, not yet built).
+
+--------------------------------------------------------------------------------
+2026-09-30 -- cold-subset K-sites result at paper-matched move count: 22 K-sites, consistent with the earlier (150000-move) smoke test
+--------------------------------------------------------------------------------
+User re-ran identify_k_sites.py with just the cold subset (T=0.2512,
+0.3981, 0.631) at the new moves=300000 budget and pushed
+per_site_entropy_by_T.csv (only the CSV -- the console text with the new
+burn-in check added earlier today wasn't captured/pushed, so that check
+still hasn't actually been seen; computed the K-sites/secondary/volatile
+breakdown directly from the CSV instead since the script's own printed
+summary wasn't available):
+
+  22 K-sites (entropy<0.05 at all 3 T's):
+    0,2,4,7,8,10,12,13,14,15,16,17,18,19,20,21,24,25,29,33,40,51
+  17 secondary (entropy<1.0 at all 3, not already a K-site):
+    1,3,5,6,9,11,28,32,36,37,38,42,44,45,48,50,53
+  17 volatile (entropy>=1.0 at some T):
+    22,23,26,27,30,31,34,35,39,41,43,46,47,49,52,54,55
+
+Consistent with the earlier smoke-test run (refine-long sweep,
+moves=150000, same 3 T's): that run found 20 K-sites; this one (2x the
+moves) finds 22, a similar count with mostly-overlapping membership, not
+a wildly different result -- suggests the K-sites determination itself
+is reasonably stable/reproducible across this move-count range, even
+though individual site-entropy VALUES for specific volatile sites shift
+some between runs (e.g. 27/K: 1.73 at 150000 moves vs 1.45 here; 30/K:
+2.14 vs 1.27) -- expected sampling variation for sites that are, by
+definition, not tightly constrained. The same standout volatile sites
+keep reappearing across every run at this scale: 27/K, 30/K, 31/Q, 34/N,
+35/D, consistent with every earlier single-T and multi-T analysis this
+project has done.
+
+Still outstanding: the actual burn-in check text (first/second-half gap
+per T) for this run hasn't been seen -- only the raw CSV was pushed, not
+the script's console output. Needs the user to paste or push that text
+specifically before the 22-K-sites number can be called fully trustworthy
+rather than just "consistent with a similar, differently-under/over-
+equilibrated run."
