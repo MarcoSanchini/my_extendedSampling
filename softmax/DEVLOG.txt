@@ -2841,3 +2841,47 @@ still needs the deferred multi-histogram reweighting stage).
 
 Not yet run (needs the real eprot/ checkpoints, only on the user's
 machine, same as every plotting script in this project).
+
+--------------------------------------------------------------------------------
+2026-09-30 -- MISTAKE: untracking data.dat deleted it from the user's working tree on their next pull; recovered via direct file transfer
+--------------------------------------------------------------------------------
+plot_run.py failed with FileNotFoundError on T0.2512's data.dat -- the
+"untrack data.dat" fix from earlier today (git rm --cached, commit
+5e50a3f) was described in that entry as "local files untouched," which
+is true ONLY on the machine that ran the command. `git rm --cached`
+removes a path from the index and stages a deletion; the resulting
+COMMIT contains that deletion. Anyone who later `git pull`s that commit
+gets the same deletion APPLIED to their own working tree (an unmodified
+tracked file cleanly fast-forwards, including removal) -- this is
+standard git merge behavior, not a bug in git, but a real gap in how the
+fix was reasoned about and communicated here. The user's 6 paper-scale
+data.dat files (T=0.2512 through 2.512, ~50-59MB each) were deleted from
+their disk this way. Not a subtle risk that was flagged and accepted --
+it wasn't identified at all before recommending the fix.
+
+Real damage was limited: eprot/ checkpoints (used for every entropy/
+K-sites/structural analysis this project actually relies on) were never
+touched -- they've been gitignored and local-only since 2026-09-24 and
+were never part of this commit. Only the data.dat trajectory logs (U/
+Hd_to_ref/acc_rate/dU per-move detail, used by analyze_run.py/
+plot_run.py) were lost -- annoying, not a re-run-the-300000-move-
+simulation-level loss.
+
+Recovered directly: this sandbox's own working tree still had all 6
+files (git rm --cached never touched THIS machine's copies, only the
+index/commit) -- gzip-compressed each (50-59MB -> 15-19MB, ~3x, plain
+text TSV compresses well) and sent them to the user directly via the
+SendUserFile mechanism, bypassing git (and its size limits) entirely for
+this one-time recovery. User needs to gunzip each back into place at
+tests_rate_sweep_temperature_paper_scale/T<T>/sim0/data.dat.
+
+Lesson for future large-file untracking in this project: `git rm
+--cached` + push is safe for the machine that runs it, but ANYONE ELSE
+who pulls that commit will have the file deleted from their own working
+tree too -- this needs to be stated explicitly and the file (or a
+recovery path) offered proactively BEFORE the user pulls and discovers
+it missing, not reactively after a script fails. Every eprot/ untracking
+done earlier in this project (2026-09-24/25 entries) carried the exact
+same risk and was never explicitly flagged this way either -- the user
+happened not to need any of those specific files back afterward, so it
+went unnoticed, not because the reasoning was actually correct.
