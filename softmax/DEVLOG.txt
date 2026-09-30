@@ -2782,3 +2782,35 @@ the script's console output. Needs the user to paste or push that text
 specifically before the 22-K-sites number can be called fully trustworthy
 rather than just "consistent with a similar, differently-under/over-
 equilibrated run."
+
+--------------------------------------------------------------------------------
+2026-09-30 -- burn-in check text received: 22 K-sites result confirmed trustworthy
+--------------------------------------------------------------------------------
+User pasted the console output. Burn-in check, all 3 T's:
+  T=0.2512: mean S(i)=0.0047 -- first half=0.0042, second half=0.0047,
+            gap=10.4% -- flagged "still trending"
+  T=0.3981: mean S(i)=0.4137 (13.8% of log(20)) -- gap=9.0% -- "looks settled"
+  T=0.631:  mean S(i)=0.6716 (22.4% of log(20)) -- gap=6.2% -- "looks settled"
+
+Two of three cleanly settled. T=0.2512's "still trending" flag is the
+same near-zero-signal artifact already identified for this T (and
+T=0.1585) in the 2026-09-25 refine-sweep entries -- the 10.4% gap is
+computed on a mean of only 0.0047 (first half 0.0042, second half
+0.0047), an order of magnitude below the K-site threshold (0.05) either
+way, so no site's classification could flip on this wobble. The 22
+K-sites result (previous entry) is now confirmed trustworthy, not just
+"consistent with a differently-equilibrated run."
+
+Cross-checked against the earlier refine-long (150000-move) numbers as
+an extra consistency check: T=0.631's mean S(i) here (0.6716) is
+essentially identical to that run's already-settled 0.6710 -- good
+agreement, as expected since that T was already converged at the
+shorter budget. T=0.3981 moved further (0.3222 at 150000 moves -> 0.4137
+here), consistent with the slow-but-shrinking convergence trend already
+tracked throughout this project -- each doubling of moves buys a smaller
+correction, as expected approaching equilibrium from below.
+
+K-sites/entropy analysis for the paper-matched sweep is now on solid
+footing. Not yet done: the corresponding structural (Rg/pLDDT) plots and
+the "how fast does full disorder set in" view across the hot T's
+(1.0-2.512) flagged as outstanding in the earlier entry.
