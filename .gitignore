@@ -61,4 +61,16 @@ softmax/monte_carlo/tests_rate*/**/eprot/
 # whose source can't be reproduced from what's actually in the repo.
 *.png
 softmax/monte_carlo/**/structural_metrics.csv
-softmax/monte_carlo/k_sites_plots/
+softmax/monte_carlo/k_sites_plots*/
+
+# data.dat itself is local-only from here on, same reasoning as eprot/:
+# moves=300000 (the paper-matched sweep) already produces ~50-57MB
+# data.dat files, over GitHub's 50MB recommended-max warning and heading
+# toward its 100MB hard limit as run lengths grow further (this project's
+# own direction -- the paper's own range goes up to 1e6 moves, and the
+# eventual ~200-residue target will need longer runs still, not shorter).
+# See DEVLOG.txt, 2026-09-30 entry. Existing SMALLER already-committed
+# data.dat files (every sweep before this one, all comfortably under the
+# warning threshold) are left as historical record, not retroactively
+# untracked -- this only stops NEW large ones from being added.
+softmax/monte_carlo/tests_rate*/**/data.dat

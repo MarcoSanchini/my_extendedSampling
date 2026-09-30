@@ -2642,3 +2642,45 @@ and plddt_vs_T.png.
 
 Not yet run -- both scripts pushed, waiting on the user to launch
 sweep_temperature_paper_scale.sh.
+
+--------------------------------------------------------------------------------
+2026-09-30 -- data.dat itself now needs to be gitignored: paper-scale sweep pushed 6 files over GitHub's size warning
+--------------------------------------------------------------------------------
+sweep_temperature_paper_scale.sh (moves=300000) completed and was pushed;
+git's own push output warned all 5 non-frozen T's data.dat files (49-57MB
+each) exceed GitHub's 50MB recommended max, right at the edge of its
+100MB hard limit. .git itself is already 205MB. This is a real, growing
+problem, not a one-off: data.dat's size scales with move count, not
+sequence length, and this project is headed toward LONGER runs, not
+shorter -- the paper's own range goes up to 1e6 moves (3.3x this sweep's
+budget, which would put a single data.dat at ~165-190MB, over the HARD
+limit and an actual failed push, not just a warning), and the eventual
+~200-residue target will need more moves still to equilibrate, same
+reasoning already used for the K-sites persistence/burn-in fixes earlier
+in this project.
+
+Fixed the same way as the earlier eprot/ incident (2026-09-24/25
+entries): added a general .gitignore pattern,
+softmax/monte_carlo/tests_rate*/**/data.dat, local-only from here on
+(matching eprot/'s own treatment) -- and untracked (git rm --cached,
+local files untouched) specifically the 6 files that triggered the
+actual warning. Every EARLIER sweep's already-committed data.dat (all
+comfortably under 10MB, well under the warning threshold) was left
+tracked as historical record -- not retroactively rewritten, matching
+the same "fix going forward, don't rewrite history for its own sake"
+precedent set for eprot/.
+
+Consequence, flagged directly: I (Claude) have directly read/computed
+from pushed data.dat myself several times earlier in this project
+(cheap, no GPU needed, unlike eprot/ checkpoints) -- that convenience
+goes away for sweeps from this point on. analyze_run.py's printed text
+output (already an established paste-back pattern) and plot_run.py's
+PNGs (already selectively shareable, as already done for the smoke
+test) are the replacement channels; nothing is actually lost, just
+routed differently.
+
+Also generalized the k_sites_plots/ .gitignore line to k_sites_plots*/,
+since run_plotting_suite.sh now namespaces its output dir per sweep
+(k_sites_plots_<basename>) rather than always writing the same
+k_sites_plots/ -- the old literal-name-only rule would have missed the
+namespaced directories.
