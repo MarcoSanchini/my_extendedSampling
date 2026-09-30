@@ -44,8 +44,11 @@ def plot_rg(results_dir, out_dir, window):
 		fig, ax = plt.subplots(figsize=(10, 4))
 		ax.plot(df["move"], series, alpha=0.35, linewidth=0.8, marker='o', markersize=3,
 				color="gray", label="raw (per decoded checkpoint)")
-		ax.plot(df["move"], cumulative, linewidth=1.5, label="cumulative mean")
-		ax.plot(df["move"], rolling, linewidth=1.5, label=f"rolling mean (window={window})")
+		# alpha=0.7 (not 1.0): cumulative and rolling sit nearly on top of
+		# each other once a run has settled -- same fix as plot_run.py,
+		# applied here too for consistency (see DEVLOG.txt visual-cleanup entry).
+		ax.plot(df["move"], cumulative, linewidth=1.5, alpha=0.7, label="cumulative mean")
+		ax.plot(df["move"], rolling, linewidth=1.5, alpha=0.7, label=f"rolling mean (window={window})")
 		ax.set_xlabel("move")
 		ax.set_ylabel(f"{col} [Å]")
 		ax.set_title(f"{col} vs move -- {results_dir}")
@@ -83,7 +86,15 @@ def plot_hamming(results_dir, out_dir, ref_seq, burn_in_frac):
 
 	fig, axes = plt.subplots(1, 2, figsize=(12, 4))
 
-	axes[0].hist(qs, bins=30, edgecolor="black", linewidth=0.3)
+	# q = 1 - Hamming/L only takes L+1 discrete values, spaced 1/L apart --
+	# bins=30 (evenly spaced over q's range) misaligns with that spacing and
+	# produced a jagged/uneven histogram (some bins straddle two discrete q
+	# values, some catch only one) even though the Hamming side right next
+	# to it, using one integer-width bin per discrete value, was clean.
+	# Mirror that here: one bin per discrete q value, edges at the
+	# midpoints between consecutive q values.
+	q_bin_edges = [(i - 0.5) / L for i in range(L + 2)]
+	axes[0].hist(qs, bins=q_bin_edges, edgecolor="black", linewidth=0.3)
 	axes[0].set_xlabel("pairwise sequence similarity q")
 	axes[0].set_ylabel("pair count")
 	axes[0].set_title(f"p(q) -- {results_dir}\nn_pairs={len(qs)}")

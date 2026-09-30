@@ -1,9 +1,10 @@
 """
 Pandas/matplotlib plots for a single run's data.dat trajectory -- companion
 to analyze_run.py (which reports the same information as printed text/
-block-averages, no plotting dependency). For every numeric column data.dat
+block-averages, no plotting dependency). For most numeric columns data.dat
 logs, plots three views on one figure: the raw per-move value, its
-cumulative (expanding) mean, and a rolling-window mean.
+cumulative (expanding) mean, and a rolling-window mean. A few columns get a
+different treatment -- see COLUMN_INFO's "mode" field and its comment.
 
 Usage:
     python plot_run.py <results_dir>                       # e.g. tests_rate_sweep_temperature/T1e0/sim0
@@ -36,6 +37,51 @@ NUMERIC_COLUMNS = [
 	"log_a_AB", "log_a_BA", "log_ratio", "accepted", "acc_moves", "acc_rate",
 ]
 
+# (y-axis label, one-line description, plot mode) per column -- lifted
+# directly from data.dat's own header comment (_extend_buffer) so a plot
+# alone explains itself instead of requiring you to remember or go look up
+# what a column means. Added after "I can't remember what log_a_AB and
+# log_a_BA was for and I can't discern it from the plots" -- same fix
+# applied to every column, not just those two, and 'time' now carries its
+# unit ([s]) in the axis label itself rather than needing a caption at all.
+#
+# mode:
+#   "standard" -- raw (thin, alpha=0.25) + cumulative mean + rolling mean,
+#                 the default treatment.
+#   "raw_only" -- time/acc_moves/acc_rate are THEMSELVES already-cumulative
+#                 bookkeeping quantities (data.dat defines acc_rate as
+#                 acc_moves/move, i.e. already a running average). Taking a
+#                 cumulative-mean-of-a-cumulative-value or a rolling-mean-
+#                 of-a-running-average doesn't have a clean interpretation
+#                 and looked exactly that confusing in practice (acc_rate's
+#                 "cumulative mean" line is a doubly-smoothed, slower-
+#                 converging shadow of its own raw curve; time's cumulative
+#                 mean of a roughly-linear ramp is just a differently-
+#                 scaled ramp) -- plot the raw trajectory alone instead,
+#                 which is already the informative view for these.
+#   "no_raw"   -- accepted is a dense 0/1 series; 300000 raw points at low
+#                 alpha render as a solid gray block (confirmed by looking
+#                 at the actual pushed plot), not an informative trace.
+#                 Cumulative + rolling mean (i.e. cumulative/windowed
+#                 acceptance rate) are still shown; the raw scatter is not.
+COLUMN_INFO = {
+	"time":            ("time [s]", "CPU time elapsed since simulation start", "raw_only"),
+	"U":               ("U", "potential energy of the current accepted sequence", "standard"),
+	"U_am":            ("U_am", "attention-map contribution to U", "standard"),
+	"U_structure_ce":  ("U_structure_ce", "structure-token cross-entropy contribution to U (0 if unused)", "standard"),
+	"entropy":         ("entropy", "Shannon entropy of the PROPOSED SITE's softmax probabilities (per-move, "
+						 "single-site -- NOT the K-sites ensemble site entropy S(i) from identify_k_sites.py, "
+						 "a different quantity computed over many sampled sequences)", "standard"),
+	"Hd_to_ref":       ("Hd_to_ref", "Hamming distance, current accepted sequence vs reference", "standard"),
+	"dU":              ("dU", "U(proposed) - U(current)", "standard"),
+	"log_a_AB":        ("log_a_AB", "log-probability of proposing THIS substitution (forward, A->B)", "standard"),
+	"log_a_BA":        ("log_a_BA", "log-probability of the REVERSE proposal (B->A), used in the M-H ratio", "standard"),
+	"log_ratio":       ("log_ratio", "log Metropolis-Hastings ratio: -dU/T + log_a_BA - log_a_AB", "standard"),
+	"accepted":        ("accepted (0/1)", "1 if this move's proposal was accepted, 0 if rejected", "no_raw"),
+	"acc_moves":       ("acc_moves (count)", "cumulative number of accepted moves", "raw_only"),
+	"acc_rate":        ("acc_rate", "cumulative acceptance rate, acc_moves / move (already a running average)", "raw_only"),
+}
+
 
 def main():
 	parser = argparse.ArgumentParser()
@@ -60,23 +106,37 @@ def main():
 
 	for col in present:
 		series = df[col]
-		cumulative = series.expanding().mean()
-		rolling = series.rolling(args.window, min_periods=1).mean()
+		ylabel, desc, mode = COLUMN_INFO.get(col, (col, "", "standard"))
 
 		fig, ax = plt.subplots(figsize=(10, 4))
-		ax.plot(df["move"], series, alpha=0.25, linewidth=0.5, color="gray", label="raw")
-		ax.plot(df["move"], cumulative, linewidth=1.5, label="cumulative mean")
-		ax.plot(df["move"], rolling, linewidth=1.5, label=f"rolling mean (window={args.window})")
+
+		if mode == "raw_only":
+			ax.plot(df["move"], series, linewidth=1.2)
+			summary = "raw (already a cumulative/running quantity, see module docstring)"
+		else:
+			if mode != "no_raw":
+				ax.plot(df["move"], series, alpha=0.25, linewidth=0.5, color="gray", label="raw")
+			cumulative = series.expanding().mean()
+			rolling = series.rolling(args.window, min_periods=1).mean()
+			# alpha=0.7 (not 1.0): cumulative and rolling frequently sit
+			# nearly on top of each other once a run has settled, and were
+			# previously indistinguishable where they overlapped.
+			ax.plot(df["move"], cumulative, linewidth=1.5, alpha=0.7, label="cumulative mean")
+			ax.plot(df["move"], rolling, linewidth=1.5, alpha=0.7, label=f"rolling mean (window={args.window})")
+			ax.legend(fontsize=8)
+			summary = ("cumulative + rolling" if mode == "no_raw"
+					   else f"raw + cumulative + rolling(window={args.window})")
+
 		ax.set_xlabel("move")
-		ax.set_ylabel(col)
-		ax.set_title(f"{col} vs move -- {args.results_dir}")
-		ax.legend(fontsize=8)
+		ax.set_ylabel(ylabel)
+		title = f"{col} vs move -- {desc}" if desc else f"{col} vs move"
+		ax.set_title(f"{title}\n{args.results_dir}", fontsize=9)
 		fig.tight_layout()
 
 		out_path = os.path.join(out_dir, f"{col}.png")
 		fig.savefig(out_path, dpi=120)
 		plt.close(fig)
-		print(f"  {col}: raw + cumulative + rolling(window={args.window}) -> {out_path}")
+		print(f"  {col}: {summary} -> {out_path}")
 
 	print("Done.")
 

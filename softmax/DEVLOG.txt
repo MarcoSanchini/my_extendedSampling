@@ -3094,3 +3094,73 @@ staying flat across T "looks ok" (user's own assessment) given what the
 sampler actually selects for. pLDDT remains a signal to treat with
 caution generally (known helix-attractor bias), independent of anything
 about this specific sweep.
+
+--------------------------------------------------------------------------------
+2026-09-30 -- visual cleanup of the plotting suite, per direct review of the paper-scale sweep's pushed PNGs
+--------------------------------------------------------------------------------
+User pushed tests_rate_sweep_temperature_paper_scale's real plots (via
+their own .gitignore edit keeping this one sweep's PNGs tracked) and
+reviewed them directly, flagging four concrete issues plus an open
+invitation to fix anything else noticed. Confirmed each by viewing the
+actual T=1.0 PNGs before changing anything:
+
+1. Cumulative-mean and rolling-mean lines frequently overlap and become
+   indistinguishable once a run has settled (log_a_AB.png, acc_rate.png
+   both showed the cumulative line almost entirely hidden under the
+   rolling one). Fix: alpha=0.7 on both lines, in plot_run.py (already
+   applied, apparently mid-session before the context compaction that
+   preceded this entry) and now also in plot_structural_metrics.py's
+   plot_rg() (Rg_ca.png / Rg_allatom.png), for the same reason.
+
+2. plot_structural_metrics.py's p(q) histogram (hamming_and_q_distribution.png)
+   was visibly jagged/uneven compared to the clean Hamming-distance
+   histogram right next to it. Root cause: q = 1 - Hamming/L only takes
+   L+1 discrete values spaced 1/L apart, but the q panel used bins=30,
+   evenly spaced over [0,1] with no relation to that spacing -- some bins
+   straddled two discrete q values, others caught only one. Fixed by
+   building explicit bin edges at the midpoints between consecutive
+   discrete q values ([(i-0.5)/L for i in range(L+2)]), mirroring the
+   Hamming side's own bins=range(0, L+2) one-bin-per-value approach.
+
+3. time.png had no units and, along with acc_moves/acc_rate, was getting
+   a cumulative-mean-of-a-cumulative-value / rolling-mean-of-a-running-
+   average treatment that doesn't have a clean interpretation and looked
+   exactly that confusing (acc_rate's "cumulative mean" line is a doubly-
+   smoothed shadow of its own raw curve, which is already a running
+   average by data.dat's own definition acc_moves/move). Fixed in
+   plot_run.py: time now labeled "time [s]"; time/acc_moves/acc_rate
+   reclassified to a new "raw_only" plot mode (raw trajectory alone, no
+   cumulative/rolling) via a per-column mode field added to COLUMN_INFO.
+   accepted.png also reviewed while making this change -- a dense 0/1
+   raw series renders as a solid gray block at 300k points, not an
+   informative trace -- given its own "no_raw" mode (cumulative+rolling
+   only, i.e. windowed/cumulative acceptance rate, no raw scatter).
+
+4. Could not recall what log_a_AB / log_a_BA meant from the plots alone.
+   Fixed by adding a (label, description, mode) COLUMN_INFO entry for
+   EVERY data.dat column, not just those two, sourced from data.dat's own
+   header comment (classes/rate_sampler.py:_extend_buffer) -- the
+   description is now baked into each plot's own title, so the plot is
+   self-explanatory without cross-referencing this file or the sampler
+   source. Also used this pass to disambiguate entropy.png specifically:
+   this is the per-move, single-proposed-site softmax entropy, NOT
+   identify_k_sites.py's ensemble site entropy S(i) -- same word, two
+   different quantities computed completely differently (one from a
+   single move's proposal distribution, the other across many accepted
+   sequences at fixed T) -- now spelled out directly in the plot title.
+
+"Whatever else you noticed": reviewed identify_k_sites.py's per-T entropy
+plot and plot_plddt_vs_T.py's reference-threshold lines for the same
+overlap pattern -- neither applies (per-T lines are naturally separated
+by different T colors/values; the reference-threshold lines are dashed
+horizontal references, not overlapping data series) -- left as-is.
+
+Net: plot_run.py and plot_structural_metrics.py both edited (identify_k_sites.py,
+plot_plddt_vs_T.py unchanged, reviewed only). Both py_compile clean. Not
+yet re-run against real data -- plotting-only changes, so the existing
+structural_metrics.csv/data.dat from the paper-scale sweep can be reused
+directly (no re-decode needed): re-run via
+  bash run_plotting_suite.sh tests_rate_sweep_temperature_paper_scale \
+      0.2512 0.3981 0.631 1.0 1.585 2.512
+or per-T via plot_run.py <results_dir> / plot_structural_metrics.py <results_dir>
+directly, to regenerate PNGs with the fixes.
