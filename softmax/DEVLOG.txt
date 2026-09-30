@@ -2683,4 +2683,64 @@ Also generalized the k_sites_plots/ .gitignore line to k_sites_plots*/,
 since run_plotting_suite.sh now namespaces its output dir per sweep
 (k_sites_plots_<basename>) rather than always writing the same
 k_sites_plots/ -- the old literal-name-only rule would have missed the
-namespaced directories.
+namespaced directories. Confirmed this was needed, not theoretical: the
+pushed commit's per_site_entropy_by_T.csv landed inside
+k_sites_plots_tests_rate_sweep_temperature_paper_scale/, which the OLD
+literal-only rule didn't match, so it slipped through and got committed
+before this fix (harmless, small file, not worth a separate untrack).
+
+--------------------------------------------------------------------------------
+2026-09-30 -- paper-scale sweep first look: T>=1.0 nearly fully disordered per-site despite a plateaued U/Hd trajectory; identify_k_sites.py never had a burn-in check
+--------------------------------------------------------------------------------
+Read the pushed per_site_entropy_by_T.csv directly (all 6 T's: 0.2512,
+0.3981, 0.631, 1.0, 1.585, 2.512). Striking jump from T=0.631 to T=1.0:
+almost every site's entropy jumps to 2.0-2.9 (out of log(20)=2.9957) by
+T=1.0, i.e. near-total per-site disorder -- much higher than the
+50000-move estimate for T=1.0 from the original 12-point sweep (mean
+1.7929, ~60% of max). Only a handful of sites (8/G, 25/A, 40/G, and to a
+lesser extent a few others) stay noticeably below the rest even at
+T=1.0-2.512.
+
+Checked this against the U/Hd_to_ref trajectory directly (data.dat still
+present locally in this sandbox even though it's now gitignored --
+git rm --cached doesn't touch the working tree -- via analyze_run.py,
+which needs no GPU/torch): at BOTH T=0.631 and T=1.0, U and Hd_to_ref
+reach a stable plateau quickly (by move ~30000-60000 of the 300000-move
+run) and stay flat for the rest of the run (T=1.0: Hd hovers 39-42/56
+throughout; T=0.631: U hovers 13-19 throughout) -- NOT still trending
+upward the way T=0.3981 was at the shorter 50000-move budget.
+
+Read together, this is a coherent, non-contradictory picture, not a
+red flag: the chain reaches a stable "distance-from-reference" shell
+quickly and then wanders ERGODICALLY within/around that shell for the
+rest of the run -- the aggregate order parameter (Hd_to_ref, U) stays
+flat because it isn't sensitive to WHICH specific sites differ from the
+reference at any given moment, while site entropy (computed by pooling
+ALL post-burn-in checkpoints) keeps climbing as the ensemble visits many
+different specific sequences at roughly the same distance. This is
+exactly the kind of signal site entropy is supposed to be more sensitive
+to than U/Hd_to_ref alone -- and the FEW sites that stay conserved even
+under this wandering (8/G, 25/A, 40/G) are good K-sites candidates
+specifically because they resist it.
+
+GAP FOUND: identify_k_sites.py never had the same first-half-vs-second-
+half burn-in sanity check analyze_ensemble.py has had since it was first
+written -- an oversight, not a deliberate omission. Given the U/Hd
+plateau doesn't by itself prove entropy specifically has stopped
+climbing within the kept post-burn-in window, this needs to be checked
+directly before trusting the T>=1.0 entropy numbers as converged. Fixed:
+added the identical statistics.mean-based first/second-half check,
+printed per T alongside the existing load-summary line. NOT yet re-run
+(needs the real eprot/ checkpoints, which only exist on the user's
+machine) -- results pending.
+
+Practical consequence for K-sites specifically: including T=1.0/1.585/
+2.512 in identify_k_sites.py's --active-t washes out the K-sites result
+entirely (entropy exceeds even the SECONDARY 1.0 threshold at nearly
+every site by T=1.0), consistent with the paper's own framing that
+K-sites is a COLD-regime concept (T_s<T_s^c), not something that should
+be checked against hot/disordered T's at all. Recommended re-running
+identify_k_sites.py with just the cold subset (0.2512, 0.3981, 0.631)
+for the actual K-sites determination, keeping the full 6-T range as a
+separate, still-useful "how fast does this fully disorder" view (also
+worth its own plot, not yet built).

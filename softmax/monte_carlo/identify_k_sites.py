@@ -48,6 +48,7 @@ per_site_entropy.png to --out-dir (default k_sites_plots/).
 import argparse
 import math
 import os
+import statistics
 
 import pandas as pd
 import matplotlib
@@ -96,6 +97,25 @@ def main():
 		mean_S = sum(entropies) / L
 		print(f"T={T}: loaded {len(sequences)}/{n_total} checkpoints from {results_dir}, "
 			  f"mean S(i)={mean_S:.4f} ({mean_S/max_S:.1%} of log(20))")
+
+		# Same burn-in sanity check as analyze_ensemble.py (this script
+		# never had one until now -- added after the paper-scale sweep's
+		# T>=1.0 results showed near-log(20) entropy at most sites while
+		# U/Hd_to_ref had already plateaued, raising the question of
+		# whether entropy specifically was still climbing within the
+		# kept window; see DEVLOG.txt 2026-09-30 entry).
+		half = len(sequences) // 2
+		if half >= 2:
+			S1, _ = site_entropy(sequences[:half], L)
+			S2, _ = site_entropy(sequences[half:], L)
+			mean_S1, mean_S2 = statistics.mean(S1), statistics.mean(S2)
+			denom = max(mean_S1, mean_S2, 1e-9)
+			rel_gap = abs(mean_S2 - mean_S1) / denom
+			trending = rel_gap > 0.10
+			note = (f"still trending, {args.burn_in_frac:.0%} cutoff may not be enough" if trending
+					else "looks settled")
+			print(f"       burn-in check: first half={mean_S1:.4f}, second half={mean_S2:.4f} "
+				  f"(gap {rel_gap:.1%} of mean -- {note})")
 
 	row_labels = [f"{i}_{ref_seq[i]}" for i in range(L)]
 	df = pd.DataFrame(per_t_entropy, index=row_labels)
