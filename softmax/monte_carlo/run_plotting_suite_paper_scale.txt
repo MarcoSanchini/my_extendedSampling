@@ -1,0 +1,325 @@
+nohup: ignoring input
+
+============================================================
+T=0.2512 -- Wed 30 Sep 11:51:06 CEST 2026
+============================================================
+--- plot_run.py ---
+Plotting 13 metrics from tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/data.dat (300001 rows) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/
+  time: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/time.png
+  U: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/U.png
+  U_am: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/U_am.png
+  U_structure_ce: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/U_structure_ce.png
+  entropy: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/entropy.png
+  Hd_to_ref: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/Hd_to_ref.png
+  dU: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/dU.png
+  log_a_AB: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/log_a_AB.png
+  log_a_BA: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/log_a_BA.png
+  log_ratio: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/log_ratio.png
+  accepted: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/accepted.png
+  acc_moves: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/acc_moves.png
+  acc_rate: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/acc_rate.png
+Done.
+--- compute_structural_metrics.py (stride=100) ---
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 50203.86it/s]
+Decoding 16/3001 checkpoints (stride=100) from tests_rate_sweep_temperature_paper_scale/T0.2512/sim0
+  move  150000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  160000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  170000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  180000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  190000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  200000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  210000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  220000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  230000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  240000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  250000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  260000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  270000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  280000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  290000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+  move  300000: Rg_ca=9.918  Rg_allatom=9.896  mean_plddt=0.790
+Saved 16 rows -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/structural_metrics.csv
+--- plot_structural_metrics.py ---
+  Rg_ca: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/Rg_ca.png
+  Rg_allatom: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/Rg_allatom.png
+  mean_plddt -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/mean_plddt.png
+Hamming/q distribution: 1501/3001 post-burn-in checkpoints
+  Hamming + q distribution -> tests_rate_sweep_temperature_paper_scale/T0.2512/sim0/plots/hamming_and_q_distribution.png
+Done.
+
+============================================================
+T=0.3981 -- Wed 30 Sep 11:51:37 CEST 2026
+============================================================
+--- plot_run.py ---
+Plotting 13 metrics from tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/data.dat (300001 rows) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/
+  time: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/time.png
+  U: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/U.png
+  U_am: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/U_am.png
+  U_structure_ce: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/U_structure_ce.png
+  entropy: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/entropy.png
+  Hd_to_ref: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/Hd_to_ref.png
+  dU: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/dU.png
+  log_a_AB: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/log_a_AB.png
+  log_a_BA: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/log_a_BA.png
+  log_ratio: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/log_ratio.png
+  accepted: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/accepted.png
+  acc_moves: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/acc_moves.png
+  acc_rate: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/acc_rate.png
+Done.
+--- compute_structural_metrics.py (stride=100) ---
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 44534.12it/s]
+Decoding 16/3001 checkpoints (stride=100) from tests_rate_sweep_temperature_paper_scale/T0.3981/sim0
+  move  150000: Rg_ca=9.879  Rg_allatom=9.864  mean_plddt=0.801
+  move  160000: Rg_ca=9.901  Rg_allatom=9.876  mean_plddt=0.783
+  move  170000: Rg_ca=9.837  Rg_allatom=9.812  mean_plddt=0.776
+  move  180000: Rg_ca=9.910  Rg_allatom=9.883  mean_plddt=0.744
+  move  190000: Rg_ca=9.823  Rg_allatom=9.796  mean_plddt=0.817
+  move  200000: Rg_ca=9.984  Rg_allatom=9.964  mean_plddt=0.786
+  move  210000: Rg_ca=9.938  Rg_allatom=9.910  mean_plddt=0.776
+  move  220000: Rg_ca=9.908  Rg_allatom=9.882  mean_plddt=0.763
+  move  230000: Rg_ca=9.852  Rg_allatom=9.834  mean_plddt=0.795
+  move  240000: Rg_ca=9.931  Rg_allatom=9.905  mean_plddt=0.783
+  move  250000: Rg_ca=9.814  Rg_allatom=9.796  mean_plddt=0.761
+  move  260000: Rg_ca=9.869  Rg_allatom=9.843  mean_plddt=0.813
+  move  270000: Rg_ca=9.868  Rg_allatom=9.849  mean_plddt=0.782
+  move  280000: Rg_ca=9.936  Rg_allatom=9.922  mean_plddt=0.772
+  move  290000: Rg_ca=9.857  Rg_allatom=9.842  mean_plddt=0.778
+  move  300000: Rg_ca=9.910  Rg_allatom=9.913  mean_plddt=0.786
+Saved 16 rows -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/structural_metrics.csv
+--- plot_structural_metrics.py ---
+  Rg_ca: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/Rg_ca.png
+  Rg_allatom: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/Rg_allatom.png
+  mean_plddt -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/mean_plddt.png
+Hamming/q distribution: 1501/3001 post-burn-in checkpoints
+  Hamming + q distribution -> tests_rate_sweep_temperature_paper_scale/T0.3981/sim0/plots/hamming_and_q_distribution.png
+Done.
+
+============================================================
+T=0.631 -- Wed 30 Sep 11:52:06 CEST 2026
+============================================================
+--- plot_run.py ---
+Plotting 13 metrics from tests_rate_sweep_temperature_paper_scale/T0.631/sim0/data.dat (300001 rows) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/
+  time: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/time.png
+  U: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/U.png
+  U_am: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/U_am.png
+  U_structure_ce: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/U_structure_ce.png
+  entropy: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/entropy.png
+  Hd_to_ref: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/Hd_to_ref.png
+  dU: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/dU.png
+  log_a_AB: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/log_a_AB.png
+  log_a_BA: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/log_a_BA.png
+  log_ratio: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/log_ratio.png
+  accepted: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/accepted.png
+  acc_moves: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/acc_moves.png
+  acc_rate: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/acc_rate.png
+Done.
+--- compute_structural_metrics.py (stride=100) ---
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 226163.45it/s]
+Decoding 16/3001 checkpoints (stride=100) from tests_rate_sweep_temperature_paper_scale/T0.631/sim0
+  move  150000: Rg_ca=9.822  Rg_allatom=9.793  mean_plddt=0.781
+  move  160000: Rg_ca=10.012  Rg_allatom=9.979  mean_plddt=0.726
+  move  170000: Rg_ca=9.863  Rg_allatom=9.830  mean_plddt=0.768
+  move  180000: Rg_ca=9.918  Rg_allatom=9.904  mean_plddt=0.782
+  move  190000: Rg_ca=9.971  Rg_allatom=9.949  mean_plddt=0.769
+  move  200000: Rg_ca=9.995  Rg_allatom=9.963  mean_plddt=0.755
+  move  210000: Rg_ca=9.887  Rg_allatom=9.874  mean_plddt=0.783
+  move  220000: Rg_ca=9.974  Rg_allatom=9.952  mean_plddt=0.766
+  move  230000: Rg_ca=9.837  Rg_allatom=9.805  mean_plddt=0.829
+  move  240000: Rg_ca=9.925  Rg_allatom=9.891  mean_plddt=0.854
+  move  250000: Rg_ca=9.805  Rg_allatom=9.792  mean_plddt=0.770
+  move  260000: Rg_ca=10.011  Rg_allatom=10.014  mean_plddt=0.773
+  move  270000: Rg_ca=9.870  Rg_allatom=9.846  mean_plddt=0.785
+  move  280000: Rg_ca=10.007  Rg_allatom=9.984  mean_plddt=0.799
+  move  290000: Rg_ca=9.899  Rg_allatom=9.878  mean_plddt=0.767
+  move  300000: Rg_ca=9.840  Rg_allatom=9.848  mean_plddt=0.743
+Saved 16 rows -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/structural_metrics.csv
+--- plot_structural_metrics.py ---
+  Rg_ca: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/Rg_ca.png
+  Rg_allatom: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/Rg_allatom.png
+  mean_plddt -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/mean_plddt.png
+Hamming/q distribution: 1501/3001 post-burn-in checkpoints
+  Hamming + q distribution -> tests_rate_sweep_temperature_paper_scale/T0.631/sim0/plots/hamming_and_q_distribution.png
+Done.
+
+============================================================
+T=1.0 -- Wed 30 Sep 11:52:33 CEST 2026
+============================================================
+--- plot_run.py ---
+Plotting 13 metrics from tests_rate_sweep_temperature_paper_scale/T1.0/sim0/data.dat (300001 rows) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/
+  time: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/time.png
+  U: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/U.png
+  U_am: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/U_am.png
+  U_structure_ce: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/U_structure_ce.png
+  entropy: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/entropy.png
+  Hd_to_ref: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/Hd_to_ref.png
+  dU: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/dU.png
+  log_a_AB: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/log_a_AB.png
+  log_a_BA: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/log_a_BA.png
+  log_ratio: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/log_ratio.png
+  accepted: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/accepted.png
+  acc_moves: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/acc_moves.png
+  acc_rate: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/acc_rate.png
+Done.
+--- compute_structural_metrics.py (stride=100) ---
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 237821.36it/s]
+Decoding 16/3001 checkpoints (stride=100) from tests_rate_sweep_temperature_paper_scale/T1.0/sim0
+  move  150000: Rg_ca=10.076  Rg_allatom=10.080  mean_plddt=0.756
+  move  160000: Rg_ca=10.105  Rg_allatom=10.109  mean_plddt=0.815
+  move  170000: Rg_ca=10.177  Rg_allatom=10.157  mean_plddt=0.838
+  move  180000: Rg_ca=10.053  Rg_allatom=10.077  mean_plddt=0.827
+  move  190000: Rg_ca=10.176  Rg_allatom=10.176  mean_plddt=0.767
+  move  200000: Rg_ca=10.008  Rg_allatom=10.026  mean_plddt=0.780
+  move  210000: Rg_ca=10.024  Rg_allatom=10.021  mean_plddt=0.859
+  move  220000: Rg_ca=10.124  Rg_allatom=10.149  mean_plddt=0.821
+  move  230000: Rg_ca=10.059  Rg_allatom=10.077  mean_plddt=0.793
+  move  240000: Rg_ca=10.163  Rg_allatom=10.152  mean_plddt=0.785
+  move  250000: Rg_ca=10.187  Rg_allatom=10.207  mean_plddt=0.777
+  move  260000: Rg_ca=10.066  Rg_allatom=10.078  mean_plddt=0.766
+  move  270000: Rg_ca=10.058  Rg_allatom=10.064  mean_plddt=0.834
+  move  280000: Rg_ca=10.003  Rg_allatom=9.998  mean_plddt=0.809
+  move  290000: Rg_ca=10.059  Rg_allatom=10.031  mean_plddt=0.817
+  move  300000: Rg_ca=10.140  Rg_allatom=10.145  mean_plddt=0.792
+Saved 16 rows -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/structural_metrics.csv
+--- plot_structural_metrics.py ---
+  Rg_ca: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/Rg_ca.png
+  Rg_allatom: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/Rg_allatom.png
+  mean_plddt -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/mean_plddt.png
+Hamming/q distribution: 1501/3001 post-burn-in checkpoints
+  Hamming + q distribution -> tests_rate_sweep_temperature_paper_scale/T1.0/sim0/plots/hamming_and_q_distribution.png
+Done.
+
+============================================================
+T=1.585 -- Wed 30 Sep 11:53:03 CEST 2026
+============================================================
+--- plot_run.py ---
+Plotting 13 metrics from tests_rate_sweep_temperature_paper_scale/T1.585/sim0/data.dat (300001 rows) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/
+  time: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/time.png
+  U: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/U.png
+  U_am: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/U_am.png
+  U_structure_ce: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/U_structure_ce.png
+  entropy: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/entropy.png
+  Hd_to_ref: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/Hd_to_ref.png
+  dU: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/dU.png
+  log_a_AB: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/log_a_AB.png
+  log_a_BA: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/log_a_BA.png
+  log_ratio: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/log_ratio.png
+  accepted: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/accepted.png
+  acc_moves: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/acc_moves.png
+  acc_rate: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/acc_rate.png
+Done.
+--- compute_structural_metrics.py (stride=100) ---
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 230111.44it/s]
+Decoding 16/3001 checkpoints (stride=100) from tests_rate_sweep_temperature_paper_scale/T1.585/sim0
+  move  150000: Rg_ca=9.950  Rg_allatom=9.941  mean_plddt=0.798
+  move  160000: Rg_ca=10.114  Rg_allatom=10.139  mean_plddt=0.756
+  move  170000: Rg_ca=10.221  Rg_allatom=10.222  mean_plddt=0.781
+  move  180000: Rg_ca=10.090  Rg_allatom=10.085  mean_plddt=0.799
+  move  190000: Rg_ca=10.099  Rg_allatom=10.131  mean_plddt=0.839
+  move  200000: Rg_ca=10.011  Rg_allatom=10.009  mean_plddt=0.855
+  move  210000: Rg_ca=10.063  Rg_allatom=10.057  mean_plddt=0.811
+  move  220000: Rg_ca=10.009  Rg_allatom=10.002  mean_plddt=0.801
+  move  230000: Rg_ca=10.221  Rg_allatom=10.228  mean_plddt=0.759
+  move  240000: Rg_ca=10.058  Rg_allatom=10.051  mean_plddt=0.770
+  move  250000: Rg_ca=10.121  Rg_allatom=10.153  mean_plddt=0.801
+  move  260000: Rg_ca=9.872  Rg_allatom=9.852  mean_plddt=0.788
+  move  270000: Rg_ca=10.018  Rg_allatom=10.006  mean_plddt=0.799
+  move  280000: Rg_ca=10.075  Rg_allatom=10.107  mean_plddt=0.767
+  move  290000: Rg_ca=9.935  Rg_allatom=9.930  mean_plddt=0.808
+  move  300000: Rg_ca=9.744  Rg_allatom=9.746  mean_plddt=0.825
+Saved 16 rows -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/structural_metrics.csv
+--- plot_structural_metrics.py ---
+  Rg_ca: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/Rg_ca.png
+  Rg_allatom: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/Rg_allatom.png
+  mean_plddt -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/mean_plddt.png
+Hamming/q distribution: 1501/3001 post-burn-in checkpoints
+  Hamming + q distribution -> tests_rate_sweep_temperature_paper_scale/T1.585/sim0/plots/hamming_and_q_distribution.png
+Done.
+
+============================================================
+T=2.512 -- Wed 30 Sep 11:53:32 CEST 2026
+============================================================
+--- plot_run.py ---
+Plotting 13 metrics from tests_rate_sweep_temperature_paper_scale/T2.512/sim0/data.dat (300001 rows) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/
+  time: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/time.png
+  U: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/U.png
+  U_am: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/U_am.png
+  U_structure_ce: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/U_structure_ce.png
+  entropy: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/entropy.png
+  Hd_to_ref: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/Hd_to_ref.png
+  dU: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/dU.png
+  log_a_AB: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/log_a_AB.png
+  log_a_BA: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/log_a_BA.png
+  log_ratio: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/log_ratio.png
+  accepted: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/accepted.png
+  acc_moves: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/acc_moves.png
+  acc_rate: raw + cumulative + rolling(window=200) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/acc_rate.png
+Done.
+--- compute_structural_metrics.py (stride=100) ---
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 51206.82it/s]
+Decoding 16/3001 checkpoints (stride=100) from tests_rate_sweep_temperature_paper_scale/T2.512/sim0
+  move  150000: Rg_ca=9.858  Rg_allatom=9.891  mean_plddt=0.828
+  move  160000: Rg_ca=10.176  Rg_allatom=10.182  mean_plddt=0.861
+  move  170000: Rg_ca=10.074  Rg_allatom=10.067  mean_plddt=0.815
+  move  180000: Rg_ca=10.138  Rg_allatom=10.136  mean_plddt=0.805
+  move  190000: Rg_ca=10.019  Rg_allatom=10.049  mean_plddt=0.845
+  move  200000: Rg_ca=9.854  Rg_allatom=9.856  mean_plddt=0.830
+  move  210000: Rg_ca=10.033  Rg_allatom=10.003  mean_plddt=0.842
+  move  220000: Rg_ca=9.748  Rg_allatom=9.742  mean_plddt=0.870
+  move  230000: Rg_ca=10.038  Rg_allatom=10.028  mean_plddt=0.823
+  move  240000: Rg_ca=9.891  Rg_allatom=9.867  mean_plddt=0.831
+  move  250000: Rg_ca=10.052  Rg_allatom=10.065  mean_plddt=0.755
+  move  260000: Rg_ca=9.859  Rg_allatom=9.834  mean_plddt=0.784
+  move  270000: Rg_ca=10.007  Rg_allatom=9.975  mean_plddt=0.792
+  move  280000: Rg_ca=9.942  Rg_allatom=9.971  mean_plddt=0.670
+  move  290000: Rg_ca=9.901  Rg_allatom=9.898  mean_plddt=0.813
+  move  300000: Rg_ca=10.062  Rg_allatom=10.069  mean_plddt=0.808
+Saved 16 rows -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/structural_metrics.csv
+--- plot_structural_metrics.py ---
+  Rg_ca: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/Rg_ca.png
+  Rg_allatom: raw + cumulative + rolling(window=5) -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/Rg_allatom.png
+  mean_plddt -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/mean_plddt.png
+Hamming/q distribution: 1501/3001 post-burn-in checkpoints
+  Hamming + q distribution -> tests_rate_sweep_temperature_paper_scale/T2.512/sim0/plots/hamming_and_q_distribution.png
+Done.
+
+============================================================
+Cross-T plots -- Wed 30 Sep 11:54:01 CEST 2026
+============================================================
+--- identify_k_sites.py ---
+T=0.2512: loaded 1501/3001 checkpoints from tests_rate_sweep_temperature_paper_scale/T0.2512/sim0, mean S(i)=0.0047 (0.2% of log(20))
+       burn-in check: first half=0.0042, second half=0.0047 (gap 10.4% of mean -- still trending, 50% cutoff may not be enough)
+T=0.3981: loaded 1501/3001 checkpoints from tests_rate_sweep_temperature_paper_scale/T0.3981/sim0, mean S(i)=0.4137 (13.8% of log(20))
+       burn-in check: first half=0.3650, second half=0.3322 (gap 9.0% of mean -- looks settled)
+T=0.631: loaded 1501/3001 checkpoints from tests_rate_sweep_temperature_paper_scale/T0.631/sim0, mean S(i)=0.6716 (22.4% of log(20))
+       burn-in check: first half=0.6006, second half=0.6405 (gap 6.2% of mean -- looks settled)
+T=1.0: loaded 1501/3001 checkpoints from tests_rate_sweep_temperature_paper_scale/T1.0/sim0, mean S(i)=2.0289 (67.7% of log(20))
+       burn-in check: first half=1.9355, second half=1.9956 (gap 3.0% of mean -- looks settled)
+T=1.585: loaded 1501/3001 checkpoints from tests_rate_sweep_temperature_paper_scale/T1.585/sim0, mean S(i)=2.1658 (72.3% of log(20))
+       burn-in check: first half=2.1083, second half=2.1434 (gap 1.6% of mean -- looks settled)
+T=2.512: loaded 1501/3001 checkpoints from tests_rate_sweep_temperature_paper_scale/T2.512/sim0, mean S(i)=2.2540 (75.2% of log(20))
+       burn-in check: first half=2.2042, second half=2.2294 (gap 1.1% of mean -- looks settled)
+
+=== K-sites (paper definition, p.6): entropy < 0.05 at EVERY T in [0.2512, 0.3981, 0.631, 1.0, 1.585, 2.512] ===
+0/56 sites qualify (paper found 7/56 for protein G):
+[]
+
+=== secondary tier: entropy < 1.0 at every T, but not a K-site ===
+3/56 sites (paper found 9/56 more at this level):
+['8_G', '40_G', '45_D']
+
+Per-site-per-T entropy table -> k_sites_plots_tests_rate_sweep_temperature_paper_scale/per_site_entropy_by_T.csv
+Per-site entropy plot -> k_sites_plots_tests_rate_sweep_temperature_paper_scale/per_site_entropy.png
+--- plot_plddt_vs_T.py ---
+T=0.2512: 16 decoded checkpoints, mean_plddt=0.79 +/- 0.00
+T=0.3981: 16 decoded checkpoints, mean_plddt=0.78 +/- 0.02
+T=0.631: 16 decoded checkpoints, mean_plddt=0.78 +/- 0.03
+T=1.0: 16 decoded checkpoints, mean_plddt=0.80 +/- 0.03
+T=1.585: 16 decoded checkpoints, mean_plddt=0.80 +/- 0.03
+T=2.512: 16 decoded checkpoints, mean_plddt=0.81 +/- 0.05
+
+pLDDT vs T -> k_sites_plots_tests_rate_sweep_temperature_paper_scale/plddt_vs_T.png
+
+============================================================
+Plotting suite complete -- Wed 30 Sep 11:54:04 CEST 2026
+Plots: tests_rate_sweep_temperature_paper_scale/T<T>/sim0/plots/*.png, k_sites_plots_tests_rate_sweep_temperature_paper_scale/*.png
+============================================================

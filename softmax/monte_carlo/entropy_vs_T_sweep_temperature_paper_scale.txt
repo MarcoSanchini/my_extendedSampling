@@ -1,0 +1,6 @@
+T=0.2512: 1501/3001 checkpoints, mean S(i)=0.0047 (0.2% of log(20)), mean q=0.9981
+T=0.3981: 1501/3001 checkpoints, mean S(i)=0.4137 (13.8% of log(20)), mean q=0.8064
+T=0.631: 1501/3001 checkpoints, mean S(i)=0.6716 (22.4% of log(20)), mean q=0.6916
+T=1.0: 1501/3001 checkpoints, mean S(i)=2.0289 (67.7% of log(20)), mean q=0.2297
+T=1.585: 1501/3001 checkpoints, mean S(i)=2.1658 (72.3% of log(20)), mean q=0.1902
+T=2.512: 1501/3001 checkpoints, mean S(i)=2.2540 (75.2% of log(20)), mean q=0.1759
