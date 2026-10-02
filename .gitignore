@@ -1,47 +1,23 @@
 **/__pycache__/
 *.pyc
 
-softmax/monte_carlo/logs/
-softmax/monte_carlo/logs_dt/
-softmax/monte_carlo/logs_fixed_tau/
-softmax/monte_carlo/logs_lambda/
-softmax/monte_carlo/logs_tau/
-
-softmax/monte_carlo/tests/
+softmax/monte_carlo/protein_g*/logs*/
+softmax/monte_carlo/protein_g*/tests/
 
 softmax/code/classes/ep_sampler_am_backup.py
 
 *.log
-softmax/code/joint_coupling_test.txt
-softmax/code/joint_coupling_test_smalldt_no_max_sites.txt
-softmax/code/steepest_descent_test.txt
+softmax/code/protein_g*/joint_coupling_test.txt
+softmax/code/protein_g*/joint_coupling_test_smalldt_no_max_sites.txt
+softmax/code/protein_g*/steepest_descent_test.txt
 
 
-softmax/code/proposal_test.txt
-softmax/code/steepest_descent_M1.txt
-softmax/code/compare_grad.txt
-
-softmax/monte_carlo/tests_rate/sim0/eprot/
-softmax/monte_carlo/tests_rate/sim1/eprot/
-
+softmax/code/protein_g*/proposal_test.txt
+softmax/code/protein_g*/steepest_descent_M1.txt
+softmax/code/protein_g*/compare_grad.txt
 
 softmax/monte_carlo/old_sampling/
 
-softmax/monte_carlo/tests_rate_sweep_dt/dt50/sim0/eprot/
-softmax/monte_carlo/tests_rate_sweep_dt/dt150/sim0/eprot/
-softmax/monte_carlo/tests_rate_sweep_dt/dt20/sim0/eprot/
-softmax/monte_carlo/tests_rate_sweep_dt/dt100/sim0/eprot/
-
-softmax/monte_carlo/tests_rate_sweep_dt/dt300/sim0/eprot/
-softmax/monte_carlo/tests_rate_sweep_dt/dt600/sim0/eprot/
-softmax/monte_carlo/tests_rate_sweep_dt/dt1000/sim0/eprot/
-softmax/monte_carlo/tests_rate_sweep_dt/dt1300/sim0/eprot/
-
-softmax/monte_carlo/tests_rate_sweep_dt_seeds/dt*/sim0/eprot/
-
-softmax/monte_carlo/tests_rate_sweep_temperature/T*/sim0/eprot/
-softmax/monte_carlo/tests_rate_sweep_temperature_refine/T*/sim0/eprot/
-softmax/monte_carlo/tests_rate_sweep_temperature_refine_long/T*/sim0/eprot/
 
 # General safety net: an eprot/ checkpoint dir under any tests_rate* sweep
 # results dir should always be local-only, per every sweep in this project
@@ -49,31 +25,7 @@ softmax/monte_carlo/tests_rate_sweep_temperature_refine_long/T*/sim0/eprot/
 # committed because the specific rule above was added one commit too late
 # -- this catches any future sweep directory even if a specific line is
 # forgotten again.
-softmax/monte_carlo/tests_rate*/**/eprot/
-
-# Plots (plot_run.py, plot_structural_metrics.py, identify_k_sites.py) are
-# generated locally from data.dat/eprot checkpoints -- local-only for the
-# same reason eprot/ itself is: regeneratable from data already gitignored,
-# and PNGs would bloat the repo the same way the accidental eprot/ commit
-# did. Also covers structural_metrics.csv (compute_structural_metrics.py's
-# output) -- cheap to regenerate from a *.pt checkpoint set that's itself
-# never committed, so keeping the CSV out too avoids a committed artifact
-# whose source can't be reproduced from what's actually in the repo.
-*.png
-# Keep paper-scale temperature-sweep plots tracked
-!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/
-!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/T*/
-!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/T*/sim0/
-!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/T*/sim0/plots/
-!softmax/monte_carlo/tests_rate_sweep_temperature_paper_scale/T*/sim0/plots/*.png
-
-
-
-
-softmax/monte_carlo/**/structural_metrics.csv
-softmax/monte_carlo/k_sites_plots*/
-!softmax/monte_carlo/k_sites_plots_tests_rate_sweep_temperature_paper_scale/
-
+softmax/monte_carlo/protein_g*/**/eprot/
 
 # data.dat itself is local-only from here on, same reasoning as eprot/:
 # moves=300000 (the paper-matched sweep) already produces ~50-57MB
@@ -85,4 +37,30 @@ softmax/monte_carlo/k_sites_plots*/
 # data.dat files (every sweep before this one, all comfortably under the
 # warning threshold) are left as historical record, not retroactively
 # untracked -- this only stops NEW large ones from being added.
-softmax/monte_carlo/tests_rate*/**/data.dat
+softmax/monte_carlo/protein_g*/**/data.dat
+
+# Plots (plot_run.py, plot_structural_metrics.py, identify_k_sites.py) are
+# generated locally from data.dat/eprot checkpoints -- local-only for the
+# same reason eprot/ itself is: regeneratable from data already gitignored,
+# and PNGs would bloat the repo the same way the accidental eprot/ commit
+# did. Also covers structural_metrics.csv (compute_structural_metrics.py's
+# output) -- cheap to regenerate from a *.pt checkpoint set that's itself
+# never committed, so keeping the CSV out too avoids a committed artifact
+# whose source can't be reproduced from what's actually in the repo.
+*.png
+# Keep paper-scale temperature-sweep plots tracked
+!softmax/monte_carlo/protein_g*/tests_rate_sweep_temperature_paper_scale/
+!softmax/monte_carlo/protein_g*/tests_rate_sweep_temperature_paper_scale/T*/
+!softmax/monte_carlo/protein_g*/tests_rate_sweep_temperature_paper_scale/T*/sim0/
+!softmax/monte_carlo/protein_g*/tests_rate_sweep_temperature_paper_scale/T*/sim0/plots/
+!softmax/monte_carlo/protein_g*/tests_rate_sweep_temperature_paper_scale/T*/sim0/plots/*.png
+
+
+
+
+softmax/monte_carlo/protein_g*/**/structural_metrics.csv
+softmax/monte_carlo/protein_g*/k_sites_plots*/
+!softmax/monte_carlo/protein_g*/k_sites_plots_tests_rate_sweep_temperature_paper_scale/
+
+
+
