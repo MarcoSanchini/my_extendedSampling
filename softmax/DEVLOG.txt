@@ -3309,3 +3309,120 @@ only). Run from softmax/code:
     mkdir -p zero_polymer
     nohup python -u tests/test_joint_coupling_N.py \
         > zero_polymer/test_joint_coupling_N_results.txt 2>&1 &
+
+--------------------------------------------------------------------------------
+2026-10-02 -- zero_polymer results: coupling IS much weaker (2-5x) and now mostly FAVOURABLE in sign -- but dU per move is larger, because U_am's scale grows with L
+--------------------------------------------------------------------------------
+User ran it on the GPU and pushed zero_polymer/test_joint_coupling_N_results.txt
+(commit ac8e1ad). N=1 sanity check passes at every trial (coupling
+=+0.00000), so the construction is intact at the new length.
+
+The hypothesis holds on the coupling axis. Scale-free ratios, protein G
+vs zero_polymer, both recomputed from their 140 per-trial rows
+(c = coupling, iso = sum_isolated, dU_j = dU_joint):
+
+  N   |c|/|dU_j|  pG -> zp   |c|/|iso|  pG -> zp   frac(|c|>|iso|)  pG -> zp
+  2      0.51    ->  0.08      0.40    ->  0.07        0.10   ->  0.05
+  3      0.43    ->  0.26      0.51    ->  0.24        0.40   ->  0.05
+  5      0.85    ->  0.21      0.97    ->  0.18        0.55   ->  0.05
+  8      0.60    ->  0.28      0.72    ->  0.25        0.40   ->  0.10
+  12     0.75    ->  0.47      0.91    ->  0.44        0.65   ->  0.20
+  20     0.70    ->  0.30      1.43    ->  0.28        0.65   ->  0.00
+
+Every ratio drops, by 2-5x, and N=2/3/5 land at or near the "comfortably
+small" (<0.2) level the previous entry set as the bar. The protein G
+headline -- coupling as large as the move itself, i.e. a joint
+accept/reject dominated by cross-site interaction -- does NOT reproduce
+at 566 residues. On the longest-N row the contrast is sharpest: at N=20,
+coupling exceeded the isolated sum in 65% of protein G trials and in 0%
+of zero_polymer's.
+
+Coupling also changed SIGN. On protein G mean coupling was positive at
+every N above 2 (joint moves more uphill than the sum of their isolated
+parts, i.e. coupling hurt). On zero_polymer it is negative at every N
+(-52 to -560), negative in 60-80% of trials: the joint move is now
+consistently LESS uphill than the sum of its isolated single-site
+effects. Coupling now mildly helps. (Still not a correctable fixed bias
+-- |mean|/std stays below 1 at every N, 0.10-0.86, so it remains
+idiosyncratic per site-set, just small relative to the move and
+favourably signed. Same caveat as protein G's, opposite sign.)
+
+BUT the practical conclusion for a multi-site sampler does not follow,
+and the same run shows why. The ratios above fell mostly because their
+DENOMINATOR grew, not because coupling got small in absolute terms:
+
+  - A single-site move (N=1, coupling=0 by construction) costs mean
+    |dU| = 458 on zero_polymer vs 57.7 on protein G: 7.9x more. That
+    tracks L (10.1x), not the attention-map pair count (103.8x) -- one
+    site change perturbs one row+column of the LxL map, ~L entries, so
+    U_am's single-site sensitivity scales roughly LINEARLY in L. Worth
+    recording as a general scaling fact, independent of this test.
+  - Expressed in single-site units -- mean dU_joint / (N * N=1 mean|dU|),
+    where 1.0 means the N-site move costs exactly N independent
+    single-site moves -- protein G sits at 0.13-0.34 (strong
+    cancellation between sites) while zero_polymer sits at 0.58-1.13,
+    averaging ~0.9. Which is just the separability result restated: with
+    coupling weak, an N-site move costs about N single-site moves. There
+    is no free lunch in it.
+  - So absolute dU_joint is LARGER here, not smaller: mean +1037 at N=2
+    rising to +8649 at N=20 (protein G: +15 to +394). At T=2, every one
+    of those is rejected as surely as protein G's were.
+
+Net: the two obstacles the protein G run conflated have separated. The
+non-separability obstacle (coupling comparable to the move, sign-
+flipping, uncorrectable) largely goes away at 566 residues. What remains
+is an energy-SCALE obstacle: U_am's dU per changed site grows ~linearly
+in L, so both single- and multi-site moves get more expensive on a
+longer protein, and T (characterized entirely at L=56: the transition's
+steep part near T~0.3-0.4, the T=2 working point) does not transfer. The
+remaining problem is T calibration, which is tractable in a way
+cross-site coupling never was -- and it applies to the EXISTING
+single-site sampler just as much as to any multi-site design, so it is
+work that has to happen for the ~200-residue scale-up regardless.
+
+For the supervisor's multi-site question specifically: the 2026-09-25
+"no safe N" conclusion is now explicitly length-specific. It stands for
+protein G and must not be quoted for the scale-up target. Whether
+multi-site moves are worth it at 566 residues turns on the T question
+above, not on separability -- the 20 observed N-site moves per N are
+all uphill in a regime where T was never calibrated.
+
+Caveats on this run, unchanged from the pre-run entry and worth
+repeating next to the numbers:
+  - seq_A is 5 mutations from the reference: Hd=5/566 (0.9%) vs 5/56
+    (9%) on protein G, verified from the results file's own header
+    (sites 191, 443, 496, 501, 525). So nearly every site sits exactly
+    at the reference, where U_am is at its floor. The uphill FRACTION
+    happens to match protein G (14/20 of N=1 trials uphill in both), so
+    this did not bias the sign, but it does mean the available
+    downhill moves are the 5 mutated sites alone -- a reference-anchored
+    measurement, not an equilibrated-chain one.
+  - Site 496 of seq_A is 'O' (pyrrolysine), drawn by mutate() from the
+    full SEQUENCE_USED_VOCAB. Non-canonical residues are valid for a
+    site to sit ON but never valid proposal TARGETS
+    (_competition_indices), which the test respects. Protein G's own
+    seq_A had an 'O' too (site 36), so the two runs are consistent, not
+    newly compromised.
+  - N=20 is 3.5% of zero_polymer vs 36% of protein G. These numbers
+    answer "would an N-site move work on the long protein" at fixed N,
+    which is the design-relevant question; they do NOT test the
+    fixed-FRACTION question (N~200 here), which is what the original
+    JOINT design's N~54-of-58 failure actually was. Left open
+    deliberately -- the per-site cost would be ~10x sum(N).
+
+Next, if this line is continued (nothing run yet, user's call): the
+cheapest useful follow-up is a T scan on zero_polymer to find where
+single-site dU/T lands in the acceptance window, since every multi-site
+conclusion above is gated on it. A fixed-FRACTION N sweep (N up to ~200)
+would close the remaining comparability gap but costs ~10x this run.
+
+Added tests/compare_coupling_across_refs.py so none of the above has to
+be re-derived by hand: parses both results files' per-trial rows and
+prints every table in this entry (the three ratios, the single-site
+scale, the single-site-units cost, coupling sign/consistency, plus
+seq_A's Hd and non-canonical residues from the file header). Pure
+stdlib, no torch/GPU -- it reads committed text files, so it runs in the
+sandbox, and it was used to produce the numbers above rather than them
+being transcribed. From softmax/code:
+    python tests/compare_coupling_across_refs.py
+    python tests/compare_coupling_across_refs.py A_results.txt B_results.txt
