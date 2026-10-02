@@ -3598,3 +3598,160 @@ whole story reduces to the T calibration in step 4.
 Also worth running once step 3 is in: SITES=30 MUTS=51 on
 test_steepest_descent.py, to tighten the top-1 error bar and to test the
 gradient away from the floor rather than pinned at it.
+
+--------------------------------------------------------------------------------
+2026-10-02 -- safety-check suite results on zero_polymer: every check PASSES, the method is sound at L=566. The dU spike is energy scale; two proline picks produce the whole apparent degradation; T=2.0 confirmed frozen
+--------------------------------------------------------------------------------
+User ran the suite (own run_all.sh, commit 2d4645a) and pushed every
+results file. Verdict: the "method is not fully reliable" worry is NOT
+borne out. Nothing is broken. Three separate things were being conflated
+and the suite separates all three.
+
+(A) HARNESS VERIFIED -- the control reproduces protein G exactly.
+REF=protein_g through the current (refactored) code reproduces every
+recorded landmark to the last decimal:
+  - test_steepest_descent: top-1 2/10; site 4 gradient-predicted T with
+    true dU=+356.4977 (the same outlier since 2026-09-21); mean dU at
+    predicted +17.1975 vs others +20.9858 (the DEVLOG's "+17.2").
+  - scan_U_am_landscape: compute_U_am(ref_am,ref_am)=0 exactly; 0 negative
+    across 190 reference-anchored single mutants; mean dU-from-ref
+    +31.4405 (the DEVLOG's "~31"); per-site best picks identical to the
+    2026-09-23 table (site 4 L->I +9.07, 30 K->E +3.04, 49 K->R +2.66,
+    24 T->V +5.62, 55 E->Q +2.74).
+  - Sites 30 and 52 came back as the two top-1 HITs, which is exactly the
+    provenance validate_boltzmann_toy.py's FREE_SITES=[30,52] claims.
+So references.py and the env-override refactor changed no behavior, and
+every zero_polymer difference below is a real property of the sequence.
+
+(B) THE ENERGY IS NUMERICALLY SOUND AT L=566 -- the new check (0) clears
+the concern it was built for, rather than confirming it:
+  - am: 320356 entries, 0 exactly zero, 0 non-finite. min=5.42e-05, which
+    is ~33 orders of magnitude above bfloat16's smallest normal (~1.2e-38),
+    so log(am) has enormous headroom and compute_U_am's missing eps guard
+    is not reachable on this reference. log(am) range [-9.82, -2.20].
+  - U_am NOISE FLOOR = 0.000000e+00 exactly, max|am - am_recomputed| = 0:
+    the forward pass is bit-reproducible at 566 residues. So U_am carries
+    NO run-to-run noise and every dU discussed anywhere in this project is
+    signal, not rounding. (Same on protein G.) This also retroactively
+    clears the coupling results, which the noise-floor worry would have
+    invalidated.
+  - U_am(ref,ref)=0 exactly; 0 floor violations across 190 mutants.
+The eps-guard gap in compute_U_am stays a latent risk worth keeping in
+mind for much longer sequences or a more peaked attention map, but it is
+measured-and-clear here, not a live bug.
+
+(C) THE GRADIENT IS JUST AS INFORMATIVE AS ON PROTEIN G, in the only
+terms that can be compared across energy scales:
+                  top-1   mean dU@pred  mean dU@other  advantage  /scale
+  protein G        2/10         +17.20        +20.99       3.79    12.0%
+  zero_polymer     2/10        +474.38       +542.46      68.08    11.3%
+Identical top-1, and the gradient's advantage over a random candidate is
+the SAME fraction of the energy scale (12.0% vs 11.3%) -- where "scale"
+is each reference's own mean dU-from-ref. The p=0 descent check passes at
+every site on both. compare_grad_methods gives cosine(grad_site,
+grad_whole) >= 0.9999 at all 11 sites, so the site-only gradient remains
+equivalent to the whole-sequence one at this length.
+
+(D) THE dU SPIKE IS ENERGY SCALE, and the clean measurement is steeper
+than the earlier estimate. Reference-anchored (Hd=1, no drift, no
+gradient involved) mean dU-from-ref: 31.44 -> 603.35, a factor 19.2.
+That is ~1.9x steeper than L itself (10.1x), so the earlier 7.9x estimate
+(taken from seq_A with the gradient's greedy pick, i.e. confounded) UNDER-
+stated it. Revise the scaling claim: U_am's per-site cost grows somewhat
+FASTER than linear in L on a clean reference-anchored measurement, not
+"~linearly" as the previous two entries said. U_A_exact for 5 mutations is
+2557.04, i.e. ~511/mutation, consistent with the 603 mean.
+
+(E) THE ONE REAL FINDING: PROLINE. zero_polymer's alarming "+474 mean dU
+at the gradient's pick" is, entirely, two proline proposals:
+  site 463 (cur=F) -> P: dU=+3871.63   (true best Y: -104.17)
+  site 468 (cur=K) -> P: dU= +925.30   (true best R: -135.21)
+  the other 8 sites:      mean dU = -6.6   <-- i.e. mildly FAVOURABLE
+Those two picks contribute +4797 of the +4744 total. Strip them and the
+gradient's average proposal is slightly downhill, which is the behaviour
+protein G's runs showed too. compare_grad confirms BOTH gradient methods
+pick P at both sites (cosine +1.0000), so this is a genuine property of
+the gradient, not a computation artifact.
+  CRITICALLY, the fix is NOT to exclude P the way X/B/U/Z/O were excluded
+  back on 2026-09-17/18. Proline is a real canonical residue and is
+  sometimes the RIGHT answer: at site 189 of this very run the TRUE BEST
+  substitution is P, at dU=-835.23 (the most favourable move seen in the
+  whole scan), and on protein G the gradient picked P at site 55 and got
+  -79.32. So P is not "always bad" -- the gradient simply cannot tell a
+  catastrophic P from an excellent one. That is the known linearization
+  limit, now with a chemically identifiable signature rather than a
+  site-specific one (protein G's version of this was "site 4").
+  This is a PROPOSAL-EFFICIENCY problem, not a correctness problem: the
+  exact MH accept/reject rejects a +3871 move with certainty, so the
+  target distribution is untouched. The cost is wasted moves -- at ~20% of
+  sites on this sample, ~1 in 5 proposals is thrown away. Worth measuring
+  properly (how often does the gradient pick P across many more sites, and
+  what is the dU distribution when it does) before considering any
+  mitigation, and worth remembering that any mitigation must preserve P as
+  a reachable target or it breaks detailed balance and rules out the best
+  move at sites like 189.
+
+(F) T=2.0 CONFIRMED FROZEN, and the usable window is now measured. The
+new calibration block, on the 2-site/400-state enumeration:
+  U over 400 states: min=0, median=+740.27, max=+6235.03, std=1074.06
+         T   eff. states   max p_exact   verdict
+      2.00          1.00        1.0000   FROZEN  <== the inherited T
+     10.74          1.05        0.9743   FROZEN
+     32.22          2.97        0.5475   usable
+    107.41         41.66        0.0804   usable
+    322.22        183.45        0.0149   usable
+   1074.06        337.19        0.0050   FLAT
+At the inherited T=2.0 the exact target distribution puts p=1.0000 on the
+single state (L,T): the chain cannot move, and the test correctly SKIPPED
+its 2000-move run instead of burning the GPU proving it. Usable window
+T~32-322, best around T~107 (41.7 of 400 states effective). That is ~50x
+protein G's working T, consistent with (D)'s energy-scale factor.
+
+(G) dt: the working point moved 1270 -> 63, and widening DTS_TO_SWEEP was
+essential rather than cosmetic. Mean p_match=0.15 (the "mild
+informedness" point validate_boltzmann_toy.py wants) sits at dt~1270 on
+protein G and dt~63 on zero_polymer, a factor ~20 -- close to the ~18x
+predicted from the gradient-magnitude ratio. At the OLD range's floor
+(dt=300) zero_polymer is already at p_match=0.444, well past the working
+point, so without the extension down to dt=10 this would have been missed
+entirely and dt would have looked "already saturated everywhere".
+
+Minor notes:
+  - compare_grad_methods tests 11 sites, not 10: it deliberately prepends
+    site 4 (protein G's outlier) for reproducibility. On zero_polymer site
+    4 is an ordinary site (cur=I -> K, +879.65) and carries no special
+    meaning; harmless, but the extra row is by design.
+  - One site FLAGGED by compare_grad: site 43, where cosine is +1.0000 yet
+    the two methods pick differently (site-only W, +680.10; whole-sequence
+    A, -127.26). Near-parallel gradients with different argmax means the
+    top candidates are nearly TIED there, so a tiny magnitude difference
+    flips the winner. That is argmax fragility at near-degenerate sites,
+    not gradient disagreement -- and it is a second instance of the same
+    "the gradient's ranking is only as good as its margin" theme as (E).
+  - test_proposals.py's output went to test_proposals.log, which *.log
+    gitignores, so its result is not visible here. It is the pure-math,
+    length-independent check (no REF_SEQ at all), so it should be
+    unaffected -- worth confirming it printed its OKs.
+  - Recorded MOST_NEGATIVE_DU["zero_polymer"] = (835.2300, "site 189") in
+    scan_U_am_landscape.py, so the sharper cross-script consistency check
+    is now active for this reference too (2557.04 >= 835.23, consistent).
+
+NEXT, in order:
+  1. The end-to-end correctness check, now that a usable T exists -- this
+     is the one safety check still outstanding, and the only one that
+     tests the accept/reject machinery as a whole:
+       cd softmax/code
+       T=107 DT=63 MOVES=20000 python -u tests/validate_boltzmann_toy.py \
+           2>&1 | tee zero_polymer/validate_boltzmann_results.txt
+     Expect the empirical histogram over 400 states to match the exact
+     Boltzmann one. If it does, the sampler is validated at L=566 and the
+     whole "is the method reliable" question is closed affirmatively.
+  2. Tighten the gradient verdict and measure the proline rate on a real
+     sample, away from the floor:
+       SITES=30 MUTS=51 python -u tests/test_steepest_descent.py \
+           2>&1 | tee zero_polymer/steepest_descent_S30_M51.txt
+     30 sites also gives the proline frequency some actual statistics
+     (2/10 is one draw), and MUTS=51 matches protein G's 8.9% drift so the
+     comparison stops being floor-vs-bulk.
+  3. Only then a real main_rate.py run, at a T from (F) -- NOT the
+     inherited T=2.0, which (F) shows cannot move.

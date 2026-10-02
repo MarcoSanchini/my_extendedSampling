@@ -186,8 +186,12 @@ def main():
 		# protein G: site 55, from the 2026-09-22 run (code/protein_g/
 		# informedness_vs_dt_results.txt). Requires U_A_exact >= 92.9918.
 		"protein_g": (92.9918, "site 55"),
-		# zero_polymer: fill in from the informedness run on this reference.
-		"zero_polymer": None,
+		# zero_polymer: site 189, from the 2026-10-02 run (code/zero_polymer/
+		# informedness_vs_dt_results.txt). Requires U_A_exact >= 835.2300;
+		# the same run's scan measured U_A_exact=2557.0425, so consistent.
+		# (Note that dU is the TRUE BEST at that site, and it is a proline --
+		# see the DEVLOG entry on proline picks.)
+		"zero_polymer": (835.2300, "site 189"),
 	}
 	known = MOST_NEGATIVE_DU.get(REF_NAME)
 	if known is None:
