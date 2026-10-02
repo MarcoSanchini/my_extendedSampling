@@ -62,7 +62,25 @@ from utils.energies import compute_U_am, compute_entropy
 import custom_esm.utils.constants.esm3 as C
 
 
-REF_SEQ = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+# Protein G (56 aa): the reference behind protein_g/test_joint_coupling_N_results.txt
+# and every earlier result in this project. Kept commented out to switch back.
+#REF_SEQ = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+# zero_polymer (566 aa, ~10x protein G): checks whether cross-site coupling is
+# weaker when the N random sites are spread over a much longer sequence.
+# Results go to zero_polymer/test_joint_coupling_N_results.txt. One line per
+# 60 residues, so line k holds (0-indexed) sites 60k..60k+59.
+REF_SEQ = (
+    "MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQ"
+    "SSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPD"
+    "YASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPAL"
+    "NVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVR"
+    "NIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITP"
+    "NGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWE"
+    "GMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEG"
+    "RIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGN"
+    "GCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISC"
+    "FLLCVALLGFIMWACQKGNIRCNICI"
+)
 SEED = 0
 N_VALUES = [1, 2, 3, 5, 8, 12, 20]
 # Raised from 5 to 20 after the first run (test_joint_coupling_N_results.txt,
