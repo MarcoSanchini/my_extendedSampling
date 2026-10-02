@@ -1,0 +1,42 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 189475.75it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Free sites: 30 (ref=L), 52 (ref=T)  -- 20^2=400 states, background fixed at reference elsewhere
+T=2.0, dt=1300.0, MOVES=2000, BURN_IN=400
+
+=== exact enumeration ===
+U at (ref,ref) = 0.000000  (should be exactly/near-exactly 0)
+sum(p_exact) = 1.000000  (should be 1.0)
+
+Top 10 states by exact Boltzmann probability:
+  (L,T): p_exact=1.0000  U=+0.0000
+  (L,S): p_exact=0.0000  U=+42.0872
+  (M,T): p_exact=0.0000  U=+59.8256
+  (L,Q): p_exact=0.0000  U=+68.9740
+  (M,S): p_exact=0.0000  U=+73.8306
+  (L,N): p_exact=0.0000  U=+106.2867
+  (M,Q): p_exact=0.0000  U=+134.7961
+  (Y,Q): p_exact=0.0000  U=+140.7529
+  (Y,S): p_exact=0.0000  U=+140.9799
+  (L,G): p_exact=0.0000  U=+146.0622
+
+=== T calibration (from the enumerated spectrum, no extra model calls) ===
+U over the 400 states: min=+0.00  median=+740.27  max=+6235.03  std=1074.06
+spread above the minimum: median-min=740.27  max-min=6235.03
+  (T must be comparable to these gaps; T << gap freezes the chain, T >> gap flattens it)
+
+           T   eff. states  max p_exact   verdict
+      2.0000          1.00       1.0000   FROZEN -- one state, validates nothing  <== configured T
+     10.7406          1.05       0.9743   FROZEN -- one state, validates nothing
+     32.2217          2.97       0.5475   usable
+    107.4057         41.66       0.0804   usable
+    322.2171        183.45       0.0149   usable
+   1074.0568        337.19       0.0050   FLAT -- ~uniform, validates nothing
+   3222.1705        382.03       0.0033   FLAT -- ~uniform, validates nothing
+  10740.5684        397.06       0.0027   FLAT -- ~uniform, validates nothing
+
+*** configured T=2.0 leaves the target distribution FROZEN (essentially all mass on one state): eff. states=1.00 of 400.
+    The MCMC comparison below cannot validate the sampler in this regime --
+    it would agree with the exact distribution for the wrong reason.
+    Pick a T from the 'usable' rows above, e.g.  T=<value> python validate_boltzmann_toy.py
+    Skipping the 2000-move run (set FORCE=1 to run it anyway).

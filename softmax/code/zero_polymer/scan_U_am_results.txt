@@ -1,0 +1,42 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 182361.04it/s]
+# reference: zero_polymer (L=566 residues)
+
+=== (0) log(am) numerical health (length-sensitive) ===
+am: shape=(566, 566)  min=5.421609e-05  max=1.103998e-01  mean=1.747851e-03  (uniform would be ~1.760563e-03)
+am entries exactly 0: 0/320356   non-finite: 0/320356
+log(am) range: [-9.8225, -2.2036]  (all finite, so compute_U_am's raw log is safe on this reference)
+U_am NOISE FLOOR (same sequence, two separate forward passes) = 0.000000e+00
+  max |am - am_recomputed| = 0.000000e+00
+  (0 => the forward pass is bit-reproducible and U_am has no run-to-run noise.
+   Non-zero => every dU smaller in magnitude than this is numerical noise, not signal.)
+
+=== (1) floor consistency check ===
+compute_U_am(ref_am, ref_am) = 0.00000000e+00  (should be exactly/near-exactly 0)
+Current A (Hd=5 from ref): MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELWVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVELKSFYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+U_A_exact = 2557.0425
+Floor bound: no dU measured from this seq_A can be below -U_A_exact = -2557.0425 (since U_cand >= 0 always).
+(No recorded most-negative dU for reference 'zero_polymer' yet -- run
+ test_informedness_vs_dt.py on it, then record its value in this script's
+ MOST_NEGATIVE_DU to enable the sharper cross-script consistency check.)
+
+=== (2) reference-anchored scan (Hd=1 from ref, no prior drift) ===
+  site 178 (ref=A): best=M (dU=+110.2730)  worst=C (dU=+1732.1415)  mean=+419.5964  n_negative=0/19
+  site  30 (ref=L): best=M (dU=+59.8256)  worst=D (dU=+1061.6278)  mean=+537.3375  n_negative=0/19
+  site  43 (ref=T): best=N (dU=+159.8434)  worst=F (dU=+3430.1426)  mean=+1250.2973  n_negative=0/19
+  site 494 (ref=G): best=H (dU=+213.8920)  worst=I (dU=+1067.8933)  mean=+457.5857  n_negative=0/19
+  site 463 (ref=F): best=L (dU=+70.8860)  worst=P (dU=+3960.4480)  mean=+737.5116  n_negative=0/19
+  site 107 (ref=K): best=R (dU=+94.4008)  worst=G (dU=+1144.7660)  mean=+410.2825  n_negative=0/19
+  site 313 (ref=N): best=S (dU=+77.1637)  worst=C (dU=+2153.6658)  mean=+698.0679  n_negative=0/19
+  site 123 (ref=L): best=M (dU=+79.6328)  worst=C (dU=+1796.0507)  mean=+424.4826  n_negative=0/19
+  site 189 (ref=F): best=Y (dU=+139.1526)  worst=C (dU=+3049.3149)  mean=+707.9771  n_negative=0/19
+  site 468 (ref=K): best=N (dU=+52.9796)  worst=C (dU=+2192.2629)  mean=+390.3271  n_negative=0/19
+
+Across all 190 single mutants of the reference tested: 0 negative (should be 0, up to float precision -- the floor argument
+guarantees every one of these is >= 0 since U(ref)=0 is the global minimum).
+Mean dU-from-ref across all tested single mutants: +603.3466
+(This is the typical 'cost' of one mutation evaluated with NO other drift --
+ compare by eye to test_informedness_vs_dt.py's true_dU values at the SAME sites,
+ which were evaluated from seq_A (Hd=4). A site whose cost-from-ref is clearly
+ positive but whose cost-from-seq_A went negative is direct, site-matched evidence
+ of epistasis/context-dependence -- not a landscape-optimality violation, since
+ seq_A's own baseline U_A_exact already accounts for its own Hd=4 distance from ref.)

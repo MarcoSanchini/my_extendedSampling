@@ -1,0 +1,22 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 99864.38it/s]
+# reference: protein_g (L=56 residues)
+Reference: MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+Current A: MTYKLFLNGKTLKGETTYEAVDAATAEKVFKQYENDOGVDGEWTYDDATKTFTVTW
+  site   4 (cur=L): gradient-predicted=T (true dU=+356.4977)  true best=F (true dU=-19.9868)  top1=miss
+  site  30 (cur=K): gradient-predicted=R (true dU=-3.5485)  true best=R (true dU=-3.5485)  top1=HIT
+  site  49 (cur=K): gradient-predicted=I (true dU=+22.8421)  true best=A (true dU=-4.0389)  top1=miss
+  site  24 (cur=T): gradient-predicted=E (true dU=+11.3973)  true best=F (true dU=-27.1905)  top1=miss
+  site  55 (cur=W): gradient-predicted=P (true dU=-79.3216)  true best=K (true dU=-92.9918)  top1=miss
+  site   5 (cur=F): gradient-predicted=K (true dU=+4.1762)  true best=M (true dU=-62.7916)  top1=miss
+  site  33 (cur=E): gradient-predicted=F (true dU=-40.6453)  true best=A (true dU=-76.1019)  top1=miss
+  site  52 (cur=T): gradient-predicted=E (true dU=-26.7100)  true best=E (true dU=-26.7100)  top1=HIT
+  site   6 (cur=L): gradient-predicted=H (true dU=-9.4346)  true best=V (true dU=-24.4091)  top1=miss
+  site  14 (cur=E): gradient-predicted=A (true dU=-63.2788)  true best=F (true dU=-72.3288)  top1=miss
+
+[OK] mu_A . grad_A <= 0 at every tested site (p=0 displacement is a descent direction)
+
+Top-1 accuracy (gradient pick == true best, among candidates excluding 'stay'): 2/10
+Mean true dU at gradient-predicted class:     +17.1975
+Mean true dU at all other candidate classes:  +20.9858
+(gradient-predicted class should be markedly lower than the random/other average;
+ it need not hit the true optimum every time -- that's the linearization-quality tradeoff.)

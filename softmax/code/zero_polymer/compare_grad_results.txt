@@ -1,0 +1,31 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 68200.07it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Current A: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELWVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVELKSFYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+
+site   4 (cur=I): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=1.9866  |grad_whole|=1.9825
+    both methods pick K  (true dU=+879.6533)
+site 178 (cur=A): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=1.2143  |grad_whole|=1.1959
+    both methods pick V  (true dU=-167.4673)
+site  30 (cur=L): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.6705  |grad_whole|=0.6686
+    both methods pick I  (true dU=-63.7280)
+site  43 (cur=T): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.4401  |grad_whole|=0.4609
+    site-only picks W (true dU=+680.1042)   whole-sequence picks A (true dU=-127.2637)
+    [FLAGGED: low agreement between methods]
+site 494 (cur=G): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.1393  |grad_whole|=0.1350
+    both methods pick E  (true dU=+171.8462)
+site 463 (cur=F): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.2971  |grad_whole|=0.2915
+    both methods pick P  (true dU=+3871.6343)
+site 107 (cur=K): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.6451  |grad_whole|=0.7107
+    both methods pick G  (true dU=-301.0586)
+site 313 (cur=N): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.2878  |grad_whole|=0.2909
+    both methods pick D  (true dU=+15.8345)
+site 123 (cur=L): cosine(grad_site, grad_whole)=+0.9999  |grad_site|=0.3450  |grad_whole|=0.3417
+    both methods pick C  (true dU=+28.6895)
+site 189 (cur=F): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.8679  |grad_whole|=0.8901
+    both methods pick N  (true dU=-417.3479)
+site 468 (cur=K): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.2769  |grad_whole|=0.3000
+    both methods pick P  (true dU=+925.2986)
+
+Flagged sites (cosine<0.5 or disagreeing picks with |dU diff|>50): [43]
+-> worth a closer look at those specific sites before trusting the site-only gradient there.

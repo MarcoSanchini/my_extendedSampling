@@ -1,0 +1,52 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 159094.29it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Current A: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELWVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVELKSFYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+T=2.0, M=1.0  (fixed; dt is the swept axis)
+
+  site 178 (cur=A): gradient-predicted=V (true dU=-167.4673)  true best=I (true dU=-171.2229)  top1=miss
+      p_match(dt): dt=10:0.073  dt=20:0.098  dt=50:0.189  dt=100:0.367  dt=200:0.645  dt=300:0.780  dt=600:0.946  dt=1000:0.996  dt=1300:1.000  dt=2000:1.000  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site  30 (cur=L): gradient-predicted=I (true dU=-63.7280)  true best=Y (true dU=-209.6162)  top1=miss
+      p_match(dt): dt=10:0.061  dt=20:0.070  dt=50:0.101  dt=100:0.158  dt=200:0.263  dt=300:0.342  dt=600:0.492  dt=1000:0.591  dt=1300:0.635  dt=2000:0.710  dt=4000:0.866  dt=8000:0.987  dt=16000:1.000  dt=32000:1.000
+  site  43 (cur=T): gradient-predicted=W (true dU=+680.1042)  true best=A (true dU=-127.2637)  top1=miss
+      p_match(dt): dt=10:0.063  dt=20:0.074  dt=50:0.107  dt=100:0.152  dt=200:0.209  dt=300:0.248  dt=600:0.346  dt=1000:0.433  dt=1300:0.470  dt=2000:0.503  dt=4000:0.520  dt=8000:0.541  dt=16000:0.581  dt=32000:0.659
+  site 494 (cur=G): gradient-predicted=E (true dU=+171.8462)  true best=H (true dU=-101.7134)  top1=miss
+      p_match(dt): dt=10:0.055  dt=20:0.058  dt=50:0.068  dt=100:0.084  dt=200:0.121  dt=300:0.160  dt=600:0.275  dt=1000:0.403  dt=1300:0.481  dt=2000:0.616  dt=4000:0.835  dt=8000:0.980  dt=16000:1.000  dt=32000:1.000
+  site 463 (cur=F): gradient-predicted=P (true dU=+3871.6343)  true best=Y (true dU=-104.1660)  top1=miss
+      p_match(dt): dt=10:0.057  dt=20:0.063  dt=50:0.079  dt=100:0.111  dt=200:0.188  dt=300:0.277  dt=600:0.567  dt=1000:0.852  dt=1300:0.950  dt=2000:0.998  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site 107 (cur=K): gradient-predicted=G (true dU=-301.0586)  true best=G (true dU=-301.0586)  top1=HIT
+      p_match(dt): dt=10:0.067  dt=20:0.084  dt=50:0.140  dt=100:0.239  dt=200:0.410  dt=300:0.547  dt=600:0.808  dt=1000:0.945  dt=1300:0.982  dt=2000:0.999  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site 313 (cur=N): gradient-predicted=D (true dU=+15.8345)  true best=D (true dU=+15.8345)  top1=HIT
+      p_match(dt): dt=10:0.058  dt=20:0.063  dt=50:0.081  dt=100:0.115  dt=200:0.191  dt=300:0.266  dt=600:0.442  dt=1000:0.581  dt=1300:0.655  dt=2000:0.773  dt=4000:0.937  dt=8000:0.999  dt=16000:1.000  dt=32000:1.000
+  site 123 (cur=L): gradient-predicted=C (true dU=+28.6895)  true best=V (true dU=-169.0020)  top1=miss
+      p_match(dt): dt=10:0.064  dt=20:0.078  dt=50:0.126  dt=100:0.226  dt=200:0.435  dt=300:0.596  dt=600:0.859  dt=1000:0.977  dt=1300:0.996  dt=2000:1.000  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site 189 (cur=F): gradient-predicted=N (true dU=-417.3479)  true best=P (true dU=-835.2300)  top1=miss
+      p_match(dt): dt=10:0.090  dt=20:0.137  dt=50:0.313  dt=100:0.562  dt=200:0.818  dt=300:0.933  dt=600:0.999  dt=1000:1.000  dt=1300:1.000  dt=2000:1.000  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site 468 (cur=K): gradient-predicted=P (true dU=+925.2986)  true best=R (true dU=-135.2144)  top1=miss
+      p_match(dt): dt=10:0.058  dt=20:0.063  dt=50:0.081  dt=100:0.116  dt=200:0.199  dt=300:0.287  dt=600:0.495  dt=1000:0.667  dt=1300:0.762  dt=2000:0.908  dt=4000:0.999  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+
+=== (A) dt-independent: is the gradient's fixed pick any good? ===
+Top-1 accuracy (gradient pick == true best, among candidates excluding 'stay'): 2/10
+Mean true dU at gradient-predicted class:     +474.3805
+Mean true dU at all other candidate classes:  +542.4638
+(This number does NOT change with dt -- dt only affects how reliably a single
+ realized move follows this fixed pick, see (B) below.)
+
+=== (B) dt-dependent, closed form: mean P(realized proposal == gradient's pick), pooled over sites ===
+  dt=    10: mean p_match=0.0647  (min=0.0555  max=0.0895 across the 10 tested sites)
+  dt=    20: mean p_match=0.0788  (min=0.0584  max=0.1371 across the 10 tested sites)
+  dt=    50: mean p_match=0.1285  (min=0.0676  max=0.3126 across the 10 tested sites)
+  dt=   100: mean p_match=0.2132  (min=0.0842  max=0.5616 across the 10 tested sites)
+  dt=   200: mean p_match=0.3479  (min=0.1210  max=0.8180 across the 10 tested sites)
+  dt=   300: mean p_match=0.4436  (min=0.1604  max=0.9326 across the 10 tested sites)
+  dt=   600: mean p_match=0.6229  (min=0.2754  max=0.9989 across the 10 tested sites)
+  dt=  1000: mean p_match=0.7447  (min=0.4034  max=1.0000 across the 10 tested sites)
+  dt=  1300: mean p_match=0.7930  (min=0.4696  max=1.0000 across the 10 tested sites)
+  dt=  2000: mean p_match=0.8507  (min=0.5033  max=1.0000 across the 10 tested sites)
+  dt=  4000: mean p_match=0.9156  (min=0.5204  max=1.0000 across the 10 tested sites)
+  dt=  8000: mean p_match=0.9506  (min=0.5408  max=1.0000 across the 10 tested sites)
+  dt= 16000: mean p_match=0.9581  (min=0.5812  max=1.0000 across the 10 tested sites)
+  dt= 32000: mean p_match=0.9659  (min=0.6591  max=1.0000 across the 10 tested sites)
+(As dt -> infinity this should -> 1.0 at every site; the crossover dt where it
+ leaves the momentum-dominated ~uniform regime is exactly the number the old
+ accept-rate-gap sweep was trying to locate indirectly and noisily.)
