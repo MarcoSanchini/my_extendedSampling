@@ -69,8 +69,11 @@ softmax/monte_carlo/tests_rate*/**/eprot/
 
 
 
+
 softmax/monte_carlo/**/structural_metrics.csv
 softmax/monte_carlo/k_sites_plots*/
+!softmax/monte_carlo/k_sites_plots_tests_rate_sweep_temperature_paper_scale/
+
 
 # data.dat itself is local-only from here on, same reasoning as eprot/:
 # moves=300000 (the paper-matched sweep) already produces ~50-57MB
