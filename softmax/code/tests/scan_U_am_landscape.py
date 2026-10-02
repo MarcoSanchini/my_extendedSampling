@@ -56,8 +56,26 @@ from utils.energies import compute_U_am
 import custom_esm.utils.constants.esm3 as C
 
 
-REF_SEQ = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
-N_SITES_TESTED = 10
+from references import get_reference
+
+# Reference sequence now comes from tests/references.py so the whole
+# diagnostic suite can be re-pointed in one place (and run on protein_g as
+# a control) -- see that module's docstring. Override per run with e.g.
+#     REF=protein_g python tests/<this script>
+REF_NAME, REF_SEQ = get_reference()
+# Both overridable per run, so a verdict at a new sequence length can be
+# tightened (or matched to another reference's drift fraction) without
+# editing this file -- defaults reproduce every recorded protein G result:
+#   SITES  how many sites to test. 10 of protein G's 56 is 18% coverage but
+#          only 1.8% of zero_polymer's 566, and the top-1 count out of 10 has
+#          a wide error bar; raise it for a firmer answer (cost is linear).
+#   MUTS   initial mutations in seq_A. 5 is 9% of protein G but 0.9% of
+#          zero_polymer, which leaves seq_A almost exactly at U_am's floor
+#          where nearly every move is uphill. ~51 matches protein G's
+#          fraction on zero_polymer.
+# e.g.  SITES=30 MUTS=51 python tests/<this script>
+N_SITES_TESTED = int(os.environ.get("SITES", 10))
+N_INIT_MUTS = int(os.environ.get("MUTS", 5))
 SEED = 0
 
 # The same 10 sites test_steepest_descent.py / test_informedness_vs_dt.py
@@ -84,16 +102,66 @@ def main():
 	vocab = C.SEQUENCE_USED_VOCAB
 	L = len(REF_SEQ)
 
+	print(f"# reference: {REF_NAME} (L={L} residues)")
+
+	# ================================================================
+	# (0) numerical health of log(am) -- length-sensitive, added 2026-10-02
+	# ================================================================
+	# compute_U_am takes a RAW torch.log(am), with no eps guard (unlike
+	# compute_entropy's log(p+eps)). am is a softmax over L+2 positions, so
+	# its entries shrink as the sequence gets longer (mean ~1/(L+2): ~0.017
+	# at L=56, ~0.0018 at L=566) and its small tail shrinks faster. Two
+	# distinct failure modes, neither of which any existing check would
+	# notice, and both of which get worse with L:
+	#   - an entry reaching exactly 0 makes log(am) = -inf and U_am inf/nan;
+	#   - log amplifies RELATIVE error (d log x = dx/x), and on GPU this runs
+	#     under torch.autocast(bfloat16) (~8 mantissa bits, ~0.4% relative
+	#     precision), so every one of the L(L-1)/2 summed pairs carries
+	#     log-amplified rounding noise. The pair count grows ~L^2 (1540 at
+	#     L=56, 159895 at L=566), so the NOISE FLOOR of U_am itself grows
+	#     with length -- and dU values below that floor are not meaningful
+	#     regardless of how the sampler behaves.
+	# The recompute below measures that floor directly: predict_attention on
+	# the SAME sequence twice should be bit-identical (deterministic model),
+	# giving exactly 0. Anything above 0 is run-to-run numerical noise, and
+	# is the resolution limit every dU in every other diagnostic is subject
+	# to.
+	print("\n=== (0) log(am) numerical health (length-sensitive) ===")
+
+	ref_am = sampler.ref_eprot.am
+	n_entries = ref_am.numel()
+	n_zero = int((ref_am == 0).sum().item())
+	n_nonfinite = int((~torch.isfinite(ref_am)).sum().item())
+	min_am = ref_am.min().item()
+	print(f"am: shape={tuple(ref_am.shape)}  min={min_am:.6e}  max={ref_am.max().item():.6e}  "
+		  f"mean={ref_am.mean().item():.6e}  (uniform would be ~{1./(L+2):.6e})")
+	print(f"am entries exactly 0: {n_zero}/{n_entries}   non-finite: {n_nonfinite}/{n_entries}")
+	if n_zero or n_nonfinite:
+		print("  *** log(am) IS -inf/nan FOR THESE ENTRIES -- compute_U_am has no eps guard,")
+		print("      so U_am is not trustworthy at this length until this is fixed ***")
+	else:
+		log_ref = torch.log(ref_am)
+		print(f"log(am) range: [{log_ref.min().item():.4f}, {log_ref.max().item():.4f}]  "
+			  f"(all finite, so compute_U_am's raw log is safe on this reference)")
+
+	am_again = sampler.model.predict_attention(sequence_probs=sampler.ref_eprot.get_probs())
+	noise_floor = compute_U_am(am_again.to(ref_am.device), ref_am).item()
+	max_abs_dev = (am_again.to(ref_am.device) - ref_am).abs().max().item()
+	print(f"U_am NOISE FLOOR (same sequence, two separate forward passes) = {noise_floor:.6e}")
+	print(f"  max |am - am_recomputed| = {max_abs_dev:.6e}")
+	print("  (0 => the forward pass is bit-reproducible and U_am has no run-to-run noise.")
+	print("   Non-zero => every dU smaller in magnitude than this is numerical noise, not signal.)")
+
 	# ================================================================
 	# (1) floor consistency check
 	# ================================================================
-	print("=== (1) floor consistency check ===")
+	print("\n=== (1) floor consistency check ===")
 
 	U_am_ref_self = compute_U_am(sampler.ref_eprot.am, sampler.ref_eprot.am).item()
 	print(f"compute_U_am(ref_am, ref_am) = {U_am_ref_self:.8e}  (should be exactly/near-exactly 0)")
 
 	from utils.operations import mutate
-	seq_A = mutate(REF_SEQ, 5, sampler.generator.get())
+	seq_A = mutate(REF_SEQ, N_INIT_MUTS, sampler.generator.get())
 	eprot_A = ExtendedProtein(sequence=seq_A, requires_grad=False, device=device)
 	eprot_A.expand()
 	U_A_exact, U_am_A, _ = sampler._exact_energy(eprot_A, pars)
@@ -101,15 +169,43 @@ def main():
 
 	print(f"Current A (Hd={hd_A} from ref): {seq_A}")
 	print(f"U_A_exact = {U_A_exact:.4f}")
-	print(f"(test_informedness_vs_dt.py's most negative reported dU at this seq_A")
-	print(f" was -92.9918 at site 55; that requires U_A_exact >= 92.9918 to be possible.")
-	print(f" {'CONSISTENT' if U_A_exact >= 92.9918 else 'INCONSISTENT -- see note below'}: "
-		  f"U_A_exact={U_A_exact:.4f} {'>=' if U_A_exact >= 92.9918 else '<'} 92.9918)")
-	if U_A_exact < 92.9918:
-		print("  NOTE: if this prints INCONSISTENT, U_A_exact here and the U_A_exact used")
-		print("  inside test_informedness_vs_dt.py's own true_dU computation are somehow")
-		print("  different despite using the same seq_A -- worth comparing the two code")
-		print("  paths line by line (_exact_energy is called identically in both).")
+
+	# U >= 0 holds for every sequence (squared log-distance), so U_A_exact is
+	# itself the hard ceiling on how negative any dU measured FROM seq_A can
+	# be: dU = U_cand - U_A_exact >= -U_A_exact. That part is
+	# reference-independent and always checkable.
+	print(f"Floor bound: no dU measured from this seq_A can be below "
+		  f"-U_A_exact = {-U_A_exact:.4f} (since U_cand >= 0 always).")
+	if U_A_exact < 0:
+		print("  *** U_A_exact < 0 -- IMPOSSIBLE for a squared log-distance. Real bug. ***")
+
+	# The sharper, historical form of this check needs a known most-negative
+	# dU from a test_informedness_vs_dt.py run on the SAME reference and
+	# seq_A. Recorded per reference; None until that run exists.
+	MOST_NEGATIVE_DU = {
+		# protein G: site 55, from the 2026-09-22 run (code/protein_g/
+		# informedness_vs_dt_results.txt). Requires U_A_exact >= 92.9918.
+		"protein_g": (92.9918, "site 55"),
+		# zero_polymer: fill in from the informedness run on this reference.
+		"zero_polymer": None,
+	}
+	known = MOST_NEGATIVE_DU.get(REF_NAME)
+	if known is None:
+		print(f"(No recorded most-negative dU for reference {REF_NAME!r} yet -- run")
+		print(" test_informedness_vs_dt.py on it, then record its value in this script's")
+		print(" MOST_NEGATIVE_DU to enable the sharper cross-script consistency check.)")
+	else:
+		need, where = known
+		ok = U_A_exact >= need
+		print(f"(test_informedness_vs_dt.py's most negative reported dU at this seq_A")
+		print(f" was -{need} at {where}; that requires U_A_exact >= {need} to be possible.")
+		print(f" {'CONSISTENT' if ok else 'INCONSISTENT -- see note below'}: "
+			  f"U_A_exact={U_A_exact:.4f} {'>=' if ok else '<'} {need})")
+		if not ok:
+			print("  NOTE: if this prints INCONSISTENT, U_A_exact here and the U_A_exact used")
+			print("  inside test_informedness_vs_dt.py's own true_dU computation are somehow")
+			print("  different despite using the same seq_A -- worth comparing the two code")
+			print("  paths line by line (_exact_energy is called identically in both).")
 
 	# ================================================================
 	# (2) reference-anchored single-mutant scan, same 10 sites as before

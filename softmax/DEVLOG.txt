@@ -3426,3 +3426,175 @@ sandbox, and it was used to produce the numbers above rather than them
 being transcribed. From softmax/code:
     python tests/compare_coupling_across_refs.py
     python tests/compare_coupling_across_refs.py A_results.txt B_results.txt
+
+--------------------------------------------------------------------------------
+2026-10-02 -- "dU spikes, method may not be reliable": diagnosis, and the safety-check suite re-pointed at zero_polymer (nothing run yet)
+--------------------------------------------------------------------------------
+User's read of the zero_polymer coupling results: "dU spikes up with this
+new sequence. looks to me like method is not fully reliable. maybe we
+should retest from the beginning and see if can get steepest_descent and
+other safety checks to work." Agreed on the action; the diagnosis splits
+into one part that is expected and one part that is genuinely unmeasured.
+
+EXPECTED, not a defect. Most of the dU increase is arithmetic:
+  - mean |dU| for a SINGLE-site move (N=1, coupling=0 by construction)
+    goes 57.7 -> 458.3, a factor 7.9, tracking L (10.1x) rather than the
+    attention-pair count (103.8x). One site perturbs a row+column of the
+    LxL map, so U_am's per-site sensitivity grows ~linearly in L.
+  - the MEDIAN goes 8.7 -> 240.4 (27.7x), well above the 7.9x mean ratio.
+    That extra factor is the seq_A placement caveat already flagged: 5
+    mutations is 8.9% of protein G but 0.9% of zero_polymer, so almost
+    every site still sits exactly at U_am's floor, where essentially
+    every move is uphill. Protein G's seq_A had real slack at 5 of 56
+    sites; zero_polymer's has it at 5 of 566.
+So "dU is bigger" is mostly length, plus a starting point much closer to
+the floor. Neither is evidence of a broken method.
+
+GENUINELY UNMEASURED, and this is the part worth the re-test. What the
+coupling run can be made to say about gradient QUALITY is not reassuring:
+  - The first-order prediction is negligible against the truth at BOTH
+    lengths: mean|sum_linear|/mean|dU| = 8.3e-4 (protein G) and 1.9e-3
+    (zero_polymer). The gradient's MAGNITUDE has never carried usable
+    information -- consistent with the long-documented linearization-
+    quality limit, not new, and not length-specific.
+  - But its SIGN now fails on the biggest moves. On protein G the four
+    largest-|dU| N=1 trials all had the sign right (including the famous
+    site-4 +356.5). On zero_polymer three of the four largest are sign-
+    WRONG: the gradient predicted -2.56, -1.01, -0.23 where the truth was
+    +2246.9, +1819.7, +950.9. Overall N=1 sign agreement is 13/20 vs
+    14/20, i.e. near chance at both lengths, but the failures have moved
+    onto the moves that matter most.
+What actually governs the sampler is neither of those: it is whether the
+gradient's ARGMAX still ranks candidates well (top-1 accuracy, and mean
+dU at the predicted class vs the other candidates). That is exactly what
+test_steepest_descent.py and test_informedness_vs_dt.py (A) measure, and
+it has never been run at L=566. So the user's instinct is right and the
+suite is the correct instrument.
+
+A SEPARATE, HARDER BLOCKER found while setting this up: T. Every T in
+this project was calibrated at L=56 (production T=2.0; the coupling
+test's T=20.0; the transition's steep part near T~0.3-0.4). With median
+single-site dU ~240 on zero_polymer, T=2.0 gives dU/T ~120 and an
+acceptance probability of ~e^-120: the chain cannot move at all. Any
+diagnostic that runs a chain (validate_boltzmann_toy.py, and any real
+main_rate.py run) is meaningless at the inherited T, and would burn GPU
+hours proving only that. T has to be re-derived BEFORE chain-level
+results mean anything -- and this applies to the existing single-site
+sampler just as much as to any multi-site design.
+
+HARNESS CHANGES (no results yet -- py_compile + logic checks only, no
+torch in this sandbox):
+
+1. tests/references.py (new): the reference sequence lives in ONE place
+   now, selected by the REF environment variable (default zero_polymer,
+   REF=protein_g for the control). Previously 7 copies of the protein G
+   literal across tests/; re-pointing meant editing each, and one missed
+   or subtly mistyped file would silently produce results for a different
+   protein with nothing in the output to show it. Verified both stored
+   sequences are byte-identical to the "Reference:" line of the results
+   files they produced, so this is a faithful refactor, and that an
+   unknown REF raises instead of falling back.
+   Wired into test_steepest_descent.py, compare_grad_methods.py,
+   test_informedness_vs_dt.py, scan_U_am_landscape.py,
+   validate_boltzmann_toy.py; each now prints "# reference: <name> (L=...)"
+   so every saved results file is self-identifying.
+
+2. Per-run overrides, so iterating needs no file edits (defaults all
+   reproduce the recorded protein G numbers exactly):
+     SITES      sites tested (default 10). 10/56 is 18% coverage but
+                10/566 is 1.8%, and a top-1 count out of 10 has a wide
+                error bar. Cost is linear.
+     MUTS       initial mutations in seq_A (default 5). ~51 matches
+                protein G's 8.9% drift fraction on zero_polymer, which is
+                the way to separate "gradient is bad at this length" from
+                "seq_A is pinned at the floor".
+     T/DT/MOVES/BURN_IN/SITES_FREE/FORCE  (validate_boltzmann_toy.py)
+   SITES_FREE is validated against the active reference's length, so
+   protein-G-era site indices can't silently run out of range.
+
+3. test_informedness_vs_dt.py: DTS_TO_SWEEP extended DOWNWARD to dt=10
+   (was 300-32000). The crossover dt scales ~1/gradient_gap, and
+   zero_polymer's gradient components are ~18x larger, so the crossover
+   should sit around dt~17-100 -- BELOW the entire old range, which would
+   have shown p_match already saturated everywhere and located nothing.
+   Old values kept, since extra dt points need no further model calls
+   (one gradient per site covers every dt), so widening is free.
+
+4. scan_U_am_landscape.py: new check (0), log(am) numerical health. This
+   is the one genuinely new length-specific risk and nothing covered it.
+   compute_U_am does a RAW torch.log(am) with no eps guard (unlike
+   compute_entropy's log(p+eps)); am is a softmax over L+2 positions, so
+   entries shrink with length (mean ~0.017 at L=56 vs ~0.0018 at L=566)
+   and the small tail shrinks faster. Two failure modes, both worsening
+   with L: an entry reaching 0 makes U_am inf/nan, and log amplifies
+   relative error (d log x = dx/x) under bfloat16 autocast (~0.4%
+   relative precision) across L(L-1)/2 summed pairs -- 1540 pairs at
+   L=56, 159895 at L=566. So the check reports min/zero/non-finite counts
+   and the log range, and measures the U_am NOISE FLOOR directly by
+   running predict_attention twice on the same sequence: 0 if the forward
+   pass is bit-reproducible, otherwise the resolution limit below which
+   no dU in any other diagnostic means anything. Nothing in the
+   zero_polymer results was inf/nan, so this has not bitten yet -- it is
+   a latent risk being measured rather than a known failure.
+   Also made the old hardcoded protein-G consistency threshold
+   (-92.9918 at site 55) reference-keyed, and added the always-valid
+   floor bound (no dU from seq_A can go below -U_A_exact, since U >= 0).
+
+5. validate_boltzmann_toy.py: T calibration block, from the 400-state
+   enumeration it already does -- no extra model calls, pure arithmetic
+   on energies in hand. Reports the spectrum (min/median/max/std) and,
+   for a bracket of candidate T, the participation ratio 1/sum(p^2) (the
+   effective number of states carrying real probability) plus the top
+   state's probability, labelling each FROZEN (<1.5 effective states),
+   FLAT (>50% of states) or usable. If the configured T is frozen or
+   flat it says so and SKIPS the MCMC run (FORCE=1 overrides), because in
+   either regime the empirical-vs-exact comparison agrees for the wrong
+   reason and validates nothing -- while still costing MOVES*3 model
+   calls at ~10x protein G's per-call cost. Verified the verdict logic on
+   synthetic spectra at both energy scales: it brackets a usable range
+   and that range moves up with the scale, as it must.
+
+RUN ORDER (cheapest and most diagnostic first; from softmax/code). The
+protein_g control first is the actual answer to "do the safety checks
+still work" -- if it reproduces the recorded landmarks (steepest_descent
+top-1 2/10 with site 4 at +356.4977; U_am(ref,ref)=0 with 0 negative
+reference-anchored dU; compare_grad_methods cosine >= 0.9995) then the
+harness is sound and every zero_polymer difference is real:
+
+  mkdir -p zero_polymer
+
+  # 0. math only, no model. test_proposals.py has no REF_SEQ at all (it
+  #    tests log_pointing_prob over the K-way vocab competition, which does
+  #    not depend on L), so it is not reference-specific and its output is
+  #    not filed under either protein's directory. Must pass unchanged.
+  python tests/test_proposals.py
+
+  # 1. CONTROL: known-good reference through the current code
+  REF=protein_g python -u tests/scan_U_am_landscape.py    2>&1 | tee protein_g/scan_U_am_CONTROL.txt
+  REF=protein_g python -u tests/test_steepest_descent.py  2>&1 | tee protein_g/steepest_descent_CONTROL.txt
+
+  # 2. the energy itself at L=566, before judging the sampler
+  python -u tests/scan_U_am_landscape.py   2>&1 | tee zero_polymer/scan_U_am_results.txt
+
+  # 3. gradient quality / ranking -- the actual open question
+  python -u tests/test_steepest_descent.py 2>&1 | tee zero_polymer/steepest_descent_results.txt
+  python -u tests/compare_grad_methods.py  2>&1 | tee zero_polymer/compare_grad_results.txt
+  python -u tests/test_informedness_vs_dt.py 2>&1 | tee zero_polymer/informedness_vs_dt_results.txt
+
+  # 4. T calibration (prints the usable T range, skips the chain if frozen)
+  MOVES=2000 python -u tests/validate_boltzmann_toy.py 2>&1 | tee zero_polymer/boltzmann_Tcal.txt
+  # then, with a usable T from that table:
+  T=<usable> DT=<from step 3's p_match~0.15 row> MOVES=20000 \
+      python -u tests/validate_boltzmann_toy.py 2>&1 | tee zero_polymer/validate_boltzmann_results.txt
+
+Read step 2 FIRST and stop if check (0) reports any zero/non-finite am
+entry or a noise floor comparable to the dU values being discussed --
+that would make it a numerical problem in the energy, not a sampler
+problem, and would invalidate the coupling results too. If step 2 is
+clean and step 3 shows top-1 and mean-dU-at-predicted no worse than
+protein G's, the method is behaving as designed at this length and the
+whole story reduces to the T calibration in step 4.
+
+Also worth running once step 3 is in: SITES=30 MUTS=51 on
+test_steepest_descent.py, to tighten the top-1 error bar and to test the
+gradient away from the floor rather than pinned at it.

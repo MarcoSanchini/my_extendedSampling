@@ -68,6 +68,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.
 
 import math
 import itertools
+import statistics
 import torch
 
 from classes.rate_sampler import ExtendedProteinRateSampler
@@ -76,28 +77,66 @@ from utils.proposals import log_pointing_prob
 import custom_esm.utils.constants.esm3 as C
 
 
-REF_SEQ = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+from references import get_reference
+
+# Reference sequence now comes from tests/references.py so the whole
+# diagnostic suite can be re-pointed in one place (and run on protein_g as
+# a control) -- see that module's docstring. Override per run with e.g.
+#     REF=protein_g python tests/<this script>
+REF_NAME, REF_SEQ = get_reference()
 SEED = 0
 
 # Two of the sites already characterized in test_informedness_vs_dt.py /
 # scan_U_am_landscape.py (both were gradient-top1 HITs there) -- arbitrary
 # but fixed for continuity with earlier results. 20 canonical letters each
 # -> 20^2=400 states, small enough to enumerate exactly.
-FREE_SITES = [30, 52]
+# On zero_polymer these two indices are still valid (0..565) but carry none
+# of that "already characterized as gradient HITs" rationale, so they are
+# arbitrary there. Override to two sites this reference's own
+# test_steepest_descent.py run flagged as HITs, to keep the original logic:
+#   SITES_FREE=12,407 python tests/validate_boltzmann_toy.py
+FREE_SITES = [int(x) for x in os.environ.get("SITES_FREE", "30,52").split(",")]
+assert len(FREE_SITES) == 2, f"FREE_SITES must be exactly 2 sites, got {FREE_SITES}"
+assert len(set(FREE_SITES)) == 2, f"FREE_SITES must be two DISTINCT sites, got {FREE_SITES}"
+assert all(0 <= s < len(REF_SEQ) for s in FREE_SITES), (
+	f"FREE_SITES {FREE_SITES} out of range for reference {REF_NAME} (L={len(REF_SEQ)})"
+)
 
 # Moderate dt: low enough to explore broadly across all 20 classes per site
 # (very high dt concentrates proposals on the gradient's fixed favorite,
 # per test_informedness_vs_dt.py's p_match curve, which is good for speed
 # but risks under-exploring the other ~19 classes within a limited move
 # budget -- the opposite of what THIS test wants). dt=1300 gives mean
-# p_match~0.15 (mild informedness, not near-uniform, not near-greedy).
+# p_match~0.15 (mild informedness, not near-uniform, not near-greedy) --
+# MEASURED ON PROTEIN G. Both T and dt are reference-specific and must be
+# re-derived for a longer sequence, which is why they are overridable below:
+#   T  -- U_am's per-site dU scale grows ~linearly in L (measured 7.9x from
+#         L=56 to L=566), so protein G's T=2.0 gives dU/T in the hundreds on
+#         zero_polymer and a chain that never moves. The calibration block
+#         after the enumeration computes the right range from real energies.
+#   dt -- gradients are ~18x larger on zero_polymer, so the p_match~0.15
+#         working point moves down by roughly that factor (see
+#         test_informedness_vs_dt.py's widened DTS_TO_SWEEP).
+#
+# Override per run without editing this file:
+#   T=400 DT=70 MOVES=4000 python tests/validate_boltzmann_toy.py
 pars = {
-	"T": 2.0, "dt": 1300.0, "M": 1.0, "T_sftm": 0.1,
+	"T": float(os.environ.get("T", 2.0)),
+	"dt": float(os.environ.get("DT", 1300.0)),
+	"M": 1.0, "T_sftm": 0.1,
 	"lambda_am": 1.0, "lambda_S": 0.0, "eps": 1.0e-9, "n_quad": 40,
 }
 
-MOVES = 20000
-BURN_IN = 4000  # moves discarded before collecting the empirical histogram
+MOVES = int(os.environ.get("MOVES", 20000))
+# moves discarded before collecting the empirical histogram (20% of MOVES,
+# matching the original 4000/20000, so lowering MOVES for a quick look keeps
+# a proportionate burn-in instead of a fixed one that could swallow the run)
+BURN_IN = int(os.environ.get("BURN_IN", max(1, MOVES//5)))
+
+# Set FORCE=1 to run the MCMC even when the T-calibration block below judges
+# the chain frozen or the distribution flat (see that block for why either
+# makes the comparison uninformative).
+FORCE = os.environ.get("FORCE", "") not in ("", "0", "false", "False")
 
 
 def restricted_step(sampler, eprot, U_A, pars, free_sites):
@@ -174,6 +213,7 @@ def main():
 	canonical = [vocab[i] for i in sampler._canonical_idx.tolist()]
 	s1, s2 = FREE_SITES
 
+	print(f"# reference: {REF_NAME} (L={len(REF_SEQ)} residues)")
 	print(f"Reference: {REF_SEQ}")
 	print(f"Free sites: {s1} (ref={REF_SEQ[s1]}), {s2} (ref={REF_SEQ[s2]})  "
 		  f"-- {len(canonical)}^2={len(canonical)**2} states, background fixed at reference elsewhere")
@@ -207,6 +247,77 @@ def main():
 	print("\nTop 10 states by exact Boltzmann probability:")
 	for (a1, a2), p in top_exact:
 		print(f"  ({a1},{a2}): p_exact={p:.4f}  U={U_exact[(a1,a2)]:+.4f}")
+
+	# ================================================================
+	# T calibration, from the enumeration just done (no extra model calls)
+	# ================================================================
+	# Added 2026-10-02 for the zero_polymer re-test. This test can only
+	# validate the sampler if the target distribution it is being compared
+	# against is actually explorable: if T is far below the energy spectrum's
+	# spread, the exact Boltzmann distribution puts essentially all its mass
+	# on one state, the chain correctly freezes there, and the empirical/exact
+	# agreement becomes trivially perfect while testing nothing. If T is far
+	# above, every state is equally likely and the comparison is equally
+	# uninformative (it would pass for a sampler ignoring U entirely).
+	#
+	# The 400 exact energies above are all that is needed to pick T: the
+	# participation ratio 1/sum(p^2) is the effective number of states carrying
+	# real probability, so a T giving ~5-100 of 400 is a regime where the
+	# distribution is genuinely structured AND reachable. This is free -- pure
+	# arithmetic on energies already computed.
+	U_vals = sorted(U_exact.values())
+	U_min, U_max = U_vals[0], U_vals[-1]
+	U_median = U_vals[len(U_vals)//2]
+	U_spread = statistics.stdev(U_vals)
+	print("\n=== T calibration (from the enumerated spectrum, no extra model calls) ===")
+	print(f"U over the {len(U_vals)} states: min={U_min:+.2f}  median={U_median:+.2f}  "
+		  f"max={U_max:+.2f}  std={U_spread:.2f}")
+	print(f"spread above the minimum: median-min={U_median-U_min:.2f}  max-min={U_max-U_min:.2f}")
+	print("  (T must be comparable to these gaps; T << gap freezes the chain, T >> gap flattens it)")
+
+	def participation(T_try):
+		"""Effective number of states at temperature T_try, plus the top
+		state's probability. Computed in log space for stability at small T."""
+		negs = torch.tensor([-u/T_try for u in U_exact.values()], dtype=torch.float64)
+		lz = torch.logsumexp(negs, dim=0)
+		p = torch.exp(negs - lz)
+		return (1./(p**2).sum()).item(), p.max().item()
+
+	# Bracket the observed spread by orders of magnitude around it, and always
+	# include whatever T the run is configured with so it can be located on
+	# the same scale.
+	candidates = sorted({
+		*(round(U_spread * f, 4) for f in (0.01, 0.03, 0.1, 0.3, 1.0, 3.0, 10.0)),
+		pars['T'],
+	})
+	print(f"\n{'T':>12} {'eff. states':>13} {'max p_exact':>12}   verdict")
+	for T_try in candidates:
+		if T_try <= 0:
+			continue
+		eff, pmax = participation(T_try)
+		if eff < 1.5:
+			verdict = "FROZEN -- one state, validates nothing"
+		elif eff > 0.5*len(U_vals):
+			verdict = "FLAT -- ~uniform, validates nothing"
+		else:
+			verdict = "usable"
+		mark = "  <== configured T" if T_try == pars['T'] else ""
+		print(f"{T_try:>12.4f} {eff:>13.2f} {pmax:>12.4f}   {verdict}{mark}")
+
+	eff_at_T, pmax_at_T = participation(pars['T'])
+	frozen = eff_at_T < 1.5
+	flat = eff_at_T > 0.5*len(U_vals)
+	if frozen or flat:
+		why = "FROZEN (essentially all mass on one state)" if frozen else "FLAT (~uniform)"
+		print(f"\n*** configured T={pars['T']} leaves the target distribution {why}: "
+			  f"eff. states={eff_at_T:.2f} of {len(U_vals)}.")
+		print("    The MCMC comparison below cannot validate the sampler in this regime --")
+		print("    it would agree with the exact distribution for the wrong reason.")
+		print(f"    Pick a T from the 'usable' rows above, e.g.  T=<value> python {os.path.basename(__file__)}")
+		if not FORCE:
+			print(f"    Skipping the {MOVES}-move run (set FORCE=1 to run it anyway).")
+			return
+		print("    FORCE=1 set -- running anyway.")
 
 	# ================================================================
 	# restricted MCMC run

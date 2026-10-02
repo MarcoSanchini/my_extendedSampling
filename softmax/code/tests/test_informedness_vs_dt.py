@@ -57,8 +57,26 @@ from utils.proposals import log_pointing_prob
 import custom_esm.utils.constants.esm3 as C
 
 
-REF_SEQ = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
-N_SITES_TESTED = 10
+from references import get_reference
+
+# Reference sequence now comes from tests/references.py so the whole
+# diagnostic suite can be re-pointed in one place (and run on protein_g as
+# a control) -- see that module's docstring. Override per run with e.g.
+#     REF=protein_g python tests/<this script>
+REF_NAME, REF_SEQ = get_reference()
+# Both overridable per run, so a verdict at a new sequence length can be
+# tightened (or matched to another reference's drift fraction) without
+# editing this file -- defaults reproduce every recorded protein G result:
+#   SITES  how many sites to test. 10 of protein G's 56 is 18% coverage but
+#          only 1.8% of zero_polymer's 566, and the top-1 count out of 10 has
+#          a wide error bar; raise it for a firmer answer (cost is linear).
+#   MUTS   initial mutations in seq_A. 5 is 9% of protein G but 0.9% of
+#          zero_polymer, which leaves seq_A almost exactly at U_am's floor
+#          where nearly every move is uphill. ~51 matches protein G's
+#          fraction on zero_polymer.
+# e.g.  SITES=30 MUTS=51 python tests/<this script>
+N_SITES_TESTED = int(os.environ.get("SITES", 10))
+N_INIT_MUTS = int(os.environ.get("MUTS", 5))
 SEED = 0
 
 # T, M held fixed at the values the real sweeps used (see DEVLOG.txt); dt is
@@ -68,8 +86,21 @@ M = 1.0
 N_QUAD = 40
 
 # Matches the dt values actually run in sweep_dt.sh / sweep_dt_seeds.sh,
-# plus a couple points further out to see where p_match saturates.
-DTS_TO_SWEEP = [300, 600, 1000, 1300, 2000, 4000, 8000, 16000, 32000]
+# plus points further out to see where p_match saturates.
+#
+# Extended DOWNWARD to dt=10 on 2026-10-02 for the zero_polymer re-test. The
+# crossover dt (where p_match leaves the momentum-dominated ~uniform regime)
+# scales roughly as 1/gradient_gap, since the standardized gap is
+# alpha ~ dt*grad_gap/(2*sqrt(M*T)). Gradient components measured on
+# zero_polymer are ~18x LARGER than protein G's (mean |grad . onehot_diff|
+# 0.048 -> 0.874, from the two test_joint_coupling_N runs' sum_linear
+# columns), so the crossover is expected ~18x LOWER -- i.e. around dt~17-100,
+# BELOW the entire original protein-G-tuned range, which would have shown
+# p_match already saturated at every point and located nothing. The old
+# values are kept so the two references stay directly comparable: per the
+# module docstring, sweeping extra dt values needs NO further model calls
+# (one gradient per site covers every dt), so widening this list is free.
+DTS_TO_SWEEP = [10, 20, 50, 100, 200, 300, 600, 1000, 1300, 2000, 4000, 8000, 16000, 32000]
 
 
 def main():
@@ -90,10 +121,11 @@ def main():
 	sampler.ref_eprot.am = sampler.model.predict_attention(sequence_probs=sampler.ref_eprot.get_probs())
 
 	from utils.operations import mutate
-	seq_A = mutate(REF_SEQ, 5, sampler.generator.get())
+	seq_A = mutate(REF_SEQ, N_INIT_MUTS, sampler.generator.get())
 	eprot_A = ExtendedProtein(sequence=seq_A, requires_grad=True, device=device)
 	eprot_A.expand()
 
+	print(f"# reference: {REF_NAME} (L={len(REF_SEQ)} residues)")
 	print(f"Reference: {REF_SEQ}")
 	print(f"Current A: {seq_A}")
 	print(f"T={T}, M={M}  (fixed; dt is the swept axis)\n")

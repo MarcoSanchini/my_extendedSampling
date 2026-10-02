@@ -41,8 +41,26 @@ from classes.ExtendedProtein import ExtendedProtein
 import custom_esm.utils.constants.esm3 as C
 
 
-REF_SEQ = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
-N_SITES_TESTED = 10
+from references import get_reference
+
+# Reference sequence now comes from tests/references.py so the whole
+# diagnostic suite can be re-pointed in one place (and run on protein_g as
+# a control) -- see that module's docstring. Override per run with e.g.
+#     REF=protein_g python tests/<this script>
+REF_NAME, REF_SEQ = get_reference()
+# Both overridable per run, so a verdict at a new sequence length can be
+# tightened (or matched to another reference's drift fraction) without
+# editing this file -- defaults reproduce every recorded protein G result:
+#   SITES  how many sites to test. 10 of protein G's 56 is 18% coverage but
+#          only 1.8% of zero_polymer's 566, and the top-1 count out of 10 has
+#          a wide error bar; raise it for a firmer answer (cost is linear).
+#   MUTS   initial mutations in seq_A. 5 is 9% of protein G but 0.9% of
+#          zero_polymer, which leaves seq_A almost exactly at U_am's floor
+#          where nearly every move is uphill. ~51 matches protein G's
+#          fraction on zero_polymer.
+# e.g.  SITES=30 MUTS=51 python tests/<this script>
+N_SITES_TESTED = int(os.environ.get("SITES", 10))
+N_INIT_MUTS = int(os.environ.get("MUTS", 5))
 SEED = 0
 
 
@@ -65,10 +83,11 @@ def main():
 
 	# Start a few mutations away from the reference so gradients are non-trivial
 	from utils.operations import mutate
-	seq_A = mutate(REF_SEQ, 5, sampler.generator.get())
+	seq_A = mutate(REF_SEQ, N_INIT_MUTS, sampler.generator.get())
 	eprot_A = ExtendedProtein(sequence=seq_A, requires_grad=True, device=device)
 	eprot_A.expand()
 
+	print(f"# reference: {REF_NAME} (L={len(REF_SEQ)} residues)")
 	print(f"Reference: {REF_SEQ}")
 	print(f"Current A: {seq_A}")
 
