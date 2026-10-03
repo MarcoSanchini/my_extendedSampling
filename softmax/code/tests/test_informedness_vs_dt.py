@@ -85,6 +85,17 @@ T = 2.0
 M = 1.0
 N_QUAD = 40
 
+# IMPORTANT when carrying a dt from this table to a run at a DIFFERENT T:
+# log_pointing_prob depends on the scale parameters only through
+# alpha = (mu_target - mu_k)/sigma, and with mu ~ dt^2/(2M)*grad and
+# sigma = dt*sqrt(T/M) that is alpha = dt*grad_gap/(2*sqrt(M*T)) -- i.e.
+# informedness is set by dt/sqrt(T), not by dt. This script fixes T = 2.0
+# (above), so every p_match below is a T=2.0 number. To keep the same
+# p_match at another temperature, scale dt by sqrt(T_run/2.0): e.g. the
+# p_match~0.15 point sits at dt~63 here but at dt~460 for a run at T=107.
+# Getting this wrong puts the proposal back on the uniform floor (1/19)
+# while still appearing to run fine. See DEVLOG.txt, 2026-10-03.
+#
 # Matches the dt values actually run in sweep_dt.sh / sweep_dt_seeds.sh,
 # plus points further out to see where p_match saturates.
 #

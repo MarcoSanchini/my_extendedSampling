@@ -3755,3 +3755,61 @@ NEXT, in order:
      comparison stops being floor-vs-bulk.
   3. Only then a real main_rate.py run, at a T from (F) -- NOT the
      inherited T=2.0, which (F) shows cannot move.
+
+--------------------------------------------------------------------------------
+2026-10-03 -- CORRECTION to the previous entry's run command: dt must be rescaled with sqrt(T). "T=107 DT=63" is wrong; use DT~460
+--------------------------------------------------------------------------------
+Caught while answering a question about what the queued commands actually
+do. The previous entry's step 1 (DEVLOG line ~3744) says
+    T=107 DT=63 MOVES=20000 python -u tests/validate_boltzmann_toy.py
+and the DT=63 is WRONG. Do not run it as written.
+
+Why. log_pointing_prob's only dependence on the scale parameters is
+through alpha = (mu_target - mu_k)/sigma (utils/proposals.py), and
+    mu ~ dt^2/(2M) * grad,    sigma = dt*sqrt(T/M)
+    => alpha = dt*grad_gap / (2*sqrt(M*T))
+So the proposal's informedness depends on dt/sqrt(T), NOT on dt alone.
+dt=63 was read off test_informedness_vs_dt.py's p_match table, and that
+script hardcodes its own T = 2.0 (module constant, independent of
+whatever T a later run uses). Carrying dt=63 over to a run at T=107
+changes alpha by 1/sqrt(107/2) = 1/7.31 and lands the proposal back on
+the uniform floor:
+    dt=63 at T=107  ==  dt=8.6 on the T=2 curve  ->  p_match ~ 0.06
+    uniform baseline = 1/19 = 0.0526   (19 competitors: 25 vocab - 5
+    non-canonical - the site's own current residue, which is also why
+    scan_U_am prints "n_negative=0/19")
+i.e. essentially no informedness at all. Holding p_match at the 0.15
+working point the toy's docstring asks for requires
+    DT = 63 * sqrt(107/2) ~ 460
+Equivalents at T=107, for picking a different working point:
+    p_match~0.10 -> DT~240     p_match~0.25 -> DT~931
+    p_match~0.15 -> DT~460     p_match~0.50 -> DT~2885
+
+Consequence of having run it wrong: it would NOT have produced a false
+pass. A near-uniform proposal still targets the same Boltzmann
+distribution, and with a_AB ~ a_BA the Hastings correction term
+(log_a_BA - log_a_AB) ~ 0, so the run would have converged (arguably
+faster, being better at exploring all 400 states) while silently NOT
+exercising the informed-proposal machinery -- the reverse-probability
+pass is exactly the part most likely to hide a subtle bug, and it is the
+reason this test exists. So the error costs test COVERAGE, not
+correctness. Worth running both deliberately: DT~460 as the real test,
+and a small DT as an easier convergence baseline.
+
+Note for any future T change: this coupling applies to every dt quoted
+anywhere in this project. protein G's own dt=1300 working point needed
+no rescaling only because its runs used T=2.0, the same T the
+informedness script assumes. A note has been added to
+test_informedness_vs_dt.py's DTS_TO_SWEEP comment so the next reader
+does not repeat this.
+
+Also, while checking: validate_boltzmann_toy.py's FREE_SITES=[30,52] are
+inherited from protein G, where they were chosen because both were
+gradient top-1 HITs. On zero_polymer they are arbitrary. This run's own
+HIT sites are 107 (K->G) and 313 (N->D), so
+    SITES_FREE=107,313
+reproduces the original rationale on this reference. Left at the default
+rather than changed, since the 2-site enumeration is valid either way --
+but it means the 400-state spectrum in boltzmann_Tcal.txt (and the T
+window derived from it) describes sites 30/52 specifically, and would
+need re-deriving if SITES_FREE changes.
