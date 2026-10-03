@@ -3813,3 +3813,127 @@ rather than changed, since the 2-site enumeration is valid either way --
 but it means the 400-state spectrum in boltzmann_Tcal.txt (and the T
 window derived from it) describes sites 30/52 specifically, and would
 need re-deriving if SITES_FREE changes.
+
+--------------------------------------------------------------------------------
+2026-10-03 -- Boltzmann validation PASSES at L=566 (both dt), and the proline "pathology" is revealed as a floor artifact: at comparable drift the gradient is 9x MORE informative on zero_polymer than on protein G
+--------------------------------------------------------------------------------
+User ran all three queued jobs and pushed them (commit 83f2f15):
+validate_boltzmann at the corrected DT=460 AND at the wrong DT=63 (good
+call -- the pair is exactly the informed-vs-uniform comparison the
+correction entry suggested), plus steepest_descent at SITES=30 MUTS=51.
+Two results, and the second one overturns the previous entry's headline
+finding.
+
+(1) THE SAMPLER IS VALIDATED AT L=566. This was the last outstanding
+safety check and the only one that exercises accept/reject end to end.
+                        dt=460 (informed)   dt=63 (~uniform)
+  acceptance rate                  0.3060             0.2893
+  KL(emp || exact)                 0.0316             0.0338
+  total variation                  0.0787             0.0848
+  states visited                  224/400            223/400
+  mean U exact                    +185.20            +185.20
+  mean U empirical                +185.63            +187.63
+  deviation                         +0.44 (0.24%)      +2.43 (1.31%)
+Both reproduce the exact Boltzmann distribution. The top states come back
+in essentially the right order and the right proportions, and mean U --
+the most robust single number here -- agrees to 0.24% at the informed dt.
+Nothing resembling the decisive failure signature the script warns about
+(mass piled on states the exact distribution calls unlikely, or the true
+top states missed).
+  The informed proposal is slightly better on all three metrics, as
+  expected, but only slightly, and acceptance barely moved (0.306 vs
+  0.289) -- so the dt=63 mistake really did cost only coverage of the
+  reverse-probability machinery, as the correction entry predicted, not
+  correctness. Worth noting the uniform run is ALSO a genuine (weaker)
+  test and it passed too: a correct target distribution with the Hastings
+  term ~0 is a real check on the energy and accept/reject path.
+
+  Is the residual gap bias or noise? Noise, on the arithmetic. The
+  participation ratio at T=107 is 41.4 effective states, so for
+  INDEPENDENT samples E[KL] ~ (k_eff-1)/(2n) = 0.00126 at n=16000. The
+  observed KL implies ESS ~ 639 (dt=460) / 597 (dt=63), i.e. an
+  autocorrelation time of ~25-27 moves. That is entirely ordinary for a
+  2-site chain at 30% acceptance (each site is re-proposed about every 2
+  moves and accepted ~30% of the time), so both KLs are what a CORRECT
+  sampler limited by chain autocorrelation looks like.
+  FALSIFIABLE FOLLOW-UP, cheap and decisive: if the sampler is unbiased,
+  KL must fall as 1/MOVES. MOVES=40000 should roughly halve it (~0.016);
+  a KL that PLATEAUS instead would be real bias. Until that is run, "no
+  detectable bias at this resolution" is the honest claim, not "unbiased".
+
+(2) THE PROLINE FINDING WAS A FLOOR ARTIFACT -- retract the previous
+entry's section (E). Measuring away from U_am's floor changes the picture
+completely:
+                               top-1    dU@pred   dU@other  advantage
+  protein G  MUTS=5  (Hd 8.9%)  2/10     +17.20     +20.99       3.79
+  zero_poly  MUTS=5  (Hd 0.9%)  2/10    +474.38    +542.46      68.08
+  zero_poly  MUTS=51 (Hd 8.8%) 10/30    -360.03    +244.25     604.28
+At comparable drift the gradient's pick is DOWNHILL on average (-360),
+not uphill (+474); top-1 rises 20% -> 33%; the advantage over a random
+candidate grows ~9x (68 -> 604); and 73% of picks are downhill vs 40% at
+the floor (protein G: 60%). So the gradient is not merely "as informative
+as on protein G" (the previous entry's conclusion, drawn at MUTS=5) --
+measured fairly, it is substantially MORE informative on the longer
+sequence.
+  And proline specifically:
+    MUTS=5  (floor): gradient picked P twice, dU = +3871.6, +925.3
+                     (mean +2398.5) -- the entire apparent degradation
+    MUTS=51 (bulk):  gradient picked P 3 times, dU = -325.3, -198.7,
+                     -271.9 (mean -265.3) -- ALL FAVOURABLE
+    P was the true best at 1/10 sites at the floor, 4/30 in the bulk.
+  So the gradient was never "unable to tell a catastrophic P from an
+  excellent one". Inserting a proline into a sequence sitting essentially
+  AT the reference is structurally catastrophic (and the reference is
+  proline-rich, so the floor punishes extra P hard); once the sequence has
+  real drift, P is ordinary and often optimal. The pathology was the
+  measurement point, not the gradient. Nothing to mitigate, and the
+  previous entry's warning against excluding P stands for a different and
+  better reason than it gave.
+  GENERAL LESSON, worth carrying forward: MUTS=5 on a 566-residue
+  reference (0.9% drift) is a floor measurement and is actively
+  misleading about proposal quality. Any future diagnostic on a long
+  sequence should use a drift fraction comparable to the regime the
+  sampler actually runs in -- the real chains equilibrate at Hd ~77% of
+  L, far beyond even MUTS=51. The suite's defaults are kept at 5 only for
+  continuity with protein G's recorded numbers.
+
+(3) The MUTS=51 side-effects predicted before the run came out right,
+which is a small check on understanding mutate(): Hd=50/566 (8.8%)
+against a predicted ~47 (collisions plus a 1/25 chance of redrawing the
+existing letter), and 12 non-canonical residues in seq_A against a
+predicted ~10 (5 of the 25 vocab letters are X/B/U/Z/O) -- letters
+BOOUXXXXZZZZ. One tested site, 372, has cur=X, i.e. the test scanned a
+site sitting on a non-canonical residue. Harmless here (the brute-force
+scan just compares candidates), but note _competition_indices(cur) only
+removes cur if it is IN _canonical_idx, so at such a site the competitor
+set is 20 rather than 19, and in the real sampler the reverse move from
+any substitution back to X is structurally unreachable (log_a_BA=-inf,
+handled explicitly in _step). Not a bug; a consequence of mutate() being
+allowed to draw non-canonical letters.
+
+Status: every safety check in the suite now passes at L=566 -- proposal
+math, energy numerics, floor, gradient method equivalence, gradient
+ranking quality, descent direction, and now the full accept/reject
+against an exactly-enumerated Boltzmann distribution. The "method is not
+fully reliable" concern is resolved, and the one thing that genuinely
+needed re-deriving was the T (and dt) calibration, not the method.
+
+NEXT:
+  1. The 1/MOVES bias check from (1) -- the only loose end on validation:
+       cd softmax/code
+       T=107 DT=460 MOVES=40000 python -u tests/validate_boltzmann_toy.py \
+           2>&1 | tee zero_polymer/validate_boltzmann_dt460_M40000.txt
+     Expect KL ~0.016. If it plateaus near 0.03, chase real bias.
+  2. A real main_rate.py run on zero_polymer, which nothing has done yet.
+     T must come from the calibration, NOT the inherited T=2.0. Note the
+     T window in boltzmann_Tcal.txt (32-322) was derived for the 2-site
+     subproblem at sites 30/52 with everything else pinned at the
+     reference; a full 566-site chain explores a much larger energy range,
+     so that window is a starting bracket, not a final answer -- the
+     equivalent of this project's original protein G temperature sweep now
+     needs doing on zero_polymer.
+  3. Optional: re-run the N-sweep coupling test at MUTS=51 rather than 5.
+     Given (2), every number in both coupling runs is a floor measurement,
+     so the "coupling is weaker on zero_polymer" conclusion deserves a
+     re-check in the bulk before it is relied on for the multi-site
+     question.
