@@ -1,0 +1,647 @@
+% ---------------------------------------------------------------------------
+% Informedness of the gradient-informed single-site proposal
+%
+% Recap of the proposal mathematics, the dt/sqrt(T) scaling law, how dt is
+% chosen, and what the dt=460 vs dt=63 pair of Boltzmann-validation runs
+% established. Companion to softmax/DEVLOG.txt -- the DEVLOG is the
+% chronological record, this is the standing explanation.
+%
+% Build:  cd softmax/docs && pdflatex informedness.tex && pdflatex informedness.tex
+% (twice, for the table of contents and cross-references)
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+% Long file paths are set with hyperref's \path, which breaks at slashes
+% and needs no underscore escaping; \sloppy absorbs the rest.
+\sloppy
+
+% Consistent notation for the recurring quantities
+\newcommand{\dt}{\Delta t}
+\newcommand{\gradU}{\nabla U}
+\newcommand{\pmatch}{p_{\mathrm{match}}}
+\newcommand{\Mass}{M}
+\newcommand{\Ncomp}{K_{\mathrm{c}}}
+
+\title{Informedness of the gradient-informed single-site proposal\\
+       \large Why it scales as $\dt/\sqrt{T}$, how $\dt$ is chosen,\\
+       and what the $\dt=460$ vs.\ $\dt=63$ runs showed}
+\author{\texttt{my\_extendedSampling} / \texttt{softmax}}
+\date{2026--10--03}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The sampler in \path{classes/rate_sampler.py} proposes one substitution per
+Monte Carlo move by reading off which amino acid a gradient-informed Gaussian
+displacement ``points at''. How reliably that displacement follows the
+gradient's own preference---its \emph{informedness}---is controlled by $\dt$,
+but \emph{not} by $\dt$ alone: the governing combination is
+$\dt/\sqrt{\Mass T}$. This note derives that scaling from the proposal
+construction, records the measured informedness curves for both reference
+sequences, explains why $\dt$ is chosen at a deliberately \emph{partial}
+informedness of $\pmatch\!\approx\!0.15$ rather than as large as possible, and
+reports what the paired $\dt=460$ / $\dt=63$ Boltzmann-validation runs on
+\texttt{zero\_polymer} ($L=566$) established. The short version of the last
+point: both runs reproduce the exactly-enumerated Boltzmann distribution, so
+the $\dt$ error that motivated the pair cost test \emph{coverage}, not
+correctness.
+\end{abstract}
+
+\tableofcontents
+
+% ===========================================================================
+\section{Scope and sources}
+% ===========================================================================
+
+Everything below is either derived from the code as it stands or measured in a
+run whose output file is committed. Source of truth for each:
+
+\begin{itemize}
+  \item Proposal construction: \path{classes/rate_sampler.py}, method
+        \texttt{\_step}.
+  \item Pointing probability: \path{utils/proposals.py}, function
+        \path{log_pointing_prob}.
+  \item Informedness curves: \path{tests/test_informedness_vs_dt.py};
+        outputs \path{protein_g/informedness_vs_dt_results.txt} and
+        \path{zero_polymer/informedness_vs_dt_results.txt}.
+  \item Boltzmann validation: \path{tests/validate_boltzmann_toy.py};
+        outputs \path{zero_polymer/validate_boltzmann_results_dt460.txt}
+        and \path{..._dt63.txt}.
+  \item Chronology and the mistake that prompted this note:
+        \path{softmax/DEVLOG.txt}, entries dated 2026--10--02 and
+        2026--10--03.
+\end{itemize}
+
+Quantities that are \emph{estimated} rather than measured are flagged as such
+at the point of use; there are two (the effective sample size in
+\S\ref{sec:noise}, and the $\pmatch$ interpolations in
+Table~\ref{tab:working-points}).
+
+% ===========================================================================
+\section{The proposal, and what ``informedness'' means}
+% ===========================================================================
+
+\subsection{One move}
+
+A sequence of length $L$ is held as per-site logits over the
+$K=25$-letter vocabulary \path{SEQUENCE_USED_VOCAB}, mean-centred along the
+class axis to gauge-fix the translation invariance of the softmax. One move:
+
+\begin{enumerate}
+  \item Pick one site $s$ uniformly from $\{0,\dots,L-1\}$. Uniform and
+        state-independent, so it cancels exactly from the
+        Metropolis--Hastings ratio and needs no correction term.
+  \item At that site only, draw a displacement $\delta x\in\mathbb{R}^{K}$
+        (\S\ref{sec:displacement}) and propose the substitution it points at,
+        \emph{excluding} the site's current residue and the five non-canonical
+        codes \texttt{X,B,U,Z,O}. That leaves
+        \[
+          \Ncomp = 25 - 5 - 1 = 19
+        \]
+        competitors. ($\Ncomp$ is $20$ in the one edge case where the site
+        already sits on a non-canonical code, since then there is no current
+        residue to remove from the canonical set.)
+  \item Accept or reject with an exact Metropolis--Hastings correction using
+        the true recomputed energy of the candidate and the true reverse
+        proposal probability, so the target is $\exp(-U/T)$ exactly rather
+        than to first order.
+\end{enumerate}
+
+Note that step 2 always proposes a genuine change: ``staying'' is decided by
+rejection in step 3, never by the proposal.
+
+\subsection{The displacement}
+\label{sec:displacement}
+
+The displacement is one HMC leapfrog half-step with fresh momentum, which for
+a single step is the same object as a MALA/Langevin step:
+\begin{equation}
+  \delta x \;=\; \frac{\dt\,p}{\Mass} \;-\; \frac{\dt^{2}}{2\Mass}\,\gradU,
+  \qquad p \sim \mathcal{N}\!\left(0,\, \Mass T\, I\right),
+  \label{eq:leapfrog}
+\end{equation}
+with $\gradU = \partial U/\partial(\text{logits at } s)$ obtained by relaxing
+\emph{only} site $s$ through $\mathrm{softmax}(\cdot/T_{\mathrm{sftm}})$ while
+every other site is held at its exact one-hot value. Equation
+\eqref{eq:leapfrog} makes $\delta x$ Gaussian, and this is the pair of
+quantities everything downstream depends on:
+\begin{equation}
+  \delta x \sim \mathcal{N}\!\left(\mu,\, \sigma^{2} I\right),
+  \qquad
+  \boxed{\;\mu \;=\; -\frac{\dt^{2}}{2\Mass}\,\gradU,
+         \qquad
+         \sigma \;=\; \dt\sqrt{\frac{T}{\Mass}}\;}
+  \label{eq:musigma}
+\end{equation}
+So the drift grows as $\dt^{2}$ while the noise grows only as $\dt$. That
+asymmetry is the entire mechanism by which $\dt$ buys informedness, and
+\S\ref{sec:scaling} is just this observation carried through carefully.
+
+\subsection{Informedness, defined}
+
+Write $j^{\star}$ for the competitor the gradient alone would pick,
+\begin{equation}
+  j^{\star} \;=\; \arg\max_{j \in \text{competitors}} \mu_{j}
+            \;=\; \arg\min_{j \in \text{competitors}} (\gradU)_{j},
+  \label{eq:jstar}
+\end{equation}
+the second equality because $\mu = -\dt^{2}/(2\Mass)\cdot\gradU$ and
+$\dt^{2}/(2\Mass)$ is a \emph{positive scalar}. This gives the first of two
+facts that the diagnostic
+\texttt{test\_informedness\_vs\_dt.py} was built to separate:
+
+\begin{description}
+  \item[(A) The gradient's choice is independent of $\dt$.] Scaling $\mu$ by a
+        positive scalar cannot change its $\arg\max$. So \emph{which} residue
+        the gradient prefers, and therefore how good that preference is, does
+        not depend on $\dt$ at all. $\dt$ cannot improve the gradient's taste.
+  \item[(B) How often the realised draw obeys that choice does depend on
+        $\dt$.] The actual proposal is the $\arg\max$ of $\delta x$, which is
+        $\mu$ plus noise. Define
+        \begin{equation}
+          \pmatch \;=\; \mathbb{P}\!\left(
+            \arg\max_{j} \delta x_{j} = j^{\star} \right),
+          \label{eq:pmatch}
+        \end{equation}
+        the probability that one realised move follows the gradient's own
+        pick. This is what $\dt$ controls, and it is what ``informedness''
+        means throughout this note.
+\end{description}
+
+Conflating (A) and (B) was the original error that this decomposition fixed:
+an earlier diagnostic swept $\dt$ looking for improvements in proposal
+\emph{quality}, which by (A) cannot exist. The two limits of (B) are
+\begin{equation}
+  \pmatch \longrightarrow \frac{1}{\Ncomp} = \frac{1}{19} \approx 0.0526
+  \quad (\dt \to 0),
+  \qquad
+  \pmatch \longrightarrow 1 \quad (\dt \to \infty),
+\end{equation}
+i.e.\ a uniform pick among the 19 competitors at small $\dt$, and a
+deterministic, greedy gradient-descent pick at large $\dt$. Note the
+small-$\dt$ limit is \emph{uniform}, not ``stay put'': nothing in
+\eqref{eq:leapfrog} references the current residue's identity, which is why an
+earlier design that tried to make small $\dt$ mean ``few sites change'' could
+not work and was abandoned.
+
+% ===========================================================================
+\section{\texorpdfstring{The pointing probability $a_{i\to j}$}{The pointing probability a(i->j)}}
+% ===========================================================================
+
+\subsection{Closed form}
+
+$\pmatch$, and more generally the proposal probability needed for the
+Metropolis--Hastings ratio, is the probability that a particular component of
+a Gaussian vector is the largest. For target $j$ among competitors $k$, with a
+common $\sigma$ (true here, since $\dt$, $T$, $\Mass$ are global scalars):
+\begin{equation}
+  a_{i\to j}
+  \;=\; \mathbb{P}\!\left(\delta x_{j} > \delta x_{k}\ \ \forall k \neq i,j\right)
+  \;=\; \int_{-\infty}^{\infty}\! \phi(u)
+        \prod_{k \neq i,j} \Phi\!\left(\alpha_{kj} + u\right) \mathrm{d}u,
+  \qquad
+  \alpha_{kj} = \frac{\mu_{j}-\mu_{k}}{\sigma},
+  \label{eq:aij}
+\end{equation}
+with $\phi$, $\Phi$ the standard normal density and CDF. With constant
+$\sigma$ this is a Thurstone/probit discrete-choice model---the probit analogue
+of the softmax-based proposal used by Gibbs-With-Gradients. It is an exact
+probability, not merely something proportional to one: summing
+\eqref{eq:aij} over all admissible $j$ at a fixed site gives $1$, which is
+checked numerically in \path{tests/test_proposals.py}.
+
+\subsection{How it is evaluated}
+
+\path{log_pointing_prob} evaluates \eqref{eq:aij} by Gauss--Hermite
+quadrature entirely in log space, using $n_{\mathrm{quad}}=40$ nodes:
+\begin{equation}
+  \log a_{i\to j}
+  \;=\; \log \sum_{q} \exp\!\left[
+          \log w_{q} + \sum_{k \neq j} \log \Phi\!\left(\alpha_{kj} + u_{q}\right)
+        \right],
+\end{equation}
+computed with \texttt{torch.special.log\_ndtr} and \texttt{logsumexp} so that
+no intermediate underflows even when $\alpha$ is large. The current residue is
+removed by \emph{slicing} it out of the tensor being maximised over, not by
+adding a large negative penalty---a deliberate change from an earlier version,
+since a finite penalty could in principle be approached by
+$\dt^{2}$-scaled gradients at large $\dt$, whereas a sliced-out class is
+structurally absent.
+
+\subsection{The one approximation}
+
+Equation \eqref{eq:aij} treats the $K$ components of $\delta x$ as
+independent. They are not exactly: mean-centring the momenta and logits
+induces the covariance $\sigma^{2}(I - J/K)$ rather than $\sigma^{2}I$, a
+pairwise correlation of $-1/(K-1) \approx -0.05$ for $K=20$. This is a
+deliberate, small, documented approximation---the exact calculation would be a
+$(K\!-\!1)$-dimensional orthant integral with no closed form. It is worth
+knowing it is there, because it is the one place the proposal probability is
+not exact; it is not, however, a threat to the sampler's target distribution,
+since the \emph{same} formula is used for both the forward and reverse
+direction and the Metropolis--Hastings correction only needs their ratio to be
+the ratio of the probabilities actually used to propose.
+
+% ===========================================================================
+\section{\texorpdfstring{Why informedness scales as $\dt/\sqrt{T}$}{Why informedness scales as dt/sqrt(T)}}
+\label{sec:scaling}
+% ===========================================================================
+
+\subsection{The derivation}
+
+This is the central result of the note, and it is three lines. Inspecting
+\eqref{eq:aij}, the \emph{only} way $\dt$, $T$ and $\Mass$ enter $a_{i\to j}$
+is through the standardised gaps $\alpha_{kj} = (\mu_{j}-\mu_{k})/\sigma$.
+Substituting \eqref{eq:musigma}:
+\begin{align}
+  \alpha_{kj}
+  &= \frac{\mu_{j}-\mu_{k}}{\sigma}
+   = \frac{-\dfrac{\dt^{2}}{2\Mass}\left[(\gradU)_{j} - (\gradU)_{k}\right]}
+          {\dt\sqrt{T/\Mass}}
+  \notag\\[4pt]
+  &= \frac{\dt}{2\sqrt{\Mass T}}\,
+     \left[(\gradU)_{k} - (\gradU)_{j}\right]
+  \;=\;\frac{\dt \, g_{kj}}{2\sqrt{\Mass T}},
+  \qquad g_{kj} \equiv (\gradU)_{k} - (\gradU)_{j}.
+  \label{eq:alpha-scaling}
+\end{align}
+The $\dt^{2}$ of the drift divides by the $\dt$ of the noise, leaving one
+power of $\dt$; the temperature enters only through $\sigma$, as
+$\sqrt{T}$. Hence:
+\begin{equation}
+  \boxed{\;
+    \pmatch \text{ depends on } (\dt, T, \Mass, \gradU)
+    \text{ only through } \frac{\dt}{\sqrt{\Mass T}}
+    \text{ and the gradient gaps } g_{kj}.
+  \;}
+  \label{eq:scaling-law}
+\end{equation}
+
+\subsection{Three consequences}
+
+\paragraph{1. An exact invariance.} Any two settings with the same
+$\dt/\sqrt{\Mass T}$ have \emph{identical} informedness. With $\Mass=1$
+throughout this project, holding $\pmatch$ fixed while changing temperature
+requires
+\begin{equation}
+  \dt' \;=\; \dt \,\sqrt{\frac{T'}{T}}.
+  \label{eq:rescale}
+\end{equation}
+This is an exact statement about the proposal, not an approximation or a
+fitted relation.
+
+\paragraph{2. Hotter sampling is less informed at fixed $\dt$.} Raising $T$
+inflates $\sigma$ without touching $\mu$, so the same $\dt$ buys strictly less
+informedness at higher temperature. There is a certain physical justice to
+this---a hotter chain should explore more freely---but it means $\dt$ is
+\emph{not} a transferable constant, and any quoted $\dt$ is meaningless
+without the $T$ it was measured at.
+
+\paragraph{3. The trap, which we fell into.}
+\texttt{test\_informedness\_vs\_dt.py} hard-codes its own $T=2.0$ as a module
+constant, so every $\pmatch$ it reports is a $T\!=\!2$ number. Reading
+$\dt=63$ off that table and using it for a run at $T=107$---which is what the
+first version of the queued command did---changes $\alpha$ by
+$1/\sqrt{107/2} = 1/7.31$ and lands the proposal essentially back on the
+uniform floor. In the equivalence of \eqref{eq:rescale},
+\begin{equation}
+  \dt=63 \text{ at } T=107
+  \;\;\equiv\;\;
+  \dt = \frac{63}{\sqrt{107/2}} = 8.6 \text{ at } T=2,
+\end{equation}
+and at $\dt\!\approx\!8.6$ the measured $T\!=\!2$ curve gives
+$\pmatch \approx 0.06$ against a uniform baseline of $0.0526$. The correct
+value for the intended working point is
+\begin{equation}
+  \dt = 63 \times \sqrt{107/2} \;=\; 63 \times 7.3144 \;\approx\; 460 .
+\end{equation}
+This is now recorded in a comment on \path{DTS_TO_SWEEP} so that the next
+reader does not repeat it. For the record, \texttt{protein\_g}'s long-standing
+$\dt=1300$ needed no rescaling only because its runs used $T=2.0$, the same
+temperature the informedness script assumes---the coupling was invisible for
+as long as only one temperature was ever used.
+
+% ===========================================================================
+\section{\texorpdfstring{Choosing $\dt$}{Choosing dt}}
+% ===========================================================================
+
+\subsection{\texorpdfstring{Why not simply make $\dt$ large?}{Why not simply make dt large?}}
+
+By (B), large $\dt$ drives $\pmatch \to 1$, i.e.\ a deterministic greedy pick.
+That is undesirable for three independent reasons.
+
+\begin{enumerate}
+  \item \textbf{The gradient's pick is not that good.} By (A), $\dt$ cannot
+        improve it. Measured top-1 accuracy---how often $j^{\star}$ is the
+        true energetic optimum among the 19 competitors, by brute force---is
+        $2/10$ on \texttt{protein\_g} and $10/30$ on \texttt{zero\_polymer}
+        measured away from the energy floor. So a fully greedy proposal would
+        commit to a substitution that is wrong roughly two thirds of the time,
+        with no mechanism left for exploring the alternatives.
+  \item \textbf{A deterministic proposal cripples the
+        Metropolis--Hastings correction.} As $\pmatch \to 1$ the proposal
+        becomes a near-deterministic map, the reverse probability $a_{j\to i}$
+        for the move that undoes it becomes very small, and the Hastings ratio
+        $a_{j\to i}/a_{i\to j}$ swings wildly. The chain's mobility collapses.
+  \item \textbf{Specific sites saturate at wildly different rates.} The
+        measured spread across sites is large---at $\dt=1000$ on
+        \texttt{zero\_polymer}, $\pmatch$ ranges from $0.40$ to $1.00$
+        depending on the site. A $\dt$ chosen for the mean already pins some
+        sites at $1.0$.
+\end{enumerate}
+
+Equally, $\dt$ too small gives a uniform proposal: correct, but it throws away
+the gradient information the whole construction exists to exploit, and the
+Hastings term becomes $\approx 0$ because $a_{i\to j} \approx a_{j\to i}
+\approx 1/\Ncomp$.
+
+\subsection{The working point}
+
+The target is therefore deliberately \emph{partial} informedness---meaningfully
+above uniform, nowhere near greedy. The convention this project settled on is
+\begin{equation}
+  \pmatch \approx 0.15,
+\end{equation}
+roughly $3\times$ the uniform baseline of $1/19 = 0.0526$ and far from
+saturation. It leaves the gradient a real but non-binding say, keeps all 19
+competitors reachable within a realistic move budget, and keeps both
+$a_{i\to j}$ and $a_{j\to i}$ comfortably away from their extremes so the
+Hastings correction stays well-conditioned.
+
+\subsection{Measured curves}
+
+Table~\ref{tab:pmatch} is the measured $\pmatch(\dt)$ for both references,
+both at $T=2.0$, pooled over 10 brute-forced sites. Note these are
+\emph{closed-form} evaluations of \eqref{eq:aij} at the real measured
+gradients, not Monte Carlo estimates: once $\gradU$ is known at a site (one
+forward/backward pass), sweeping arbitrarily many $\dt$ values costs nothing
+further. This is why extending the sweep downward was free.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{r cc cc}
+\toprule
+ & \multicolumn{2}{c}{\texttt{protein\_g} ($L=56$)}
+ & \multicolumn{2}{c}{\texttt{zero\_polymer} ($L=566$)} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+$\dt$ & mean $\pmatch$ & (min, max) & mean $\pmatch$ & (min, max) \\
+\midrule
+    10 & ---    & ---                & 0.0647 & (0.056, 0.090) \\
+    20 & ---    & ---                & 0.0788 & (0.058, 0.137) \\
+    50 & ---    & ---                & 0.1285 & (0.068, 0.313) \\
+   100 & ---    & ---                & 0.2132 & (0.084, 0.562) \\
+   200 & ---    & ---                & 0.3479 & (0.121, 0.818) \\
+   300 & 0.0725 & (0.060, 0.099)     & 0.4436 & (0.160, 0.933) \\
+   600 & 0.0954 & (0.068, 0.160)     & 0.6229 & (0.275, 0.999) \\
+  1000 & 0.1280 & (0.080, 0.256)     & 0.7447 & (0.403, 1.000) \\
+  1300 & 0.1524 & (0.089, 0.331)     & 0.7930 & (0.470, 1.000) \\
+  2000 & 0.2047 & (0.111, 0.483)     & 0.8507 & (0.503, 1.000) \\
+  4000 & 0.3197 & (0.178, 0.743)     & 0.9156 & (0.520, 1.000) \\
+  8000 & 0.4669 & (0.300, 0.948)     & 0.9506 & (0.541, 1.000) \\
+ 16000 & 0.6266 & (0.391, 1.000)     & 0.9581 & (0.581, 1.000) \\
+ 32000 & 0.7691 & (0.472, 1.000)     & 0.9659 & (0.659, 1.000) \\
+\bottomrule
+\end{tabular}
+\caption{Measured $\pmatch(\dt)$, both at $T=2.0$, $\Mass=1$, pooled over 10
+sites. Uniform baseline $1/19 = 0.0526$. The \texttt{protein\_g} sweep was
+never run below $\dt=300$; the \texttt{zero\_polymer} range was extended down
+to $\dt=10$ precisely because the old range turned out to sit entirely above
+its working point.}
+\label{tab:pmatch}
+\end{table}
+
+The two curves are displaced by about a factor of $20$ in $\dt$: at a given
+$\dt$, \texttt{zero\_polymer} is far more informed. By
+\eqref{eq:alpha-scaling} with $T$ and $\Mass$ equal, that displacement is
+entirely attributable to larger gradient gaps $g_{kj}$ on the longer sequence,
+which is consistent with the independently measured $\approx\!18\times$ larger
+gradient components there.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{c rr r}
+\toprule
+target $\pmatch$ & $\dt$ at $T=2$ & $\dt$ at $T=107$ & regime \\
+\midrule
+$\approx 0.0526$ & ---   & ---    & uniform floor, no gradient information \\
+$0.10$           &   33  &   240  & weakly informed \\
+$\mathbf{0.15}$  & $\mathbf{63}$ & $\mathbf{460}$ & \textbf{the working point} \\
+$0.25$           &  127  &   931  & strongly informed \\
+$0.50$           &  394  &  2885  & approaching greedy \\
+$0.79$           & 1281  &  9372  & effectively greedy \\
+\bottomrule
+\end{tabular}
+\caption{Working points for \texttt{zero\_polymer}, with the $T=107$ column
+obtained from the $T=2$ column by the exact rescaling \eqref{eq:rescale},
+factor $\sqrt{107/2}=7.3144$. The $T=2$ values are linear interpolations
+within Table~\ref{tab:pmatch} and so carry interpolation error; the rescaling
+itself is exact.}
+\label{tab:working-points}
+\end{table}
+
+\subsection{Recommended practice}
+
+\begin{enumerate}
+  \item Never quote $\dt$ without the $T$ it belongs to.
+  \item Changing $T$ requires rescaling $\dt$ by $\sqrt{T'/T}$,
+        \eqref{eq:rescale}, or informedness silently moves.
+  \item Re-measure Table~\ref{tab:pmatch} for a new reference sequence. The
+        curve depends on the gradient gaps, which are a property of the
+        sequence and the energy, and they moved by $20\times$ between these
+        two references.
+  \item Check the per-site (min, max) spread, not just the mean. A mean of
+        $0.15$ can hide sites already saturated at $1.0$.
+\end{enumerate}
+
+% ===========================================================================
+\section{\texorpdfstring{What $\dt=460$ vs.\ $\dt=63$ showed}{What dt=460 vs. dt=63 showed}}
+\label{sec:460v63}
+% ===========================================================================
+
+\subsection{The experiment}
+
+\texttt{validate\_boltzmann\_toy.py} makes the sampler's target distribution
+exactly checkable. It frees exactly two sites (30 and 52), pins all 564 others
+at the reference, and enumerates every one of the $20^{2}=400$ states by brute
+force, giving the exact Boltzmann distribution $p_{\mathrm{exact}} \propto
+\exp(-U/T)$. It then runs the real \texttt{\_step} logic restricted to those
+two sites and compares the empirical visit histogram against
+$p_{\mathrm{exact}}$.
+
+Both runs used $T=107$ (chosen from the participation-ratio calibration: the
+inherited $T=2.0$ puts $p=1.0000$ on a single state and the chain cannot
+move), $\Mass=1$, 20\,000 moves, 4000 discarded as burn-in. They differ
+\emph{only} in $\dt$, and by \S\ref{sec:scaling} that means they differ only
+in informedness:
+\begin{center}
+\begin{tabular}{llc}
+\toprule
+run & $\dt$ & informedness at $T=107$ \\
+\midrule
+informed & 460 & $\pmatch \approx 0.15$, the intended working point \\
+uniform  &  63 & $\pmatch \approx 0.06$, essentially the $1/19$ floor \\
+\bottomrule
+\end{tabular}
+\end{center}
+The $\dt=63$ run exists because it was the erroneous value in the first
+version of the queued command. Running it alongside the corrected one turned
+the mistake into a controlled comparison: the same sampler, same energy, same
+temperature, with the gradient information effectively switched off.
+
+\subsection{Results}
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{l rr}
+\toprule
+ & $\dt=460$ (informed) & $\dt=63$ ($\approx$ uniform) \\
+\midrule
+acceptance rate                  & 0.3060   & 0.2893 \\
+$\mathrm{KL}(p_{\mathrm{emp}} \,\|\, p_{\mathrm{exact}})$
+                                 & 0.0316   & 0.0338 \\
+total variation distance         & 0.0787   & 0.0848 \\
+distinct states visited          & 224/400  & 223/400 \\
+\midrule
+mean $U$ under $p_{\mathrm{exact}}$   & $+185.20$ & $+185.20$ \\
+mean $U$ under $p_{\mathrm{emp}}$     & $+185.63$ & $+187.63$ \\
+deviation                             & $+0.44$ \;(0.24\%) & $+2.43$ \;(1.31\%) \\
+\bottomrule
+\end{tabular}
+\caption{Boltzmann validation on \texttt{zero\_polymer}, $T=107$,
+20\,000 moves, 16\,000 post-burn-in samples over 400 enumerated states.
+$\log 400 = 5.99$ is the rough scale against which to read the KL.}
+\label{tab:460v63}
+\end{table}
+
+\subsection{Reading the result}
+
+\paragraph{Both pass; this validates the sampler at $L=566$.} The top states
+come back in essentially the right order and the right proportions, and mean
+$U$---the most robust single summary, being an average over the whole
+distribution rather than a per-state frequency---agrees to $0.24\%$ at the
+informed $\dt$. Neither run shows the decisive failure signature the script
+warns about: mass piled on states the exact distribution calls unlikely, or
+the true top states missed. This was the last outstanding safety check and the
+only one that exercises accept/reject end to end.
+
+\paragraph{The $\dt$ error cost coverage, not correctness.} This is the
+substantive methodological lesson of the pair. A near-uniform proposal still
+targets the same Boltzmann distribution---the Metropolis--Hastings correction
+does not care how good the proposal is, only that its forward and reverse
+probabilities are computed consistently. So the $\dt=63$ run converged
+perfectly respectably. But with $a_{i\to j} \approx a_{j\to i} \approx
+1/\Ncomp$, the Hastings term
+\begin{equation}
+  \log a_{j\to i} - \log a_{i\to j} \;\approx\; 0,
+\end{equation}
+which means that run never meaningfully exercised the reverse-probability
+pass---the second backward pass at the candidate point, and the asymmetry
+correction it feeds. That is the most intricate part of the sampler and the
+part most likely to harbour a subtle bug, and it is the reason this test
+exists. Had only the $\dt=63$ run been done, it would have been reported as a
+pass while leaving that machinery untested. The informed run is the one that
+actually tests it.
+
+\paragraph{Informedness helps, but modestly, and not via acceptance.} The
+informed run is better on every metric, but only slightly, and acceptance
+barely moved ($0.306$ vs.\ $0.289$). Informedness is not acting as an
+acceptance-rate lever here. The natural reading is that on a 400-state
+problem with a $\approx\!41$-state effective support, a uniform proposal is
+already a decent explorer, so there is little headroom; the informed
+proposal's advantage should be expected to matter much more on the full
+566-site problem, where the competitor set per move is the same 19 but the
+state space is vastly larger. That expectation is untested.
+
+\subsection{Is the residual discrepancy bias or noise?}
+\label{sec:noise}
+
+The KL values are small but not zero, and it is worth being precise about
+whether that residue is bias. The participation ratio of
+$p_{\mathrm{exact}}$ at $T=107$ is
+\begin{equation}
+  k_{\mathrm{eff}} = \Big(\textstyle\sum_{i} p_{i}^{2}\Big)^{-1} = 41.4
+\end{equation}
+effective states out of 400. For $n$ \emph{independent} samples from the exact
+distribution, the expected KL of the empirical histogram is approximately
+\begin{equation}
+  \mathbb{E}\!\left[\mathrm{KL}\right] \approx \frac{k_{\mathrm{eff}}-1}{2n}
+  = \frac{40.4}{2 \times 16000} = 0.00126,
+\end{equation}
+about $25\times$ smaller than observed. But MCMC samples are not
+independent. Inverting the same expression for the effective sample size
+actually implied:
+\begin{equation}
+  \mathrm{ESS} \approx \frac{k_{\mathrm{eff}}-1}{2\,\mathrm{KL}}
+  = \begin{cases}
+      639 & (\dt=460)\\
+      598 & (\dt=63)
+    \end{cases}
+  \qquad\Longrightarrow\qquad
+  \tau_{\mathrm{auto}} = \frac{16000}{\mathrm{ESS}} \approx 25\text{--}27 \text{ moves}.
+\end{equation}
+An autocorrelation time of $\approx\!25$ moves is entirely ordinary for a
+two-site chain at $30\%$ acceptance: each site is re-proposed roughly every
+two moves and the proposal is accepted about $30\%$ of the time, so the state
+decorrelates over tens of moves. Both KL values are therefore what a
+\emph{correct} sampler limited by chain autocorrelation looks like. This is an
+estimate, not a measurement---$\tau_{\mathrm{auto}}$ was inferred from the KL
+rather than computed from the chain.
+
+\paragraph{The falsifiable check.} If the sampler is unbiased, the KL is pure
+finite-sample noise and must fall as $1/n$:
+\begin{equation}
+  \mathrm{KL}(n) \;\propto\; \frac{1}{n}
+  \qquad\Longrightarrow\qquad
+  \mathrm{KL}(40000\ \text{moves}) \approx 0.016 .
+\end{equation}
+A KL that instead plateaus near $0.03$ would indicate genuine bias. Until that
+run exists, the defensible claim is \emph{no detectable bias at this
+resolution}, not \emph{unbiased}. The check is cheap:
+\begin{verbatim}
+cd softmax/code
+T=107 DT=460 MOVES=40000 python -u tests/validate_boltzmann_toy.py \
+    2>&1 | tee zero_polymer/validate_boltzmann_dt460_M40000.txt
+\end{verbatim}
+
+% ===========================================================================
+\section{Caveats and open items}
+% ===========================================================================
+
+\begin{enumerate}
+  \item \textbf{The $T$ window is from a two-site subproblem.} The usable
+        range $T \approx 32$--$322$, and hence the $\dt \approx 460$ derived
+        from it, were obtained with 564 of 566 residues pinned at the
+        reference. A full-length chain explores a far wider energy range, so
+        that window is a starting bracket, not a final answer.
+        \texttt{zero\_polymer} needs its own temperature sweep.
+  \item \textbf{Informedness curves are floor measurements.} The gradients
+        behind Table~\ref{tab:pmatch} were computed at a $\mathrm{seq\_A}$
+        only 5 mutations from the reference---$0.9\%$ drift at $L=566$, where
+        the energy sits essentially at its floor. Measured at a comparable
+        drift to \texttt{protein\_g} ($\approx\!8.8\%$), the gradient's
+        behaviour changes substantially: top-1 rises from $2/10$ to $10/30$
+        and the mean true $\Delta U$ at the gradient's pick goes from $+474$
+        to $-360$. Gradient \emph{gaps}, and hence the whole $\pmatch(\dt)$
+        curve, should be re-measured in the bulk before
+        Table~\ref{tab:working-points} is trusted for a production run.
+  \item \textbf{The independence approximation} of \S2 is the one inexactness
+        in $a_{i\to j}$. Unquantified against the exact orthant integral.
+  \item \textbf{Per-site saturation} is wide (Table~\ref{tab:pmatch}), so a
+        single global $\dt$ is necessarily a compromise. Whether a per-site
+        $\dt$ would help, and whether it could be made to preserve detailed
+        balance, is unexplored.
+  \item \textbf{$1/n$ scaling of the KL} (\S\ref{sec:noise}) is the one
+        outstanding validation item.
+\end{enumerate}
+
+\end{document}
