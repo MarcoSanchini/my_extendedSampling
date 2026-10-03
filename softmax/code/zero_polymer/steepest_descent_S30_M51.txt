@@ -1,0 +1,42 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 217116.91it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Current A: MKTIIALSYILCLVFAQKLPGNMCSTATICLGHHAVPCITIVKTITNDQIEVTNOTELVQSSSTGEICDSPHQILDGKNCTLIDALLGEPQCDGFQNKKWDLSVERSKAYSNCYPYDVPDYASLRSLVADVGTLEFNNESFNWTGVTQNGTSSACIRRZKNXNFSRLNWMTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDDDQIFLYAQASGRITVSTKRSZQTVSPNIGSRPRVRNIZSRISIYWTIVKAGDIELINSTGNPIAPRGYFKIRFGKSSIMHSDAPIGKCMSECITPNGSIPNDKPFQNVNRSTYGACPRYVKQNTLKLATGMRPVPEKQTRGIFGIKAGFIENGWEGMVDGGYVFRHQXSEGRGQAADLKSTQAASDQINGKLNRLIGKTUEKFHQILKETSEVEGRIQDLEKDVEDTKPDLWSYNAELWVAZENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCRKXYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVRLKSFYKDWILLISFAIKCFLLCVALLGVIMWACQKGXIRCNICB
+  site 178 (cur=A): gradient-predicted=W (true dU=-2751.7480)  true best=W (true dU=-2751.7480)  top1=HIT
+  site  30 (cur=L): gradient-predicted=M (true dU=-20.5586)  true best=W (true dU=-508.7891)  top1=miss
+  site  43 (cur=T): gradient-predicted=Q (true dU=-579.5195)  true best=F (true dU=-1386.2188)  top1=miss
+  site 494 (cur=G): gradient-predicted=W (true dU=-623.8164)  true best=W (true dU=-623.8164)  top1=HIT
+  site 463 (cur=F): gradient-predicted=Y (true dU=-162.1816)  true best=S (true dU=-745.0410)  top1=miss
+  site 107 (cur=K): gradient-predicted=Y (true dU=-163.3477)  true best=G (true dU=-271.2129)  top1=miss
+  site 313 (cur=N): gradient-predicted=P (true dU=-325.3262)  true best=C (true dU=-1861.5293)  top1=miss
+  site 123 (cur=L): gradient-predicted=P (true dU=-198.6699)  true best=I (true dU=-439.6367)  top1=miss
+  site 189 (cur=F): gradient-predicted=I (true dU=-1417.8516)  true best=I (true dU=-1417.8516)  top1=HIT
+  site 468 (cur=K): gradient-predicted=Y (true dU=-88.6816)  true best=P (true dU=-432.2637)  top1=miss
+  site 499 (cur=G): gradient-predicted=W (true dU=-158.1680)  true best=P (true dU=-158.2051)  top1=miss
+  site 547 (cur=L): gradient-predicted=M (true dU=+25.2129)  true best=C (true dU=-779.1660)  top1=miss
+  site 482 (cur=R): gradient-predicted=W (true dU=-1657.3574)  true best=W (true dU=-1657.3574)  top1=HIT
+  site 256 (cur=D): gradient-predicted=M (true dU=-1556.7246)  true best=Y (true dU=-3363.3516)  top1=miss
+  site 540 (cur=F): gradient-predicted=D (true dU=+492.3770)  true best=C (true dU=-524.8379)  top1=miss
+  site 372 (cur=X): gradient-predicted=G (true dU=-671.2656)  true best=H (true dU=-1031.5527)  top1=miss
+  site 472 (cur=E): gradient-predicted=I (true dU=-214.2246)  true best=W (true dU=-1018.9941)  top1=miss
+  site   3 (cur=I): gradient-predicted=L (true dU=-44.6699)  true best=L (true dU=-44.6699)  top1=HIT
+  site  32 (cur=H): gradient-predicted=Y (true dU=-345.7559)  true best=Y (true dU=-345.7559)  top1=HIT
+  site 279 (cur=K): gradient-predicted=Q (true dU=-599.8066)  true best=C (true dU=-4108.4941)  top1=miss
+  site 292 (cur=C): gradient-predicted=I (true dU=+969.4688)  true best=K (true dU=+433.7949)  top1=miss
+  site 520 (cur=V): gradient-predicted=I (true dU=+16.5684)  true best=C (true dU=-419.1777)  top1=miss
+  site 173 (cur=N): gradient-predicted=D (true dU=-300.2988)  true best=D (true dU=-300.2988)  top1=HIT
+  site 352 (cur=G): gradient-predicted=P (true dU=-271.9180)  true best=P (true dU=-271.9180)  top1=HIT
+  site  64 (cur=G): gradient-predicted=N (true dU=+629.6895)  true best=W (true dU=-216.4707)  top1=miss
+  site 271 (cur=G): gradient-predicted=D (true dU=-2002.5137)  true best=D (true dU=-2002.5137)  top1=HIT
+  site 195 (cur=W): gradient-predicted=Y (true dU=+254.5176)  true best=Y (true dU=+254.5176)  top1=HIT
+  site 345 (cur=G): gradient-predicted=N (true dU=-120.9551)  true best=K (true dU=-351.1113)  top1=miss
+  site 467 (cur=K): gradient-predicted=R (true dU=+225.0020)  true best=P (true dU=-887.3613)  top1=miss
+  site 269 (cur=P): gradient-predicted=R (true dU=+861.7441)  true best=C (true dU=-5312.4902)  top1=miss
+
+[OK] mu_A . grad_A <= 0 at every tested site (p=0 displacement is a descent direction)
+
+Top-1 accuracy (gradient pick == true best, among candidates excluding 'stay'): 10/30
+Mean true dU at gradient-predicted class:     -360.0260
+Mean true dU at all other candidate classes:  +244.2493
+(gradient-predicted class should be markedly lower than the random/other average;
+ it need not hit the true optimum every time -- that's the linearization-quality tradeoff.)
