@@ -64,10 +64,28 @@ import custom_esm.utils.constants.esm3 as C
 
 from references import get_reference
 
+# Plotting lives in tests/locality_plots.py, deliberately free of torch so the
+# figures can be exercised on synthetic arrays without a GPU. If matplotlib or
+# pandas are missing the numeric sections still run and only the figures are
+# skipped -- the diagnostic must not become unrunnable because of a plotting
+# dependency.
+try:
+    import locality_plots as LP
+    _PLOTS = True
+    _PLOT_ERR = ""
+except Exception as exc:                      # pragma: no cover
+    _PLOTS = False
+    _PLOT_ERR = f"{type(exc).__name__}: {exc}"
+
 REF_NAME, REF_SEQ = get_reference()
 SEED = int(os.environ.get("SEED", 0))
 N_INIT_MUTS = int(os.environ.get("MUTS", 5))
 PROBE_SITES = [int(x) for x in os.environ.get("SITES", "").split(",") if x.strip()]
+# Where figures and CSVs go. Default sits next to this reference's other
+# results. PNGs are gitignored project-wide (see .gitignore: regenerable, and
+# they bloat the repo), so these stay local unless deliberately un-ignored.
+PLOT_DIR = os.environ.get("PLOT_DIR", f"{REF_NAME}/attention_locality_plots")
+NO_PLOTS = os.environ.get("NO_PLOTS", "") not in ("", "0", "false", "False")
 
 PARS = {
     "T": 2.0, "dt": 2.0, "M": 1.0, "T_sftm": 0.1,
@@ -146,6 +164,36 @@ def grad_k_sites(sampler, eprot, sites, pars, backward=True):
     return None, U.item()
 
 
+def _emit_outputs(site_records, profile_frames, plot_payload, want_plots):
+    """Figures and CSVs. Wrapped so a plotting failure degrades to a warning
+    rather than discarding the model run that produced the numbers."""
+    if not want_plots:
+        return
+    try:
+        import pandas as pd
+        os.makedirs(PLOT_DIR, exist_ok=True)
+        summary = pd.DataFrame(site_records)
+        profiles = [pd.DataFrame(p) for p in profile_frames]
+        c1, c2 = LP.write_tables(summary, profiles, PLOT_DIR)
+        made = [c1, c2]
+        for s_, am_a, am_b, dp, lab in plot_payload:
+            made.append(LP.attention_panels(
+                am_a, am_b, dp, s_, os.path.join(PLOT_DIR, f"panels_site{s_}.png"),
+                ref_label=f"reference {REF_NAME}", title_extra=f"  [{lab}]"))
+        for p in profiles:
+            s_ = int(p["site"].iloc[0])
+            made.append(LP.decay_profile(p, s_, os.path.join(PLOT_DIR, f"decay_site{s_}.png")))
+        made.append(LP.local_vs_distal_bar(summary, os.path.join(PLOT_DIR, "distal_share.png")))
+        print(f"\n  wrote {len(made)} files to {PLOT_DIR}/ :")
+        for p in made:
+            print(f"    {os.path.getsize(p)/1024:9.1f} KB  {os.path.basename(p)}")
+        print("  (PNGs are gitignored project-wide -- regenerable, and they would bloat")
+        print("   the repo. The two CSVs carry the same numbers in machine-readable form.)")
+    except Exception as exc:
+        print(f"\n  [figure/CSV generation FAILED: {type(exc).__name__}: {exc}]")
+        print("  The numbers above are unaffected.")
+
+
 def main():
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     L = len(REF_SEQ)
@@ -203,6 +251,13 @@ def main():
     print("delta am = am(seq_B) - am(seq_A), split into LOCAL (row/col s) and")
     print("DISTAL (everything else). See LEGEND.")
 
+    want_plots = _PLOTS and not NO_PLOTS
+    if NO_PLOTS:
+        print("  [figures disabled via NO_PLOTS]")
+    elif not _PLOTS:
+        print(f"  [figures skipped -- plotting import failed: {_PLOT_ERR}]")
+    site_records, profile_frames, plot_payload = [], [], []
+
     with torch.no_grad():
         am_A = sampler.model.predict_attention(sequence_probs=eprot_A.get_probs())
     ref_am = sampler.ref_eprot.am
@@ -257,12 +312,34 @@ def main():
         jj = torch.arange(L, device=D.device).view(1, -1).expand(L, L)
         dist = torch.minimum((ii - s).abs(), (jj - s).abs())
         bins = [(0, 0), (1, 2), (3, 5), (6, 10), (11, 20), (21, 50), (51, 100), (101, 10**6)]
-        prof = []
+        prof, prof_rows = [], []
         for lo, hi in bins:
             m = (dist >= lo) & (dist <= hi)
             if m.any():
-                prof.append(f"{lo}-{hi if hi < 10**6 else 'inf'}:{D[m].mean().item():.2e}")
+                mv = D[m].mean().item()
+                prof.append(f"{lo}-{hi if hi < 10**6 else 'inf'}:{mv:.2e}")
+                prof_rows.append(dict(site=s, distance=lo, distance_hi=hi,
+                                      mean_abs_delta=mv, n_entries=int(m.sum().item())))
         print(f"    mean |delta am| by distance from s:  " + "  ".join(prof))
+
+        site_records.append(dict(
+            site=s, from_aa=seq_A[s], to_aa=vocab[tgt],
+            n_local=n_local, n_distal=n_distal,
+            abs_total=tot, abs_local=loc, abs_distal=dis,
+            distal_share_abs=(dis/tot if tot else float('nan')),
+            mean_abs_local=loc/n_local, mean_abs_distal=dis/n_distal,
+            max_abs_distal=D[~mask_local].max().item(),
+            dU_total=dU_total, dU_local=dU_local, dU_distal=dU_distal,
+            distal_share_dU=(dU_distal/dU_total if dU_total else float('nan'))))
+        profile_frames.append(prof_rows)
+        if want_plots:
+            plot_payload.append((s, am_A.float().cpu().numpy(),
+                                 am_B.float().cpu().numpy(),
+                                 dpair.float().cpu().numpy(),
+                                 f"{seq_A[s]}->{vocab[tgt]}"))
+
+    if site_records:
+        _emit_outputs(site_records, profile_frames, plot_payload, want_plots)
 
     print("\n  How to read (1): if the attention map changed only at the mutated site,")
     print("  DISTAL would be ~0 in every column above. The DISTAL share of dU_am is")
