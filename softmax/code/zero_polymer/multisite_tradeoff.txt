@@ -1,0 +1,241 @@
+# reference: zero_polymer (L=566 residues)
+# starting points: 6  (drifts=[5, 51, 150] x seeds=[0, 1])
+# N values: [1, 2, 3, 5, 8, 12, 20]   trials/cell: 10   modes: ['dispersed', 'clustered']
+# acceptance temperatures: [32.0, 107.0, 322.0]
+# estimated budget: ~4236 forward passes + 6 backward passes
+#   (566 isolated-energy forwards per starting point, bounded by the
+#    number of DISTINCT sites touched, plus 140 joint-energy forwards)
+# (isolated single-site energies are cached per starting point -- they depend
+#  only on (start, site, target), so they are reused across every N and trial)
+
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 196747.74it/s]
+=== (0) wall-clock cost per model operation ===
+The multi-site case rests on t_grad_whole ~ t_grad_site (one backward
+covering all sites costs no more than one covering a single site, because
+the forward pass runs over all L residues either way). That is an
+assumption; this measures it.
+
+  t_exact       (1 forward)              =    60.02 ms
+  t_grad_site   (1 single-site backward) =   150.36 ms
+  t_grad_whole  (1 whole-seq backward)   =   149.77 ms   ratio to site: 0.996
+
+  modelled move cost (2 grads + 1 exact):
+    single-site move =   360.75 ms
+    N-site move      =   359.56 ms   ratio: 0.997
+  -> cost parity holds: an N-site move costs about the same as a
+     single-site one, so throughput is decided by a_N*N vs a_1.
+
+  ETA for the rest of this run: ~4.3 min (4236 forwards at the 60.0 ms just measured). Ctrl-C now if that is too long;
+  reduce it with TRIALS, NVALS, DRIFTS, SEEDS or MODES.
+
+=== starting point: drift=5 seed=0 -> Hd=5/566 (0.9%)  U_A=2557.04 ===
+  dispersed  N=  1  dU_joint med=     441.4 [    213.0,    690.1]   coupling med=       0.0   dU/site=    441.4
+  dispersed  N=  2  dU_joint med=     139.4 [    -54.7,    282.0]   coupling med=     -33.1   dU/site=     69.7
+  dispersed  N=  3  dU_joint med=      57.5 [   -259.5,    337.4]   coupling med=    -125.2   dU/site=     19.2
+  dispersed  N=  5  dU_joint med=    3187.2 [   2364.9,   3994.9]   coupling med=    -512.4   dU/site=    637.4
+  dispersed  N=  8  dU_joint med=    3119.0 [   1502.9,   5307.0]   coupling med=    -190.3   dU/site=    389.9
+  dispersed  N= 12  dU_joint med=    3959.9 [   2412.4,   5838.4]   coupling med=    -352.9   dU/site=    330.0
+  dispersed  N= 20  dU_joint med=    6219.2 [   5675.3,   8121.8]   coupling med=   -1988.4   dU/site=    311.0
+  clustered  N=  1  dU_joint med=      76.7 [    -60.1,    191.0]   coupling med=       0.0   dU/site=     76.7
+  clustered  N=  2  dU_joint med=     143.4 [   -159.9,    533.2]   coupling med=       7.9   dU/site=     71.7
+  clustered  N=  3  dU_joint med=    1073.9 [    -18.5,   1575.6]   coupling med=     -27.3   dU/site=    358.0
+  clustered  N=  5  dU_joint med=     881.3 [    548.1,   2382.1]   coupling med=    -542.0   dU/site=    176.3
+  clustered  N=  8  dU_joint med=    1737.1 [   1153.9,   2113.2]   coupling med=   -1362.9   dU/site=    217.1
+  clustered  N= 12  dU_joint med=    2806.4 [   1821.0,   4524.6]   coupling med=   -1332.2   dU/site=    233.9
+  clustered  N= 20  dU_joint med=    5909.4 [   4461.2,   6931.2]   coupling med=   -3164.7   dU/site=    295.5
+  isolated single-site dU over 461 distinct sites (81% of the sequence):
+    median=     220.2  IQR=[     20.5,    605.6]  min=   -1555.6  max=    6979.0
+    downhill (dU<0): 101/461 = 22%   mean=    +432.7
+
+=== starting point: drift=5 seed=1 -> Hd=4/566 (0.7%)  U_A=6426.73 ===
+  dispersed  N=  1  dU_joint med=      -9.7 [   -319.8,    122.6]   coupling med=       0.0   dU/site=     -9.7
+  dispersed  N=  2  dU_joint med=     379.1 [    -48.5,    628.4]   coupling med=       3.1   dU/site=    189.6
+  dispersed  N=  3  dU_joint med=     478.1 [    133.1,    817.3]   coupling med=     118.8   dU/site=    159.4
+  dispersed  N=  5  dU_joint med=     312.6 [   -696.2,    767.1]   coupling med=     206.6   dU/site=     62.5
+  dispersed  N=  8  dU_joint med=    1189.9 [    350.8,   1472.6]   coupling med=     581.5   dU/site=    148.7
+  dispersed  N= 12  dU_joint med=    3229.3 [   2229.1,   3972.9]   coupling med=     597.2   dU/site=    269.1
+  dispersed  N= 20  dU_joint med=    4325.5 [   2550.3,   6319.7]   coupling med=    3690.4   dU/site=    216.3
+  clustered  N=  1  dU_joint med=     243.3 [     -6.0,    745.1]   coupling med=       0.0   dU/site=    243.3
+  clustered  N=  2  dU_joint med=     267.4 [     85.1,    477.5]   coupling med=     104.5   dU/site=    133.7
+  clustered  N=  3  dU_joint med=     157.6 [      4.9,    638.0]   coupling med=     278.2   dU/site=     52.5
+  clustered  N=  5  dU_joint med=     824.2 [    -44.6,   4032.4]   coupling med=     344.8   dU/site=    164.8
+  clustered  N=  8  dU_joint med=    1130.0 [   -210.5,   3177.9]   coupling med=    1395.7   dU/site=    141.3
+  clustered  N= 12  dU_joint med=     882.0 [    176.0,   2271.8]   coupling med=    1164.4   dU/site=     73.5
+  clustered  N= 20  dU_joint med=    2346.6 [   1993.2,   3315.9]   coupling med=     948.7   dU/site=    117.3
+  isolated single-site dU over 479 distinct sites (85% of the sequence):
+    median=      24.2  IQR=[   -143.5,    239.0]  min=   -4243.6  max=    3594.8
+    downhill (dU<0): 220/479 = 46%   mean=     +74.8
+
+=== starting point: drift=51 seed=0 -> Hd=50/566 (8.8%)  U_A=28013.28 ===
+  dispersed  N=  1  dU_joint med=    -285.4 [  -1418.1,    -40.0]   coupling med=       0.0   dU/site=   -285.4
+  dispersed  N=  2  dU_joint med=    -658.8 [  -1040.1,   -191.5]   coupling med=     -10.4   dU/site=   -329.4
+  dispersed  N=  3  dU_joint med=    -340.2 [  -1339.0,   -215.9]   coupling med=      41.8   dU/site=   -113.4
+  dispersed  N=  5  dU_joint med=    -776.0 [  -1812.2,   -333.5]   coupling med=      73.4   dU/site=   -155.2
+  dispersed  N=  8  dU_joint med=   -1914.5 [  -2478.1,   -886.8]   coupling med=     891.0   dU/site=   -239.3
+  dispersed  N= 12  dU_joint med=   -1694.5 [  -5603.8,    973.4]   coupling med=     458.1   dU/site=   -141.2
+  dispersed  N= 20  dU_joint med=   -2704.8 [  -4159.7,  -2007.5]   coupling med=    2577.8   dU/site=   -135.2
+  clustered  N=  1  dU_joint med=     -16.3 [   -206.8,    172.0]   coupling med=       0.0   dU/site=    -16.3
+  clustered  N=  2  dU_joint med=     -82.3 [   -411.4,    455.7]   coupling med=     142.1   dU/site=    -41.2
+  clustered  N=  3  dU_joint med=    -183.1 [  -1120.1,    112.0]   coupling med=      22.4   dU/site=    -61.0
+  clustered  N=  5  dU_joint med=    -427.7 [  -1736.8,   1142.4]   coupling med=     446.9   dU/site=    -85.5
+  clustered  N=  8  dU_joint med=     -44.5 [   -886.6,   2795.6]   coupling med=    3993.6   dU/site=     -5.6
+  clustered  N= 12  dU_joint med=    -959.1 [  -1579.1,   -722.7]   coupling med=     876.0   dU/site=    -79.9
+  clustered  N= 20  dU_joint med=     206.8 [  -1829.1,   1219.9]   coupling med=    4687.3   dU/site=     10.3
+  isolated single-site dU over 480 distinct sites (85% of the sequence):
+    median=    -174.9  IQR=[   -510.2,     47.5]  min=   -5081.3  max=    3839.2
+    downhill (dU<0): 326/480 = 68%   mean=    -265.9
+
+=== starting point: drift=51 seed=1 -> Hd=44/566 (7.8%)  U_A=14719.92 ===
+  dispersed  N=  1  dU_joint med=      -9.3 [   -459.4,     45.0]   coupling med=       0.0   dU/site=     -9.3
+  dispersed  N=  2  dU_joint med=    -146.4 [   -537.0,    271.2]   coupling med=      28.6   dU/site=    -73.2
+  dispersed  N=  3  dU_joint med=      -9.3 [   -409.1,    812.4]   coupling med=     -15.1   dU/site=     -3.1
+  dispersed  N=  5  dU_joint med=    -384.5 [   -582.7,    -97.6]   coupling med=       1.4   dU/site=    -76.9
+  dispersed  N=  8  dU_joint med=    1038.4 [    520.1,   1154.0]   coupling med=     192.1   dU/site=    129.8
+  dispersed  N= 12  dU_joint med=     249.5 [   -266.4,   1146.9]   coupling med=     167.9   dU/site=     20.8
+  dispersed  N= 20  dU_joint med=    1890.4 [    884.9,   2736.3]   coupling med=    2089.6   dU/site=     94.5
+  clustered  N=  1  dU_joint med=    -179.5 [   -209.8,    -69.6]   coupling med=       0.0   dU/site=   -179.5
+  clustered  N=  2  dU_joint med=    -289.2 [   -831.2,    154.7]   coupling med=      36.8   dU/site=   -144.6
+  clustered  N=  3  dU_joint med=     -73.1 [   -663.1,    447.1]   coupling med=      90.1   dU/site=    -24.4
+  clustered  N=  5  dU_joint med=     510.3 [   -150.6,   1193.1]   coupling med=     348.6   dU/site=    102.1
+  clustered  N=  8  dU_joint med=     218.1 [   -168.3,    769.1]   coupling med=     645.6   dU/site=     27.3
+  clustered  N= 12  dU_joint med=     808.5 [    484.0,   2190.6]   coupling med=    1739.2   dU/site=     67.4
+  clustered  N= 20  dU_joint med=    3078.4 [   2106.6,   5075.9]   coupling med=    6079.5   dU/site=    153.9
+  isolated single-site dU over 472 distinct sites (83% of the sequence):
+    median=     -12.9  IQR=[   -198.3,    153.7]  min=   -1456.7  max=    4492.1
+    downhill (dU<0): 251/472 = 53%   mean=      -2.7
+
+=== starting point: drift=150 seed=0 -> Hd=127/566 (22.4%)  U_A=31734.50 ===
+  dispersed  N=  1  dU_joint med=    -123.3 [   -570.7,     60.9]   coupling med=       0.0   dU/site=   -123.3
+  dispersed  N=  2  dU_joint med=    -210.1 [   -359.7,    -53.0]   coupling med=     -15.1   dU/site=   -105.0
+  dispersed  N=  3  dU_joint med=    -430.3 [   -990.4,    479.1]   coupling med=      58.5   dU/site=   -143.4
+  dispersed  N=  5  dU_joint med=     -77.3 [  -2283.1,    633.0]   coupling med=      54.1   dU/site=    -15.5
+  dispersed  N=  8  dU_joint med=     360.5 [  -1544.1,    767.8]   coupling med=     102.2   dU/site=     45.1
+  dispersed  N= 12  dU_joint med=   -1974.7 [  -3689.0,   -187.0]   coupling med=    1393.8   dU/site=   -164.6
+  dispersed  N= 20  dU_joint med=    -971.7 [  -1385.2,   -478.3]   coupling med=    1428.6   dU/site=    -48.6
+  clustered  N=  1  dU_joint med=    -437.1 [   -866.2,   -235.4]   coupling med=       0.0   dU/site=   -437.1
+  clustered  N=  2  dU_joint med=    -131.6 [   -565.5,    358.3]   coupling med=      26.3   dU/site=    -65.8
+  clustered  N=  3  dU_joint med=    -173.5 [   -306.1,   1122.6]   coupling med=      93.0   dU/site=    -57.8
+  clustered  N=  5  dU_joint med=    -247.7 [  -2268.7,    283.0]   coupling med=     703.5   dU/site=    -49.5
+  clustered  N=  8  dU_joint med=   -1082.6 [  -2449.0,    654.2]   coupling med=    1365.7   dU/site=   -135.3
+  clustered  N= 12  dU_joint med=     -29.5 [  -1321.2,   1088.2]   coupling med=    2812.7   dU/site=     -2.5
+  clustered  N= 20  dU_joint med=    1014.1 [   -838.1,   1490.4]   coupling med=    1505.3   dU/site=     50.7
+  isolated single-site dU over 473 distinct sites (84% of the sequence):
+    median=    -162.1  IQR=[   -448.2,    132.2]  min=   -4290.3  max=    3700.3
+    downhill (dU<0): 310/473 = 66%   mean=    -159.6
+
+=== starting point: drift=150 seed=1 -> Hd=124/566 (21.9%)  U_A=34674.93 ===
+  dispersed  N=  1  dU_joint med=    -703.3 [  -1903.7,    -31.0]   coupling med=       0.0   dU/site=   -703.3
+  dispersed  N=  2  dU_joint med=     143.3 [   -561.2,    584.9]   coupling med=      13.9   dU/site=     71.6
+  dispersed  N=  3  dU_joint med=   -1143.8 [  -1705.4,   -334.8]   coupling med=      19.2   dU/site=   -381.3
+  dispersed  N=  5  dU_joint med=    -190.3 [  -1913.7,    430.8]   coupling med=     391.1   dU/site=    -38.1
+  dispersed  N=  8  dU_joint med=    -515.9 [  -1278.3,   1116.3]   coupling med=     406.3   dU/site=    -64.5
+  dispersed  N= 12  dU_joint med=   -1399.3 [  -2819.7,   1221.2]   coupling med=    2261.1   dU/site=   -116.6
+  dispersed  N= 20  dU_joint med=   -2092.3 [  -3321.4,  -1034.0]   coupling med=    4593.8   dU/site=   -104.6
+  clustered  N=  1  dU_joint med=    -107.8 [   -503.4,    292.2]   coupling med=       0.0   dU/site=   -107.8
+  clustered  N=  2  dU_joint med=    -741.5 [  -1238.5,   -471.6]   coupling med=       9.1   dU/site=   -370.8
+  clustered  N=  3  dU_joint med=    -471.2 [  -1042.8,    -40.0]   coupling med=      28.9   dU/site=   -157.1
+  clustered  N=  5  dU_joint med=    -384.1 [  -2309.5,    893.5]   coupling med=    1033.9   dU/site=    -76.8
+  clustered  N=  8  dU_joint med=     -59.6 [   -707.2,    410.1]   coupling med=     478.2   dU/site=     -7.5
+  clustered  N= 12  dU_joint med=    1393.0 [    -46.8,   1764.4]   coupling med=    2272.7   dU/site=    116.1
+  clustered  N= 20  dU_joint med=     182.9 [  -1027.7,    827.5]   coupling med=    3824.3   dU/site=      9.1
+  isolated single-site dU over 461 distinct sites (81% of the sequence):
+    median=    -170.4  IQR=[   -524.8,    118.4]  min=   -5260.9  max=    3169.7
+    downhill (dU<0): 297/461 = 64%   mean=    -265.7
+
+=== (1) consistency: coupling must be exactly 0 at N=1 ===
+  N=1 cells checked: 12; violations: 0  -> OK
+
+=== (1b) the single-site energy landscape, by starting point ===
+This is the baseline every multi-site move competes against: what ONE
+mutation costs, and how often one is downhill at all. It also shows the
+floor effect directly -- at low drift the sequence sits at U_am's minimum
+and almost nothing is downhill, which is what made the earlier MUTS=5
+coupling numbers unrepresentative (DEVLOG 2026-10-03).
+
+ drift  seed     Hd          U_A   median dU  % downhill   sites
+     5     0      5       2557.0       220.2         22%     461
+     5     1      4       6426.7        24.2         46%     479
+    51     0     50      28013.3      -174.9         68%     480
+    51     1     44      14719.9       -12.9         53%     472
+   150     0    127      31734.5      -162.1         66%     473
+   150     1    124      34674.9      -170.4         64%     461
+
+=== (2) coupling vs N, by drift (dispersed sites, pooled over seeds) ===
+Scale-free ratio: median|coupling| / median|sum_isolated|. Raw energies
+are not comparable across drift levels (U_A itself moves by orders of
+magnitude), so the ratio is what carries meaning here.
+   N        drift=5       drift=51      drift=150
+-------------------------------------------------
+   1          0.000          0.000          0.000
+   2          0.173          0.092          0.121
+   3          0.305          0.173          0.207
+   5          0.282          0.172          0.309
+   8          0.255          0.362          0.312
+  12          0.261          0.414          0.461
+  20          0.901          1.518          0.819
+
+=== (3) dispersed vs clustered: is coupling a sequence-distance effect? ===
+Clustered sites are drawn within a 30-residue window.
+If clustered coupling is much larger at the same N, then the weaker
+coupling seen on the 566-residue reference is substantially a
+consequence of random sites being far apart, and the earlier
+protein_g-vs-zero_polymer comparison was confounded by length.
+
+   N  disp spread  clus spread  disp |c|/|iso|  clus |c|/|iso|    ratio
+   2        133.0          8.0           0.130           0.267     2.06
+   3        197.0         10.7           0.248           0.336     1.35
+   5        200.2          9.6           0.264           0.517     1.96
+   8        191.9         10.6           0.300           0.778     2.59
+  12        185.0         10.3           0.366           0.764     2.09
+  20        190.5         10.5           0.960           0.774     0.81
+
+=== (4) throughput: accepted mutations per move, vs the single-site baseline ===
+Acceptance is estimated from the energy term alone,
+    a_N ~ mean_trials min(1, exp(-dU_joint/T)),
+which OMITS the Hastings proposal-ratio term (log a_BA - log a_AB). That
+term is O(1) while exp(-dU/T) spans orders of magnitude, so this is the
+right leading-order estimate, but it is an estimate and can err in either
+direction -- it is not a substitute for running the real sampler.
+Multi-site is worth building only where a_N*N exceeds a_1, shown as 'gain'.
+
+--- T = 32 ---
+  single-site baseline a_1 = 0.592  (from the N=1 cells of this run)
+     N          a_N        a_N*N   gain vs a_1      verdict
+     1        0.592        0.592             1     baseline
+     2       0.5706        1.141          1.93         WINS
+     3       0.5846        1.754          2.96         WINS
+     5       0.5169        2.584          4.37         WINS
+     8       0.3513        2.811          4.75         WINS
+    12       0.4505        5.406          9.13         WINS
+    20         0.45            9          15.2         WINS
+
+--- T = 107 ---
+  single-site baseline a_1 = 0.6678  (from the N=1 cells of this run)
+     N          a_N        a_N*N   gain vs a_1      verdict
+     1       0.6678       0.6678             1     baseline
+     2       0.6029        1.206          1.81         WINS
+     3       0.6125        1.837          2.75         WINS
+     5       0.5285        2.643          3.96         WINS
+     8       0.3681        2.945          4.41         WINS
+    12         0.46         5.52          8.27         WINS
+    20       0.4502        9.005          13.5         WINS
+
+--- T = 322 ---
+  single-site baseline a_1 = 0.7708  (from the N=1 cells of this run)
+     N          a_N        a_N*N   gain vs a_1      verdict
+     1       0.7708       0.7708             1     baseline
+     2       0.6997        1.399          1.82         WINS
+     3       0.6981        2.094          2.72         WINS
+     5       0.5806        2.903          3.77         WINS
+     8       0.4229        3.383          4.39         WINS
+    12       0.4844        5.813          7.54         WINS
+    20       0.4557        9.115          11.8         WINS
+
+Reading (4): a_N collapses roughly geometrically in N whenever dU per
+mutated site is larger than T, because the N-site move must pay every
+site's cost at once with no opportunity to reject them individually.
+A single-site chain pays the same costs but gets N independent
+accept/reject decisions, which is why it is hard to beat. Multi-site
+can only win where dU/site is small relative to T -- look for that
+regime in the per-drift table of section (2) and the T sweep above,
+rather than assuming it exists.
