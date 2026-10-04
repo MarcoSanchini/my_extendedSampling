@@ -1,0 +1,93 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 35517.59it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Free sites: 30 (ref=L), 52 (ref=T)  -- 20^2=400 states, background fixed at reference elsewhere
+T=107.0, dt=460.0, MOVES=40000, BURN_IN=8000
+
+=== exact enumeration ===
+U at (ref,ref) = 0.000000  (should be exactly/near-exactly 0)
+sum(p_exact) = 1.000000  (should be 1.0)
+
+Top 10 states by exact Boltzmann probability:
+  (L,T): p_exact=0.0809  U=+0.0000
+  (L,S): p_exact=0.0546  U=+42.0872
+  (M,T): p_exact=0.0463  U=+59.8256
+  (L,Q): p_exact=0.0425  U=+68.9740
+  (M,S): p_exact=0.0406  U=+73.8306
+  (L,N): p_exact=0.0300  U=+106.2867
+  (M,Q): p_exact=0.0230  U=+134.7961
+  (Y,Q): p_exact=0.0217  U=+140.7529
+  (Y,S): p_exact=0.0217  U=+140.9799
+  (L,G): p_exact=0.0207  U=+146.0622
+
+=== T calibration (from the enumerated spectrum, no extra model calls) ===
+U over the 400 states: min=+0.00  median=+740.27  max=+6235.03  std=1074.06
+spread above the minimum: median-min=740.27  max-min=6235.03
+  (T must be comparable to these gaps; T << gap freezes the chain, T >> gap flattens it)
+
+           T   eff. states  max p_exact   verdict
+     10.7406          1.05       0.9743   FROZEN -- one state, validates nothing
+     32.2217          2.97       0.5475   usable
+    107.0000         41.37       0.0809   usable  <== configured T
+    107.4057         41.66       0.0804   usable
+    322.2171        183.45       0.0149   usable
+   1074.0568        337.19       0.0050   FLAT -- ~uniform, validates nothing
+   3222.1705        382.03       0.0033   FLAT -- ~uniform, validates nothing
+  10740.5684        397.06       0.0027   FLAT -- ~uniform, validates nothing
+
+=== running 40000 restricted moves (site in [30, 52] only) ===
+  move   2000/40000  acc_rate so far=0.320  distinct states visited post-burn-in=0
+  move   4000/40000  acc_rate so far=0.308  distinct states visited post-burn-in=0
+  move   6000/40000  acc_rate so far=0.306  distinct states visited post-burn-in=0
+  move   8000/40000  acc_rate so far=0.305  distinct states visited post-burn-in=0
+  move  10000/40000  acc_rate so far=0.307  distinct states visited post-burn-in=109
+  move  12000/40000  acc_rate so far=0.307  distinct states visited post-burn-in=137
+  move  14000/40000  acc_rate so far=0.304  distinct states visited post-burn-in=156
+  move  16000/40000  acc_rate so far=0.306  distinct states visited post-burn-in=180
+  move  18000/40000  acc_rate so far=0.308  distinct states visited post-burn-in=200
+  move  20000/40000  acc_rate so far=0.306  distinct states visited post-burn-in=207
+  move  22000/40000  acc_rate so far=0.308  distinct states visited post-burn-in=211
+  move  24000/40000  acc_rate so far=0.309  distinct states visited post-burn-in=218
+  move  26000/40000  acc_rate so far=0.310  distinct states visited post-burn-in=229
+  move  28000/40000  acc_rate so far=0.310  distinct states visited post-burn-in=235
+  move  30000/40000  acc_rate so far=0.310  distinct states visited post-burn-in=236
+  move  32000/40000  acc_rate so far=0.312  distinct states visited post-burn-in=241
+  move  34000/40000  acc_rate so far=0.311  distinct states visited post-burn-in=242
+  move  36000/40000  acc_rate so far=0.312  distinct states visited post-burn-in=246
+  move  38000/40000  acc_rate so far=0.310  distinct states visited post-burn-in=249
+  move  40000/40000  acc_rate so far=0.309  distinct states visited post-burn-in=252
+
+Overall acceptance rate: 0.3092
+Moves counted toward the histogram (post burn-in): 32000
+Distinct states visited: 252 / 400
+
+=== exact vs. empirical ===
+Top 10 exact states, with empirical count/frequency alongside:
+  (L,T): p_exact=0.0809  p_empirical=0.0721  (n=2306)
+  (L,S): p_exact=0.0546  p_empirical=0.0594  (n=1901)
+  (M,T): p_exact=0.0463  p_empirical=0.0453  (n=1449)
+  (L,Q): p_exact=0.0425  p_empirical=0.0420  (n=1345)
+  (M,S): p_exact=0.0406  p_empirical=0.0399  (n=1278)
+  (L,N): p_exact=0.0300  p_empirical=0.0314  (n=1005)
+  (M,Q): p_exact=0.0230  p_empirical=0.0217  (n=694)
+  (Y,Q): p_exact=0.0217  p_empirical=0.0244  (n=781)
+  (Y,S): p_exact=0.0217  p_empirical=0.0207  (n=662)
+  (L,G): p_exact=0.0207  p_empirical=0.0219  (n=702)
+
+Top 5 empirical states (for comparison, in case they differ from the exact top 5):
+  (L,T): p_empirical=0.0721 (n=2306)  p_exact=0.0809
+  (L,S): p_empirical=0.0594 (n=1901)  p_exact=0.0546
+  (M,T): p_empirical=0.0453 (n=1449)  p_exact=0.0463
+  (L,Q): p_empirical=0.0420 (n=1345)  p_exact=0.0425
+  (M,S): p_empirical=0.0399 (n=1278)  p_exact=0.0406
+
+KL(empirical || exact):     0.0169  (0 = perfect match; compare to log(400)=5.99 as a rough scale)
+Total variation distance:   0.0569  (0 = perfect match, 1 = no overlap at all)
+Mean U under p_exact:       +185.1973
+Mean U under p_empirical:   +186.9009
+
+(With only 40000 moves and 32000 post-burn-in samples over 400 states, expect real
+ Monte Carlo noise even for a perfectly correct sampler -- this is a first-pass, not a
+ high-precision bias measurement. A large, systematic gap (e.g. empirical concentrated on
+ states the exact distribution says are unlikely, or missing the true top few states
+ entirely) would be the decisive signal; run longer for a finer read.)
