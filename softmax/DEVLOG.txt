@@ -4015,3 +4015,102 @@ item):
      Table 2 inherit that caveat.
   3. Optional, still open: re-run the N-sweep coupling test at MUTS=51.
      Both coupling runs remain floor measurements.
+
+--------------------------------------------------------------------------------
+2026-10-04 -- deeper multi-site analysis built: tests/test_multisite_tradeoff.py (starting points, energy landscape, timing, throughput). Not yet run.
+--------------------------------------------------------------------------------
+User asked to go deeper on multiple-mutations-per-move: different starting
+points, energy analysis, time per move. Added
+tests/test_multisite_tradeoff.py rather than changing
+test_joint_coupling_N.py, whose output is a committed published result.
+
+WHY THE OLD TEST WAS NOT ENOUGH. Two reasons, both established since it ran:
+  1. It measured from ONE starting point, mutate(REF,5) = 0.9% drift on a
+     566-residue reference, i.e. essentially AT U_am's floor. The 2026-10-04
+     entry showed that is actively misleading about proposal quality (the
+     same gradient scores +474 at the floor and -360 in the bulk), so every
+     coupling number on record inherits the caveat.
+  2. More fundamentally, coupling magnitude was never the decision-relevant
+     quantity. What decides whether multi-site moves are worth building is
+     THROUGHPUT: accepted mutations per unit wall-clock. An N-site move
+     should cost about the same as a single-site move (the dominant cost is
+     a whole-sequence forward pass that runs over all L residues regardless
+     of how many change -- DEVLOG 2026-09-24) while delivering N mutations
+     when accepted, so multi-site wins iff a_N*N > a_1 at equal cost.
+     Nothing had measured a_N, or t_N, or checked the cost-parity premise.
+
+WHAT THE NEW SCRIPT MEASURES
+  (0) Wall-clock per operation, with CUDA synchronisation (without it the
+      measurement is queue-submission time, not compute): t_exact,
+      t_grad_site, t_grad_whole, and the modelled move cost 2*grad + exact
+      for both designs. The cost-parity premise is CHECKED here, not
+      assumed; the script says so explicitly if t_N/t_1 > 1.25.
+  (1b) The single-site energy landscape per starting point -- median/IQR of
+      isolated dU and the fraction downhill. This comes free: the isolated
+      cache ends up covering essentially the whole sequence, so each
+      starting point yields a complete single-site landscape. It is the
+      baseline every multi-site move competes against and it shows the floor
+      effect directly.
+  (2) Coupling vs N vs drift, as median|coupling|/median|sum_isolated| --
+      scale-free, because U_A itself moves by orders of magnitude across
+      drift levels so raw energies are not comparable.
+  (3) Dispersed vs clustered site selection. Clustered draws N sites within
+      a CLUSTER_WINDOW-residue window. This is the control for a confound in
+      the existing cross-protein result: on 566 residues N random sites are
+      far apart, so "coupling is weaker on zero_polymer" may be largely a
+      DISTANCE effect rather than a length effect. If clustered coupling is
+      much stronger at equal N, the protein_g-vs-zero_polymer comparison was
+      confounded.
+  (4) Throughput: a_N estimated as mean min(1, exp(-dU_joint/T)) over a grid
+      of T, then a_N*N against the a_1 baseline measured in the same run.
+      Stated caveat in the output: this omits the Hastings proposal-ratio
+      term, which is O(1) while exp(-dU/T) spans orders of magnitude, so it
+      is the right leading-order estimate but an estimate, and can err
+      either way.
+  Statistics are reported as median and IQR alongside mean/std, because
+  these distributions were already shown to be heavy-tailed and
+  sign-flipping, which a mean +- std describes badly.
+
+COST. The isolated single-site energy of a site depends only on (starting
+point, site, target) and the target is deterministic given the gradient, so
+it is identical across every trial and every N that touches that site. The
+old script recomputed it per trial; this caches it, which is what makes a
+6-starting-point sweep affordable. Default config is ~4236 forward passes
+(vs 1160 for the whole old run) -- roughly 2-20 min depending on per-call
+cost. The script prints its own budget before doing work and a real ETA once
+it has measured t_exact, so an expensive configuration can be aborted rather
+than discovered.
+
+Everything is env-configurable: DRIFTS, SEEDS, NVALS, TRIALS, MODES,
+CLUSTER_WINDOW, TGRID, POOL, plus REF via references.py.
+
+VERIFIED HERE (no torch in this sandbox, so no real run): py_compile; the
+pure-python helpers exercised against a torch stub (quartiles on
+odd/even/single/empty; draw_sites over both references x window 30/100 x
+N 2..40 -- 0 invalid draws, correct clamping when window > L or N >= window,
+and dispersed mean spread ~L/3 = 189 as uniform theory requires against
+clustered ~window/3 = 10); the budget arithmetic; and every reporting path
+driven on synthetic results so a formatting or key error cannot surface
+mid-run. Three real bugs were caught and fixed this way: an unclamped
+cluster window that indexed past the end of a short reference, sections (2)
+and (4) hard-coding the dispersed mode, and a missing N=1 baseline guard.
+
+TO RUN (from softmax/code):
+    python -u tests/test_multisite_tradeoff.py \
+        2>&1 | tee zero_polymer/multisite_tradeoff.txt
+  cheap first look (~225 forwards):
+    DRIFTS=5,51 SEEDS=0 NVALS=1,2,3,5,8 TRIALS=5 MODES=dispersed \
+        python -u tests/test_multisite_tradeoff.py
+  and the protein_g control, to see whether its coupling picture also moves
+  with drift:
+    REF=protein_g DRIFTS=5,20 python -u tests/test_multisite_tradeoff.py \
+        2>&1 | tee protein_g/multisite_tradeoff.txt
+
+PREDICTION, recorded before the run so it can be wrong. a_N should collapse
+roughly geometrically in N wherever dU per mutated site exceeds T, because
+an N-site move pays every site's cost at once with no chance to reject them
+individually, whereas a single-site chain pays the same costs across N moves
+with N independent accept/reject decisions. So a_N*N should LOSE to a_1
+except where dU/site is small relative to T -- which section (1b) will show
+is exactly the high-drift, non-floor regime, if it exists at all. If
+multi-site wins anywhere, expect it at high drift and high T, at small N.
