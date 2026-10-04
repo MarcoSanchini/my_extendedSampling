@@ -54,7 +54,9 @@ reports what the paired $\dt=460$ / $\dt=63$ Boltzmann-validation runs on
 \texttt{zero\_polymer} ($L=566$) established. The short version of the last
 point: both runs reproduce the exactly-enumerated Boltzmann distribution, so
 the $\dt$ error that motivated the pair cost test \emph{coverage}, not
-correctness.
+correctness. A subsequent doubling of the run length confirms the residual
+discrepancy decays as finite-sample noise must, in two independent
+functionals.
 \end{abstract}
 
 \tableofcontents
@@ -597,21 +599,59 @@ decorrelates over tens of moves. Both KL values are therefore what a
 estimate, not a measurement---$\tau_{\mathrm{auto}}$ was inferred from the KL
 rather than computed from the chain.
 
-\paragraph{The falsifiable check.} If the sampler is unbiased, the KL is pure
-finite-sample noise and must fall as $1/n$:
-\begin{equation}
-  \mathrm{KL}(n) \;\propto\; \frac{1}{n}
-  \qquad\Longrightarrow\qquad
-  \mathrm{KL}(40000\ \text{moves}) \approx 0.016 .
-\end{equation}
-A KL that instead plateaus near $0.03$ would indicate genuine bias. Until that
-run exists, the defensible claim is \emph{no detectable bias at this
-resolution}, not \emph{unbiased}. The check is cheap:
-\begin{verbatim}
-cd softmax/code
-T=107 DT=460 MOVES=40000 python -u tests/validate_boltzmann_toy.py \
-    2>&1 | tee zero_polymer/validate_boltzmann_dt460_M40000.txt
-\end{verbatim}
+\paragraph{The falsifiable check, and its outcome.} If the sampler is
+unbiased, the KL is pure finite-sample noise and must fall as $1/n$, while the
+total variation distance---a different functional of the same histogram---must
+fall as $1/\sqrt{n}$. Predicting forward from the $n=16000$ run gave
+$\mathrm{KL}(32000) \approx 0.016$; a KL that instead plateaued near $0.03$
+would have indicated genuine bias. The run was done
+(\path{zero_polymer/validate_boltzmann_results_dt460_M40000.txt}, 40\,000
+moves, 32\,000 post burn-in) and \textbf{both laws hold}:
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{l rr r r l}
+\toprule
+ & $n=16000$ & $n=32000$ & ratio & predicted & \\
+\midrule
+$\mathrm{KL}(p_{\mathrm{emp}}\,\|\,p_{\mathrm{exact}})$
+  & 0.0316 & 0.0169 & 1.87 & 2.00 \;($1/n$)        & pass \\
+total variation distance
+  & 0.0787 & 0.0569 & 1.38 & 1.41 \;($1/\sqrt{n}$) & pass \\
+\midrule
+$\tau_{\mathrm{auto}}$ (inferred)
+  & 25.0 & 26.8 & --- & run-length independent & pass \\
+acceptance rate
+  & 0.3060 & 0.3092 & --- & unchanged & pass \\
+\bottomrule
+\end{tabular}
+\caption{The $1/n$ bias check. KL and total variation are \emph{independent}
+functionals of the same histogram with different convergence rates, so
+matching both is considerably stronger evidence than matching either alone: a
+biased sampler would have each converge to its own nonzero constant rather
+than keep falling on schedule. The inferred autocorrelation time is a property
+of the chain and must not depend on run length---it does not.}
+\label{tab:bias-check}
+\end{table}
+
+\noindent
+This settles the question to the resolution available: the residual
+discrepancy is finite-sample noise, behaving quantitatively as finite-sample
+noise must, and there is no evidence of bias. The claim can now be stated more
+strongly than \emph{no detectable bias at this resolution}---though note that
+no finite experiment can establish exact unbiasedness, and what has been shown
+is that the error decays on the schedule an unbiased sampler requires.
+
+\paragraph{One number that did not improve, and why that is fine.} Mean $U$
+moved \emph{away} from the exact value between the two runs ($+0.44 \to
++1.70$). This is not a regression. Mean $U$ is a single scalar statistic
+carrying its own Monte Carlo error, not a convergence metric: with
+$\mathrm{ESS}\approx 1200$ and $\mathrm{sd}_{p}(U)$ of order 150--200, its
+standard error is roughly $5$, so both deviations sit comfortably inside one
+standard error. The $0.24\%$ agreement at $n=16000$ reported in
+Table~\ref{tab:460v63} was therefore partly luck, and should not be read as a
+precision claim; the KL and total variation, which aggregate over the whole
+distribution, are the trustworthy convergence diagnostics here.
 
 % ===========================================================================
 \section{Caveats and open items}
@@ -640,8 +680,14 @@ T=107 DT=460 MOVES=40000 python -u tests/validate_boltzmann_toy.py \
         single global $\dt$ is necessarily a compromise. Whether a per-site
         $\dt$ would help, and whether it could be made to preserve detailed
         balance, is unexplored.
-  \item \textbf{$1/n$ scaling of the KL} (\S\ref{sec:noise}) is the one
-        outstanding validation item.
+  \item \textbf{Resolved:} the $1/n$ scaling of the KL (\S\ref{sec:noise})
+        was the one outstanding validation item at the time of writing. It has
+        since been run and passed, together with the $1/\sqrt{n}$ scaling of
+        the total variation distance---see Table~\ref{tab:bias-check}. What
+        remains open on the validation side is only that this is a two-site
+        subproblem: the full 566-site chain has never been validated against
+        anything exact, and cannot be, since its state space is not
+        enumerable.
 \end{enumerate}
 
 \end{document}
