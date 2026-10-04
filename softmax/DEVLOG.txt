@@ -4306,3 +4306,85 @@ dU values. What changes is presentation: the legend, sum_iso and the mean
 columns, the per-drift throughput breakdown and the median-move acceptance
 table. The old file can therefore be diffed against the new one as a
 consistency check -- any change in a dU number would itself be a finding.
+
+--------------------------------------------------------------------------------
+2026-10-04 -- second review pass: vocab asymmetry clarified (mutate draws 25, proposal uses 19), clustered confined to section 3, and the gradient-cost question answered with arithmetic
+--------------------------------------------------------------------------------
+(1) VOCAB ASYMMETRY, user caught an imprecision. The legend said "1/25
+chance of redrawing the residue already there", and the user reasonably
+objected that this project uses only the 20 standard residues. Both are
+true of different things, and the codebase genuinely uses two different
+sets:
+  - mutate() (utils/operations.py), used ONLY to build test starting
+    sequences, draws the replacement uniformly from SEQUENCE_USED_VOCAB =
+    25 entries (20 standard + X, B, U, Z, O). Hence 1/25 for a no-op draw
+    and 5/25 = 20% for a non-canonical code.
+  - the SAMPLER's proposal (_competition_indices) excludes all 5
+    non-canonical codes and the site's current residue, leaving 19
+    competitors out of 20.
+So non-canonical residues are legal to SIT on but can never be PROPOSED,
+and a high-drift test starting point contains residues the sampler itself
+could never have produced (MUTS=51 gave 12: B O O U X X X X Z Z Z Z).
+Documented in the legend rather than silently changed: restricting
+mutate() to the 20 canonical residues would arguably be more coherent for
+test starting points, but it would change every recorded result's starting
+sequence and break comparability with the whole existing results set.
+Flagged for a decision rather than taken unilaterally.
+
+(2) CLUSTERED CONFINED TO SECTION 3, per user ("clustered is not so
+informative, don't put it in points (1) onward"). Sections 1b, 2 and 4
+already used dispersed sites only; what was missing was SAYING so. Each
+now carries an explicit "[dispersed sites only -- clustered is a section-3
+control]" header line, the per-start running log tags clustered rows
+"[sec-3 control only]", and the legend states that dispersed is the main
+line of analysis while clustered exists solely as the distance control.
+MODES=dispersed skips computing it at all. Also, per the same request, the
+pooled throughput table now names its site-selection mode in the header.
+
+(3) GRADIENT COST, the user pushed back twice and deserves the actual
+arithmetic rather than a restatement. Their intuition: "for N=1 the
+gradient is computed on a single row back and forth so I assume it's
+cheaper", and "for N=1 the attention map for the backward pass should be
+the same except for that site". Both are reasonable and both are wrong,
+for the same underlying reason -- self-attention is global.
+  (a) Why one row is not cheaper: to obtain dU/d(probs[s]) for a single
+      site you still need the gradient at EVERY position of EVERY
+      intermediate layer, because layer k+1 at every position depends on
+      layer k at position s. The (L, d_model) activation gradient is
+      propagated through all 48 layers either way. Only the final
+      projection differs -- onto one row of the (L,K) input instead of all
+      L. With L=566, d_model=1536, 48 layers, K=25, params frozen so only
+      input gradients are computed:
+          transformer backward      ~816 GFLOP  (identical both ways)
+          embedding leaf, all L     ~0.0217 GFLOP
+          embedding leaf, one row   ~0.00004 GFLOP
+      Maximum possible saving ~0.001% of a pass, ~100x below run-to-run
+      noise -- consistent with the measured 0.996 ratio (the whole-sequence
+      pass actually timed marginally FASTER, i.e. indistinguishable).
+      Memory is the same too: the same activations must be stored to
+      differentiate through attention regardless of how many input rows
+      carry grad.
+  (b) Why the attention map is NOT unchanged away from the mutated site:
+      changing one residue changes the embedding at that position, and one
+      attention layer immediately mixes it into every position; after 48
+      layers the final attention map differs everywhere. The strongest
+      evidence is this project's own data -- if a single-site change
+      perturbed only its row and column of am, U_am would be nearly
+      additive across sites and the measured coupling would be ~0. Instead
+      coupling/|sum_isolated| runs 0.13-0.96. The coupling measurements ARE
+      the signature of that non-locality.
+      (Suggestive, not conclusive: single-site dU scales as roughly L^1.3
+      between the two references -- 19.2x for a 10.1x length ratio --
+      steeper than the L^1 expected if only the site's own row+column of
+      the map changed, so the perturbation is concentrated near the site
+      but demonstrably spreads beyond it.)
+  Corollary now stated in the legend, because it is the point that matters
+  for the design question: since a gradient covering ALL sites costs the
+  same as one covering a single site, an N-site move gets its N mutations
+  for free. The COST argument unambiguously favours multi-site; the whole
+  decision rests on acceptance, which is what section 4 measures and what
+  the equilibrium run still has to settle.
+  No cheap win is available on the other side either: making the
+  single-site gradient genuinely cheaper would require truncating the
+  backward to a window around the site, which would be an approximation and
+  would break the exactness the proposal relies on.
