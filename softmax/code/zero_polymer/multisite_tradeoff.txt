@@ -1,3 +1,4 @@
+nohup: ignoring input
 # reference: zero_polymer (L=566 residues)
 # starting points: 6  (drifts=[5, 51, 150] x seeds=[0, 1])
 # N values: [1, 2, 3, 5, 8, 12, 20]   trials/cell: 10   modes: ['dispersed', 'clustered']
@@ -8,139 +9,313 @@
 # (isolated single-site energies are cached per starting point -- they depend
 #  only on (start, site, target), so they are reused across every N and trial)
 
-Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 196747.74it/s]
+
+================================================================================
+LEGEND -- every symbol used anywhere in this file, so a results file can be
+read without opening the script.
+================================================================================
+SETUP
+  drift     the `mutations` argument to mutate(REF, drift): how many random
+            (site, amino-acid) draws were made to build the starting sequence.
+            This is NOT the resulting distance -- see Hd.
+  Hd        Hamming distance actually achieved: the number of positions where
+            the starting sequence differs from the reference. Hd <= drift,
+            because mutate() draws sites WITH replacement (a repeat overwrites
+            rather than adding) and each draw has a 1/25 chance of redrawing
+            the residue already there. E.g. drift=150 typically gives Hd~125.
+  seed      RNG seed picking which starting sequence a given drift produces.
+  U_A       exact energy of the starting sequence. U=0 at the reference, which
+            is the global minimum, so U_A measures how far up the starting
+            point sits.
+  N         number of sites changed SIMULTANEOUSLY in one proposed move.
+  sites     number of DISTINCT positions whose isolated single-site energy was
+            computed and cached at that starting point. A coverage figure (how
+            much of the sequence the random trials happened to touch), not a
+            parameter.
+
+ENERGY DECOMPOSITION  (every term is an energy DIFFERENCE from U_A)
+  sum_lin      first-order Taylor prediction of the N-site move, grad . delta.
+               No coupling, no within-site nonlinearity.
+  sum_iso      true effect of the SAME N substitutions applied ONE AT A TIME,
+               each against the original starting sequence, then added up.
+               Includes within-site nonlinearity; still excludes any
+               cross-site interaction. (This is the "sequential" quantity.)
+  dU_joint     true effect of applying all N substitutions AT ONCE. This is
+               what a real accept/reject would use, and it is the operative
+               number for the design question.
+  nonlin       = sum_iso - sum_lin    (within-site linearisation error)
+  coupling     = dU_joint - sum_iso   (cross-site non-separability; exactly 0
+               would mean U is additive over the touched sites)
+  dU/site      = dU_joint / N. Cost per mutation actually delivered; compare it
+               against a single-site move's own dU.
+  med [q1,q3]  median and interquartile range over trials.
+  mean         arithmetic mean over trials.
+  *** MEDIANS DO NOT ADD. med(coupling) is NOT med(dU_joint) - med(sum_iso);
+      each is the median of its own distribution. The MEAN columns do add
+      exactly (mean(coupling) = mean(dU_joint) - mean(sum_iso)), so use those
+      to check the decomposition. Medians are reported because these
+      distributions are heavy-tailed and change sign between trials, which a
+      mean alone describes badly -- both are given rather than one. ***
+
+SITE SELECTION
+  dispersed   the N sites drawn uniformly over the whole sequence.
+  clustered   the N sites drawn inside one randomly placed window of
+              CLUSTER_WINDOW residues.
+  spread      mean pairwise |i-j| sequence separation of the chosen sites.
+              About L/3 for dispersed, about window/3 for clustered.
+  |c|/|iso|   median|coupling| / median|sum_iso|. Scale-free, so it can be
+              compared across drift levels and sequence lengths -- raw
+              energies cannot be, since U_A moves by orders of magnitude.
+  ratio       clustered |c|/|iso| divided by dispersed |c|/|iso|. Greater
+              than 1 means nearby sites couple more strongly than distant
+              ones, i.e. coupling is partly a sequence-distance effect.
+
+ACCEPTANCE AND THROUGHPUT
+  T           temperature used ONLY for the acceptance estimate in section 4.
+  a_N         estimated acceptance probability of an N-site move,
+              mean over trials of min(1, exp(-dU_joint/T)).
+              Two caveats, both stated again in section 4: it omits the
+              Hastings proposal-ratio term, and this mean is BIMODAL (downhill
+              trials contribute ~1, uphill ones ~0) so it behaves more like a
+              downhill FRACTION than a typical acceptance. The companion
+              "acceptance of the MEDIAN move" table is the honest partner.
+  a_1         the same quantity at N=1: the single-site baseline.
+  a_N*N       expected mutations accepted per move -- the figure of merit,
+              because an N-site move costs the same as a single-site one
+              (measured in section 0, ratio 0.997).
+  gain        a_N*N / a_1. Greater than 1 means multi-site delivers more
+              accepted mutations per unit wall-clock than single-site.
+
+TIMING (section 0)
+  t_exact       wall-clock of one exact-energy forward pass.
+  t_grad_site   wall-clock of one single-site relaxed backward pass.
+  t_grad_whole  wall-clock of one whole-sequence relaxed backward pass.
+              These are near-equal by design, not by accident: both run the
+              SAME full forward over all L residues and the SAME backward
+              through the whole transformer. Only the final leaf differs (one
+              row of logits vs all L rows), which is O(L*K) against a
+              transformer backward of O(L^2*d + L*d^2) -- negligible. The
+              single-site gradient was never chosen to be cheaper; it was
+              chosen to be more faithful to the exact discrete context.
+================================================================================
+
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 60787.01it/s]
 === (0) wall-clock cost per model operation ===
 The multi-site case rests on t_grad_whole ~ t_grad_site (one backward
 covering all sites costs no more than one covering a single site, because
 the forward pass runs over all L residues either way). That is an
 assumption; this measures it.
 
-  t_exact       (1 forward)              =    60.02 ms
-  t_grad_site   (1 single-site backward) =   150.36 ms
-  t_grad_whole  (1 whole-seq backward)   =   149.77 ms   ratio to site: 0.996
+  t_exact       (1 forward)              =    60.25 ms
+  t_grad_site   (1 single-site backward) =   150.42 ms
+  t_grad_whole  (1 whole-seq backward)   =   149.98 ms   ratio to site: 0.997
 
   modelled move cost (2 grads + 1 exact):
-    single-site move =   360.75 ms
-    N-site move      =   359.56 ms   ratio: 0.997
+    single-site move =   361.09 ms
+    N-site move      =   360.21 ms   ratio: 0.998
   -> cost parity holds: an N-site move costs about the same as a
      single-site one, so throughput is decided by a_N*N vs a_1.
 
-  ETA for the rest of this run: ~4.3 min (4236 forwards at the 60.0 ms just measured). Ctrl-C now if that is too long;
+  ETA for the rest of this run: ~4.3 min (4236 forwards at the 60.3 ms just measured). Ctrl-C now if that is too long;
   reduce it with TRIALS, NVALS, DRIFTS, SEEDS or MODES.
 
 === starting point: drift=5 seed=0 -> Hd=5/566 (0.9%)  U_A=2557.04 ===
-  dispersed  N=  1  dU_joint med=     441.4 [    213.0,    690.1]   coupling med=       0.0   dU/site=    441.4
-  dispersed  N=  2  dU_joint med=     139.4 [    -54.7,    282.0]   coupling med=     -33.1   dU/site=     69.7
-  dispersed  N=  3  dU_joint med=      57.5 [   -259.5,    337.4]   coupling med=    -125.2   dU/site=     19.2
-  dispersed  N=  5  dU_joint med=    3187.2 [   2364.9,   3994.9]   coupling med=    -512.4   dU/site=    637.4
-  dispersed  N=  8  dU_joint med=    3119.0 [   1502.9,   5307.0]   coupling med=    -190.3   dU/site=    389.9
-  dispersed  N= 12  dU_joint med=    3959.9 [   2412.4,   5838.4]   coupling med=    -352.9   dU/site=    330.0
-  dispersed  N= 20  dU_joint med=    6219.2 [   5675.3,   8121.8]   coupling med=   -1988.4   dU/site=    311.0
-  clustered  N=  1  dU_joint med=      76.7 [    -60.1,    191.0]   coupling med=       0.0   dU/site=     76.7
-  clustered  N=  2  dU_joint med=     143.4 [   -159.9,    533.2]   coupling med=       7.9   dU/site=     71.7
-  clustered  N=  3  dU_joint med=    1073.9 [    -18.5,   1575.6]   coupling med=     -27.3   dU/site=    358.0
-  clustered  N=  5  dU_joint med=     881.3 [    548.1,   2382.1]   coupling med=    -542.0   dU/site=    176.3
-  clustered  N=  8  dU_joint med=    1737.1 [   1153.9,   2113.2]   coupling med=   -1362.9   dU/site=    217.1
-  clustered  N= 12  dU_joint med=    2806.4 [   1821.0,   4524.6]   coupling med=   -1332.2   dU/site=    233.9
-  clustered  N= 20  dU_joint med=    5909.4 [   4461.2,   6931.2]   coupling med=   -3164.7   dU/site=    295.5
+  dispersed  N=  1 | dU_joint med=    441.4 [   213.0,   690.1] mean=   1205.3 | dU/site med=   441.4
+                   | sum_lin med=    -0.08  sum_iso med=    441.4 mean=   1205.3 | coupling med=      0.0 mean=      0.0
+  dispersed  N=  2 | dU_joint med=    139.4 [   -54.7,   282.0] mean=      1.4 | dU/site med=    69.7
+                   | sum_lin med=    -1.04  sum_iso med=    103.8 mean=     50.9 | coupling med=    -33.1 mean=    -49.6
+  dispersed  N=  3 | dU_joint med=     57.5 [  -259.5,   337.4] mean=   -122.7 | dU/site med=    19.2
+                   | sum_lin med=    -0.63  sum_iso med=     75.3 mean=    -35.3 | coupling med=   -102.4 mean=    -87.4
+  dispersed  N=  5 | dU_joint med=   3187.2 [  2364.9,  3994.9] mean=   3690.3 | dU/site med=   637.4
+                   | sum_lin med=     1.82  sum_iso med=   3619.7 mean=   3969.7 | coupling med=   -512.4 mean=   -279.4
+  dispersed  N=  8 | dU_joint med=   3119.0 [  1502.9,  5307.0] mean=   3354.7 | dU/site med=   389.9
+                   | sum_lin med=     0.86  sum_iso med=   3416.3 mean=   3630.2 | coupling med=   -289.4 mean=   -275.6
+  dispersed  N= 12 | dU_joint med=   3959.9 [  2412.4,  5838.4] mean=   4359.2 | dU/site med=   330.0
+                   | sum_lin med=    -3.96  sum_iso med=   4151.8 mean=   4126.5 | coupling med=   -352.9 mean=    232.6
+  dispersed  N= 20 | dU_joint med=   6219.2 [  5675.3,  8121.8] mean=   6796.6 | dU/site med=   311.0
+                   | sum_lin med=    -0.43  sum_iso med=   6957.8 mean=   7769.0 | coupling med=  -1988.4 mean=   -972.4
+  clustered  N=  1 | dU_joint med=     76.7 [   -60.1,   191.0] mean=    119.2 | dU/site med=    76.7
+                   | sum_lin med=    -0.01  sum_iso med=     76.7 mean=    119.2 | coupling med=      0.0 mean=      0.0
+  clustered  N=  2 | dU_joint med=    143.4 [  -159.9,   533.2] mean=    529.8 | dU/site med=    71.7
+                   | sum_lin med=     0.09  sum_iso med=     60.2 mean=    119.3 | coupling med=      7.9 mean=    410.5
+  clustered  N=  3 | dU_joint med=   1073.9 [   -18.5,  1575.6] mean=    923.7 | dU/site med=   358.0
+                   | sum_lin med=     0.11  sum_iso med=   1041.1 mean=   1074.1 | coupling med=    -27.3 mean=   -150.4
+  clustered  N=  5 | dU_joint med=    881.3 [   548.1,  2382.1] mean=   1662.7 | dU/site med=   176.3
+                   | sum_lin med=    -0.14  sum_iso med=   2233.2 mean=   2160.3 | coupling med=   -542.0 mean=   -497.6
+  clustered  N=  8 | dU_joint med=   1793.2 [  1153.9,  2113.2] mean=   1781.6 | dU/site med=   224.1
+                   | sum_lin med=    -0.81  sum_iso med=   3373.7 mean=   3618.1 | coupling med=  -1362.9 mean=  -1836.5
+  clustered  N= 12 | dU_joint med=   2806.4 [  1298.4,  4592.5] mean=   3445.5 | dU/site med=   233.9
+                   | sum_lin med=     2.11  sum_iso med=   4954.9 mean=   5179.3 | coupling med=  -1405.6 mean=  -1733.8
+  clustered  N= 20 | dU_joint med=   5909.4 [  4461.2,  6878.7] mean=   6005.2 | dU/site med=   295.5
+                   | sum_lin med=    -2.86  sum_iso med=   8707.2 mean=   8909.7 | coupling med=  -3164.7 mean=  -2904.6
   isolated single-site dU over 461 distinct sites (81% of the sequence):
-    median=     220.2  IQR=[     20.5,    605.6]  min=   -1555.6  max=    6979.0
-    downhill (dU<0): 101/461 = 22%   mean=    +432.7
+    median=     222.5  IQR=[     23.3,    605.6]  min=   -1555.6  max=    6979.0
+    downhill (dU<0): 100/461 = 22%   mean=    +436.3
 
 === starting point: drift=5 seed=1 -> Hd=4/566 (0.7%)  U_A=6426.73 ===
-  dispersed  N=  1  dU_joint med=      -9.7 [   -319.8,    122.6]   coupling med=       0.0   dU/site=     -9.7
-  dispersed  N=  2  dU_joint med=     379.1 [    -48.5,    628.4]   coupling med=       3.1   dU/site=    189.6
-  dispersed  N=  3  dU_joint med=     478.1 [    133.1,    817.3]   coupling med=     118.8   dU/site=    159.4
-  dispersed  N=  5  dU_joint med=     312.6 [   -696.2,    767.1]   coupling med=     206.6   dU/site=     62.5
-  dispersed  N=  8  dU_joint med=    1189.9 [    350.8,   1472.6]   coupling med=     581.5   dU/site=    148.7
-  dispersed  N= 12  dU_joint med=    3229.3 [   2229.1,   3972.9]   coupling med=     597.2   dU/site=    269.1
-  dispersed  N= 20  dU_joint med=    4325.5 [   2550.3,   6319.7]   coupling med=    3690.4   dU/site=    216.3
-  clustered  N=  1  dU_joint med=     243.3 [     -6.0,    745.1]   coupling med=       0.0   dU/site=    243.3
-  clustered  N=  2  dU_joint med=     267.4 [     85.1,    477.5]   coupling med=     104.5   dU/site=    133.7
-  clustered  N=  3  dU_joint med=     157.6 [      4.9,    638.0]   coupling med=     278.2   dU/site=     52.5
-  clustered  N=  5  dU_joint med=     824.2 [    -44.6,   4032.4]   coupling med=     344.8   dU/site=    164.8
-  clustered  N=  8  dU_joint med=    1130.0 [   -210.5,   3177.9]   coupling med=    1395.7   dU/site=    141.3
-  clustered  N= 12  dU_joint med=     882.0 [    176.0,   2271.8]   coupling med=    1164.4   dU/site=     73.5
-  clustered  N= 20  dU_joint med=    2346.6 [   1993.2,   3315.9]   coupling med=     948.7   dU/site=    117.3
+  dispersed  N=  1 | dU_joint med=     -9.7 [  -319.8,   122.6] mean=   -135.1 | dU/site med=    -9.7
+                   | sum_lin med=    -0.03  sum_iso med=     -9.7 mean=   -135.1 | coupling med=      0.0 mean=      0.0
+  dispersed  N=  2 | dU_joint med=    379.1 [   -48.5,   628.4] mean=    378.2 | dU/site med=   189.6
+                   | sum_lin med=     0.06  sum_iso med=    359.2 mean=    446.7 | coupling med=      3.1 mean=    -68.4
+  dispersed  N=  3 | dU_joint med=    478.1 [   107.0,   817.3] mean=    341.4 | dU/site med=   159.4
+                   | sum_lin med=    -0.54  sum_iso med=    152.1 mean=    182.0 | coupling med=    112.3 mean=    159.4
+  dispersed  N=  5 | dU_joint med=    312.6 [  -696.2,   767.1] mean=     76.9 | dU/site med=    62.5
+                   | sum_lin med=     0.95  sum_iso med=   -111.9 mean=   -327.3 | coupling med=    206.6 mean=    404.2
+  dispersed  N=  8 | dU_joint med=   1189.9 [   350.8,  1472.6] mean=   1370.7 | dU/site med=   148.7
+                   | sum_lin med=    -1.36  sum_iso med=    476.7 mean=    682.6 | coupling med=    581.5 mean=    688.1
+  dispersed  N= 12 | dU_joint med=   3229.3 [  2229.1,  3972.9] mean=   3082.3 | dU/site med=   269.1
+                   | sum_lin med=    -1.20  sum_iso med=   2469.8 mean=   2025.9 | coupling med=    597.2 mean=   1056.4
+  dispersed  N= 20 | dU_joint med=   4325.5 [  2550.3,  6319.7] mean=   4623.3 | dU/site med=   216.3
+                   | sum_lin med=    -0.17  sum_iso med=    -42.2 mean=    643.6 | coupling med=   3690.4 mean=   3979.7
+  clustered  N=  1 | dU_joint med=    243.3 [    -6.0,   745.1] mean=    374.8 | dU/site med=   243.3
+                   | sum_lin med=    -0.07  sum_iso med=    243.3 mean=    374.8 | coupling med=      0.0 mean=      0.0
+  clustered  N=  2 | dU_joint med=    267.4 [    85.1,   477.5] mean=    217.5 | dU/site med=   133.7
+                   | sum_lin med=     0.19  sum_iso med=     78.3 mean=    218.5 | coupling med=    104.5 mean=     -1.0
+  clustered  N=  3 | dU_joint med=    157.6 [     4.9,   638.0] mean=    321.1 | dU/site med=    52.5
+                   | sum_lin med=    -0.34  sum_iso med=     39.3 mean=   -304.0 | coupling med=    278.2 mean=    625.1
+  clustered  N=  5 | dU_joint med=    824.2 [   -44.6,  4032.4] mean=   2410.7 | dU/site med=   164.8
+                   | sum_lin med=    -0.11  sum_iso med=   1703.2 mean=   1790.2 | coupling med=    344.8 mean=    620.5
+  clustered  N=  8 | dU_joint med=   1130.0 [  -210.5,  3177.9] mean=   2089.1 | dU/site med=   141.3
+                   | sum_lin med=    -0.20  sum_iso med=    344.5 mean=    228.6 | coupling med=   1395.7 mean=   1860.6
+  clustered  N= 12 | dU_joint med=    882.0 [   176.0,  2271.8] mean=   2439.6 | dU/site med=    73.5
+                   | sum_lin med=     0.43  sum_iso med=    276.8 mean=   1159.6 | coupling med=   1164.4 mean=   1280.0
+  clustered  N= 20 | dU_joint med=   2346.6 [  1993.2,  3315.9] mean=   3355.8 | dU/site med=   117.3
+                   | sum_lin med=     0.65  sum_iso med=   1576.0 mean=   1598.8 | coupling med=    948.7 mean=   1757.0
   isolated single-site dU over 479 distinct sites (85% of the sequence):
-    median=      24.2  IQR=[   -143.5,    239.0]  min=   -4243.6  max=    3594.8
-    downhill (dU<0): 220/479 = 46%   mean=     +74.8
+    median=      25.6  IQR=[   -143.5,    239.0]  min=   -4243.6  max=    3594.8
+    downhill (dU<0): 219/479 = 46%   mean=     +75.1
 
 === starting point: drift=51 seed=0 -> Hd=50/566 (8.8%)  U_A=28013.28 ===
-  dispersed  N=  1  dU_joint med=    -285.4 [  -1418.1,    -40.0]   coupling med=       0.0   dU/site=   -285.4
-  dispersed  N=  2  dU_joint med=    -658.8 [  -1040.1,   -191.5]   coupling med=     -10.4   dU/site=   -329.4
-  dispersed  N=  3  dU_joint med=    -340.2 [  -1339.0,   -215.9]   coupling med=      41.8   dU/site=   -113.4
-  dispersed  N=  5  dU_joint med=    -776.0 [  -1812.2,   -333.5]   coupling med=      73.4   dU/site=   -155.2
-  dispersed  N=  8  dU_joint med=   -1914.5 [  -2478.1,   -886.8]   coupling med=     891.0   dU/site=   -239.3
-  dispersed  N= 12  dU_joint med=   -1694.5 [  -5603.8,    973.4]   coupling med=     458.1   dU/site=   -141.2
-  dispersed  N= 20  dU_joint med=   -2704.8 [  -4159.7,  -2007.5]   coupling med=    2577.8   dU/site=   -135.2
-  clustered  N=  1  dU_joint med=     -16.3 [   -206.8,    172.0]   coupling med=       0.0   dU/site=    -16.3
-  clustered  N=  2  dU_joint med=     -82.3 [   -411.4,    455.7]   coupling med=     142.1   dU/site=    -41.2
-  clustered  N=  3  dU_joint med=    -183.1 [  -1120.1,    112.0]   coupling med=      22.4   dU/site=    -61.0
-  clustered  N=  5  dU_joint med=    -427.7 [  -1736.8,   1142.4]   coupling med=     446.9   dU/site=    -85.5
-  clustered  N=  8  dU_joint med=     -44.5 [   -886.6,   2795.6]   coupling med=    3993.6   dU/site=     -5.6
-  clustered  N= 12  dU_joint med=    -959.1 [  -1579.1,   -722.7]   coupling med=     876.0   dU/site=    -79.9
-  clustered  N= 20  dU_joint med=     206.8 [  -1829.1,   1219.9]   coupling med=    4687.3   dU/site=     10.3
+  dispersed  N=  1 | dU_joint med=   -285.4 [ -1418.1,   -40.0] mean=   -414.1 | dU/site med=  -285.4
+                   | sum_lin med=     0.11  sum_iso med=   -285.4 mean=   -414.1 | coupling med=      0.0 mean=      0.0
+  dispersed  N=  2 | dU_joint med=   -658.8 [ -1040.1,  -191.5] mean=   -229.6 | dU/site med=  -329.4
+                   | sum_lin med=    -0.11  sum_iso med=   -642.2 mean=   -257.3 | coupling med=    -10.4 mean=     27.7
+  dispersed  N=  3 | dU_joint med=   -340.2 [ -1339.0,  -215.9] mean=   -764.9 | dU/site med=  -113.4
+                   | sum_lin med=     0.02  sum_iso med=   -508.0 mean=   -926.8 | coupling med=     41.8 mean=    161.9
+  dispersed  N=  5 | dU_joint med=   -776.0 [ -1812.2,  -333.5] mean=   -797.4 | dU/site med=  -155.2
+                   | sum_lin med=     1.22  sum_iso med=  -1041.0 mean=   -816.9 | coupling med=     73.4 mean=     19.5
+  dispersed  N=  8 | dU_joint med=  -1914.5 [ -2478.1,  -886.8] mean=  -1772.5 | dU/site med=  -239.3
+                   | sum_lin med=    -0.48  sum_iso med=  -2809.4 mean=  -2479.4 | coupling med=    891.0 mean=    706.8
+  dispersed  N= 12 | dU_joint med=  -1575.9 [ -5603.8,   973.4] mean=  -2041.3 | dU/site med=  -131.3
+                   | sum_lin med=    -1.29  sum_iso med=  -3540.1 mean=  -2641.0 | coupling med=    367.2 mean=    599.7
+  dispersed  N= 20 | dU_joint med=  -2853.2 [ -4292.8, -2007.5] mean=  -2197.7 | dU/site med=  -142.7
+                   | sum_lin med=    -2.21  sum_iso med=  -4559.7 mean=  -5381.4 | coupling med=   2268.9 mean=   3183.7
+  clustered  N=  1 | dU_joint med=    -16.3 [  -206.8,   172.0] mean=     73.7 | dU/site med=   -16.3
+                   | sum_lin med=     0.27  sum_iso med=    -16.3 mean=     73.7 | coupling med=      0.0 mean=      0.0
+  clustered  N=  2 | dU_joint med=    -82.3 [  -411.4,   455.7] mean=    -40.3 | dU/site med=   -41.2
+                   | sum_lin med=     0.51  sum_iso med=     24.7 mean=   -171.7 | coupling med=    142.1 mean=    131.4
+  clustered  N=  3 | dU_joint med=   -183.1 [ -1120.1,   112.0] mean=     25.8 | dU/site med=   -61.0
+                   | sum_lin med=    -0.04  sum_iso med=      9.0 mean=   -233.5 | coupling med=     22.4 mean=    259.3
+  clustered  N=  5 | dU_joint med=   -427.7 [ -1736.8,  1142.4] mean=   -696.9 | dU/site med=   -85.5
+                   | sum_lin med=     0.16  sum_iso med=   -725.8 mean=   -949.6 | coupling med=    446.9 mean=    252.7
+  clustered  N=  8 | dU_joint med=    -44.5 [  -886.6,  2795.6] mean=    447.7 | dU/site med=    -5.6
+                   | sum_lin med=    -1.05  sum_iso med=  -2020.5 mean=  -3500.2 | coupling med=   3993.6 mean=   3947.9
+  clustered  N= 12 | dU_joint med=  -1223.6 [ -1752.9,  -805.1] mean=  -1163.0 | dU/site med=  -102.0
+                   | sum_lin med=     0.38  sum_iso med=  -1444.5 mean=  -2629.5 | coupling med=    775.6 mean=   1466.6
+  clustered  N= 20 | dU_joint med=     76.1 [ -1829.1,  1219.9] mean=    115.2 | dU/site med=     3.8
+                   | sum_lin med=     0.98  sum_iso med=  -3308.9 mean=  -4170.1 | coupling med=   4687.3 mean=   4285.3
   isolated single-site dU over 480 distinct sites (85% of the sequence):
-    median=    -174.9  IQR=[   -510.2,     47.5]  min=   -5081.3  max=    3839.2
-    downhill (dU<0): 326/480 = 68%   mean=    -265.9
+    median=    -178.1  IQR=[   -508.6,     47.5]  min=   -5081.3  max=    3839.2
+    downhill (dU<0): 327/480 = 68%   mean=    -265.3
 
 === starting point: drift=51 seed=1 -> Hd=44/566 (7.8%)  U_A=14719.92 ===
-  dispersed  N=  1  dU_joint med=      -9.3 [   -459.4,     45.0]   coupling med=       0.0   dU/site=     -9.3
-  dispersed  N=  2  dU_joint med=    -146.4 [   -537.0,    271.2]   coupling med=      28.6   dU/site=    -73.2
-  dispersed  N=  3  dU_joint med=      -9.3 [   -409.1,    812.4]   coupling med=     -15.1   dU/site=     -3.1
-  dispersed  N=  5  dU_joint med=    -384.5 [   -582.7,    -97.6]   coupling med=       1.4   dU/site=    -76.9
-  dispersed  N=  8  dU_joint med=    1038.4 [    520.1,   1154.0]   coupling med=     192.1   dU/site=    129.8
-  dispersed  N= 12  dU_joint med=     249.5 [   -266.4,   1146.9]   coupling med=     167.9   dU/site=     20.8
-  dispersed  N= 20  dU_joint med=    1890.4 [    884.9,   2736.3]   coupling med=    2089.6   dU/site=     94.5
-  clustered  N=  1  dU_joint med=    -179.5 [   -209.8,    -69.6]   coupling med=       0.0   dU/site=   -179.5
-  clustered  N=  2  dU_joint med=    -289.2 [   -831.2,    154.7]   coupling med=      36.8   dU/site=   -144.6
-  clustered  N=  3  dU_joint med=     -73.1 [   -663.1,    447.1]   coupling med=      90.1   dU/site=    -24.4
-  clustered  N=  5  dU_joint med=     510.3 [   -150.6,   1193.1]   coupling med=     348.6   dU/site=    102.1
-  clustered  N=  8  dU_joint med=     218.1 [   -168.3,    769.1]   coupling med=     645.6   dU/site=     27.3
-  clustered  N= 12  dU_joint med=     808.5 [    484.0,   2190.6]   coupling med=    1739.2   dU/site=     67.4
-  clustered  N= 20  dU_joint med=    3078.4 [   2106.6,   5075.9]   coupling med=    6079.5   dU/site=    153.9
+  dispersed  N=  1 | dU_joint med=     -9.3 [  -459.4,    45.0] mean=    -64.5 | dU/site med=    -9.3
+                   | sum_lin med=    -0.14  sum_iso med=     -9.3 mean=    -64.5 | coupling med=      0.0 mean=      0.0
+  dispersed  N=  2 | dU_joint med=   -146.4 [  -537.0,   271.2] mean=   -181.6 | dU/site med=   -73.2
+                   | sum_lin med=     0.41  sum_iso med=   -321.2 mean=   -270.5 | coupling med=     28.6 mean=     88.8
+  dispersed  N=  3 | dU_joint med=     -9.3 [  -409.1,   812.4] mean=     24.2 | dU/site med=    -3.1
+                   | sum_lin med=     0.56  sum_iso med=    -28.1 mean=     53.4 | coupling med=    -15.1 mean=    -29.2
+  dispersed  N=  5 | dU_joint med=   -442.5 [  -631.7,   -97.6] mean=   -250.4 | dU/site med=   -88.5
+                   | sum_lin med=     0.79  sum_iso med=   -589.4 mean=   -385.6 | coupling med=      1.4 mean=    135.3
+  dispersed  N=  8 | dU_joint med=    946.8 [   428.2,  1154.0] mean=    800.4 | dU/site med=   118.3
+                   | sum_lin med=     0.23  sum_iso med=    627.9 mean=    630.3 | coupling med=     25.8 mean=    170.0
+  dispersed  N= 12 | dU_joint med=    125.1 [   -76.8,  1146.9] mean=    597.1 | dU/site med=    10.4
+                   | sum_lin med=    -0.05  sum_iso med=    205.7 mean=    483.1 | coupling med=    186.2 mean=    114.0
+  dispersed  N= 20 | dU_joint med=   1993.1 [   884.9,  2736.3] mean=   2208.5 | dU/site med=    99.7
+                   | sum_lin med=    -1.49  sum_iso med=    147.9 mean=     84.5 | coupling med=   2089.6 mean=   2124.0
+  clustered  N=  1 | dU_joint med=   -179.5 [  -209.8,   -69.6] mean=    -25.7 | dU/site med=  -179.5
+                   | sum_lin med=    -0.52  sum_iso med=   -179.5 mean=    -25.7 | coupling med=      0.0 mean=      0.0
+  clustered  N=  2 | dU_joint med=   -289.2 [  -649.7,   154.7] mean=   -190.7 | dU/site med=  -144.6
+                   | sum_lin med=     0.01  sum_iso med=   -360.8 mean=   -232.8 | coupling med=     45.4 mean=     42.1
+  clustered  N=  3 | dU_joint med=    -73.1 [  -663.1,   447.1] mean=     42.7 | dU/site med=   -24.4
+                   | sum_lin med=    -0.35  sum_iso med=   -108.6 mean=     21.1 | coupling med=     90.1 mean=     21.6
+  clustered  N=  5 | dU_joint med=    510.3 [  -150.6,  1193.1] mean=    664.4 | dU/site med=   102.1
+                   | sum_lin med=    -0.06  sum_iso med=    171.8 mean=    335.5 | coupling med=    348.6 mean=    329.0
+  clustered  N=  8 | dU_joint med=    218.1 [  -168.3,   769.1] mean=    178.5 | dU/site med=    27.3
+                   | sum_lin med=     1.34  sum_iso med=   -667.8 mean=   -756.1 | coupling med=    645.6 mean=    934.6
+  clustered  N= 12 | dU_joint med=    808.5 [   484.0,  2190.6] mean=   1327.4 | dU/site med=    67.4
+                   | sum_lin med=     0.30  sum_iso med=   -583.7 mean=   -864.0 | coupling med=   1739.2 mean=   2191.4
+  clustered  N= 20 | dU_joint med=   3422.8 [  2106.6,  5075.9] mean=   4428.3 | dU/site med=   171.1
+                   | sum_lin med=     0.96  sum_iso med=   -523.3 mean=  -1575.4 | coupling med=   6079.5 mean=   6003.7
   isolated single-site dU over 472 distinct sites (83% of the sequence):
-    median=     -12.9  IQR=[   -198.3,    153.7]  min=   -1456.7  max=    4492.1
-    downhill (dU<0): 251/472 = 53%   mean=      -2.7
+    median=     -11.3  IQR=[   -198.3,    147.9]  min=   -1456.7  max=    4492.1
+    downhill (dU<0): 250/472 = 53%   mean=      -3.0
 
 === starting point: drift=150 seed=0 -> Hd=127/566 (22.4%)  U_A=31734.50 ===
-  dispersed  N=  1  dU_joint med=    -123.3 [   -570.7,     60.9]   coupling med=       0.0   dU/site=   -123.3
-  dispersed  N=  2  dU_joint med=    -210.1 [   -359.7,    -53.0]   coupling med=     -15.1   dU/site=   -105.0
-  dispersed  N=  3  dU_joint med=    -430.3 [   -990.4,    479.1]   coupling med=      58.5   dU/site=   -143.4
-  dispersed  N=  5  dU_joint med=     -77.3 [  -2283.1,    633.0]   coupling med=      54.1   dU/site=    -15.5
-  dispersed  N=  8  dU_joint med=     360.5 [  -1544.1,    767.8]   coupling med=     102.2   dU/site=     45.1
-  dispersed  N= 12  dU_joint med=   -1974.7 [  -3689.0,   -187.0]   coupling med=    1393.8   dU/site=   -164.6
-  dispersed  N= 20  dU_joint med=    -971.7 [  -1385.2,   -478.3]   coupling med=    1428.6   dU/site=    -48.6
-  clustered  N=  1  dU_joint med=    -437.1 [   -866.2,   -235.4]   coupling med=       0.0   dU/site=   -437.1
-  clustered  N=  2  dU_joint med=    -131.6 [   -565.5,    358.3]   coupling med=      26.3   dU/site=    -65.8
-  clustered  N=  3  dU_joint med=    -173.5 [   -306.1,   1122.6]   coupling med=      93.0   dU/site=    -57.8
-  clustered  N=  5  dU_joint med=    -247.7 [  -2268.7,    283.0]   coupling med=     703.5   dU/site=    -49.5
-  clustered  N=  8  dU_joint med=   -1082.6 [  -2449.0,    654.2]   coupling med=    1365.7   dU/site=   -135.3
-  clustered  N= 12  dU_joint med=     -29.5 [  -1321.2,   1088.2]   coupling med=    2812.7   dU/site=     -2.5
-  clustered  N= 20  dU_joint med=    1014.1 [   -838.1,   1490.4]   coupling med=    1505.3   dU/site=     50.7
+  dispersed  N=  1 | dU_joint med=   -123.3 [  -570.7,    60.9] mean=   -294.4 | dU/site med=  -123.3
+                   | sum_lin med=     0.02  sum_iso med=   -123.3 mean=   -294.4 | coupling med=      0.0 mean=      0.0
+  dispersed  N=  2 | dU_joint med=   -210.1 [  -359.7,   -53.8] mean=   -422.5 | dU/site med=  -105.0
+                   | sum_lin med=    -0.05  sum_iso med=   -238.0 mean=   -409.3 | coupling med=     25.3 mean=    -13.2
+  dispersed  N=  3 | dU_joint med=   -430.3 [  -990.4,   479.1] mean=   -151.6 | dU/site med=  -143.4
+                   | sum_lin med=    -0.49  sum_iso med=   -157.7 mean=   -215.9 | coupling med=     58.5 mean=     64.3
+  dispersed  N=  5 | dU_joint med=  -1566.8 [ -2291.8,   227.8] mean=  -1413.1 | dU/site med=  -313.4
+                   | sum_lin med=     0.85  sum_iso med=  -1100.1 mean=  -1470.8 | coupling med=     54.1 mean=     57.7
+  dispersed  N=  8 | dU_joint med=    360.5 [ -1544.1,   767.8] mean=    -17.2 | dU/site med=    45.1
+                   | sum_lin med=    -2.87  sum_iso med=   -805.5 mean=   -280.4 | coupling med=    102.2 mean=    263.1
+  dispersed  N= 12 | dU_joint med=  -1974.7 [ -3689.0,  -310.2] mean=  -2065.6 | dU/site med=  -164.6
+                   | sum_lin med=    -5.15  sum_iso med=  -2044.9 mean=  -3560.2 | coupling med=   1393.8 mean=   1494.5
+  dispersed  N= 20 | dU_joint med=  -1054.0 [ -1485.5,  -478.3] mean=   -775.9 | dU/site med=   -52.7
+                   | sum_lin med=    -1.68  sum_iso med=  -3033.7 mean=  -2619.9 | coupling med=   1428.6 mean=   1844.1
+  clustered  N=  1 | dU_joint med=   -437.1 [  -866.2,  -286.2] mean=   -630.5 | dU/site med=  -437.1
+                   | sum_lin med=    -0.19  sum_iso med=   -437.1 mean=   -630.5 | coupling med=      0.0 mean=      0.0
+  clustered  N=  2 | dU_joint med=   -346.5 [  -678.2,    77.5] mean=   -257.3 | dU/site med=  -173.2
+                   | sum_lin med=     0.10  sum_iso med=   -494.8 mean=   -537.7 | coupling med=     26.3 mean=    280.4
+  clustered  N=  3 | dU_joint med=   -173.5 [  -306.1,  1122.6] mean=    278.1 | dU/site med=   -57.8
+                   | sum_lin med=    -0.03  sum_iso med=   -170.4 mean=    296.3 | coupling med=     93.0 mean=    -18.3
+  clustered  N=  5 | dU_joint med=   -247.7 [ -2268.7,   283.0] mean=   -951.5 | dU/site med=   -49.5
+                   | sum_lin med=     0.02  sum_iso med=  -1143.9 mean=  -2056.6 | coupling med=    473.0 mean=   1105.1
+  clustered  N=  8 | dU_joint med=   -900.1 [ -2449.0,   654.2] mean=   -825.9 | dU/site med=  -112.5
+                   | sum_lin med=    -1.66  sum_iso med=  -3332.6 mean=  -2783.6 | coupling med=   1365.7 mean=   1957.7
+  clustered  N= 12 | dU_joint med=    -29.5 [ -1321.2,  1088.2] mean=    312.7 | dU/site med=    -2.5
+                   | sum_lin med=    -1.03  sum_iso med=  -2693.2 mean=  -5389.5 | coupling med=   2812.7 mean=   5702.3
+  clustered  N= 20 | dU_joint med=   1014.1 [  -838.1,  1490.4] mean=    366.7 | dU/site med=    50.7
+                   | sum_lin med=    -3.23  sum_iso med=  -1764.5 mean=  -1889.8 | coupling med=   1505.3 mean=   2256.5
   isolated single-site dU over 473 distinct sites (84% of the sequence):
-    median=    -162.1  IQR=[   -448.2,    132.2]  min=   -4290.3  max=    3700.3
-    downhill (dU<0): 310/473 = 66%   mean=    -159.6
+    median=    -168.7  IQR=[   -448.2,    128.9]  min=   -4290.3  max=    3700.3
+    downhill (dU<0): 312/473 = 66%   mean=    -164.3
 
 === starting point: drift=150 seed=1 -> Hd=124/566 (21.9%)  U_A=34674.93 ===
-  dispersed  N=  1  dU_joint med=    -703.3 [  -1903.7,    -31.0]   coupling med=       0.0   dU/site=   -703.3
-  dispersed  N=  2  dU_joint med=     143.3 [   -561.2,    584.9]   coupling med=      13.9   dU/site=     71.6
-  dispersed  N=  3  dU_joint med=   -1143.8 [  -1705.4,   -334.8]   coupling med=      19.2   dU/site=   -381.3
-  dispersed  N=  5  dU_joint med=    -190.3 [  -1913.7,    430.8]   coupling med=     391.1   dU/site=    -38.1
-  dispersed  N=  8  dU_joint med=    -515.9 [  -1278.3,   1116.3]   coupling med=     406.3   dU/site=    -64.5
-  dispersed  N= 12  dU_joint med=   -1399.3 [  -2819.7,   1221.2]   coupling med=    2261.1   dU/site=   -116.6
-  dispersed  N= 20  dU_joint med=   -2092.3 [  -3321.4,  -1034.0]   coupling med=    4593.8   dU/site=   -104.6
-  clustered  N=  1  dU_joint med=    -107.8 [   -503.4,    292.2]   coupling med=       0.0   dU/site=   -107.8
-  clustered  N=  2  dU_joint med=    -741.5 [  -1238.5,   -471.6]   coupling med=       9.1   dU/site=   -370.8
-  clustered  N=  3  dU_joint med=    -471.2 [  -1042.8,    -40.0]   coupling med=      28.9   dU/site=   -157.1
-  clustered  N=  5  dU_joint med=    -384.1 [  -2309.5,    893.5]   coupling med=    1033.9   dU/site=    -76.8
-  clustered  N=  8  dU_joint med=     -59.6 [   -707.2,    410.1]   coupling med=     478.2   dU/site=     -7.5
-  clustered  N= 12  dU_joint med=    1393.0 [    -46.8,   1764.4]   coupling med=    2272.7   dU/site=    116.1
-  clustered  N= 20  dU_joint med=     182.9 [  -1027.7,    827.5]   coupling med=    3824.3   dU/site=      9.1
+  dispersed  N=  1 | dU_joint med=   -703.3 [ -1903.7,   -31.0] mean=  -1063.1 | dU/site med=  -703.3
+                   | sum_lin med=     0.51  sum_iso med=   -703.3 mean=  -1063.1 | coupling med=      0.0 mean=      0.0
+  dispersed  N=  2 | dU_joint med=    143.3 [  -561.2,   584.9] mean=   -257.0 | dU/site med=    71.6
+                   | sum_lin med=     0.87  sum_iso med=    168.4 mean=   -263.1 | coupling med=     13.9 mean=      6.1
+  dispersed  N=  3 | dU_joint med=  -1143.8 [ -1705.4,  -321.6] mean=  -1050.7 | dU/site med=  -381.3
+                   | sum_lin med=    -1.22  sum_iso med=   -813.6 mean=  -1123.7 | coupling med=     19.2 mean=     73.0
+  dispersed  N=  5 | dU_joint med=   -115.4 [ -1913.7,   588.5] mean=   -272.5 | dU/site med=   -23.1
+                   | sum_lin med=     0.50  sum_iso med=   -503.9 mean=   -895.2 | coupling med=    391.1 mean=    622.7
+  dispersed  N=  8 | dU_joint med=   -515.9 [ -1278.3,  1116.3] mean=    452.3 | dU/site med=   -64.5
+                   | sum_lin med=     2.24  sum_iso med=   -527.6 mean=  -1010.0 | coupling med=    406.3 mean=   1462.3
+  dispersed  N= 12 | dU_joint med=  -1399.3 [ -2819.7,  1221.2] mean=  -1150.0 | dU/site med=  -116.6
+                   | sum_lin med=     0.68  sum_iso med=  -3781.9 mean=  -4596.8 | coupling med=   2261.1 mean=   3446.8
+  dispersed  N= 20 | dU_joint med=  -2092.3 [ -3321.4, -1034.0] mean=  -1830.2 | dU/site med=  -104.6
+                   | sum_lin med=    -2.16  sum_iso med=  -6634.6 mean=  -7358.1 | coupling med=   4593.8 mean=   5527.9
+  clustered  N=  1 | dU_joint med=   -107.8 [  -503.4,   292.2] mean=    -31.9 | dU/site med=  -107.8
+                   | sum_lin med=    -0.11  sum_iso med=   -107.8 mean=    -31.9 | coupling med=      0.0 mean=      0.0
+  clustered  N=  2 | dU_joint med=   -741.5 [ -1238.5,  -471.6] mean=   -848.3 | dU/site med=  -370.8
+                   | sum_lin med=    -0.00  sum_iso med=   -676.1 mean=  -1018.2 | coupling med=      9.1 mean=    169.9
+  clustered  N=  3 | dU_joint med=   -471.2 [ -1042.8,   -40.0] mean=   -504.1 | dU/site med=  -157.1
+                   | sum_lin med=    -0.30  sum_iso med=  -1166.9 mean=   -640.8 | coupling med=     28.9 mean=    136.7
+  clustered  N=  5 | dU_joint med=   -384.1 [ -2309.5,   893.5] mean=   -781.6 | dU/site med=   -76.8
+                   | sum_lin med=     0.39  sum_iso med=  -1956.6 mean=  -2305.2 | coupling med=   1033.9 mean=   1523.6
+  clustered  N=  8 | dU_joint med=    -59.6 [  -707.2,   410.1] mean=   -134.5 | dU/site med=    -7.5
+                   | sum_lin med=    -0.99  sum_iso med=  -1307.7 mean=   -984.4 | coupling med=    478.2 mean=    849.9
+  clustered  N= 12 | dU_joint med=   1535.6 [   -46.8,  2099.3] mean=   1565.3 | dU/site med=   128.0
+                   | sum_lin med=    -1.93  sum_iso med=  -1549.6 mean=   -889.9 | coupling med=   2272.7 mean=   2455.1
+  clustered  N= 20 | dU_joint med=    182.9 [ -1027.7,   827.5] mean=    -97.4 | dU/site med=     9.1
+                   | sum_lin med=    -0.88  sum_iso med=  -3955.5 mean=  -5356.1 | coupling med=   3824.3 mean=   5258.7
   isolated single-site dU over 461 distinct sites (81% of the sequence):
     median=    -170.4  IQR=[   -524.8,    118.4]  min=   -5260.9  max=    3169.7
-    downhill (dU<0): 297/461 = 64%   mean=    -265.7
+    downhill (dU<0): 296/461 = 64%   mean=    -264.1
 
 === (1) consistency: coupling must be exactly 0 at N=1 ===
   N=1 cells checked: 12; violations: 0  -> OK
@@ -151,28 +326,33 @@ mutation costs, and how often one is downhill at all. It also shows the
 floor effect directly -- at low drift the sequence sits at U_am's minimum
 and almost nothing is downhill, which is what made the earlier MUTS=5
 coupling numbers unrepresentative (DEVLOG 2026-10-03).
+  drift = mutations requested; Hd = distance actually achieved (Hd<=drift,
+  because draws collide and can redraw the existing residue); sites = how many
+  distinct positions were scanned; median dU / % downhill describe the ONE-site
+  move at that starting point. See LEGEND at the top.
 
  drift  seed     Hd          U_A   median dU  % downhill   sites
-     5     0      5       2557.0       220.2         22%     461
-     5     1      4       6426.7        24.2         46%     479
-    51     0     50      28013.3      -174.9         68%     480
-    51     1     44      14719.9       -12.9         53%     472
-   150     0    127      31734.5      -162.1         66%     473
+     5     0      5       2557.0       222.5         22%     461
+     5     1      4       6426.7        25.6         46%     479
+    51     0     50      28013.3      -178.1         68%     480
+    51     1     44      14719.9       -11.3         53%     472
+   150     0    127      31734.5      -168.7         66%     473
    150     1    124      34674.9      -170.4         64%     461
 
 === (2) coupling vs N, by drift (dispersed sites, pooled over seeds) ===
+Cell value = median|coupling| / median|sum_isolated| (see LEGEND).
 Scale-free ratio: median|coupling| / median|sum_isolated|. Raw energies
 are not comparable across drift levels (U_A itself moves by orders of
 magnitude), so the ratio is what carries meaning here.
    N        drift=5       drift=51      drift=150
 -------------------------------------------------
    1          0.000          0.000          0.000
-   2          0.173          0.092          0.121
-   3          0.305          0.173          0.207
-   5          0.282          0.172          0.309
+   2          0.173          0.092          0.136
+   3          0.274          0.173          0.207
+   5          0.282          0.171          0.369
    8          0.255          0.362          0.312
-  12          0.261          0.414          0.461
-  20          0.901          1.518          0.819
+  12          0.261          0.467          0.461
+  20          0.901          1.475          0.778
 
 === (3) dispersed vs clustered: is coupling a sequence-distance effect? ===
 Clustered sites are drawn within a 30-residue window.
@@ -180,14 +360,18 @@ If clustered coupling is much larger at the same N, then the weaker
 coupling seen on the 566-residue reference is substantially a
 consequence of random sites being far apart, and the earlier
 protein_g-vs-zero_polymer comparison was confounded by length.
+  spread = mean pairwise |i-j| separation of the N chosen sites.
+  |c|/|iso| = median|coupling| / median|sum_isolated|, scale-free so it
+  compares across drift and length. ratio = clustered / dispersed; >1 means
+  nearby sites couple more than distant ones. See LEGEND at the top.
 
    N  disp spread  clus spread  disp |c|/|iso|  clus |c|/|iso|    ratio
-   2        133.0          8.0           0.130           0.267     2.06
-   3        197.0         10.7           0.248           0.336     1.35
-   5        200.2          9.6           0.264           0.517     1.96
+   2        133.0          8.0           0.132           0.265     2.00
+   3        197.0         10.7           0.235           0.336     1.43
+   5        200.2          9.6           0.279           0.471     1.68
    8        191.9         10.6           0.300           0.778     2.59
-  12        185.0         10.3           0.366           0.764     2.09
-  20        190.5         10.5           0.960           0.774     0.81
+  12        185.0         10.3           0.366           0.713     1.95
+  20        190.5         10.5           0.823           0.774     0.94
 
 === (4) throughput: accepted mutations per move, vs the single-site baseline ===
 Acceptance is estimated from the energy term alone,
@@ -198,15 +382,114 @@ right leading-order estimate, but it is an estimate and can err in either
 direction -- it is not a substitute for running the real sampler.
 Multi-site is worth building only where a_N*N exceeds a_1, shown as 'gain'.
 
+  a_N   = mean over trials of min(1, exp(-dU_joint/T)): acceptance of an
+          N-site move. BIMODAL -- downhill trials give ~1 and uphill ~0, so
+          it reads as a downhill fraction more than a typical acceptance.
+  a_1   = the same at N=1, i.e. the single-site baseline.
+  a_N*N = expected mutations accepted per move. THE figure of merit, because
+          an N-site move costs the same as a single-site one (section 0).
+  gain  = a_N*N / a_1.  >1 means multi-site delivers more accepted mutations
+          per unit wall-clock.  See LEGEND at the top for the full list.
+
+*** READ THIS BEFORE THE TABLES ***
+These starting points come from mutate(REF, drift), which is NOT an
+equilibrated chain. A high-drift random sequence sits far ABOVE the
+equilibrium energy, so most gradient-greedy moves are downhill and get
+accepted -- that measures RELAXATION (how fast you descend from a bad
+starting point), not SAMPLING. At equilibrium the chain is by definition
+not systematically descending, and acceptance is far lower: the real
+sampler measured 0.309 at T=107 in the Boltzmann validation, against the
+a_1 near 0.67 reported below. So treat a drift level whose single-site dU
+is predominantly NEGATIVE as a relaxation measurement, and do not read its
+'WINS' as an argument for multi-site SAMPLING.
+
+--- per-drift breakdown (the pooled table below hides a 20-orders-of-
+    magnitude split between drift levels, so this one comes first) ---
+
+  T = 32
+     N                    drift=5                   drift=51                  drift=150
+          a_N      a_N*N     gain    a_N      a_N*N     gain    a_N      a_N*N     gain
+     1    0.307    0.307        1    0.707    0.707        1    0.762    0.762        1
+     2    0.356    0.712     2.32    0.743     1.49      2.1    0.612     1.22     1.61
+     3    0.353     1.06     3.45      0.7      2.1     2.97     0.75     2.25     2.95
+     5    0.201        1     3.27     0.85     4.25     6.01      0.6        3     3.94
+     8   0.0535    0.428     1.39      0.5        4     5.66      0.5        4     5.25
+    12 2.19e-13 2.63e-12 8.57e-12    0.503     6.03     8.53     0.85     10.2     13.4
+    20 6.42e-19 1.28e-17 4.18e-17      0.5       10     14.1     0.85       17     22.3
+                        a_1=0.307                  a_1=0.707                  a_1=0.762
+
+  acceptance of the MEDIAN move (exp(-median dU/T)) -- the mean above is
+  bimodal (downhill trials contribute 1, uphill ~0) so it reads as a
+  downhill fraction rather than a typical acceptance:
+     N        drift=5       drift=51      drift=150
+     1         0.0048              1              1
+     2       0.000862              1              1
+     3        0.00396              1              1
+     5       7.06e-27              1              1
+     8       6.44e-21              1              1
+    12       7.71e-48          0.164              1
+    20          2e-78        0.00442              1
+
+  T = 107
+     N                    drift=5                   drift=51                  drift=150
+          a_N      a_N*N     gain    a_N      a_N*N     gain    a_N      a_N*N     gain
+     1      0.4      0.4        1    0.785    0.785        1    0.818    0.818        1
+     2    0.412    0.825     2.06    0.754     1.51     1.92    0.642     1.28     1.57
+     3    0.406     1.22     3.04    0.714     2.14     2.73    0.753     2.26     2.76
+     5    0.214     1.07     2.67     0.85     4.25     5.41    0.609     3.04     3.72
+     8   0.0789    0.631     1.58    0.515     4.12     5.25    0.511     4.09        5
+    12 2.52e-05 0.000303 0.000757    0.545     6.53     8.32     0.85     10.2     12.5
+    20 4.44e-07 8.88e-06 2.22e-05    0.501       10     12.7     0.85       17     20.8
+                          a_1=0.4                  a_1=0.785                  a_1=0.818
+
+  acceptance of the MEDIAN move (exp(-median dU/T)) -- the mean above is
+  bimodal (downhill trials contribute 1, uphill ~0) so it reads as a
+  downhill fraction rather than a typical acceptance:
+     N        drift=5       drift=51      drift=150
+     1          0.203              1              1
+     2          0.121              1              1
+     3          0.191              1              1
+     5       1.51e-08              1              1
+     8       9.15e-07              1              1
+    12       8.13e-15          0.583              1
+    20        5.8e-24          0.198              1
+
+  T = 322
+     N                    drift=5                   drift=51                  drift=150
+          a_N      a_N*N     gain    a_N      a_N*N     gain    a_N      a_N*N     gain
+     1    0.574    0.574        1    0.849    0.849        1     0.89     0.89        1
+     2    0.577     1.15     2.01    0.797     1.59     1.88    0.725     1.45     1.63
+     3    0.549     1.65     2.87    0.777     2.33     2.74    0.785     2.36     2.65
+     5    0.258     1.29     2.25    0.859     4.29     5.06    0.677     3.39     3.81
+     8     0.14     1.12     1.95    0.582     4.66     5.49    0.557     4.46     5.01
+    12  0.00651   0.0781    0.136    0.614     7.36     8.67    0.852     10.2     11.5
+    20  0.00116   0.0232   0.0404    0.516     10.3     12.2     0.85       17     19.1
+                        a_1=0.574                  a_1=0.849                   a_1=0.89
+
+  acceptance of the MEDIAN move (exp(-median dU/T)) -- the mean above is
+  bimodal (downhill trials contribute 1, uphill ~0) so it reads as a
+  downhill fraction rather than a typical acceptance:
+     N        drift=5       drift=51      drift=150
+     1          0.588              1              1
+     2          0.496              1              1
+     3          0.577              1              1
+     5        0.00252              1              1
+     8        0.00985              1              1
+    12       2.08e-05          0.836              1
+    20        1.9e-08          0.583              1
+
+--- pooled over all drift levels (kept for continuity; prefer the
+    per-drift tables above) ---
+
 --- T = 32 ---
   single-site baseline a_1 = 0.592  (from the N=1 cells of this run)
      N          a_N        a_N*N   gain vs a_1      verdict
      1        0.592        0.592             1     baseline
      2       0.5706        1.141          1.93         WINS
-     3       0.5846        1.754          2.96         WINS
-     5       0.5169        2.584          4.37         WINS
+     3        0.601        1.803          3.05         WINS
+     5       0.5502        2.751          4.65         WINS
      8       0.3513        2.811          4.75         WINS
-    12       0.4505        5.406          9.13         WINS
+    12       0.4509         5.41          9.14         WINS
     20         0.45            9          15.2         WINS
 
 --- T = 107 ---
@@ -214,10 +497,10 @@ Multi-site is worth building only where a_N*N exceeds a_1, shown as 'gain'.
      N          a_N        a_N*N   gain vs a_1      verdict
      1       0.6678       0.6678             1     baseline
      2       0.6029        1.206          1.81         WINS
-     3       0.6125        1.837          2.75         WINS
-     5       0.5285        2.643          3.96         WINS
-     8       0.3681        2.945          4.41         WINS
-    12         0.46         5.52          8.27         WINS
+     3       0.6243        1.873           2.8         WINS
+     5       0.5576        2.788          4.18         WINS
+     8       0.3684        2.948          4.41         WINS
+    12       0.4649        5.578          8.35         WINS
     20       0.4502        9.005          13.5         WINS
 
 --- T = 322 ---
@@ -225,11 +508,11 @@ Multi-site is worth building only where a_N*N exceeds a_1, shown as 'gain'.
      N          a_N        a_N*N   gain vs a_1      verdict
      1       0.7708       0.7708             1     baseline
      2       0.6997        1.399          1.82         WINS
-     3       0.6981        2.094          2.72         WINS
-     5       0.5806        2.903          3.77         WINS
-     8       0.4229        3.383          4.39         WINS
-    12       0.4844        5.813          7.54         WINS
-    20       0.4557        9.115          11.8         WINS
+     3       0.7035        2.111          2.74         WINS
+     5       0.5981         2.99          3.88         WINS
+     8       0.4264        3.412          4.43         WINS
+    12       0.4906        5.887          7.64         WINS
+    20       0.4557        9.114          11.8         WINS
 
 Reading (4): a_N collapses roughly geometrically in N whenever dU per
 mutated site is larger than T, because the N-site move must pay every
