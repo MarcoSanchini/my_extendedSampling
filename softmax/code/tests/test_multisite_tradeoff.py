@@ -159,6 +159,97 @@ PARS = {
 }
 
 
+LEGEND = """
+================================================================================
+LEGEND -- every symbol used anywhere in this file, so a results file can be
+read without opening the script.
+================================================================================
+SETUP
+  drift     the `mutations` argument to mutate(REF, drift): how many random
+            (site, amino-acid) draws were made to build the starting sequence.
+            This is NOT the resulting distance -- see Hd.
+  Hd        Hamming distance actually achieved: the number of positions where
+            the starting sequence differs from the reference. Hd <= drift,
+            because mutate() draws sites WITH replacement (a repeat overwrites
+            rather than adding) and each draw has a 1/25 chance of redrawing
+            the residue already there. E.g. drift=150 typically gives Hd~125.
+  seed      RNG seed picking which starting sequence a given drift produces.
+  U_A       exact energy of the starting sequence. U=0 at the reference, which
+            is the global minimum, so U_A measures how far up the starting
+            point sits.
+  N         number of sites changed SIMULTANEOUSLY in one proposed move.
+  sites     number of DISTINCT positions whose isolated single-site energy was
+            computed and cached at that starting point. A coverage figure (how
+            much of the sequence the random trials happened to touch), not a
+            parameter.
+
+ENERGY DECOMPOSITION  (every term is an energy DIFFERENCE from U_A)
+  sum_lin      first-order Taylor prediction of the N-site move, grad . delta.
+               No coupling, no within-site nonlinearity.
+  sum_iso      true effect of the SAME N substitutions applied ONE AT A TIME,
+               each against the original starting sequence, then added up.
+               Includes within-site nonlinearity; still excludes any
+               cross-site interaction. (This is the "sequential" quantity.)
+  dU_joint     true effect of applying all N substitutions AT ONCE. This is
+               what a real accept/reject would use, and it is the operative
+               number for the design question.
+  nonlin       = sum_iso - sum_lin    (within-site linearisation error)
+  coupling     = dU_joint - sum_iso   (cross-site non-separability; exactly 0
+               would mean U is additive over the touched sites)
+  dU/site      = dU_joint / N. Cost per mutation actually delivered; compare it
+               against a single-site move's own dU.
+  med [q1,q3]  median and interquartile range over trials.
+  mean         arithmetic mean over trials.
+  *** MEDIANS DO NOT ADD. med(coupling) is NOT med(dU_joint) - med(sum_iso);
+      each is the median of its own distribution. The MEAN columns do add
+      exactly (mean(coupling) = mean(dU_joint) - mean(sum_iso)), so use those
+      to check the decomposition. Medians are reported because these
+      distributions are heavy-tailed and change sign between trials, which a
+      mean alone describes badly -- both are given rather than one. ***
+
+SITE SELECTION
+  dispersed   the N sites drawn uniformly over the whole sequence.
+  clustered   the N sites drawn inside one randomly placed window of
+              CLUSTER_WINDOW residues.
+  spread      mean pairwise |i-j| sequence separation of the chosen sites.
+              About L/3 for dispersed, about window/3 for clustered.
+  |c|/|iso|   median|coupling| / median|sum_iso|. Scale-free, so it can be
+              compared across drift levels and sequence lengths -- raw
+              energies cannot be, since U_A moves by orders of magnitude.
+  ratio       clustered |c|/|iso| divided by dispersed |c|/|iso|. Greater
+              than 1 means nearby sites couple more strongly than distant
+              ones, i.e. coupling is partly a sequence-distance effect.
+
+ACCEPTANCE AND THROUGHPUT
+  T           temperature used ONLY for the acceptance estimate in section 4.
+  a_N         estimated acceptance probability of an N-site move,
+              mean over trials of min(1, exp(-dU_joint/T)).
+              Two caveats, both stated again in section 4: it omits the
+              Hastings proposal-ratio term, and this mean is BIMODAL (downhill
+              trials contribute ~1, uphill ones ~0) so it behaves more like a
+              downhill FRACTION than a typical acceptance. The companion
+              "acceptance of the MEDIAN move" table is the honest partner.
+  a_1         the same quantity at N=1: the single-site baseline.
+  a_N*N       expected mutations accepted per move -- the figure of merit,
+              because an N-site move costs the same as a single-site one
+              (measured in section 0, ratio 0.997).
+  gain        a_N*N / a_1. Greater than 1 means multi-site delivers more
+              accepted mutations per unit wall-clock than single-site.
+
+TIMING (section 0)
+  t_exact       wall-clock of one exact-energy forward pass.
+  t_grad_site   wall-clock of one single-site relaxed backward pass.
+  t_grad_whole  wall-clock of one whole-sequence relaxed backward pass.
+              These are near-equal by design, not by accident: both run the
+              SAME full forward over all L residues and the SAME backward
+              through the whole transformer. Only the final leaf differs (one
+              row of logits vs all L rows), which is O(L*K) against a
+              transformer backward of O(L^2*d + L*d^2) -- negligible. The
+              single-site gradient was never chosen to be cheaper; it was
+              chosen to be more faithful to the exact discrete context.
+================================================================================
+"""
+
 # --------------------------------------------------------------------------- #
 # helpers                                                                      #
 # --------------------------------------------------------------------------- #
@@ -269,6 +360,8 @@ def main():
     print(f"# (isolated single-site energies are cached per starting point -- they depend")
     print(f"#  only on (start, site, target), so they are reused across every N and trial)")
     print()
+
+    print(LEGEND)
 
     sampler = ExtendedProteinRateSampler(config_settings={})
     sampler.model.to(device)
@@ -432,10 +525,22 @@ def main():
                         spread=site_spread(sites)))
                 results[(drift, seed, mode, N)] = rows
                 med, q1, q3 = quartiles([r['dU'] for r in rows])
+                imed, _, _ = quartiles([r['iso'] for r in rows])
                 cmed, _, _ = quartiles([r['coup'] for r in rows])
-                print(f"  {mode:<10} N={N:>3}  dU_joint med={med:>10.1f} "
-                      f"[{q1:>9.1f},{q3:>9.1f}]   coupling med={cmed:>10.1f}   "
-                      f"dU/site={med/N:>9.1f}")
+                lmed, _, _ = quartiles([r['lin'] for r in rows])
+                # Means are reported alongside medians because MEANS ARE
+                # ADDITIVE and medians are not: mean(coupling) is exactly
+                # mean(dU_joint) - mean(sum_isolated), so the mean columns let
+                # the decomposition be checked by eye, whereas subtracting the
+                # median columns does NOT reproduce the median coupling.
+                mdU = st.mean([r['dU'] for r in rows])
+                miso = st.mean([r['iso'] for r in rows])
+                mcoup = st.mean([r['coup'] for r in rows])
+                print(f"  {mode:<10} N={N:>3} | dU_joint med={med:>9.1f} "
+                      f"[{q1:>8.1f},{q3:>8.1f}] mean={mdU:>9.1f} | dU/site med={med/N:>8.1f}")
+                print(f"  {'':<10} {'':>5} | sum_lin med={lmed:>9.2f}  "
+                      f"sum_iso med={imed:>9.1f} mean={miso:>9.1f} | "
+                      f"coupling med={cmed:>9.1f} mean={mcoup:>9.1f}")
         # The isolated cache ends up covering most or all of the sequence,
         # so it is a complete single-site landscape at this starting point
         # -- already paid for, and the cleanest view of how drift changes
@@ -481,6 +586,10 @@ def main():
     print("floor effect directly -- at low drift the sequence sits at U_am's minimum")
     print("and almost nothing is downhill, which is what made the earlier MUTS=5")
     print("coupling numbers unrepresentative (DEVLOG 2026-10-03).")
+    print("  drift = mutations requested; Hd = distance actually achieved (Hd<=drift,")
+    print("  because draws collide and can redraw the existing residue); sites = how many")
+    print("  distinct positions were scanned; median dU / % downhill describe the ONE-site")
+    print("  move at that starting point. See LEGEND at the top.")
     print(f"\n{'drift':>6} {'seed':>5} {'Hd':>6} {'U_A':>12} {'median dU':>11} "
           f"{'% downhill':>11} {'sites':>7}")
     for d, sd in START_KEYS:
@@ -493,6 +602,7 @@ def main():
 
     BASE_MODE = "dispersed" if "dispersed" in MODES else MODES[0]
     print(f"=== (2) coupling vs N, by drift ({BASE_MODE} sites, pooled over seeds) ===")
+    print("Cell value = median|coupling| / median|sum_isolated| (see LEGEND).")
     print("Scale-free ratio: median|coupling| / median|sum_isolated|. Raw energies")
     print("are not comparable across drift levels (U_A itself moves by orders of")
     print("magnitude), so the ratio is what carries meaning here.")
@@ -521,6 +631,10 @@ def main():
         print("coupling seen on the 566-residue reference is substantially a")
         print("consequence of random sites being far apart, and the earlier")
         print("protein_g-vs-zero_polymer comparison was confounded by length.")
+        print("  spread = mean pairwise |i-j| separation of the N chosen sites.")
+        print("  |c|/|iso| = median|coupling| / median|sum_isolated|, scale-free so it")
+        print("  compares across drift and length. ratio = clustered / dispersed; >1 means")
+        print("  nearby sites couple more than distant ones. See LEGEND at the top.")
         print(f"\n{'N':>4} {'disp spread':>12} {'clus spread':>12} "
               f"{'disp |c|/|iso|':>15} {'clus |c|/|iso|':>15} {'ratio':>8}")
         for N in N_VALUES:
@@ -553,6 +667,15 @@ def main():
     print("right leading-order estimate, but it is an estimate and can err in either")
     print("direction -- it is not a substitute for running the real sampler.")
     print("Multi-site is worth building only where a_N*N exceeds a_1, shown as 'gain'.")
+    print("")
+    print("  a_N   = mean over trials of min(1, exp(-dU_joint/T)): acceptance of an")
+    print("          N-site move. BIMODAL -- downhill trials give ~1 and uphill ~0, so")
+    print("          it reads as a downhill fraction more than a typical acceptance.")
+    print("  a_1   = the same at N=1, i.e. the single-site baseline.")
+    print("  a_N*N = expected mutations accepted per move. THE figure of merit, because")
+    print("          an N-site move costs the same as a single-site one (section 0).")
+    print("  gain  = a_N*N / a_1.  >1 means multi-site delivers more accepted mutations")
+    print("          per unit wall-clock.  See LEGEND at the top for the full list.")
 
     def acc(rows, T):
         return st.mean(min(1., math.exp(min(0., -r['dU']/T))) for r in rows)
