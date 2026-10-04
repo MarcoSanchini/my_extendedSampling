@@ -169,10 +169,24 @@ SETUP
             (site, amino-acid) draws were made to build the starting sequence.
             This is NOT the resulting distance -- see Hd.
   Hd        Hamming distance actually achieved: the number of positions where
-            the starting sequence differs from the reference. Hd <= drift,
-            because mutate() draws sites WITH replacement (a repeat overwrites
-            rather than adding) and each draw has a 1/25 chance of redrawing
-            the residue already there. E.g. drift=150 typically gives Hd~125.
+            the starting sequence differs from the reference. Hd <= drift for
+            two reasons: mutate() draws sites WITH replacement (a repeat
+            overwrites rather than adding), and each draw can land on the
+            residue already present. E.g. drift=150 typically gives Hd~125.
+  NOTE on the two different vocabularies -- they are NOT the same size:
+            mutate() (used ONLY to build these starting sequences) draws the
+            replacement uniformly from SEQUENCE_USED_VOCAB, which has 25
+            entries: the 20 standard residues PLUS X, B, U, Z, O. So the
+            chance of redrawing the existing residue is 1/25, and 5/25 = 20%
+            of draws land on a non-canonical code -- which is why a high-drift
+            starting sequence contains them (MUTS=51 gave 12, e.g. B O O U X
+            X X X Z Z Z Z).
+            The SAMPLER's proposal uses a different set: _competition_indices
+            excludes all 5 non-canonical codes AND the site's current residue,
+            leaving 19 competitors out of the 20 standard ones. Non-canonical
+            residues are therefore legal to SIT on but can never be PROPOSED.
+            Consequence worth knowing: these test starting points can contain
+            residues the sampler itself could never have produced.
   seed      RNG seed picking which starting sequence a given drift produces.
   U_A       exact energy of the starting sequence. U=0 at the reference, which
             is the global minimum, so U_A measures how far up the starting
@@ -208,9 +222,13 @@ ENERGY DECOMPOSITION  (every term is an energy DIFFERENCE from U_A)
       mean alone describes badly -- both are given rather than one. ***
 
 SITE SELECTION
-  dispersed   the N sites drawn uniformly over the whole sequence.
+  dispersed   the N sites drawn uniformly over the whole sequence. THIS IS
+              THE MAIN LINE OF ANALYSIS: sections 1b, 2 and 4 use dispersed
+              sites only, and each says so in its header.
   clustered   the N sites drawn inside one randomly placed window of
-              CLUSTER_WINDOW residues.
+              CLUSTER_WINDOW residues. Used ONLY as the distance control in
+              section 3; it is deliberately excluded from every other
+              section. Set MODES=dispersed to skip computing it entirely.
   spread      mean pairwise |i-j| sequence separation of the chosen sites.
               About L/3 for dispersed, about window/3 for clustered.
   |c|/|iso|   median|coupling| / median|sum_iso|. Scale-free, so it can be
@@ -240,13 +258,37 @@ TIMING (section 0)
   t_exact       wall-clock of one exact-energy forward pass.
   t_grad_site   wall-clock of one single-site relaxed backward pass.
   t_grad_whole  wall-clock of one whole-sequence relaxed backward pass.
-              These are near-equal by design, not by accident: both run the
-              SAME full forward over all L residues and the SAME backward
-              through the whole transformer. Only the final leaf differs (one
-              row of logits vs all L rows), which is O(L*K) against a
-              transformer backward of O(L^2*d + L*d^2) -- negligible. The
-              single-site gradient was never chosen to be cheaper; it was
-              chosen to be more faithful to the exact discrete context.
+              These come out near-equal, which is counter-intuitive -- "only
+              one row needs a gradient" sounds like it should be cheaper. It
+              is not, and the reason is the chain rule, not an implementation
+              detail. To obtain dU/d(probs[s]) for a SINGLE site s you still
+              need the gradient at every position of every intermediate layer:
+              self-attention makes layer k+1 at EVERY position depend on layer
+              k at position s, so the (L, d_model) activation gradient must be
+              propagated through all 48 layers regardless. Only the very last
+              step differs -- projecting that gradient onto one row of the
+              (L, K) input instead of all L rows.
+              With ESM3-open (L=566, d_model=1536, 48 layers, K=25), and model
+              parameters frozen so only input gradients are computed:
+                  transformer backward   ~816 GFLOP   (identical both ways)
+                  embedding leaf, all L  ~0.0217 GFLOP
+                  embedding leaf, 1 row  ~0.00004 GFLOP
+              so the most a single-site gradient could ever save is ~0.001% of
+              one pass -- far below run-to-run noise, which is why the
+              measured ratio sits at 0.996 (the whole-sequence pass came out
+              marginally FASTER, i.e. the two are indistinguishable).
+              Memory is likewise the same: the same activations must be stored
+              to differentiate through attention either way.
+              So the single-site gradient was never chosen to be cheaper -- it
+              is not. It was chosen at the 2026-09-19 pivot to be more
+              FAITHFUL: every other site stays at its exact one-hot value
+              rather than being blurred by T_sftm, matching the discrete
+              context the accept/reject uses.
+              Corollary, and the reason this matters for the design question:
+              since a gradient covering ALL sites costs the same as one
+              covering a single site, an N-site move gets its N mutations for
+              free. The cost argument therefore favours multi-site, and the
+              decision rests entirely on acceptance (section 4).
 ================================================================================
 """
 
@@ -536,11 +578,12 @@ def main():
                 mdU = st.mean([r['dU'] for r in rows])
                 miso = st.mean([r['iso'] for r in rows])
                 mcoup = st.mean([r['coup'] for r in rows])
+                tag = "" if mode == "dispersed" else "  [sec-3 control only]"
                 print(f"  {mode:<10} N={N:>3} | dU_joint med={med:>9.1f} "
                       f"[{q1:>8.1f},{q3:>8.1f}] mean={mdU:>9.1f} | dU/site med={med/N:>8.1f}")
                 print(f"  {'':<10} {'':>5} | sum_lin med={lmed:>9.2f}  "
                       f"sum_iso med={imed:>9.1f} mean={miso:>9.1f} | "
-                      f"coupling med={cmed:>9.1f} mean={mcoup:>9.1f}")
+                      f"coupling med={cmed:>9.1f} mean={mcoup:>9.1f}{tag}")
         # The isolated cache ends up covering most or all of the sequence,
         # so it is a complete single-site landscape at this starting point
         # -- already paid for, and the cleanest view of how drift changes
@@ -586,6 +629,7 @@ def main():
     print("floor effect directly -- at low drift the sequence sits at U_am's minimum")
     print("and almost nothing is downhill, which is what made the earlier MUTS=5")
     print("coupling numbers unrepresentative (DEVLOG 2026-10-03).")
+    print("  [dispersed sites only -- clustered is a section-3 control]")
     print("  drift = mutations requested; Hd = distance actually achieved (Hd<=drift,")
     print("  because draws collide and can redraw the existing residue); sites = how many")
     print("  distinct positions were scanned; median dU / % downhill describe the ONE-site")
@@ -602,6 +646,7 @@ def main():
 
     BASE_MODE = "dispersed" if "dispersed" in MODES else MODES[0]
     print(f"=== (2) coupling vs N, by drift ({BASE_MODE} sites, pooled over seeds) ===")
+    print(f"  [site selection: {BASE_MODE} only -- clustered is a section-3 control]")
     print("Cell value = median|coupling| / median|sum_isolated| (see LEGEND).")
     print("Scale-free ratio: median|coupling| / median|sum_isolated|. Raw energies")
     print("are not comparable across drift levels (U_A itself moves by orders of")
@@ -660,6 +705,7 @@ def main():
     # (4) THE DESIGN QUESTION: throughput                                   #
     # ===================================================================== #
     print("=== (4) throughput: accepted mutations per move, vs the single-site baseline ===")
+    print(f"  [site selection: {BASE_MODE} only -- clustered is a section-3 control]")
     print("Acceptance is estimated from the energy term alone,")
     print("    a_N ~ mean_trials min(1, exp(-dU_joint/T)),")
     print("which OMITS the Hastings proposal-ratio term (log a_BA - log a_AB). That")
@@ -732,8 +778,9 @@ def main():
                 cells.append(f"{min(1., math.exp(min(0., -med/T))):>14.3g}")
             print(f"  {N:>4} " + " ".join(cells))
 
-    print("\n--- pooled over all drift levels (kept for continuity; prefer the")
-    print("    per-drift tables above) ---")
+    print(f"\n--- pooled over all drift levels, {BASE_MODE} sites (kept for continuity;")
+    print("    prefer the per-drift tables above -- pooling mixes regimes whose")
+    print("    acceptance differs by many orders of magnitude) ---")
     for T in T_GRID:
         print(f"\n--- T = {T:g} ---")
         base_rows = [r for d, s in START_KEYS
