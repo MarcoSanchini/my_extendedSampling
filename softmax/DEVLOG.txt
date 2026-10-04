@@ -4114,3 +4114,117 @@ with N independent accept/reject decisions. So a_N*N should LOSE to a_1
 except where dU/site is small relative to T -- which section (1b) will show
 is exactly the high-drift, non-floor regime, if it exists at all. If
 multi-site wins anywhere, expect it at high drift and high T, at small N.
+
+--------------------------------------------------------------------------------
+2026-10-04 -- multisite_tradeoff results: cost parity CONFIRMED; the "multi-site wins everywhere" table is a RELAXATION artifact; my pre-registered prediction was right at the floor and wrong in the bulk for the wrong reason
+--------------------------------------------------------------------------------
+User ran it (commit 4f6dc81, zero_polymer/multisite_tradeoff.txt). Three
+results, one of which exposes a design flaw in the script's own reporting.
+
+(A) COST PARITY HOLDS, essentially exactly. This was the premise the whole
+multi-site case rests on and it had never been measured:
+    t_exact      (1 forward)              =  60.02 ms
+    t_grad_site  (1 single-site backward) = 150.36 ms
+    t_grad_whole (1 whole-seq backward)   = 149.77 ms   ratio 0.996
+    modelled move: single-site 360.75 ms, N-site 359.56 ms, ratio 0.997
+So one backward pass covering ALL 566 sites costs the same as one covering a
+single site, exactly as the 2026-09-24 reasoning argued (the forward pass
+runs over every residue regardless of how many are soft). An N-site move
+therefore delivers N mutations for the price of one move, and the design
+question really does reduce to acceptance: a_N*N vs a_1.
+
+(B) THE HEADLINE TABLE IS AN ARTIFACT OF POOLING, and I should have caught
+this before the run rather than after. Section (4) reported multi-site
+"WINS" at every N and every T, gain up to 15.2x. That is not believable on
+its face: at N=20 the reported a_N is 0.45 while the median dU_joint is
++6219, and exp(-6219/107) = 4e-26. Both numbers are correct; the pooling is
+what breaks. Splitting by drift:
+
+  median dU_joint per site (dispersed)       acceptance of the MEDIAN move, T=107
+  N     drift=5   drift=51  drift=150        drift=5    drift=51  drift=150
+  1       215.8     -147.3     -413.3          0.133           1          1
+  2       129.7     -201.3      -16.7         0.0887           1          1
+  3        89.3      -58.2     -262.4         0.0819           1          1
+  5       349.9     -116.0      -26.8        7.9e-08           1          1
+  8       269.3      -54.8       -9.7        1.8e-09           1          1
+  12      299.6      -60.2     -140.6       2.57e-15           1          1
+  20      263.6      -20.3      -76.6       3.99e-22           1          1
+
+Two regimes separated by TWENTY ORDERS OF MAGNITUDE, averaged into one
+number. At drift=5 the pre-registered prediction is exactly right: a_N
+collapses geometrically, 0.133 -> 4e-22 by N=20. At drift=51/150 the median
+move is DOWNHILL at every N, so it is accepted outright and multi-site
+trivially wins.
+
+Why the high-drift starting points are downhill, and why that does not
+support multi-site SAMPLING: mutate(REF, 150) is a random scrambled
+sequence sitting far ABOVE the equilibrium energy (U_A ~ 31700), where 66%
+of single-site gradient-greedy moves are downhill (section 1b). Such a chain
+is RELAXING, not sampling. Of course stacking N downhill moves into one
+accepted move wins there -- that is a statement about quenching speed, not
+about equilibrium sampling, where by construction the chain is not
+systematically descending. The direct evidence that these points are off
+equilibrium: a_1 here reads 0.59-0.77, while the REAL sampler measured
+acceptance 0.309 at T=107 in the Boltzmann validation.
+  Also worth stating because it misleads: a_N in section (4) is the MEAN of
+  per-trial acceptance probabilities, and that distribution is bimodal
+  (downhill trials contribute 1, uphill ones ~0), so it reads as a downhill
+  FRACTION rather than a typical acceptance. The acceptance of the median
+  move, now also reported, is the honest companion number.
+
+So the correct reading: multi-site moves are a large win for RELAXATION /
+minimisation (getting from a random sequence to a good one fast, ~N x
+fewer moves at equal cost per move), and the sampling question is still
+open, because this run never measured an equilibrated starting point.
+
+(C) COUPLING IS PARTLY A DISTANCE EFFECT -- the confound was real.
+Clustered sites (30-residue window, mean separation ~10) vs dispersed (mean
+separation ~190), as median|coupling|/median|sum_isolated|:
+    N        2      3      5      8     12     20
+    disp  0.130  0.248  0.264  0.300  0.366  0.960
+    clus  0.267  0.336  0.517  0.778  0.764  0.774
+    ratio  2.06   1.35   1.96   2.59   2.09   0.81
+Nearby sites couple 1.4-2.6x more strongly at the same N (the N=20 inversion
+is saturation: 20 sites in a 30-residue window is nearly the whole window).
+This substantially confounds the earlier protein_g-vs-zero_polymer
+comparison: on 56 residues, N random sites are unavoidably close together,
+while on 566 they are ~190 apart. "Coupling is weaker on zero_polymer" is
+therefore at least partly "the sites happened to be farther apart", not a
+clean length effect. The 2026-10-02 conclusion needs that qualification.
+  Also: coupling grows with N at every drift level (section 2), reaching
+  0.82-1.52 at N=20, so it is never negligible at large N regardless of
+  where the chain sits.
+
+FIXES MADE TO THE SCRIPT (this run exposed them):
+  1. Section (4) now breaks throughput down BY DRIFT before the pooled
+     table, and prints a prominent warning that drift-based starting points
+     measure relaxation rather than sampling, naming the 0.309-vs-0.67
+     discrepancy as the evidence.
+  2. It also reports the acceptance of the MEDIAN move alongside the mean,
+     since the mean is bimodal and reads as a downhill fraction.
+  3. New STARTS_FILE option: read starting sequences from a file (one per
+     line, length-checked against the reference) instead of mutate(REF,
+     drift). This is how the measurement should be done once a real
+     main_rate.py run has equilibrated -- dump accepted sequences and point
+     STARTS_FILE at them. All downstream tables now key off the starting
+     points actually used (START_KEYS/DRIFT_LABELS) rather than DRIFTS x
+     SEEDS, so a STARTS_FILE run reports correctly; verified by driving
+     every reporting path under both start-specification modes.
+
+NEXT, and the ordering now matters:
+  1. The equilibrium measurement is BLOCKED on the main_rate.py run that has
+     been outstanding for several entries. That run is now the critical
+     path for the multi-site question, not just a loose end: without an
+     equilibrated seq_A there is no way to answer whether a_N*N > a_1 where
+     it counts.
+       - run main_rate.py on zero_polymer at a swept T (dt rescaled by
+         sqrt(T) per the 2026-10-03 correction),
+       - dump equilibrated accepted sequences to a file,
+       - STARTS_FILE=<that file> python -u tests/test_multisite_tradeoff.py
+  2. Meanwhile the relaxation result stands on its own and is worth using:
+     if multi-site moves cut the quench from a random start to a good
+     sequence by ~N x at equal cost per move, that is a legitimate use even
+     if multi-site never helps at equilibrium -- e.g. as a burn-in /
+     initialisation phase before switching to single-site for production
+     sampling. Worth proposing to the supervisor in exactly those terms,
+     since it concedes the sampling question while keeping the speedup.

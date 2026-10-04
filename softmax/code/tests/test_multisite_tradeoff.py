@@ -130,6 +130,15 @@ def _ints(name, default):
 def _floats(name, default):
     return [float(x) for x in os.environ.get(name, default).split(",") if x.strip()]
 
+# Starting sequences read from a file (one per line, whitespace ignored),
+# INSTEAD of mutate(REF, drift). This is how to do the measurement properly:
+# the drift-based starting points below are random mutants, not equilibrated
+# chain states, so they answer a relaxation question rather than a sampling
+# one (see the warning printed above section 4). Once a real main_rate.py run
+# on this reference has equilibrated at the chosen T, dump its accepted
+# sequence(s) to a file and point STARTS_FILE at it.
+STARTS_FILE    = os.environ.get("STARTS_FILE", "").strip()
+
 DRIFTS         = _ints("DRIFTS", "5,51,150")
 SEEDS          = _ints("SEEDS", "0,1")
 N_VALUES       = _ints("NVALS", "1,2,3,5,8,12,20")
@@ -334,98 +343,116 @@ def main():
     results = {}
     starts_meta = {}
 
-    for drift in DRIFTS:
-        for seed in SEEDS:
+    if STARTS_FILE:
+        with open(STARTS_FILE) as fh:
+            seqs = [ln.strip() for ln in fh if ln.strip() and not ln.startswith("#")]
+        for q in seqs:
+            assert len(q) == len(REF_SEQ), (
+                f"{STARTS_FILE}: sequence of length {len(q)} does not match "
+                f"reference {REF_NAME} (L={len(REF_SEQ)})")
+        # label each supplied sequence by its own Hd, so the per-drift tables
+        # below keep working unchanged
+        start_specs = [(sum(1 for a, b in zip(q, REF_SEQ) if a != b), i, q)
+                       for i, q in enumerate(seqs)]
+        print(f"# starting points read from {STARTS_FILE}: {len(seqs)} sequence(s), "
+              f"Hd = {[d for d, _, _ in start_specs]}")
+    else:
+        start_specs = [(d, s_, None) for d in DRIFTS for s_ in SEEDS]
+
+    for drift, seed, supplied in start_specs:
+        if supplied is not None:
+            seq_A = supplied
+        else:
             gen = CustomGenerator(seed=seed, device=device)
             seq_A = mutate(REF_SEQ, drift, gen.get()) if drift > 0 else REF_SEQ
-            hd = sum(1 for a, b in zip(seq_A, REF_SEQ) if a != b)
+        hd = sum(1 for a, b in zip(seq_A, REF_SEQ) if a != b)
 
-            eprot_A = ExtendedProtein(sequence=seq_A, requires_grad=True, device=device)
-            eprot_A.expand()
-            U_A = energy_of(sampler, seq_A, PARS, device)
-            grad_whole = whole_sequence_grad(sampler, eprot_A, PARS)
+        eprot_A = ExtendedProtein(sequence=seq_A, requires_grad=True, device=device)
+        eprot_A.expand()
+        U_A = energy_of(sampler, seq_A, PARS, device)
+        grad_whole = whole_sequence_grad(sampler, eprot_A, PARS)
 
-            starts_meta[(drift, seed)] = dict(hd=hd, U_A=U_A, seq=seq_A)
-            print(f"=== starting point: drift={drift} seed={seed} -> "
-                  f"Hd={hd}/{L} ({100.*hd/L:.1f}%)  U_A={U_A:.2f} ===")
+        starts_meta[(drift, seed)] = dict(hd=hd, U_A=U_A, seq=seq_A)
+        print(f"=== starting point: drift={drift} seed={seed} -> "
+              f"Hd={hd}/{L} ({100.*hd/L:.1f}%)  U_A={U_A:.2f} ===")
 
-            # ---- deterministic gradient-greedy target per site ----
-            tgt_cache = {}
+        # ---- deterministic gradient-greedy target per site ----
+        tgt_cache = {}
 
-            def target_of(s):
-                """Deterministic gradient-greedy target for site s. Cached: each
-                .item() forces a GPU synchronisation, and this is called once per
-                site per trial, so recomputing it would cost real time for a
-                value that cannot change (grad_whole and seq_A are both fixed
-                for this starting point)."""
-                if s not in tgt_cache:
-                    cur = int(eprot_A.logits[s].argmax(dim=-1).item())
-                    comp = sampler._competition_indices(cur)
-                    best = (-grad_whole[s][comp]).argmax(dim=-1)
-                    tgt_cache[s] = (cur, int(comp[best].item()))
-                return tgt_cache[s]
+        def target_of(s):
+            """Deterministic gradient-greedy target for site s. Cached: each
+            .item() forces a GPU synchronisation, and this is called once per
+            site per trial, so recomputing it would cost real time for a
+            value that cannot change (grad_whole and seq_A are both fixed
+            for this starting point)."""
+            if s not in tgt_cache:
+                cur = int(eprot_A.logits[s].argmax(dim=-1).item())
+                comp = sampler._competition_indices(cur)
+                best = (-grad_whole[s][comp]).argmax(dim=-1)
+                tgt_cache[s] = (cur, int(comp[best].item()))
+            return tgt_cache[s]
 
-            # ---- isolated single-site energies, computed once per site ----
-            iso_cache = {}
-            lin_cache = {}
+        # ---- isolated single-site energies, computed once per site ----
+        iso_cache = {}
+        lin_cache = {}
 
-            def isolated(s):
-                if s not in iso_cache:
-                    cur, tgt = target_of(s)
-                    cand = seq_A[:s] + vocab[tgt] + seq_A[s+1:]
-                    iso_cache[s] = energy_of(sampler, cand, PARS, device) - U_A
-                    oh = torch.zeros(len(vocab), device=device)
-                    oh[tgt] += 1.
-                    oh[cur] -= 1.
-                    lin_cache[s] = (grad_whole[s]*oh).sum().item()
-                return iso_cache[s], lin_cache[s]
+        def isolated(s):
+            if s not in iso_cache:
+                cur, tgt = target_of(s)
+                cand = seq_A[:s] + vocab[tgt] + seq_A[s+1:]
+                iso_cache[s] = energy_of(sampler, cand, PARS, device) - U_A
+                oh = torch.zeros(len(vocab), device=device)
+                oh[tgt] += 1.
+                oh[cur] -= 1.
+                lin_cache[s] = (grad_whole[s]*oh).sum().item()
+            return iso_cache[s], lin_cache[s]
 
-            for mode in MODES:
-                for N in N_VALUES:
-                    rows = []
-                    for trial in range(TRIALS):
-                        rng = torch.Generator().manual_seed(
-                            1000003*drift + 10007*seed + 1009*N + 13*trial
-                            + (7 if mode == "clustered" else 0))
-                        sites = draw_sites(L, N, mode, rng, CLUSTER_WINDOW)
+        for mode in MODES:
+            for N in N_VALUES:
+                rows = []
+                for trial in range(TRIALS):
+                    rng = torch.Generator().manual_seed(
+                        1000003*drift + 10007*seed + 1009*N + 13*trial
+                        + (7 if mode == "clustered" else 0))
+                    sites = draw_sites(L, N, mode, rng, CLUSTER_WINDOW)
 
-                        sum_lin = sum_iso = 0.
-                        partial = list(seq_A)
-                        for s in sites:
-                            iso, lin = isolated(s)
-                            sum_iso += iso
-                            sum_lin += lin
-                            partial[s] = vocab[target_of(s)[1]]
+                    sum_lin = sum_iso = 0.
+                    partial = list(seq_A)
+                    for s in sites:
+                        iso, lin = isolated(s)
+                        sum_iso += iso
+                        sum_lin += lin
+                        partial[s] = vocab[target_of(s)[1]]
 
-                        U_joint = energy_of(sampler, "".join(partial), PARS, device)
-                        dU = U_joint - U_A
-                        rows.append(dict(
-                            sites=sites, dU=dU, iso=sum_iso, lin=sum_lin,
-                            nonlin=sum_iso - sum_lin, coup=dU - sum_iso,
-                            spread=site_spread(sites)))
-                    results[(drift, seed, mode, N)] = rows
-                    med, q1, q3 = quartiles([r['dU'] for r in rows])
-                    cmed, _, _ = quartiles([r['coup'] for r in rows])
-                    print(f"  {mode:<10} N={N:>3}  dU_joint med={med:>10.1f} "
-                          f"[{q1:>9.1f},{q3:>9.1f}]   coupling med={cmed:>10.1f}   "
-                          f"dU/site={med/N:>9.1f}")
-            # The isolated cache ends up covering most or all of the sequence,
-            # so it is a complete single-site landscape at this starting point
-            # -- already paid for, and the cleanest view of how drift changes
-            # the energy surface the proposal sees.
-            iso_vals = list(iso_cache.values())
-            med, q1, q3 = quartiles(iso_vals)
-            n_dn = sum(1 for v in iso_vals if v < 0)
-            print(f"  isolated single-site dU over {len(iso_vals)} distinct sites "
-                  f"({100.*len(iso_vals)/L:.0f}% of the sequence):")
-            print(f"    median={med:>10.1f}  IQR=[{q1:>9.1f},{q3:>9.1f}]  "
-                  f"min={min(iso_vals):>10.1f}  max={max(iso_vals):>10.1f}")
-            print(f"    downhill (dU<0): {n_dn}/{len(iso_vals)} = {100.*n_dn/len(iso_vals):.0f}%"
-                  f"   mean={st.mean(iso_vals):>+10.1f}")
-            starts_meta[(drift, seed)]['iso_median'] = med
-            starts_meta[(drift, seed)]['iso_frac_down'] = n_dn/len(iso_vals)
-            starts_meta[(drift, seed)]['iso_n'] = len(iso_vals)
-            print()
+                    U_joint = energy_of(sampler, "".join(partial), PARS, device)
+                    dU = U_joint - U_A
+                    rows.append(dict(
+                        sites=sites, dU=dU, iso=sum_iso, lin=sum_lin,
+                        nonlin=sum_iso - sum_lin, coup=dU - sum_iso,
+                        spread=site_spread(sites)))
+                results[(drift, seed, mode, N)] = rows
+                med, q1, q3 = quartiles([r['dU'] for r in rows])
+                cmed, _, _ = quartiles([r['coup'] for r in rows])
+                print(f"  {mode:<10} N={N:>3}  dU_joint med={med:>10.1f} "
+                      f"[{q1:>9.1f},{q3:>9.1f}]   coupling med={cmed:>10.1f}   "
+                      f"dU/site={med/N:>9.1f}")
+        # The isolated cache ends up covering most or all of the sequence,
+        # so it is a complete single-site landscape at this starting point
+        # -- already paid for, and the cleanest view of how drift changes
+        # the energy surface the proposal sees.
+        iso_vals = list(iso_cache.values())
+        med, q1, q3 = quartiles(iso_vals)
+        n_dn = sum(1 for v in iso_vals if v < 0)
+        print(f"  isolated single-site dU over {len(iso_vals)} distinct sites "
+              f"({100.*len(iso_vals)/L:.0f}% of the sequence):")
+        print(f"    median={med:>10.1f}  IQR=[{q1:>9.1f},{q3:>9.1f}]  "
+              f"min={min(iso_vals):>10.1f}  max={max(iso_vals):>10.1f}")
+        print(f"    downhill (dU<0): {n_dn}/{len(iso_vals)} = {100.*n_dn/len(iso_vals):.0f}%"
+              f"   mean={st.mean(iso_vals):>+10.1f}")
+        starts_meta[(drift, seed)]['iso_median'] = med
+        starts_meta[(drift, seed)]['iso_frac_down'] = n_dn/len(iso_vals)
+        starts_meta[(drift, seed)]['iso_n'] = len(iso_vals)
+        print()
 
     # ===================================================================== #
     # (1) N=1 consistency check                                             #
@@ -443,6 +470,11 @@ def main():
     # ===================================================================== #
     # (2) does the starting point change the coupling picture?              #
     # ===================================================================== #
+    # The starting points may come from STARTS_FILE rather than DRIFTS x SEEDS,
+    # so every table below keys off what was actually run.
+    START_KEYS = [(d, s_) for d, s_, _ in start_specs]
+    DRIFT_LABELS = sorted({d for d, _ in START_KEYS})
+
     print("=== (1b) the single-site energy landscape, by starting point ===")
     print("This is the baseline every multi-site move competes against: what ONE")
     print("mutation costs, and how often one is downhill at all. It also shows the")
@@ -451,13 +483,12 @@ def main():
     print("coupling numbers unrepresentative (DEVLOG 2026-10-03).")
     print(f"\n{'drift':>6} {'seed':>5} {'Hd':>6} {'U_A':>12} {'median dU':>11} "
           f"{'% downhill':>11} {'sites':>7}")
-    for d in DRIFTS:
-        for sd in SEEDS:
-            m = starts_meta.get((d, sd))
-            if not m or 'iso_median' not in m:
-                continue
-            print(f"{d:>6} {sd:>5} {m['hd']:>6} {m['U_A']:>12.1f} "
-                  f"{m['iso_median']:>11.1f} {100*m['iso_frac_down']:>10.0f}% {m['iso_n']:>7}")
+    for d, sd in START_KEYS:
+        m = starts_meta.get((d, sd))
+        if not m or 'iso_median' not in m:
+            continue
+        print(f"{d:>6} {sd:>5} {m['hd']:>6} {m['U_A']:>12.1f} "
+              f"{m['iso_median']:>11.1f} {100*m['iso_frac_down']:>10.0f}% {m['iso_n']:>7}")
     print()
 
     BASE_MODE = "dispersed" if "dispersed" in MODES else MODES[0]
@@ -465,12 +496,13 @@ def main():
     print("Scale-free ratio: median|coupling| / median|sum_isolated|. Raw energies")
     print("are not comparable across drift levels (U_A itself moves by orders of")
     print("magnitude), so the ratio is what carries meaning here.")
-    hdr = f"{'N':>4} " + " ".join(f"{'drift='+str(d):>14}" for d in DRIFTS)
+    hdr = f"{'N':>4} " + " ".join(f"{'drift='+str(d):>14}" for d in DRIFT_LABELS)
     print(hdr); print("-"*len(hdr))
     for N in N_VALUES:
         cells = []
-        for d in DRIFTS:
-            rows = [r for s in SEEDS for r in results.get((d, s, BASE_MODE, N), [])]
+        for d in DRIFT_LABELS:
+            rows = [r for dd, s in START_KEYS if dd == d
+                    for r in results.get((d, s, BASE_MODE, N), [])]
             if not rows:
                 cells.append(f"{'--':>14}"); continue
             mc = st.median([abs(r['coup']) for r in rows])
@@ -496,7 +528,7 @@ def main():
                 continue
             out = {}
             for mode in ("dispersed", "clustered"):
-                rows = [r for d in DRIFTS for s in SEEDS
+                rows = [r for d, s in START_KEYS
                         for r in results.get((d, s, mode, N), [])]
                 if not rows:
                     out[mode] = None; continue
@@ -522,9 +554,66 @@ def main():
     print("direction -- it is not a substitute for running the real sampler.")
     print("Multi-site is worth building only where a_N*N exceeds a_1, shown as 'gain'.")
 
+    def acc(rows, T):
+        return st.mean(min(1., math.exp(min(0., -r['dU']/T))) for r in rows)
+
+    print("\n*** READ THIS BEFORE THE TABLES ***")
+    print("These starting points come from mutate(REF, drift), which is NOT an")
+    print("equilibrated chain. A high-drift random sequence sits far ABOVE the")
+    print("equilibrium energy, so most gradient-greedy moves are downhill and get")
+    print("accepted -- that measures RELAXATION (how fast you descend from a bad")
+    print("starting point), not SAMPLING. At equilibrium the chain is by definition")
+    print("not systematically descending, and acceptance is far lower: the real")
+    print("sampler measured 0.309 at T=107 in the Boltzmann validation, against the")
+    print("a_1 near 0.67 reported below. So treat a drift level whose single-site dU")
+    print("is predominantly NEGATIVE as a relaxation measurement, and do not read its")
+    print("'WINS' as an argument for multi-site SAMPLING.")
+
+    print("\n--- per-drift breakdown (the pooled table below hides a 20-orders-of-")
+    print("    magnitude split between drift levels, so this one comes first) ---")
+    for T in T_GRID:
+        print(f"\n  T = {T:g}")
+        print(f"  {'N':>4} " + " ".join(f"{'drift='+str(d):>26}" for d in DRIFT_LABELS))
+        print(f"  {'':>4} " + " ".join(f"{'a_N      a_N*N     gain':>26}" for d in DRIFT_LABELS))
+        base = {}
+        for d in DRIFT_LABELS:
+            br = [r for dd, s_ in START_KEYS if dd == d
+                  for r in results.get((d, s_, BASE_MODE, 1), [])]
+            base[d] = acc(br, T) if br else float('nan')
+        for N in N_VALUES:
+            cells = []
+            for d in DRIFT_LABELS:
+                rws = [r for dd, s_ in START_KEYS if dd == d
+                       for r in results.get((d, s_, BASE_MODE, N), [])]
+                if not rws:
+                    cells.append(f"{'--':>26}"); continue
+                aN = acc(rws, T); g = aN*N/base[d] if base[d] else float('nan')
+                cells.append(f"{aN:>8.3g} {aN*N:>8.3g} {g:>8.3g}")
+            print(f"  {N:>4} " + " ".join(cells))
+        print(f"  {'':>4} " + " ".join(f"{'a_1='+format(base[d],'.3g'):>26}" for d in DRIFT_LABELS))
+
+        # the median move, which is immune to the bimodality that makes the mean
+        # of acceptance probabilities read like a downhill fraction
+        print(f"\n  acceptance of the MEDIAN move (exp(-median dU/T)) -- the mean above is")
+        print(f"  bimodal (downhill trials contribute 1, uphill ~0) so it reads as a")
+        print(f"  downhill fraction rather than a typical acceptance:")
+        print(f"  {'N':>4} " + " ".join(f"{'drift='+str(d):>14}" for d in DRIFT_LABELS))
+        for N in N_VALUES:
+            cells = []
+            for d in DRIFT_LABELS:
+                rws = [r for dd, s_ in START_KEYS if dd == d
+                       for r in results.get((d, s_, BASE_MODE, N), [])]
+                if not rws:
+                    cells.append(f"{'--':>14}"); continue
+                med = st.median([r['dU'] for r in rws])
+                cells.append(f"{min(1., math.exp(min(0., -med/T))):>14.3g}")
+            print(f"  {N:>4} " + " ".join(cells))
+
+    print("\n--- pooled over all drift levels (kept for continuity; prefer the")
+    print("    per-drift tables above) ---")
     for T in T_GRID:
         print(f"\n--- T = {T:g} ---")
-        base_rows = [r for d in DRIFTS for s in SEEDS
+        base_rows = [r for d, s in START_KEYS
                      for r in results.get((d, s, BASE_MODE, 1), [])]
         if not base_rows:
             print("  no N=1 cells in this run, so there is no single-site baseline to")
@@ -534,7 +623,7 @@ def main():
         print(f"  single-site baseline a_1 = {a1:.4g}  (from the N=1 cells of this run)")
         print(f"  {'N':>4} {'a_N':>12} {'a_N*N':>12} {'gain vs a_1':>13} {'verdict':>12}")
         for N in N_VALUES:
-            rows = [r for d in DRIFTS for s in SEEDS
+            rows = [r for d, s in START_KEYS
                     for r in results.get((d, s, BASE_MODE, N), [])]
             if not rows:
                 continue
