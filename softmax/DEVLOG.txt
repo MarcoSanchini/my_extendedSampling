@@ -3937,3 +3937,81 @@ NEXT:
      so the "coupling is weaker on zero_polymer" conclusion deserves a
      re-check in the bulk before it is relied on for the multi-site
      question.
+
+--------------------------------------------------------------------------------
+2026-10-04 -- the 1/n bias check PASSES: KL and total variation both decay on schedule. Boltzmann validation closed.
+--------------------------------------------------------------------------------
+User ran the queued MOVES=40000 job and pushed it (commit 2840781,
+zero_polymer/validate_boltzmann_results_dt460_M40000.txt). This was the
+last open item on validation.
+
+The prediction made before the run (previous entry, and informedness.tex
+eq. 18) was KL ~ 0.016 at n=32000 post-burn-in samples, versus 0.0316 at
+n=16000. Observed: 0.0169. The check also covers a second, independent
+functional of the same histogram -- total variation, which must decay as
+1/sqrt(n) rather than 1/n:
+
+                       n=16000   n=32000   ratio   predicted
+  KL(emp || exact)      0.0316    0.0169    1.87   2.00  (1/n)
+  total variation       0.0787    0.0569    1.38   1.41  (1/sqrt n)
+  tau_auto (inferred)     25.0      26.8     --    run-length independent
+  acceptance rate       0.3060    0.3092     --    unchanged
+
+Both decay laws hold, and they are independent: a biased sampler would
+have each quantity converge to its own nonzero constant rather than keep
+falling on schedule, so matching BOTH is considerably stronger than
+matching either alone. The inferred autocorrelation time is a property of
+the chain and must not depend on run length -- it does not (25.0 -> 26.8,
+and acceptance is flat at 0.309). Distinct states visited rose 224 -> 252
+of 400, the unvisited remainder being the low-probability tail (anything
+with p < 1/32000 ~ 3e-5 is likely unseen at this sample size).
+
+Conclusion: the residual discrepancy is finite-sample noise, behaving
+quantitatively as finite-sample noise must. No evidence of bias. Stated
+carefully: no finite experiment establishes exact unbiasedness; what is
+established is that the error decays on the schedule an unbiased sampler
+requires, in two independent functionals, with a stable autocorrelation
+time.
+
+ONE NUMBER WENT THE OTHER WAY, and it is worth recording why that is not
+a regression. Mean U moved AWAY from the exact value: deviation +0.44 at
+n=16000, +1.70 at n=32000 (exact +185.1973; empirical +185.6349 then
++186.9009). Mean U is a single scalar statistic carrying its own Monte
+Carlo error, not a convergence metric. With ESS~1200 and sd_p(U) of order
+150-200, its standard error is ~5, so both deviations sit well inside one
+SE. The implication runs backwards from how the 2026-10-03 entry
+presented it: the "0.24% agreement" reported there was partly luck and
+should NOT have been offered as a precision claim. KL and total
+variation, which aggregate over the whole distribution rather than
+collapsing it to one number, are the trustworthy diagnostics. Corrected
+in informedness.tex rather than left to stand.
+
+docs/informedness.tex updated accordingly: the falsifiable-check
+paragraph now reports the outcome with the two-law table (Table 4), the
+abstract notes the confirmation, and caveat 5 is marked resolved. The
+remaining validation caveat is sharper and unavoidable: this is a TWO-SITE
+subproblem. The full 566-site chain has never been validated against
+anything exact and cannot be, since its state space is not enumerable --
+the 400-state restriction is what makes an exact comparison possible at
+all. Rebuilt, 10 pages, no warnings.
+
+Validation status: CLOSED for the restricted problem. Every safety check
+in the suite passes at L=566 -- proposal math, energy numerics, floor,
+gradient-method equivalence, gradient ranking quality, descent direction,
+and accept/reject against an exactly-enumerated Boltzmann distribution
+with the error now shown to decay correctly.
+
+NEXT (unchanged in substance from the previous entry, minus the resolved
+item):
+  1. A real main_rate.py run on zero_polymer -- still nothing has done
+     this. T must come from a proper sweep, not the inherited T=2.0 and
+     not the 2-site window either (see the caveat above): the equivalent
+     of this project's original protein G temperature sweep now needs
+     doing on zero_polymer, and dt must be rescaled with sqrt(T) at every
+     point of it per the 2026-10-03 correction.
+  2. Re-measure the informedness curve in the BULK (MUTS~51) rather than
+     at the floor, since every p_match number currently on record was
+     measured at 0.9% drift. The dt working points in informedness.tex
+     Table 2 inherit that caveat.
+  3. Optional, still open: re-run the N-sweep coupling test at MUTS=51.
+     Both coupling runs remain floor measurements.
