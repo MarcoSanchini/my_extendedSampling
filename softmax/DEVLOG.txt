@@ -4228,3 +4228,81 @@ NEXT, and the ordering now matters:
      initialisation phase before switching to single-site for production
      sampling. Worth proposing to the supervisor in exactly those terms,
      since it concedes the sampling question while keeping the speedup.
+
+--------------------------------------------------------------------------------
+2026-10-04 -- review feedback on multisite_tradeoff: symbol legend now printed INTO results files (new standing convention), decomposition made self-consistent, timing explained
+--------------------------------------------------------------------------------
+User reviewed the run and raised several points, one of which is a real
+reporting bug and one of which is a standing process request.
+
+NEW PROJECT CONVENTION, user's request, to apply to every test from here on:
+"put symbol explanation in results file, so that when i review i can be
+faster by not going back to the script, since i often forget details of one
+particular test." Implemented in test_multisite_tradeoff.py: an 89-line
+LEGEND block defining every symbol is printed before any results, and each
+table header additionally carries a 2-4 line inline reminder so a reader
+scanning the middle of a long file does not have to scroll back. Other test
+scripts are NOT yet retrofitted -- offered, since a legend only appears in
+NEW runs and retrofitting pays off only when each test is next run.
+
+(1) REAL BUG IN THE REPORTING: medians were presented as if additive.
+The per-cell line printed only med(dU_joint) and med(coupling), e.g.
+    dispersed N=2  dU_joint med=139.4 [-54.7,282.0]  coupling med=-33.1
+from which the reader cannot recover sum_isolated, and worse, cannot
+reconcile the three, because coupling = dU_joint - sum_isolated holds
+TRIAL BY TRIAL but NOT between medians: the median is not a linear operator,
+so the trial sitting in the middle of the dU_joint ordering is generally not
+the one in the middle of the coupling ordering. The three medians come from
+three different trials. Demonstrated on a constructed 10-trial set with the
+real cells' shape: med(joint)-med(iso) = -35.5 while med(coupling) = -32.0,
+whereas mean(joint)-mean(iso) = mean(coupling) = -41.7 exactly.
+Fixed: the per-cell output is now two lines carrying sum_lin, sum_iso,
+dU_joint and coupling, each with BOTH median and mean, and the legend states
+in a starred block that medians do not add and that the mean columns are the
+ones that reconcile. Means were not simply substituted for medians because
+these distributions are heavy-tailed and sign-flipping, which a mean alone
+describes badly -- both are now given.
+
+(2) "dU_joint is still more informative" -- agreed, and the output now
+reflects it. dU_joint (and dU/site) is the operative quantity: it is what an
+accept/reject actually uses and what sets acceptance. The coupling ratio is a
+diagnostic of SEPARABILITY, which answers "would a multi-site design be
+predictable from single-site measurements", a different and secondary
+question. dU_joint and dU/site now lead the per-cell line.
+
+(3) "how can a single-site backward take the same time as a whole pass? does
+it use more memory?" -- near-equal by construction, and no, memory is
+essentially the same too. Both _grad_pass_site and whole_sequence_grad build
+a full (L,K) probs tensor and run the SAME predict_attention forward over all
+L residues; the backward then traverses the SAME transformer graph, because
+the attention map depends on every position, so d(U_am)/d(probs) is a full
+(L,K) object either way. The ONLY difference is where the chain terminates:
+_grad_pass_site stops at one row's softmax, whole_sequence_grad continues
+into all L rows. That final step is O(L*K) against a transformer backward of
+O(L^2*d + L*d^2) -- negligible, hence the measured 0.996 ratio. Activation
+memory is likewise the same, since the same intermediates must be stored to
+differentiate through attention regardless of how many input rows carry grad.
+Worth restating because it corrects a natural assumption: the single-site
+gradient was NEVER chosen to be cheaper (it is not), it was chosen at the
+2026-09-19 pivot to be more FAITHFUL -- every other site stays at its exact
+one-hot value instead of being blurred by T_sftm, matching the discrete
+context used in the accept/reject. This is now in the legend's TIMING entry.
+
+(4) Symbols the user flagged as unclear, now all in the legend: drift vs Hd
+(drift is the number of random draws requested; Hd is the distance actually
+achieved, Hd <= drift because draws collide and can redraw the existing
+residue -- drift=150 gave Hd~125); "sites" (count of DISTINCT positions
+scanned, a coverage figure, not a parameter); spread / |c|/|iso| / ratio in
+the clustered-vs-dispersed table; and a_N / a_1 / a_N*N / gain in section 4.
+
+(5) User's own reading of the result -- "near the ref changing more sites
+gets dU higher but further away it's ok and relaxes quicker as we may
+expect" -- matches the per-drift split exactly and is the correct summary.
+
+NOTE ON RE-RUNNING: every RNG in this script is seeded deterministically
+(starting points from CustomGenerator(seed), trials from an explicit
+manual_seed over drift/seed/N/trial/mode), so a re-run reproduces the SAME
+dU values. What changes is presentation: the legend, sum_iso and the mean
+columns, the per-drift throughput breakdown and the median-move acceptance
+table. The old file can therefore be diffed against the new one as a
+consistency check -- any change in a dU number would itself be a finding.
