@@ -13,7 +13,7 @@ reasoning about them. Sections:
       self-contained and the code being discussed can be read without opening
       the repository.
 
-  (1) ATTENTION-MAP LOCALITY (answers Q1). Builds seq_B = seq_A with exactly
+  (1) ATTENTION-MAP LOCALITY (answers Q1), with heatmaps. Builds seq_B = seq_A with exactly
       ONE site s changed, computes both attention maps, and splits the
       difference into
          LOCAL  entries in row s or column s   (2L-1 of them)
@@ -64,26 +64,12 @@ import custom_esm.utils.constants.esm3 as C
 
 from references import get_reference
 
-# Plotting lives in tests/locality_plots.py, deliberately free of torch so the
-# figures can be exercised on synthetic arrays without a GPU. If matplotlib or
-# pandas are missing the numeric sections still run and only the figures are
-# skipped -- the diagnostic must not become unrunnable because of a plotting
-# dependency.
-try:
-    import locality_plots as LP
-    _PLOTS = True
-    _PLOT_ERR = ""
-except Exception as exc:                      # pragma: no cover
-    _PLOTS = False
-    _PLOT_ERR = f"{type(exc).__name__}: {exc}"
-
 REF_NAME, REF_SEQ = get_reference()
 SEED = int(os.environ.get("SEED", 0))
 N_INIT_MUTS = int(os.environ.get("MUTS", 5))
 PROBE_SITES = [int(x) for x in os.environ.get("SITES", "").split(",") if x.strip()]
-# Where figures and CSVs go. Default sits next to this reference's other
-# results. PNGs are gitignored project-wide (see .gitignore: regenerable, and
-# they bloat the repo), so these stay local unless deliberately un-ignored.
+# Heatmaps are written here. PNGs are gitignored project-wide, so they stay
+# local. NO_PLOTS=1 skips them.
 PLOT_DIR = os.environ.get("PLOT_DIR", f"{REF_NAME}/attention_locality_plots")
 NO_PLOTS = os.environ.get("NO_PLOTS", "") not in ("", "0", "false", "False")
 
@@ -164,34 +150,71 @@ def grad_k_sites(sampler, eprot, sites, pars, backward=True):
     return None, U.item()
 
 
-def _emit_outputs(site_records, profile_frames, plot_payload, want_plots):
-    """Figures and CSVs. Wrapped so a plotting failure degrades to a warning
-    rather than discarding the model run that produced the numbers."""
-    if not want_plots:
-        return
-    try:
-        import pandas as pd
-        os.makedirs(PLOT_DIR, exist_ok=True)
-        summary = pd.DataFrame(site_records)
-        profiles = [pd.DataFrame(p) for p in profile_frames]
-        c1, c2 = LP.write_tables(summary, profiles, PLOT_DIR)
-        made = [c1, c2]
-        for s_, am_a, am_b, dp, lab in plot_payload:
-            made.append(LP.attention_panels(
-                am_a, am_b, dp, s_, os.path.join(PLOT_DIR, f"panels_site{s_}.png"),
-                ref_label=f"reference {REF_NAME}", title_extra=f"  [{lab}]"))
-        for p in profiles:
-            s_ = int(p["site"].iloc[0])
-            made.append(LP.decay_profile(p, s_, os.path.join(PLOT_DIR, f"decay_site{s_}.png")))
-        made.append(LP.local_vs_distal_bar(summary, os.path.join(PLOT_DIR, "distal_share.png")))
-        print(f"\n  wrote {len(made)} files to {PLOT_DIR}/ :")
-        for p in made:
-            print(f"    {os.path.getsize(p)/1024:9.1f} KB  {os.path.basename(p)}")
-        print("  (PNGs are gitignored project-wide -- regenerable, and they would bloat")
-        print("   the repo. The two CSVs carry the same numbers in machine-readable form.)")
-    except Exception as exc:
-        print(f"\n  [figure/CSV generation FAILED: {type(exc).__name__}: {exc}]")
-        print("  The numbers above are unaffected.")
+def save_heatmaps(am_before, am_after, dpair, site, out_dir, label=""):
+    """Three heatmaps for one probe site: am before, am after, and |difference|.
+
+    Imported lazily so that a missing matplotlib cannot make the numeric part
+    of this diagnostic unrunnable.
+
+    The one non-obvious choice is the LOG colour scale on the difference. On a
+    linear scale the mutated site's row and column saturate and everything
+    else renders as flat black -- which is exactly the question being asked,
+    so a linear difference panel would beg it. LogNorm needs strictly positive
+    bounds and the difference contains exact zeros wherever the two maps agree
+    bit-for-bit, hence the clip to a low percentile of the positive entries.
+    """
+    import numpy as np
+    import matplotlib
+    matplotlib.use("Agg")                      # headless: no display on a GPU box
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import LogNorm, TwoSlopeNorm
+
+    a, b = am_before, am_after
+    diff = np.abs(b - a)
+    L = a.shape[0]
+    os.makedirs(out_dir, exist_ok=True)
+
+    pos = diff[diff > 0]
+    vmin = float(np.percentile(pos, 50)) if pos.size else 1e-12
+    vmax = float(diff.max()) if diff.max() > vmin else vmin*10
+
+    fig, ax = plt.subplots(2, 2, figsize=(13, 11))
+    for k, (M, ttl) in enumerate(((a, "am BEFORE (seq_A)"),
+                                  (b, f"am AFTER (site {site} -> gradient's pick)"))):
+        lo = float(np.percentile(M[M > 0], 0.5)) if (M > 0).any() else 1e-12
+        im = ax[0, k].imshow(np.clip(M, lo, None), norm=LogNorm(lo, M.max()),
+                             cmap="viridis", interpolation="nearest")
+        ax[0, k].set_title(f"{ttl}\nlog colour scale")
+        fig.colorbar(im, ax=ax[0, k], fraction=0.046)
+
+    im = ax[1, 0].imshow(np.clip(diff, vmin, None), norm=LogNorm(vmin, vmax),
+                         cmap="magma", interpolation="nearest")
+    ax[1, 0].set_title("|delta am|  (LOG scale: linear would show only the\n"
+                       f"row/col of site {site} and hide everything else)")
+    fig.colorbar(im, ax=ax[1, 0], fraction=0.046)
+
+    full = dpair + dpair.T                     # symmetrise the upper triangle
+    nz = np.abs(full[full != 0])
+    lim = float(np.percentile(nz, 99)) if nz.size else 1.0
+    im = ax[1, 1].imshow(full, cmap="RdBu_r",
+                         norm=TwoSlopeNorm(vmin=-lim, vcenter=0., vmax=lim),
+                         interpolation="nearest")
+    ax[1, 1].set_title("per-pair change in energy contribution\n"
+                       "(log am - log ref)^2, signed; U_am is the sum of this")
+    fig.colorbar(im, ax=ax[1, 1], fraction=0.046)
+
+    for a_ in ax.ravel():                      # mark the mutated site
+        a_.axhline(site, color="lime", linewidth=0.6, alpha=0.9)
+        a_.axvline(site, color="lime", linewidth=0.6, alpha=0.9)
+        a_.set_xlabel("residue j"); a_.set_ylabel("residue i")
+
+    fig.suptitle(f"One substitution at site {site}{label}: effect on the "
+                 f"attention map   (L={L})", fontsize=12)
+    fig.tight_layout()
+    out = os.path.join(out_dir, f"heatmaps_site{site}.png")
+    fig.savefig(out, dpi=120)
+    plt.close(fig)
+    return out
 
 
 def main():
@@ -251,12 +274,9 @@ def main():
     print("delta am = am(seq_B) - am(seq_A), split into LOCAL (row/col s) and")
     print("DISTAL (everything else). See LEGEND.")
 
-    want_plots = _PLOTS and not NO_PLOTS
     if NO_PLOTS:
-        print("  [figures disabled via NO_PLOTS]")
-    elif not _PLOTS:
-        print(f"  [figures skipped -- plotting import failed: {_PLOT_ERR}]")
-    site_records, profile_frames, plot_payload = [], [], []
+        print("  [heatmaps disabled via NO_PLOTS]")
+    made_plots = []
 
     with torch.no_grad():
         am_A = sampler.model.predict_attention(sequence_probs=eprot_A.get_probs())
@@ -312,34 +332,28 @@ def main():
         jj = torch.arange(L, device=D.device).view(1, -1).expand(L, L)
         dist = torch.minimum((ii - s).abs(), (jj - s).abs())
         bins = [(0, 0), (1, 2), (3, 5), (6, 10), (11, 20), (21, 50), (51, 100), (101, 10**6)]
-        prof, prof_rows = [], []
+        prof = []
         for lo, hi in bins:
             m = (dist >= lo) & (dist <= hi)
             if m.any():
-                mv = D[m].mean().item()
-                prof.append(f"{lo}-{hi if hi < 10**6 else 'inf'}:{mv:.2e}")
-                prof_rows.append(dict(site=s, distance=lo, distance_hi=hi,
-                                      mean_abs_delta=mv, n_entries=int(m.sum().item())))
+                prof.append(f"{lo}-{hi if hi < 10**6 else 'inf'}:{D[m].mean().item():.2e}")
         print(f"    mean |delta am| by distance from s:  " + "  ".join(prof))
 
-        site_records.append(dict(
-            site=s, from_aa=seq_A[s], to_aa=vocab[tgt],
-            n_local=n_local, n_distal=n_distal,
-            abs_total=tot, abs_local=loc, abs_distal=dis,
-            distal_share_abs=(dis/tot if tot else float('nan')),
-            mean_abs_local=loc/n_local, mean_abs_distal=dis/n_distal,
-            max_abs_distal=D[~mask_local].max().item(),
-            dU_total=dU_total, dU_local=dU_local, dU_distal=dU_distal,
-            distal_share_dU=(dU_distal/dU_total if dU_total else float('nan'))))
-        profile_frames.append(prof_rows)
-        if want_plots:
-            plot_payload.append((s, am_A.float().cpu().numpy(),
-                                 am_B.float().cpu().numpy(),
-                                 dpair.float().cpu().numpy(),
-                                 f"{seq_A[s]}->{vocab[tgt]}"))
+        if not NO_PLOTS:
+            try:
+                made_plots.append(save_heatmaps(
+                    am_A.float().cpu().numpy(), am_B.float().cpu().numpy(),
+                    dpair.float().cpu().numpy(), s, PLOT_DIR,
+                    label=f"  ({seq_A[s]} -> {vocab[tgt]})"))
+            except Exception as exc:
+                print(f"    [heatmap failed: {type(exc).__name__}: {exc} "
+                      f"-- numbers above are unaffected]")
 
-    if site_records:
-        _emit_outputs(site_records, profile_frames, plot_payload, want_plots)
+    if made_plots:
+        print(f"\n  wrote {len(made_plots)} heatmap(s) to {PLOT_DIR}/ "
+              f"(PNGs are gitignored, so they stay local):")
+        for p in made_plots:
+            print(f"    {os.path.getsize(p)/1024:9.1f} KB  {os.path.basename(p)}")
 
     print("\n  How to read (1): if the attention map changed only at the mutated site,")
     print("  DISTAL would be ~0 in every column above. The DISTAL share of dU_am is")

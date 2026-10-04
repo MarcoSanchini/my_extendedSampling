@@ -4390,64 +4390,33 @@ for the same underlying reason -- self-attention is global.
   would break the exactness the proposal relies on.
 
 --------------------------------------------------------------------------------
-2026-10-04 -- test_attention_locality.py gains figures (tests/locality_plots.py): am before/after, |delta am|, per-pair energy change, decay profile; plus CSVs
+2026-10-04 -- heatmaps added inline to test_attention_locality.py
 --------------------------------------------------------------------------------
-User asked for visuals on the locality test: U_am heatmaps before and after,
-a heatmap of the difference, saved as PNGs.
+User asked for heatmaps in the locality test: am before and after the
+gradient's substitution, and the difference, saved as PNGs.
 
-Added tests/locality_plots.py, kept FREE of torch and of the ESM3 model so
-the plotting can be exercised on synthetic arrays without a GPU -- a figure
-bug would otherwise only surface after a model run had already been paid
-for. It was exercised that way before committing (matplotlib 3.11 / pandas
-3.0 installed in the sandbox for the purpose), on synthetic maps built to
-carry the real ones' character: values ~1/L, a diagonal band, log-normal
-spread, the measured 5e-5..0.11 range, and ~6400 EXACT ZEROS in the
-difference to exercise the LogNorm guard.
+First attempt over-built it -- a separate tests/locality_plots.py with four
+figure types, pandas CSV emitters and a degradation wrapper. User's
+correction: "i simply meant put snippet for heat maps in
+/test_attention_locality.py so that i can run it locally". Module deleted,
+replaced by one ~60-line save_heatmaps() inside the test itself.
 
-Per probe site, a four-panel figure:
-    am BEFORE / am AFTER   near-identical by eye, which is itself the point
-                           and the reason the difference panel exists.
-    |delta am|             LOG colour scale. This is a deliberate choice, not
-                           a default: on a linear scale the mutated site's
-                           row/column saturates and everything else renders as
-                           uniform black, which would hide precisely the thing
-                           under test. Stated in the panel title so a reader
-                           never has to guess whether a feature is real or a
-                           scaling artifact.
-    per-pair dU_am         signed diverging scale, robust (99th-percentile)
-                           limits. THE panel that matters: U_am is the sum
-                           over these, so it shows where the energy
-                           consequence of one mutation actually comes from.
-Green crosshairs mark the mutated site on all four.
-Plus: a decay profile (mean |delta am| vs sequence distance from s, log y --
-strict locality would collapse to the numerical floor past distance 0), and
-a cross-site bar chart of the DISTAL share of both |delta am| and dU_am.
+What it draws, per probe site, into one PNG: am BEFORE, am AFTER, |delta am|,
+and the signed per-pair change in energy contribution, with the mutated site
+crosshaired. The only non-obvious choice is the LOG colour scale on the
+difference: on a linear scale the mutated site's row and column saturate and
+everything else renders flat black, which is precisely the question under
+test, so a linear panel would beg it. LogNorm needs positive bounds and the
+difference contains exact zeros wherever the two maps agree bit-for-bit,
+hence a clip to a low percentile of the positive entries (exercised against a
+synthetic array with ~6400 exact zeros).
 
-HONESTY FIX made while testing the bar chart: a large DISTAL *share* is not
-by itself evidence of delocalisation, because DISTAL has ~L/2 times more
-entries than LOCAL (2L-1 vs L^2-2L+1). The chart now annotates the per-entry
-local/distal ratio on each bar and says so in the title, so the share cannot
-be misread as a per-entry effect. The summary CSV carries both.
+matplotlib is imported lazily inside the function and the call site catches
+failures, so a missing plotting dependency cannot make the numeric part of
+the diagnostic unrunnable. NO_PLOTS=1 skips, PLOT_DIR= relocates (default
+<reference>/attention_locality_plots/). PNGs stay gitignored project-wide;
+~2.5 MB each at L=566.
 
-Also writes two CSVs via pandas (locality_summary.csv,
-locality_decay_profiles.csv) so the numbers can be re-analysed without
-re-running the model -- the figures are not the only record.
-
-Degradation behaviour, deliberate: if matplotlib/pandas are missing or a
-figure fails, the numeric sections still run and only a warning is printed.
-A plotting dependency must not be able to discard a model run. NO_PLOTS=1
-disables figures; PLOT_DIR relocates them (default
-<reference>/attention_locality_plots/).
-
-PNGs stay gitignored (project-wide *.png rule, same reasoning as every other
-plot here: regenerable, and they would bloat the repo). At L=566 the panel
-figures are ~2.3 MB each, ~7 MB for three sites, which is exactly why.
-The CSVs are small and ARE tracked. Flagged to the user in case these
-specific figures should be exempted for sharing with the supervisor.
-
-Verified before committing: py_compile; the figure pipeline run end-to-end
-through the test's own _emit_outputs with synthetic records (9 files
-written, sizes and CSV contents checked); an AST pass confirming every
-variable the new plotting code reads inside the site loop is assigned before
-first use; and the LogNorm zero-guard exercised against an array containing
-exact zeros.
+LESSON, worth keeping: the request was for a snippet to run locally, and it
+was read as a request for a plotting subsystem. Default to the smaller thing
+inside the file being discussed.
