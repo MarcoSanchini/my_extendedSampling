@@ -1,4 +1,3 @@
-nohup: ignoring input
 # reference: zero_polymer (L=566 residues)   device=cuda:0
 
 ================================================================================
@@ -99,7 +98,7 @@ FULL (L,K) tensor in every case. predict_attention therefore runs over
 all L residues whatever k is, and the backward traverses the same
 transformer graph. Only the leaf differs: (k,K) instead of (L,K).
 
-Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 34290.11it/s]
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 215092.51it/s]
 === (1) does changing ONE site change the attention map only at that site? ===
 Scale first: U_am sums over 159895 upper-triangle pairs, and only
 565 of them involve site s at all -- 0.353% of the terms.
@@ -150,14 +149,14 @@ whole-sequence gradient. If one row were cheaper, t_fwd_bwd would rise
 with k.
 
        k   t_fwd (ms)   t_fwd_bwd (ms)   backward (ms)    peak MB
-       1        61.51           151.03           89.53     6369.6
-       2        61.53           151.14           89.62     6369.6
-       5        61.29           151.18           89.89     6369.6
-      20        61.45           150.91           89.45     6369.6
-     100        61.80           150.93           89.12     6369.7
-     566        61.71           151.02           89.31     6369.8
+       1        61.69           150.83           89.13     6369.6
+       2        61.30           151.03           89.73     6369.6
+       5        61.30           150.74           89.43     6369.6
+      20        61.51           150.99           89.48     6369.6
+     100        61.26           150.75           89.49     6369.7
+     566        61.51           151.12           89.61     6369.8
 
-  k=1 vs k=L ratio of t_fwd_bwd: 1.0002
+  k=1 vs k=L ratio of t_fwd_bwd: 0.9985
   A flat column means the cost is set by the forward over all L residues
   and the backward through all 48 layers, neither of which depends on k.
 
@@ -168,9 +167,43 @@ two evaluate the derivative at slightly different points. The question
 is whether that difference matters in practice.
 
     site     cosine       |g_k1|       |g_kL|    max|diff|  same argmax?
-      80   0.999993   5.6718e-01   5.7258e-01   4.9743e-03          True
-     283   0.999997   1.6130e+00   1.6917e+00   7.7104e-02          True
-     471   0.999962   1.0918e-01   1.0982e-01   7.7022e-04          True
+      80   0.999990   5.6930e-01   5.7316e-01   3.1973e-03          True
+     283   0.999996   1.6196e+00   1.7005e+00   7.9377e-02          True
+     471   0.999972   1.1085e-01   1.0888e-01   1.8425e-03          True
 
   'same argmax?' is the only thing the sampler actually consumes: the
   gradient's preferred substitution among the 19 legal competitors.
+
+=== (4) is the gradient bit-reproducible? ===
+Added 2026-10-05 after a re-run of test_multisite_tradeoff.py, with every
+RNG seeded identically and bit-identical starting points, reproduced 68 of
+84 cells but not the other 16 -- and the changed ones skewed monotonically
+with N (1 cell at N=2 rising to 5 at N=20). The forward pass is already
+known to be bit-reproducible (scan_U_am_landscape.py's noise-floor check
+returns exactly 0), so the suspect is the BACKWARD: CUDA reductions use
+atomics whose summation order is not fixed between launches. If the
+gradient is not reproducible, then at near-degenerate sites its argmax --
+the substitution every diagnostic here reports -- can flip between runs,
+and a trial touching N sites has N chances to be affected. That would
+explain the pattern exactly. This measures it.
+
+  two whole-sequence gradients on the SAME input:
+    bit-identical: False
+    max |g1 - g2| = 7.865524e-02   (relative to |g| ~ 4.3920e+01)
+    sites whose gradient-preferred substitution DIFFERS between the two
+    passes: 3/566 (0.53%)
+
+    If a fraction p=0.0053 of sites can flip, a trial touching N sites
+    is affected with probability 1-(1-p)^N:
+      N=1:0.5%   N=2:1.1%   N=3:1.6%   N=5:2.6%   N=8:4.2%   N=12:6.2%   N=20:10.1%
+    Compare that against the observed per-N share of changed cells in the
+    multisite re-run (N=2:1/12, 5:3/12, 8:3/12, 12:4/12, 20:5/12).
+
+  What this does and does not mean. It does NOT invalidate the sampler:
+  Metropolis-Hastings only needs the proposal probability actually used,
+  and the Boltzmann validation passed on its own terms. It DOES mean that
+  'the gradient prefers X at site s' is run-dependent wherever two
+  competitors are nearly tied, so any diagnostic reporting a specific
+  substitution at a specific site should be read as one draw, not as a
+  fixed property -- and that re-running a gradient-based test is not
+  expected to reproduce it exactly.
