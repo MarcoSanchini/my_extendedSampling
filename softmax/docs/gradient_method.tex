@@ -455,7 +455,7 @@ than an argument from single-site data.
 \subsection{The gradient may not be reproducible}
 \label{sec:repro}
 
-\textbf{Status: open, under test.} A re-run of
+\textbf{Status: CONFIRMED.} A re-run of
 \path{tests/test_multisite_tradeoff.py} with every RNG seeded identically
 reproduced 68 of 84 cells but not the other 16. Investigation:
 
@@ -465,30 +465,78 @@ reproduced 68 of 84 cells but not the other 16. Investigation:
         consistent with the independent noise-floor check, which returns
         \emph{exactly} $0$ for two \texttt{predict\_attention} calls on the
         same sequence, on both references;
-  \item the changed cells rise monotonically with $N$: 1 at $N{=}2$, 3 at
+  \item the changed cells rose monotonically with $N$: 1 at $N{=}2$, 3 at
         $N{=}5$, 3 at $N{=}8$, 4 at $N{=}12$, 5 at $N{=}20$;
   \item the run used a commit in which site selection and every seed formula
         were unchanged.
 \end{itemize}
 
 \noindent
-\textbf{Hypothesis:} the \emph{backward} pass is not bit-reproducible --- CUDA
-reductions use atomics with no fixed summation order --- so the gradient
-shifts slightly between runs and, at near-degenerate sites, its $\arg\max$
-flips. A trial touching $N$ sites then has $N$ chances to be affected, which
-reproduces the monotone trend. Only the forward was ever checked.
-\path{tests/test_attention_locality.py} §4 now measures it directly: two
-whole-sequence gradients on one input, reporting bit-identity,
-$\max|g_{1}-g_{2}|$, and the count of sites whose preferred substitution
-differs --- comparable to the observed pattern via $1-(1-p)^{N}$.
+\path{tests/test_attention_locality.py} §4 measured it directly --- two
+whole-sequence gradients on one input:
+\begin{center}
+\begin{tabular}{l l}
+\toprule
+bit-identical? & \textbf{No} \\
+$\max|g_{1}-g_{2}|$ & $7.87\times10^{-2}$ against $\|g\| \approx 43.9$,
+                      i.e.\ $0.18\%$ relative \\
+sites changing preferred substitution & $3/566 = 0.53\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
 
-If confirmed, the consequence is interpretive rather than a correctness
-problem. Metropolis--Hastings needs only the proposal probability actually
-used, and the Boltzmann validation passed on its own terms. But ``the
-gradient prefers X at site $s$'' would be \emph{one draw} rather than a fixed
-property wherever two competitors are nearly tied --- consistent with the
-site-43 flag in §3 --- and gradient-based diagnostics should not be expected
-to re-run identically.
+\paragraph{Why the perturbation is this large.} $0.18\%$ is far above the
+$\sim\!10^{-7}$ one would expect from reduction-order effects in fp32. The
+backward runs under \texttt{torch.autocast(bfloat16)}, and bfloat16 carries
+$\sim\!8$ mantissa bits, i.e.\ $\sim\!0.4\%$ relative precision. A change in
+summation order therefore lands at exactly this scale. The forward stays
+bit-reproducible because it executes the same kernels in the same order every
+time; the backward does not, because its reductions use atomics.
+
+\paragraph{Does the flip rate explain the re-run?} Yes, in both shape and
+magnitude. With $p = 0.0053$, a trial touching $N$ sites is affected with
+probability $q = 1-(1-p)^{N}$, and a cell of 10 trials contains at least one
+affected trial with probability $1-(1-q)^{10}$:
+
+\begin{center}
+\begin{tabular}{r r r r}
+\toprule
+$N$ & $q$ (per trial) & $P(\ge 1$ of 10 trials$)$ & observed cells moved \\
+\midrule
+ 2 & $1.06\%$  & $10.1\%$ & $8\%$  \\
+ 5 & $2.62\%$  & $23.3\%$ & $25\%$ \\
+ 8 & $4.16\%$  & $34.6\%$ & $25\%$ \\
+12 & $6.18\%$  & $47.2\%$ & $33\%$ \\
+20 & $10.08\%$ & $65.5\%$ & $42\%$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The observed column counts cells whose \emph{median} moved, which must sit
+below ``at least one trial moved'' --- a median over 10 values is robust, so a
+cell can contain a changed trial without its median shifting. It does, at
+every $N$, and the two rise together. A flip rate measured independently, on
+a different test, accounts for the discrepancy quantitatively.
+
+\paragraph{What follows.} Not a correctness problem.
+Metropolis--Hastings needs only the proposal probability actually used, and
+the Boltzmann validation passed on its own terms. What follows is
+interpretive, and applies to every diagnostic in this project:
+
+\begin{itemize}\itemsep2pt
+  \item ``the gradient prefers X at site $s$'' is \emph{one draw}, not a fixed
+        property, wherever two competitors are nearly tied --- which is
+        exactly the site-43 flag in §3, now explained rather than merely
+        noted;
+  \item a gradient-based test is \emph{not} expected to re-run identically,
+        and a diff between two runs is not a valid consistency check. (We
+        offered exactly that advice earlier; it was wrong and is withdrawn.)
+  \item single-site results quoted at one specific site --- the
+        \texttt{protein\_g} site-4 outlier, for instance --- should be read as
+        stable only in so far as they have reappeared across runs, which that
+        one has since 2026--09--21.
+\end{itemize}
 
 % ===========================================================================
 \section{Summary table}
@@ -523,8 +571,9 @@ Is a single substitution local?
   & No. $98\%$ of the energy change comes from pairs not involving the
     mutated site (Table~\ref{tab:locality}). \\
 Is it reproducible?
-  & Open. Forward yes (floor exactly 0); backward suspected not
-    (\S\ref{sec:repro}). \\
+  & Forward yes (noise floor exactly 0); backward \textbf{no} --- $0.18\%$
+    relative under bfloat16 autocast, flipping the preferred substitution at
+    $0.53\%$ of sites (\S\ref{sec:repro}). \\
 What does this imply for multi-site moves?
   & Cost favours them unconditionally ($N$ mutations per move at
     single-site price); only acceptance can argue against. \\
@@ -537,8 +586,12 @@ What does this imply for multi-site moves?
 % ===========================================================================
 
 \begin{enumerate}\itemsep3pt
-  \item \textbf{Backward reproducibility} (\S\ref{sec:repro}) --- measured by
-        the test but not yet run.
+  \item \textbf{Backward reproducibility} --- resolved (\S\ref{sec:repro}):
+        confirmed non-reproducible, quantitatively consistent with the
+        observed re-run discrepancy. No action proposed: forcing deterministic
+        kernels would cost speed for an effect that does not threaten
+        correctness, and the flip rate is a useful thing to know rather than
+        a defect to remove.
   \item \textbf{Gradient quality in the bulk is based on one run}
         (30 sites, MUTS$=51$, one seed). The $12\%$-of-scale figure that makes
         the two references comparable comes from the \emph{floor} runs; the

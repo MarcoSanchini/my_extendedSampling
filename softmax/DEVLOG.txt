@@ -4618,3 +4618,66 @@ could otherwise waste time crossing -- in particular any scheme that tries
 to use the gradient to ESTIMATE dU (contradicted by the first-order table)
 or to compose single-site measurements into multi-site predictions
 (contradicted by the locality table).
+
+--------------------------------------------------------------------------------
+2026-10-05 -- backward non-reproducibility CONFIRMED, and it quantitatively explains the re-run discrepancy. bfloat16 autocast is the amplifier.
+--------------------------------------------------------------------------------
+User ran test_attention_locality.py section 4 (commit 5391cb3). The
+hypothesis from the previous entry is confirmed:
+
+  two whole-sequence gradients on the SAME input:
+    bit-identical            : False
+    max |g1 - g2|            : 7.865524e-02   against |g| ~ 43.92
+    relative perturbation    : 0.179%
+    sites changing preferred substitution : 3/566 = 0.53%
+
+WHY IT IS THIS LARGE, which is the part worth understanding rather than
+just recording. 0.18% is far above the ~1e-7 that reduction-order effects
+would give in fp32. The backward runs under torch.autocast(bfloat16), and
+bfloat16 carries ~8 mantissa bits, i.e. ~0.4% relative precision -- so a
+change in summation order lands at exactly this scale. The forward stays
+bit-reproducible (noise floor exactly 0, verified on both references)
+because it runs the same kernels in the same order every time; the backward
+does not, because its reductions use atomics. Both facts are consistent:
+the determinism difference is between forward and backward, not between
+fp32 and bf16, and bf16 only sets the SIZE of the resulting perturbation.
+
+DOES IT EXPLAIN THE RE-RUN? Yes, in shape and magnitude. With p=0.0053, a
+trial touching N sites is affected with q=1-(1-p)^N, and a cell of 10
+trials contains at least one affected trial with 1-(1-q)^10:
+
+   N    q (per trial)   P(>=1 of 10)   observed cells moved
+   2       1.06%           10.1%              8%
+   5       2.62%           23.3%             25%
+   8       4.16%           34.6%             25%
+  12       6.18%           47.2%             33%
+  20      10.08%           65.5%             42%
+
+The observed column counts cells whose MEDIAN moved, which must sit BELOW
+"at least one trial moved" -- a median over 10 values is robust, so a cell
+can contain a changed trial without its median shifting. It does at every
+N, and the two rise together. A flip rate measured independently, on a
+different test, accounts for the discrepancy. That is a stronger check than
+the original hypothesis deserved.
+
+CONSEQUENCES, all interpretive -- correctness is untouched (MH needs only
+the proposal probability actually used, and the Boltzmann validation passed
+on its own terms):
+  - "the gradient prefers X at site s" is ONE DRAW, not a fixed property,
+    wherever two competitors are nearly tied. This retroactively EXPLAINS
+    the site-43 flag in compare_grad_methods (cosine 1.0000 yet the two
+    methods picked differently): near-degenerate argmax, not method
+    disagreement.
+  - a gradient-based test is not expected to re-run identically, and a diff
+    between two runs is NOT a valid consistency check. That advice was given
+    earlier in this project and is withdrawn.
+  - a result quoted at one specific site is trustworthy only in so far as it
+    has REAPPEARED across runs. protein_g's site-4 outlier qualifies (every
+    run since 2026-09-21); a one-off site-specific claim does not.
+
+NO ACTION PROPOSED. Forcing deterministic kernels (torch.use_deterministic_
+algorithms) would cost speed to remove an effect that does not threaten
+correctness, and the flip rate is a useful property to know rather than a
+defect. Recorded in docs/gradient_method.tex section 6.3, which is now
+updated from "open, under test" to confirmed, with the arithmetic above and
+the summary-table row amended. Rebuilt: 9 pages, clean.
