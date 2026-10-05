@@ -4567,3 +4567,54 @@ waved away:
   nearly tied, and gradient-based diagnostics should not be expected to
   re-run identically. My "diff the two files as a consistency check" advice
   was wrong and is withdrawn.
+
+--------------------------------------------------------------------------------
+2026-10-05 -- docs/gradient_method.tex: standing account of the gradient, companion to informedness.tex
+--------------------------------------------------------------------------------
+User asked for the gradient equivalent of informedness.tex. Added
+docs/gradient_method.tex, 8 pages, built clean (no overfull boxes, no
+undefined references). Every cited figure was checked programmatically
+against the committed results files -- 62 checks, all passing. (One
+initially flagged: the document's "12.0%" advantage-over-scale for
+protein_g. The document was right and the checker wrong -- it had been fed
+the ROUNDED table values (20.99-17.20)/31.44 = 12.1% instead of the full
+precision (20.9858-17.1975)/31.4405 = 12.05% -> 12.0%. Worth recording as a
+reminder that a verification harness built from a document's own rounded
+output can disagree with the source for reasons that are the harness's
+fault.)
+
+Contents, by section:
+  2  definition, and the two consequences that matter: only the gradient's
+     RANKING is ever consumed (the argmax is dt-independent), so "gradient
+     quality" means rank quality, never magnitude. Plus the gauge caveat --
+     d U/d(logits) sums to zero across classes, so the current class's
+     component is an aggregate rather than a peer of the competitors. Dormant
+     for the current sampler (which excludes "stay"), would resurface at once
+     if "stay" were ever reintroduced.
+  3  the two variants, why the single-site one was chosen (FIDELITY, not
+     speed -- the natural misreading), and their measured agreement
+     (cosine >= 0.99996, same choice everywhere bar the near-degenerate
+     site 43).
+  4  cost: the flat-in-k table, the chain-rule reason it must be flat, the
+     816 GFLOP vs 0.0217 GFLOP arithmetic, and the corollary that an N-site
+     move gets N mutations for free.
+  5  quality: the three steepest_descent runs side by side, with the
+     advantage expressed as a fraction of each reference's own energy scale
+     (12.0% vs 11.3%) -- the only basis on which the two lengths compare.
+     Plus the floor-vs-bulk effect and the historical non-canonical fix.
+  6  the three NEGATIVE results, which is the part most worth having
+     written down: first-order prediction fails by ~1e3 with sign right
+     barely above chance; a single substitution is not a local perturbation
+     (98% of the energy change from pairs not involving the site, and at
+     site 80 the local and distal halves have opposite signs); and the
+     backward may not be reproducible (open, test added).
+  7  a one-page summary table of every question and its answer.
+  8  open items, including that the bulk-regime quality figure rests on a
+     single run with no protein_g counterpart yet.
+
+Deliberately framed around what the gradient CANNOT do as much as what it
+can, since the three negatives are each a boundary that a future design
+could otherwise waste time crossing -- in particular any scheme that tries
+to use the gradient to ESTIMATE dU (contradicted by the first-order table)
+or to compose single-site measurements into multi-site predictions
+(contradicted by the locality table).

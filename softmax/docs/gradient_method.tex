@@ -1,0 +1,555 @@
+% ---------------------------------------------------------------------------
+% The gradient in the single-site rate sampler: what it is, what it costs,
+% how good it is, and what it cannot do.
+%
+% Companion to informedness.tex (which covers dt, the pointing probability and
+% the dt/sqrt(T) scaling) and to softmax/DEVLOG.txt (the chronological record).
+% This file is the standing account of the GRADIENT itself.
+%
+% Build:  cd softmax/docs && pdflatex gradient_method.tex && pdflatex gradient_method.tex
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\sloppy
+
+\newcommand{\dt}{\Delta t}
+\newcommand{\gradU}{\nabla U}
+\newcommand{\Mass}{M}
+\newcommand{\Tsftm}{T_{\mathrm{sftm}}}
+\newcommand{\Uam}{U_{\mathrm{am}}}
+
+\title{The gradient in the single-site rate sampler\\
+       \large What it is, what it costs, how good it is,\\
+       and the three things it cannot do}
+\author{\texttt{my\_extendedSampling} / \texttt{softmax}}
+\date{2026--10--05}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Every move of \texttt{classes/rate\_sampler.py} is steered by one gradient of
+the energy with respect to a site's logits. This note collects everything
+established about that gradient: how it is defined and computed, the two
+variants that exist and why the more faithful one was chosen over the one that
+sounds cheaper, its measured cost and memory (both exactly flat in the number
+of relaxed sites), and its measured quality --- which is modest, strongly
+dependent on where in sequence space it is evaluated, and essentially useless
+in magnitude while being genuinely useful in rank. It also records three
+negative results that bound what the gradient can be asked to do: its
+first-order prediction is wrong by a factor of $\sim\!10^{3}$, a single
+substitution perturbs the attention map almost everywhere rather than locally
+(so single-site reasoning cannot be composed), and the backward pass appears
+not to be bit-reproducible, making a specific reported substitution one draw
+rather than a fixed property.
+\end{abstract}
+
+\tableofcontents
+
+% ===========================================================================
+\section{Scope, and where every number comes from}
+% ===========================================================================
+
+All figures below are measured and committed. Sources:
+
+\begin{itemize}\itemsep2pt
+  \item \path{classes/rate_sampler.py} --- \texttt{\_grad\_pass\_site}, the
+        production gradient.
+  \item \path{customs/custom_esm/models/esm3.py} ---
+        \texttt{predict\_attention} / \texttt{\_last\_attention}.
+  \item \path{tests/test_attention_locality.py} $\rightarrow$
+        \path{zero_polymer/attention_locality.txt} --- locality, cost vs.\ $k$,
+        method equivalence, reproducibility.
+  \item \path{tests/test_steepest_descent.py} $\rightarrow$
+        \path{protein_g/steepest_descent_CONTROL.txt},
+        \path{zero_polymer/steepest_descent_results.txt},
+        \path{zero_polymer/steepest_descent_S30_M51.txt} --- pick quality.
+  \item \path{tests/compare_grad_methods.py} $\rightarrow$
+        \path{zero_polymer/compare_grad_results.txt} --- the two variants.
+  \item \path{tests/scan_U_am_landscape.py} $\rightarrow$
+        \path{*/scan_U_am_*.txt} --- energy scale, numerical floor.
+  \item \path{tests/test_joint_coupling_N.py} $\rightarrow$
+        \path{*/test_joint_coupling_N_results.txt} --- first-order quality.
+  \item \path{softmax/DEVLOG.txt} --- chronology and the decisions below.
+\end{itemize}
+
+Two references recur: \texttt{protein\_g} ($L=56$) and
+\texttt{zero\_polymer} ($L=566$). $K=25$ is the width of
+\texttt{SEQUENCE\_USED\_VOCAB} (20 standard residues plus
+\texttt{X,B,U,Z,O}); the proposal targets only the 20 standard ones minus the
+current residue, so $19$ competitors.
+
+% ===========================================================================
+\section{What the gradient is, and where it enters}
+% ===========================================================================
+
+\subsection{Definition}
+
+A sequence is held as per-site logits $x \in \mathbb{R}^{L\times K}$,
+mean-centred along the class axis to gauge-fix the softmax translation
+invariance. The gradient the sampler uses is
+\begin{equation}
+  \gradU \;=\; \frac{\partial U}{\partial x_{s}} \in \mathbb{R}^{K},
+  \qquad
+  U \;=\; \lambda_{\mathrm{am}}\Uam + \lambda_{S} S,
+  \qquad
+  \Uam = \!\!\sum_{i<j}\!\left(\log a_{ij} - \log a^{\mathrm{ref}}_{ij}\right)^{2},
+\end{equation}
+where $a$ is the attention map: the head-averaged attention of ESM3's last
+block, BOS/EOS stripped and symmetrised, obtained from a differentiable
+forward pass on soft sequence probabilities.
+
+\subsection{Where it enters}
+
+The gradient sets the \emph{drift} of a Gaussian displacement --- one HMC
+leapfrog half-step with fresh momentum, equivalently one MALA step:
+\begin{equation}
+  \delta x \sim \mathcal{N}(\mu, \sigma^{2}I),
+  \qquad
+  \mu = -\frac{\dt^{2}}{2\Mass}\gradU,
+  \qquad
+  \sigma = \dt\sqrt{T/\Mass}.
+\end{equation}
+The proposal is $\arg\max_{j}\delta x_{j}$ over the 19 competitors. Two
+consequences matter here and are developed in \texttt{informedness.tex}:
+
+\begin{enumerate}
+  \item \textbf{Only the gradient's \emph{ranking} is ever consumed.} Since
+        $\dt^{2}/(2\Mass)>0$ is a scalar, $\arg\max_{j}\mu_{j} =
+        \arg\min_{j}(\gradU)_{j}$ regardless of $\dt$, $T$, $\Mass$. The
+        gradient's \emph{magnitude} never reaches the proposal except through
+        the ratio $\mu/\sigma$, which sets how reliably the realised draw
+        follows that ranking.
+  \item \textbf{Therefore gradient quality means rank quality.} Everything in
+        \S\ref{sec:quality} measures whether the gradient's preferred
+        substitution is a good one, not whether it predicts $\Delta U$.
+\end{enumerate}
+
+\subsection{A structural caveat on the gauge}
+
+$\gradU$ is $\partial U/\partial(\text{logits})$, not
+$\partial U/\partial(\text{probs})$. Because softmax is translation
+invariant, this derivative sums to exactly zero across the $K$ classes at
+every site. The current class's component is therefore an aggregate
+(the negative sum of all others), not a component on the same footing as any
+single competitor --- so comparing $\gradU_{\mathrm{cur}}$ against
+$\gradU_{j}$ is not the clean two-point comparison it appears to be. This
+mattered for the abandoned joint design, which included ``stay'' in the
+competition. It does \emph{not} affect the current sampler, which excludes
+the current residue from the competition entirely and so only ever compares
+competitor components against each other. Recorded because it would resurface
+immediately if ``stay'' were ever reintroduced as a candidate.
+
+% ===========================================================================
+\section{Two ways to compute it, and why the production one was chosen}
+% ===========================================================================
+
+\subsection{The two variants}
+
+\paragraph{Whole-sequence relaxed (\texttt{whole\_sequence\_grad}).} Every
+site is relaxed through $\mathrm{softmax}(x/\Tsftm)$ at once; one backward
+pass yields the full $(L,K)$ gradient. This is what the original (removed)
+joint design used. It survives only as a diagnostic reimplementation in
+\path{tests/compare_grad_methods.py}, \path{tests/test_joint_coupling_N.py}
+and \path{tests/test_multisite_tradeoff.py}.
+
+\paragraph{Single-site relaxed (\texttt{\_grad\_pass\_site}).} Only the chosen
+site is relaxed; every other site is held at its \emph{exact one-hot} value:
+\begin{verbatim}
+hard = eprot.get_probs()            # (L,K) one-hot, NO grad
+site_logits = eprot.logits[site].detach().clone().requires_grad_(True)
+soft_row = torch.softmax(site_logits/pars['T_sftm'], -1).unsqueeze(0)
+probs = torch.cat([hard[:site], soft_row, hard[site+1:]], dim=0)
+                                    # ^ a FULL (L,K) tensor
+am = self.model.predict_attention(sequence_probs=probs)
+U  = pars['lambda_am']*compute_U_am(am, self.ref_eprot.am) + ...
+U.backward()
+grad = site_logits.grad             # (K,) -- only this leaf differs
+\end{verbatim}
+This is the production path, adopted at the 2026--09--19 pivot to single-site
+moves.
+
+\subsection{Why the single-site variant, and a correction}
+
+\textbf{Not} because it is cheaper. It is not cheaper
+(\S\ref{sec:cost}), and treating it as the ``light'' option is a natural but
+incorrect reading of the code. It was chosen because it is a more
+\emph{faithful} partial derivative: every other site stays at the exact
+discrete value used by the accept/reject step and the reverse-probability
+pass, instead of being blurred by $\Tsftm$. The whole-sequence variant
+evaluates the derivative at a point that is not the state the sampler is
+actually in.
+
+\subsection{Do the two agree?}
+
+Yes, to the precision that matters. On \texttt{zero\_polymer}:
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{l r r r l}
+\toprule
+source & sites & cosine & $\max|g_{1}-g_{L}|$ & same choice? \\
+\midrule
+\path{compare_grad_results.txt} & 11 & $0.9999$--$1.0000$ & --- & 10/11 \\
+\path{attention_locality.txt} §3 & 3 & $0.999962$--$0.999997$
+      & $7.7\!\times\!10^{-4}$--$7.7\!\times\!10^{-2}$ & 3/3 \\
+\bottomrule
+\end{tabular}
+\caption{The two gradient variants against each other. ``Same choice'' is the
+only thing the sampler consumes: the preferred substitution among the 19
+competitors. Note they are \emph{not required} to be identical --- they
+evaluate the derivative at different points --- so agreement is a finding,
+not a tautology.}
+\end{table}
+
+\noindent
+One site (43) was flagged: cosine $=1.0000$ yet the two methods picked
+\emph{differently} (site-only $\rightarrow$ W, $\Delta U=+680.10$;
+whole-sequence $\rightarrow$ A, $\Delta U=-127.26$). Near-parallel gradients
+with different $\arg\max$ means the top two competitors were nearly tied, so
+an arbitrarily small magnitude difference flips the winner. This is the same
+fragility that \S\ref{sec:repro} returns to, and it is a property of
+$\arg\max$ on a near-degenerate field, not a disagreement between the methods.
+
+% ===========================================================================
+\section{Cost: flat in the number of relaxed sites}
+\label{sec:cost}
+% ===========================================================================
+
+\subsection{The measurement}
+
+\path{tests/test_attention_locality.py} §2 times a gradient with $k$ rows
+relaxed and $L-k$ held one-hot. $k=1$ is exactly \texttt{\_grad\_pass\_site};
+$k=L$ is exactly \texttt{whole\_sequence\_grad}; nothing else varies.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{r r r r r}
+\toprule
+$k$ & $t_{\mathrm{fwd}}$ (ms) & $t_{\mathrm{fwd+bwd}}$ (ms)
+    & backward (ms) & peak mem (MB) \\
+\midrule
+1   & 61.51 & 151.03 & 89.53 & 6369.6 \\
+2   & 61.53 & 151.14 & 89.62 & 6369.6 \\
+5   & 61.29 & 151.18 & 89.89 & 6369.6 \\
+20  & 61.45 & 150.91 & 89.45 & 6369.6 \\
+100 & 61.80 & 150.93 & 89.12 & 6369.7 \\
+566 & 61.71 & 151.02 & 89.31 & 6369.8 \\
+\bottomrule
+\end{tabular}
+\caption{\texttt{zero\_polymer}, $L=566$. Ratio $k{=}1$ vs.\ $k{=}L$:
+$1.0002$. Memory differs by $0.2$ MB out of $6.4$ GB ($0.003\%$).}
+\label{tab:cost}
+\end{table}
+
+\subsection{Why it must be flat}
+
+The intuition that one row should be cheaper fails on the chain rule, not on
+an implementation detail. To obtain $\partial U/\partial x_{s}$ for a
+\emph{single} site you still need the gradient at every position of every
+layer, because self-attention makes layer $k{+}1$ at \emph{every} position
+depend on layer $k$ at position $s$. The $(L, d_{\mathrm{model}})$ activation
+gradient is propagated through all 48 layers either way. Only the final
+projection differs: onto one row of the $(L,K)$ input instead of all $L$.
+
+With ESM3-open ($L=566$, $d_{\mathrm{model}}=1536$, 48 layers, $K=25$) and
+model parameters frozen (\texttt{requires\_grad=False} in \texttt{ESM3.\_\_init\_\_}),
+so only input gradients are computed:
+\begin{align}
+  \text{transformer backward} &\approx 816\ \text{GFLOP}
+     &&\text{identical for every } k \notag\\
+  \text{embedding leaf, all } L \text{ rows} &\approx 0.0217\ \text{GFLOP} \notag\\
+  \text{embedding leaf, one row} &\approx 0.00004\ \text{GFLOP} \notag
+\end{align}
+so the largest possible saving from doing one row instead of $L$ is
+$\sim\!0.001\%$ of a pass. The measured spread in
+Table~\ref{tab:cost} is $0.02\%$ --- i.e.\ the predicted effect is about
+$100\times$ \emph{below} the run-to-run noise, which is exactly why the column
+reads flat. Memory is flat for the same reason: the same activations must be
+stored to differentiate through attention regardless of how many input rows
+carry a gradient.
+
+\subsection{The corollary that drives the design question}
+
+\begin{quote}
+A gradient covering \emph{all} sites costs what a gradient covering
+\emph{one} site costs. An $N$-site move therefore gets its $N$ mutations for
+free.
+\end{quote}
+Per-move cost is $2\times$ gradient $+\ 1\times$ exact energy $\approx 360$ ms
+either way (measured: single-site $360.75$ ms, $N$-site $359.56$ ms, ratio
+$0.997$). The cost argument favours multi-site moves unconditionally; only
+\emph{acceptance} can argue against them. No cheap win exists on the other
+side either: making the single-site gradient genuinely cheaper would require
+truncating the backward to a window around the site, which is an
+approximation and would break the exactness the proposal relies on.
+
+% ===========================================================================
+\section{Quality: how good is the gradient's choice?}
+\label{sec:quality}
+% ===========================================================================
+
+\subsection{The measurement}
+
+For each tested site, brute-force the true energy of all 19 candidate
+substitutions and ask (i) is the gradient's pick the true optimum (top-1),
+and (ii) how does the true $\Delta U$ at the gradient's pick compare to the
+average over the other candidates.
+
+\begin{table}[htbp]
+\centering
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{l r r r r r}
+\toprule
+run & top-1 & $\overline{\Delta U}$ at pick & at others & advantage
+    & adv./scale \\
+\midrule
+\texttt{protein\_g}, MUTS=5 (Hd $8.9\%$)   & 2/10  & $+17.20$  & $+20.99$  & $3.79$   & $12.0\%$ \\
+\texttt{zero\_polymer}, MUTS=5 (Hd $0.9\%$) & 2/10  & $+474.38$ & $+542.46$ & $68.08$  & $11.3\%$ \\
+\texttt{zero\_polymer}, MUTS=51 (Hd $8.8\%$)& 10/30 & $\mathbf{-360.03}$ & $+244.25$ & $604.28$ & --- \\
+\bottomrule
+\end{tabular}
+\caption{``scale'' is each reference's own mean $\Delta U$ for a single
+mutation from the reference ($31.44$ and $603.35$ respectively), the only
+basis on which two different energy scales can be compared.}
+\label{tab:quality}
+\end{table}
+
+\subsection{What this says}
+
+\paragraph{The gradient is weakly but genuinely informative.} Top-1 of 2/10
+means it finds the true optimum rarely. But its pick is consistently better
+than a random legal candidate, and --- the point that makes the two
+references comparable --- by nearly the \emph{same fraction} of each
+protein's energy scale: $12.0\%$ vs.\ $11.3\%$. Gradient quality does not
+degrade with sequence length.
+
+\paragraph{Where you measure dominates what you measure.} The third row is
+the same gradient on the same protein, evaluated away from $\Uam$'s floor
+instead of at it. Top-1 rises $20\%\rightarrow33\%$, the fraction of picks
+that are downhill at all rises $40\%\rightarrow73\%$, and the mean
+$\Delta U$ at the pick flips sign, from $+474$ to $-360$. A measurement taken
+at MUTS$=5$ on a 566-residue reference ($0.9\%$ drift) is a measurement at
+the energy floor, where almost every move is uphill, and it understates the
+gradient badly. This invalidated an earlier conclusion of ours about proline
+(see \S\ref{sec:negatives}) and it is the single most important caveat when
+reading any older diagnostic in this project.
+
+\paragraph{The descent-direction check always passes.} With the momentum term
+removed, $\mu_{A}\cdot\gradU \le 0$ at every tested site in every run. This is
+true by construction, so it is a bug detector (sign error, wrong gauge,
+mis-indexed vocabulary), not a result --- and it has never fired since the
+non-canonical fix below.
+
+\subsection{A historical fix worth not re-learning}
+
+The very first real runs found the gradient pointing at \texttt{X} (and
+potentially \texttt{B,U,Z,O}) --- the ambiguity codes at the tail of
+\texttt{SEQUENCE\_USED\_VOCAB} --- even when doing so \emph{increased} the
+true energy. These are now excluded from the competition by \emph{slicing}
+them out of the candidate tensor rather than by adding a large negative
+penalty: a finite penalty could in principle be approached by
+$\dt^{2}$-scaled gradients at large $\dt$, whereas a sliced-out class is
+structurally absent. Note the asymmetry this leaves: \texttt{mutate()}, used
+to build test starting points, still draws from all 25 letters, so test
+sequences can \emph{contain} residues the sampler could never \emph{propose}
+(MUTS$=51$ produced 12 such residues).
+
+% ===========================================================================
+\section{Three things the gradient cannot do}
+\label{sec:negatives}
+% ===========================================================================
+
+\subsection{It cannot predict \texorpdfstring{$\Delta U$}{dU} (first-order failure)}
+
+At $N=1$ the proposed move \emph{is} the gradient's own greedy pick, and
+\texttt{sum\_linear} is its first-order prediction of the resulting energy
+change. Against the truth:
+
+\begin{center}
+\begin{tabular}{l r r r r}
+\toprule
+ & $\overline{|\text{sum\_linear}|}$ & $\overline{|\Delta U|}$ & ratio & sign agrees \\
+\midrule
+\texttt{protein\_g}   & $0.0480$ & $57.73$  & $8.3\times10^{-4}$ & 13/20 \\
+\texttt{zero\_polymer}& $0.8735$ & $458.29$ & $1.9\times10^{-3}$ & 14/20 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The linear prediction is three orders of magnitude too small, and its
+\emph{sign} is right barely more often than chance. Worse, on
+\texttt{zero\_polymer} three of the four largest-$|\Delta U|$ cases have the
+sign \emph{wrong}: predicted $-2.56$, $-1.01$, $-0.23$ where the truth was
+$+2246.9$, $+1819.7$, $+950.9$.
+
+This is not a defect to fix but a boundary to respect. A one-hot substitution
+is a finite jump across a vocabulary simplex, not an infinitesimal
+displacement, and $\Uam$ runs through 48 nonlinear attention layers. The
+sampler never relies on this: it uses only the ranking (\S2), and the
+Metropolis test uses the \emph{true recomputed} energy. Any future design
+that tries to use $\gradU$ to \emph{estimate} $\Delta U$ --- for instance to
+skip the exact energy evaluation, or to pre-screen candidates --- is
+contradicted by this table.
+
+\subsection{A single substitution is not a local perturbation}
+
+The natural assumption is that changing site $s$ changes the attention map
+in row/column $s$. It does not. Splitting
+$|\delta a| = |a(\text{seq}_{B}) - a(\text{seq}_{A})|$ into LOCAL (row or
+column $s$; $2L-1 = 1131$ entries) and DISTAL (the other $319{,}225$):
+
+\begin{table}[htbp]
+\centering
+\small\setlength{\tabcolsep}{4pt}
+\begin{tabular}{r c c r r r}
+\toprule
+site & DISTAL share & per-entry L/D
+     & $\Delta\Uam$ & from LOCAL & from DISTAL \\
+\midrule
+ 80 & $97.4\%$ & $7.5\times$ & $-257.65$ & $+51.15\ (-19.9\%)$ & $-308.80\ (119.9\%)$ \\
+283 & $97.7\%$ & $6.6\times$ & $-180.14$ & $+4.51\ (-2.5\%)$   & $-184.65\ (102.5\%)$ \\
+471 & $97.9\%$ & $6.0\times$ & $+573.01$ & $+10.86\ (1.9\%)$   & $+562.15\ (98.1\%)$ \\
+\bottomrule
+\end{tabular}
+\caption{\texttt{zero\_polymer}. Only $565$ of the $159{,}895$ summed pairs
+involve site $s$ at all --- $0.353\%$ of the energy terms --- so strict
+locality would cap what one mutation could do.}
+\label{tab:locality}
+\end{table}
+
+Both halves of this are true and the second is what matters:
+\emph{per entry} the perturbation \emph{is} concentrated at the mutated
+site, $6.0$--$7.5\times$ stronger in LOCAL. But DISTAL has $282\times$ more
+entries, so it carries $\sim\!98\%$ of the total and $98$--$120\%$ of the
+energy change. At site 80 the two halves even have \emph{opposite signs}:
+pairs touching the mutated site push $\Uam$ \emph{up} by $51$ while the rest
+pulls it \emph{down} by $309$. The net change is not merely dominated by
+distal pairs --- it is produced by them, against the local ones.
+
+The decay profile confirms real but shallow concentration, and notably does
+not fall to zero. At site 471: $2.31\times10^{-4}$ at distance 0, decaying to
+$1.02\times10^{-5}$ at distance 51--100 --- then \emph{rising} to
+$2.46\times10^{-5}$ beyond 100. Every tested site shows this upturn in the
+farthest bin. Sequence-distant is not distant in 3D, so this is what a
+structural contact would look like; unproven here, and worth a look only if
+the question becomes load-bearing.
+
+\paragraph{Consequence.} This is the same phenomenon as the measured
+cross-site coupling, seen from the map side instead of the energy side. It is
+why single-site measurements cannot be composed into multi-site predictions,
+and therefore why the multi-site question needed its own experiments rather
+than an argument from single-site data.
+
+\subsection{The gradient may not be reproducible}
+\label{sec:repro}
+
+\textbf{Status: open, under test.} A re-run of
+\path{tests/test_multisite_tradeoff.py} with every RNG seeded identically
+reproduced 68 of 84 cells but not the other 16. Investigation:
+
+\begin{itemize}\itemsep2pt
+  \item starting points were \emph{bit-identical} (same Hd, same $U_{A}$ to
+        the last decimal at all six), so the forward pass is reproducible ---
+        consistent with the independent noise-floor check, which returns
+        \emph{exactly} $0$ for two \texttt{predict\_attention} calls on the
+        same sequence, on both references;
+  \item the changed cells rise monotonically with $N$: 1 at $N{=}2$, 3 at
+        $N{=}5$, 3 at $N{=}8$, 4 at $N{=}12$, 5 at $N{=}20$;
+  \item the run used a commit in which site selection and every seed formula
+        were unchanged.
+\end{itemize}
+
+\noindent
+\textbf{Hypothesis:} the \emph{backward} pass is not bit-reproducible --- CUDA
+reductions use atomics with no fixed summation order --- so the gradient
+shifts slightly between runs and, at near-degenerate sites, its $\arg\max$
+flips. A trial touching $N$ sites then has $N$ chances to be affected, which
+reproduces the monotone trend. Only the forward was ever checked.
+\path{tests/test_attention_locality.py} §4 now measures it directly: two
+whole-sequence gradients on one input, reporting bit-identity,
+$\max|g_{1}-g_{2}|$, and the count of sites whose preferred substitution
+differs --- comparable to the observed pattern via $1-(1-p)^{N}$.
+
+If confirmed, the consequence is interpretive rather than a correctness
+problem. Metropolis--Hastings needs only the proposal probability actually
+used, and the Boltzmann validation passed on its own terms. But ``the
+gradient prefers X at site $s$'' would be \emph{one draw} rather than a fixed
+property wherever two competitors are nearly tied --- consistent with the
+site-43 flag in §3 --- and gradient-based diagnostics should not be expected
+to re-run identically.
+
+% ===========================================================================
+\section{Summary table}
+% ===========================================================================
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{p{5.4cm} p{9.0cm}}
+\toprule
+Question & Answer, and where it is established \\
+\midrule
+Is the single-site gradient cheaper than the whole-sequence one?
+  & No. Flat in $k$: $151.03$ vs.\ $151.02$ ms, ratio $1.0002$
+    (Table~\ref{tab:cost}). \\
+Does it use less memory?
+  & No. $6369.6$ vs.\ $6369.8$ MB, a $0.003\%$ difference. \\
+Why use it then?
+  & Fidelity: other sites stay at their exact one-hot values, matching the
+    context the accept/reject uses. \\
+Do the two variants agree?
+  & Yes --- cosine $\ge 0.99996$, same choice at every site tested bar one
+    near-degenerate case. \\
+Is the gradient's pick any good?
+  & Weakly, consistently: $11$--$12\%$ of the energy scale better than a
+    random candidate, at both lengths. Top-1 $20$--$33\%$. \\
+Does quality depend on where it is evaluated?
+  & Strongly. At the floor the mean pick is $+474$; in the bulk, $-360$. \\
+Can it predict $\Delta U$?
+  & No --- off by $\sim\!10^{3}$, sign right $\sim\!65\%$ of the time. \\
+Is a single substitution local?
+  & No. $98\%$ of the energy change comes from pairs not involving the
+    mutated site (Table~\ref{tab:locality}). \\
+Is it reproducible?
+  & Open. Forward yes (floor exactly 0); backward suspected not
+    (\S\ref{sec:repro}). \\
+What does this imply for multi-site moves?
+  & Cost favours them unconditionally ($N$ mutations per move at
+    single-site price); only acceptance can argue against. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ===========================================================================
+\section{Open items}
+% ===========================================================================
+
+\begin{enumerate}\itemsep3pt
+  \item \textbf{Backward reproducibility} (\S\ref{sec:repro}) --- measured by
+        the test but not yet run.
+  \item \textbf{Gradient quality in the bulk is based on one run}
+        (30 sites, MUTS$=51$, one seed). The $12\%$-of-scale figure that makes
+        the two references comparable comes from the \emph{floor} runs; the
+        bulk equivalent has no \texttt{protein\_g} counterpart yet.
+        \texttt{REF=protein\_g SITES=30 MUTS=20} would supply it.
+  \item \textbf{The far-field upturn} in the decay profile
+        (Table~\ref{tab:locality} discussion) is unexplained; a 3D-contact
+        check against decoded structure would settle it.
+  \item \textbf{Nothing here constrains} $U_{\mathrm{structure\_ce}}$, whose
+        gradient magnitudes were measured $100$--$1000\times$ smaller and
+        whose branch is paused (see \path{DEVLOG_U_ce_backup.txt}).
+\end{enumerate}
+
+\end{document}
