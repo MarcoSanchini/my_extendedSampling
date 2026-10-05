@@ -427,6 +427,56 @@ def main():
     print("\n  'same argmax?' is the only thing the sampler actually consumes: the")
     print("  gradient's preferred substitution among the 19 legal competitors.")
 
+    # ===================================================================== #
+    # (4) is the BACKWARD pass reproducible run to run?                     #
+    # ===================================================================== #
+    print()
+    print("=== (4) is the gradient bit-reproducible? ===")
+    print("Added 2026-10-05 after a re-run of test_multisite_tradeoff.py, with every")
+    print("RNG seeded identically and bit-identical starting points, reproduced 68 of")
+    print("84 cells but not the other 16 -- and the changed ones skewed monotonically")
+    print("with N (1 cell at N=2 rising to 5 at N=20). The forward pass is already")
+    print("known to be bit-reproducible (scan_U_am_landscape.py's noise-floor check")
+    print("returns exactly 0), so the suspect is the BACKWARD: CUDA reductions use")
+    print("atomics whose summation order is not fixed between launches. If the")
+    print("gradient is not reproducible, then at near-degenerate sites its argmax --")
+    print("the substitution every diagnostic here reports -- can flip between runs,")
+    print("and a trial touching N sites has N chances to be affected. That would")
+    print("explain the pattern exactly. This measures it.")
+
+    gA, _ = grad_k_sites(sampler, eprot_A, list(range(L)), PARS)
+    gB, _ = grad_k_sites(sampler, eprot_A, list(range(L)), PARS)
+    dmax = (gA - gB).abs().max().item()
+    identical = bool(torch.equal(gA, gB))
+    print(f"\n  two whole-sequence gradients on the SAME input:")
+    print(f"    bit-identical: {identical}")
+    print(f"    max |g1 - g2| = {dmax:.6e}   (relative to |g| ~ {gA.norm().item():.4e})")
+
+    flips = 0
+    for s_ in range(L):
+        comp = sampler._competition_indices(int(eprot_A.logits[s_].argmax(-1).item()))
+        if int((-gA[s_][comp]).argmax().item()) != int((-gB[s_][comp]).argmax().item()):
+            flips += 1
+    print(f"    sites whose gradient-preferred substitution DIFFERS between the two")
+    print(f"    passes: {flips}/{L} ({100.*flips/L:.2f}%)")
+    if flips:
+        p = flips/L
+        print(f"\n    If a fraction p={p:.4f} of sites can flip, a trial touching N sites")
+        print(f"    is affected with probability 1-(1-p)^N:")
+        print("      " + "   ".join(f"N={N}:{100*(1-(1-p)**N):.1f}%"
+                                    for N in (1, 2, 3, 5, 8, 12, 20)))
+        print("    Compare that against the observed per-N share of changed cells in the")
+        print("    multisite re-run (N=2:1/12, 5:3/12, 8:3/12, 12:4/12, 20:5/12).")
+    print()
+    print("  What this does and does not mean. It does NOT invalidate the sampler:")
+    print("  Metropolis-Hastings only needs the proposal probability actually used,")
+    print("  and the Boltzmann validation passed on its own terms. It DOES mean that")
+    print("  'the gradient prefers X at site s' is run-dependent wherever two")
+    print("  competitors are nearly tied, so any diagnostic reporting a specific")
+    print("  substitution at a specific site should be read as one draw, not as a")
+    print("  fixed property -- and that re-running a gradient-based test is not")
+    print("  expected to reproduce it exactly.")
+
 
 if __name__ == "__main__":
     main()
