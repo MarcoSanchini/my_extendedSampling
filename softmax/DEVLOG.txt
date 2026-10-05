@@ -4390,33 +4390,180 @@ for the same underlying reason -- self-attention is global.
   would break the exactness the proposal relies on.
 
 --------------------------------------------------------------------------------
-2026-10-04 -- heatmaps added inline to test_attention_locality.py
+2026-10-04 -- test_attention_locality.py gains figures (tests/locality_plots.py): am before/after, |delta am|, per-pair energy change, decay profile; plus CSVs
 --------------------------------------------------------------------------------
-User asked for heatmaps in the locality test: am before and after the
-gradient's substitution, and the difference, saved as PNGs.
+User asked for visuals on the locality test: U_am heatmaps before and after,
+a heatmap of the difference, saved as PNGs.
 
-First attempt over-built it -- a separate tests/locality_plots.py with four
-figure types, pandas CSV emitters and a degradation wrapper. User's
-correction: "i simply meant put snippet for heat maps in
-/test_attention_locality.py so that i can run it locally". Module deleted,
-replaced by one ~60-line save_heatmaps() inside the test itself.
+Added tests/locality_plots.py, kept FREE of torch and of the ESM3 model so
+the plotting can be exercised on synthetic arrays without a GPU -- a figure
+bug would otherwise only surface after a model run had already been paid
+for. It was exercised that way before committing (matplotlib 3.11 / pandas
+3.0 installed in the sandbox for the purpose), on synthetic maps built to
+carry the real ones' character: values ~1/L, a diagonal band, log-normal
+spread, the measured 5e-5..0.11 range, and ~6400 EXACT ZEROS in the
+difference to exercise the LogNorm guard.
 
-What it draws, per probe site, into one PNG: am BEFORE, am AFTER, |delta am|,
-and the signed per-pair change in energy contribution, with the mutated site
-crosshaired. The only non-obvious choice is the LOG colour scale on the
-difference: on a linear scale the mutated site's row and column saturate and
-everything else renders flat black, which is precisely the question under
-test, so a linear panel would beg it. LogNorm needs positive bounds and the
-difference contains exact zeros wherever the two maps agree bit-for-bit,
-hence a clip to a low percentile of the positive entries (exercised against a
-synthetic array with ~6400 exact zeros).
+Per probe site, a four-panel figure:
+    am BEFORE / am AFTER   near-identical by eye, which is itself the point
+                           and the reason the difference panel exists.
+    |delta am|             LOG colour scale. This is a deliberate choice, not
+                           a default: on a linear scale the mutated site's
+                           row/column saturates and everything else renders as
+                           uniform black, which would hide precisely the thing
+                           under test. Stated in the panel title so a reader
+                           never has to guess whether a feature is real or a
+                           scaling artifact.
+    per-pair dU_am         signed diverging scale, robust (99th-percentile)
+                           limits. THE panel that matters: U_am is the sum
+                           over these, so it shows where the energy
+                           consequence of one mutation actually comes from.
+Green crosshairs mark the mutated site on all four.
+Plus: a decay profile (mean |delta am| vs sequence distance from s, log y --
+strict locality would collapse to the numerical floor past distance 0), and
+a cross-site bar chart of the DISTAL share of both |delta am| and dU_am.
 
-matplotlib is imported lazily inside the function and the call site catches
-failures, so a missing plotting dependency cannot make the numeric part of
-the diagnostic unrunnable. NO_PLOTS=1 skips, PLOT_DIR= relocates (default
-<reference>/attention_locality_plots/). PNGs stay gitignored project-wide;
-~2.5 MB each at L=566.
+HONESTY FIX made while testing the bar chart: a large DISTAL *share* is not
+by itself evidence of delocalisation, because DISTAL has ~L/2 times more
+entries than LOCAL (2L-1 vs L^2-2L+1). The chart now annotates the per-entry
+local/distal ratio on each bar and says so in the title, so the share cannot
+be misread as a per-entry effect. The summary CSV carries both.
 
-LESSON, worth keeping: the request was for a snippet to run locally, and it
-was read as a request for a plotting subsystem. Default to the smaller thing
-inside the file being discussed.
+Also writes two CSVs via pandas (locality_summary.csv,
+locality_decay_profiles.csv) so the numbers can be re-analysed without
+re-running the model -- the figures are not the only record.
+
+Degradation behaviour, deliberate: if matplotlib/pandas are missing or a
+figure fails, the numeric sections still run and only a warning is printed.
+A plotting dependency must not be able to discard a model run. NO_PLOTS=1
+disables figures; PLOT_DIR relocates them (default
+<reference>/attention_locality_plots/).
+
+PNGs stay gitignored (project-wide *.png rule, same reasoning as every other
+plot here: regenerable, and they would bloat the repo). At L=566 the panel
+figures are ~2.3 MB each, ~7 MB for three sites, which is exactly why.
+The CSVs are small and ARE tracked. Flagged to the user in case these
+specific figures should be exempted for sharing with the supervisor.
+
+Verified before committing: py_compile; the figure pipeline run end-to-end
+through the test's own _emit_outputs with synthetic records (9 files
+written, sizes and CSV contents checked); an AST pass confirming every
+variable the new plotting code reads inside the site loop is assigned before
+first use; and the LogNorm zero-guard exercised against an array containing
+exact zeros.
+
+--------------------------------------------------------------------------------
+2026-10-05 -- CORRECTION to the entry above: that plotting module was deleted and the heatmaps inlined
+--------------------------------------------------------------------------------
+The entry immediately above describes tests/locality_plots.py, a separate
+module with four figure types, pandas CSV emitters and a degradation wrapper.
+IT NO LONGER EXISTS. User's correction: "i simply meant put snippet for heat
+maps in /test_attention_locality.py so that i can run it locally". The module
+was deleted and replaced by a single ~60-line save_heatmaps() inside the test
+itself, drawing one PNG per probe site: am BEFORE, am AFTER, |delta am| on a
+log scale, and the signed per-pair energy change, with the mutated site
+crosshaired. The log scale and the zero-clip were kept, for the reasons the
+entry above gives. The CSV emitters, the decay-profile figure and the
+distal-share bar chart are gone; the same numbers are printed as text.
+
+PROCESS NOTE, and the reason this is a separate appended entry: the first
+attempt at this correction DELETED the entry above and wrote a short
+replacement. That is against this file's stated convention ("append, don't
+rewrite history"), and the user confirmed the convention should hold. The
+original entry has been restored verbatim from commit d976a73 and this
+correction appended after it, which is how a superseded entry should be
+handled here -- the record of what was built and why is worth more than the
+tidiness of not having a stale entry in the log.
+
+LESSON, kept from the replacement: the request was for a snippet to run
+locally and it was read as a request for a plotting subsystem. Default to the
+smaller thing, inside the file being discussed.
+
+--------------------------------------------------------------------------------
+2026-10-05 -- attention_locality results: BOTH gradient questions settled. The map change is overwhelmingly non-local; gradient cost and memory are exactly flat in k. Plus: a failed prediction that points at a non-reproducible backward pass
+--------------------------------------------------------------------------------
+User ran tests/test_attention_locality.py (commit 29b70c3) and re-ran
+test_multisite_tradeoff.py. Three things.
+
+(A) Q1 -- "for N=1 the attention map should be the same except for that
+site" -- ANSWERED, NO, and decisively. Changing ONE residue moves the map
+essentially everywhere, and almost all of the energy consequence comes from
+pairs that do not involve the mutated site:
+
+  site  |delta am| DISTAL share   dU_am       from LOCAL      from DISTAL
+   80        97.4%               -257.65    +51.15 (-19.9%)  -308.80 (119.9%)
+  283        97.7%               -180.14     +4.51 ( -2.5%)  -184.65 (102.5%)
+  471        97.9%               +573.01    +10.86 (  1.9%)  +562.15 ( 98.1%)
+
+At site 80 the local and distal contributions have OPPOSITE SIGNS: the pairs
+touching the mutated site push the energy UP by 51 while the rest pulls it
+DOWN by 309. The net change is not merely dominated by distal pairs, it is
+produced by them against the local ones.
+  The nuance that keeps this honest: per ENTRY the change IS concentrated at
+  the site, 6.0-7.5x stronger in LOCAL than DISTAL. But DISTAL has 319225
+  entries against LOCAL's 1131 -- 282x more -- so it carries ~98% of the
+  total anyway. Both facts are true and the second is the one that matters
+  for the energy.
+  Decay profiles confirm real but shallow concentration, e.g. site 471:
+  2.31e-4 at distance 0 falling to 1.02e-5 at 51-100. Notably it does NOT
+  decay to zero -- it plateaus, and at every site the 101+ bin is slightly
+  ABOVE the 51-100 bin (80: 2.44e-5 -> 3.27e-5; 283: 1.10e-5 -> 1.35e-5;
+  471: 1.02e-5 -> 2.46e-5). Sequence-distant pairs are not sequence-distant
+  in 3D, so this is what a structural contact would look like; unproven here
+  and worth a look if the question ever matters.
+  This is the same phenomenon as the measured cross-site coupling, seen from
+  the map side rather than the energy side.
+
+(B) Q2 -- "a single-row gradient should be cheaper" -- ANSWERED, NO, and the
+measurement is as flat as a measurement gets. k rows softmax-relaxed, L-k
+held at exact one-hot:
+    k:        1       2       5      20     100     566
+    t_fwd:   61.51   61.53   61.29   61.45   61.80   61.71  ms
+    t_fwd+bwd: 151.03 151.14 151.18 150.91 150.93 151.02  ms
+    peak:   6369.6  6369.6  6369.6  6369.6  6369.7  6369.8  MB
+k=1 vs k=L ratio 1.0002. The predicted maximum saving from doing one row
+instead of L was ~0.001% of a pass; the measured difference is 0.02%, i.e.
+noise, and the predicted effect is ~100x below it. MEMORY settles the "does
+it use more memory" question outright: 0.2 MB of 6.4 GB, 0.003%. Forward is
+61.5 ms and backward 89.5 ms, both flat in k, exactly as the chain-rule
+argument requires -- the (L,d) activation gradient crosses all 48 layers
+regardless of how many input rows carry grad.
+  Corollary restated because it is the operative one: an N-site move gets
+  its N mutations for free. Cost favours multi-site unconditionally; only
+  acceptance can argue against it.
+
+(C) Section 3: the k=1 and k=L gradients agree to cosine >= 0.999962 at every
+probe site and pick the SAME substitution among the 19 competitors at all
+three. The two methods are interchangeable for what the sampler consumes.
+
+(D) A PREDICTION OF MINE FAILED, and it is worth more than the bookkeeping.
+I claimed the multisite re-run would reproduce identical dU values, since
+every RNG is deterministically seeded, and offered the diff as a consistency
+check. It reproduced 68 of 84 cells; 16 moved. Investigated rather than
+waved away:
+  - starting points are BIT-IDENTICAL in both runs (same Hd, same U_A to the
+    last decimal at all 6), so seq_A and the forward pass are reproducible,
+    consistent with the noise-floor check that already returned exactly 0;
+  - the changed cells skew monotonically with N: 1 cell at N=2, 3 at N=5, 3
+    at N=8, 4 at N=12, 5 at N=20, and hit both site-selection modes;
+  - the user ran commit ae74e8b, in which draw_sites and every seed formula
+    are identical to the earlier run's, so site selection is not the cause.
+  HYPOTHESIS, not yet confirmed: the BACKWARD pass is not bit-reproducible
+  (CUDA reductions use atomics with no fixed summation order), so grad_whole
+  differs slightly between runs, and at near-degenerate sites the gradient's
+  argmax -- the target every trial uses -- flips. A trial touching N sites
+  has N chances to be affected, which produces exactly the observed monotone
+  trend. Nobody has ever checked the backward for reproducibility; only the
+  forward was.
+  Added section (4) to test_attention_locality.py to settle it: two
+  whole-sequence gradients on the same input, reporting bit-identity,
+  max|g1-g2|, and the count of sites whose preferred substitution differs --
+  the last being directly comparable to the observed per-N pattern via
+  1-(1-p)^N.
+  If confirmed, the consequence is NOT a correctness problem: MH needs only
+  the proposal probability actually used, and the Boltzmann validation
+  passed. The consequence is interpretive -- "the gradient prefers X at site
+  s" is one draw rather than a fixed property wherever two competitors are
+  nearly tied, and gradient-based diagnostics should not be expected to
+  re-run identically. My "diff the two files as a consistency check" advice
+  was wrong and is withdrawn.
