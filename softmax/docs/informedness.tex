@@ -204,23 +204,66 @@ not work and was abandoned.
 
 $\pmatch$, and more generally the proposal probability needed for the
 Metropolis--Hastings ratio, is the probability that a particular component of
-a Gaussian vector is the largest. For target $j$ among competitors $k$, with a
-common $\sigma$ (true here, since $\dt$, $T$, $\Mass$ are global scalars):
+a Gaussian vector is the largest. ``Pointing at $e_{j}$'' means
+$\delta x_{j} > \delta x_{k}$ for every competitor $k$, i.e.\ every other
+component falls below $\delta x_{j}$. Conditioning on the value of
+$\delta x_{j}$ and using independence across $k$:
 \begin{equation}
   a_{i\to j}
   \;=\; \mathbb{P}\!\left(\delta x_{j} > \delta x_{k}\ \ \forall k \neq i,j\right)
+  \;=\; \int_{-\infty}^{\infty}\!\!\mathrm{d}\delta x_{j}\;
+        f_{\mu_{j},\sigma_{j}}(\delta x_{j})
+        \prod_{k \neq i,j}
+        \int_{-\infty}^{\delta x_{j}}\!\!\mathrm{d}\delta x_{k}\;
+        f_{\mu_{k},\sigma_{k}}(\delta x_{k}),
+  \label{eq:aij-raw}
+\end{equation}
+where $f_{\mu,\sigma}$ is the Gaussian density. The inner integrals are
+Gaussian cumulatives, so this is
+$\int \mathrm{d}\delta x_{j}\, f_{\mu_{j},\sigma_{j}}(\delta x_{j})
+ \prod_{k} \Phi_{\mu_{k},\sigma_{k}}(\delta x_{j})$.
+Standardising the outer variable, $\delta x_{j} = \mu_{j} + \sigma_{j}u$:
+\begin{equation}
+  \boxed{\;
+  a_{i\to j}
   \;=\; \int_{-\infty}^{\infty}\! \phi(u)
-        \prod_{k \neq i,j} \Phi\!\left(\alpha_{kj} + u\right) \mathrm{d}u,
+        \prod_{k \neq i,j}
+        \Phi\!\left(\alpha_{kj} + \beta_{kj}\,u\right) \mathrm{d}u,
   \qquad
-  \alpha_{kj} = \frac{\mu_{j}-\mu_{k}}{\sigma},
+  \alpha_{kj} = \frac{\mu_{j}-\mu_{k}}{\sigma_{k}},
+  \qquad
+  \beta_{kj} = \frac{\sigma_{j}}{\sigma_{k}}.
+  \;}
   \label{eq:aij}
 \end{equation}
-with $\phi$, $\Phi$ the standard normal density and CDF. With constant
-$\sigma$ this is a Thurstone/probit discrete-choice model---the probit analogue
-of the softmax-based proposal used by Gibbs-With-Gradients. It is an exact
-probability, not merely something proportional to one: summing
-\eqref{eq:aij} over all admissible $j$ at a fixed site gives $1$, which is
-checked numerically in \path{tests/test_proposals.py}.
+with $\phi$, $\Phi$ the standard normal density and CDF. Note that
+$\alpha_{kj}$ is divided by $\sigma_{k}$ --- the standard deviation of the
+competitor being compared against --- not by $\sigma_{j}$.
+
+\paragraph{The specialisation used here.} In this sampler $\sigma$ is a
+global scalar: $\delta x = \dt\,p/\Mass - \frac{\dt^{2}}{2\Mass}\gradU$ with
+isotropic momentum $p\sim\mathcal{N}(0,\Mass T I)$, so every component has the
+same variance $\dt^{2}T/\Mass$ and
+\begin{equation}
+  \beta_{kj} = \frac{\sigma_{j}}{\sigma_{k}} = 1 \quad \text{identically},
+  \qquad
+  \alpha_{kj} = \frac{\mu_{j}-\mu_{k}}{\sigma},
+\end{equation}
+which is what \path{utils/proposals.py} implements (it takes $\sigma$ as a
+scalar argument). Dropping $\beta$ is therefore correct \emph{here} but not in
+general: verified numerically against brute-force Monte Carlo,
+\eqref{eq:aij} reproduces the true pointing probabilities to within Monte
+Carlo error in both cases, whereas using a single $\sigma$ when the
+$\sigma_{k}$ genuinely differ is wrong by up to $0.135$ in absolute
+probability on a $K=6$ test. Any future variant with a per-class or per-site
+step size reinstates $\beta$.
+
+With constant $\sigma$ this is a Thurstone/probit discrete-choice
+model---the probit analogue of the softmax-based proposal used by
+Gibbs-With-Gradients. It is an exact probability, not merely something
+proportional to one: summing \eqref{eq:aij} over all admissible $j$ at a fixed
+site gives $1$, which is checked numerically in
+\path{tests/test_proposals.py}.
 
 \subsection{How it is evaluated}
 
@@ -240,19 +283,51 @@ since a finite penalty could in principle be approached by
 $\dt^{2}$-scaled gradients at large $\dt$, whereas a sliced-out class is
 structurally absent.
 
-\subsection{The one approximation}
+\subsection{The independence assumption is exact here, not an approximation}
 
 Equation \eqref{eq:aij} treats the $K$ components of $\delta x$ as
-independent. They are not exactly: mean-centring the momenta and logits
-induces the covariance $\sigma^{2}(I - J/K)$ rather than $\sigma^{2}I$, a
-pairwise correlation of $-1/(K-1) \approx -0.05$ for $K=20$. This is a
-deliberate, small, documented approximation---the exact calculation would be a
-$(K\!-\!1)$-dimensional orthant integral with no closed form. It is worth
-knowing it is there, because it is the one place the proposal probability is
-not exact; it is not, however, a threat to the sampler's target distribution,
-since the \emph{same} formula is used for both the forward and reverse
-direction and the Metropolis--Hastings correction only needs their ratio to be
-the ratio of the probabilities actually used to propose.
+independent, and the project has long recorded this as ``a deliberate, small,
+controlled approximation'' --- the reasoning being that mean-centring the
+momenta and the displacement induces the covariance $\sigma^{2}(I-J/K)$
+rather than $\sigma^{2}I$, a pairwise correlation of $-1/(K-1)$. That
+description is \textbf{wrong for the quantity actually being computed}, and
+the code is more correct than its own comment claimed.
+
+The sampler centres twice --- once inside \texttt{\_extract\_momenta}
+($p \leftarrow p - \overline{p}$) and once on the displacement
+($\delta x \leftarrow \delta x - \overline{\delta x}$). Both subtract the
+\emph{same scalar from every component}, and $\arg\max$ is invariant under a
+common shift. The realised proposal is therefore the $\arg\max$ of the
+\emph{uncentred} displacement, whose components are genuinely independent
+$\mathcal{N}(\mu_{k},\sigma^{2})$. The induced correlation never reaches the
+functional being evaluated. Slicing to the 19 competitors afterwards does not
+disturb this, since the same scalar was subtracted from those components too.
+
+Verified by simulating the exact pipeline --- centred momentum, centred
+displacement, $\arg\max$ over the competitor slice, $2\times10^{6}$ draws:
+\begin{center}
+\begin{tabular}{l r}
+\toprule
+$\max|\text{empirical} - \text{formula}(\sigma)|$ & $0.00033$ \\
+$\max|\text{empirical} - \text{formula}(\sigma\sqrt{1-1/K})|$ & $0.00252$ \\
+Monte Carlo standard error & $0.00026$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+The formula with the \emph{uncentred} $\sigma$ agrees within Monte Carlo
+error. The ``corrected'' marginal $\sigma\sqrt{1-1/K}$ --- the natural thing
+to reach for once one notices the centring --- is wrong by about ten standard
+errors. Drawing uncentred momenta directly reproduces the centred pipeline's
+$\arg\max$ frequencies to $0.00036$, confirming the shift-invariance argument
+rather than merely asserting it.
+
+So $a_{i\to j}$ as computed is exact, up to quadrature error, which is
+separately verified: Gauss--Hermite with $n_{\mathrm{quad}}=40$ converged to
+$\sim\!6$ significant figures even in the steepest case tested. The
+observation that the Metropolis--Hastings correction only needs the forward
+and reverse probabilities \emph{actually used to propose} still holds, and
+remains the reason that even a genuinely approximate $a$ would not bias the
+target distribution --- but it is not needed to defend this one.
 
 % ===========================================================================
 \section{\texorpdfstring{Why informedness scales as $\dt/\sqrt{T}$}{Why informedness scales as dt/sqrt(T)}}

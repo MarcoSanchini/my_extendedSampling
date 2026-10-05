@@ -69,14 +69,46 @@ def log_pointing_prob(
 
 
 """
-Note on the independence approximation:
-mu/sigma above come from a displacement dx whose K components are, strictly,
-NOT independent: the gauge-fixing that keeps logits (and momenta) mean-centered
-across the class axis (removing the softmax translation invariance) induces a
-covariance Sigma = sigma^2*(I - J/K) rather than sigma^2*I. The formula here
-treats the K classes as independent N(mu_k, sigma^2) instead, which is a
-deliberate, small, controlled approximation (pairwise correlation -1/(K-1),
-e.g. ~-0.05 for K=20) made for tractability -- computing a_ij under the exact
-projected covariance would require a (K-1)-dimensional orthant integral with
-no closed form.
+Note on the independence assumption -- it is EXACT here, not an approximation.
+This corrects what this file said until 2026-10-05.
+
+The concern was: the gauge-fixing that keeps momenta and the displacement
+mean-centered across the class axis (removing the softmax translation
+invariance) induces a covariance Sigma = sigma^2*(I - J/K) rather than
+sigma^2*I, so treating the K classes as independent N(mu_k, sigma^2) looked
+like a deliberate approximation.
+
+It is not, for the quantity this function computes. Both centerings --
+_extract_momenta's (p -= p.mean()) and _step's (delta_x -= delta_x.mean()) --
+subtract the SAME SCALAR from every component, and argmax is invariant under
+a common shift. The realized proposal is therefore the argmax of the
+UNCENTERED displacement, whose components are genuinely independent
+N(mu_k, sigma^2). The induced correlation never reaches the functional being
+evaluated. Slicing to the competitor subset afterwards does not disturb this,
+since the same scalar was subtracted from those components too.
+
+Verified by simulating the exact pipeline (centered momentum, centered
+delta_x, argmax over the competitor slice, 2e6 draws): the formula with the
+uncentered sigma matches empirical argmax frequencies to 3.3e-4 against a
+Monte Carlo standard error of 2.6e-4, while the "corrected" marginal
+sigma*sqrt(1-1/K) -- the natural thing to reach for once one notices the
+centering -- is wrong by 2.5e-3, about ten standard errors. Drawing
+uncentered momenta directly reproduces the centered pipeline's argmax
+frequencies to 3.6e-4, confirming the shift-invariance argument rather than
+just asserting it.
+
+So the only error left in a_ij is quadrature error, which is separately
+verified (n_nodes=40 converged to ~6 significant figures even in the steepest
+case tested).
+
+Note on the general formula: this function assumes a COMMON sigma across
+classes, which holds here because dt, T and M are global scalars, so the
+momentum is isotropic. The general "which independent Gaussian is the max"
+formula carries a second coefficient,
+    a_ij = int phi(u) prod_{k!=i,j} Phi(alpha_kj + beta_kj*u) du
+    alpha_kj = (mu_j - mu_k)/sigma_k,    beta_kj = sigma_j/sigma_k
+and reduces to what is implemented here only because beta_kj == 1. A variant
+with a per-class or per-site step size would have to reinstate beta; using a
+single sigma when the sigma_k genuinely differ was measured wrong by up to
+0.135 in absolute probability on a K=6 test. See softmax/docs/informedness.tex.
 """

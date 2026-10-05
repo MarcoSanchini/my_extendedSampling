@@ -4681,3 +4681,72 @@ correctness, and the flip rate is a useful property to know rather than a
 defect. Recorded in docs/gradient_method.tex section 6.3, which is now
 updated from "open, under test" to confirmed, with the arithmetic above and
 the summary-table row amended. Rebuilt: 9 pages, clean.
+
+--------------------------------------------------------------------------------
+2026-10-05 -- user caught a missing beta in informedness.tex eq (6). Correct catch: the general pointing-probability formula needs it. Checking the sampler then turned up a SECOND correction, in our favour -- the "independence approximation" is exact
+--------------------------------------------------------------------------------
+User's reading of eq (6) in docs/informedness.tex: it lacks beta, and the
+general derivation is
+    a ~ int d(dx_j) f_{mu_j,sigma_j}(dx_j) prod_{k!=i,j} int_{-inf}^{dx_j}
+        d(dx_k) f_{mu_k,sigma_k}(dx_k)
+      = int phi(u) prod_{k!=i,j} Phi(alpha_kj + beta_kj u) du
+    alpha_kj = (mu_j - mu_k)/sigma_k,   beta_kj = sigma_j/sigma_k
+Correct on both counts, and it matches the ORIGINAL derivation recorded in
+this file on 2026-09-17, which carried beta and noted the specialisation.
+The .tex dropped beta and stated the common-sigma condition only in passing,
+which is how the general form got lost.
+
+CHECKED THE MATH (numpy + Gauss-Hermite, brute-force Monte Carlo at 4e6
+draws, no torch needed):
+  - general formula with beta, sigma DIFFERING across classes (K=6):
+    matches MC to 2.2e-4, sums to 1.000000;
+  - eq (6) as written (single sigma) on that same case: wrong by up to
+    0.135 in absolute probability -- so beta is not cosmetic;
+  - sigma COMMON: beta_kj = 1 identically, the general form collapses onto
+    eq (6), both match MC.
+So eq (6) was correct FOR THIS SAMPLER but presented as if general.
+
+CHECKED THE SAMPLER: sigma is a scalar
+(sigma = dt*sqrt(T/M), rate_sampler.py:181) passed as a scalar to
+log_pointing_prob, because the momentum is isotropic. beta_kj = 1 holds, so
+the implementation is right. Fixed the document instead: eq (6) now gives
+the general derivation with beta boxed, then the specialisation, with the
+measured 0.135 error as the reason beta matters if a per-class or per-site
+step size is ever introduced.
+
+SECOND CORRECTION, found while checking the above, and it goes the other
+way. utils/proposals.py and this DEVLOG have both recorded since 2026-09-17
+that treating the K components as independent is "a deliberate, small,
+controlled approximation", because mean-centering induces covariance
+sigma^2*(I - J/K). THAT IS WRONG for the quantity actually computed, and the
+code is more correct than its own comment claimed.
+  Both centerings -- _extract_momenta's (p -= p.mean()) and _step's
+  (delta_x -= delta_x.mean()) -- subtract the SAME SCALAR from every
+  component, and argmax is invariant under a common shift. The realised
+  proposal is therefore the argmax of the UNCENTERED displacement, whose
+  components are genuinely independent N(mu_k, sigma^2). The correlation
+  never reaches the functional. Slicing to the 19 competitors afterwards
+  does not disturb it, since the same scalar was subtracted from those too.
+  Simulated the exact pipeline (centered momentum, centered delta_x, argmax
+  over the competitor slice, 2e6 draws):
+     max |empirical - formula(sigma)|              = 3.3e-4
+     max |empirical - formula(sigma*sqrt(1-1/K))|  = 2.5e-3
+     Monte Carlo standard error                    = 2.6e-4
+  The uncentered sigma agrees within MC error. The "corrected" marginal
+  sigma*sqrt(1-1/K) -- the natural thing to reach for once one notices the
+  centering -- is off by ~10 standard errors. Drawing uncentered momenta
+  directly reproduces the centered pipeline's argmax frequencies to 3.6e-4,
+  confirming the shift-invariance argument rather than just asserting it.
+  So the only error left in a_ij is quadrature error, already verified
+  (n_quad=40, ~6 significant figures in the steepest case tested).
+  Corrected in utils/proposals.py's module note (which also now records the
+  general beta formula) and in informedness.tex, whose section 3.3 changes
+  from "The one approximation" to "The independence assumption is exact
+  here, not an approximation".
+
+Worth noting what this does NOT change: the argument that MH only needs the
+forward and reverse probabilities ACTUALLY USED to propose still holds, and
+is still why even a genuinely approximate a would not bias the target. It is
+just no longer needed to defend this particular step.
+
+informedness.tex rebuilt: 11 pages (was 10), clean.
