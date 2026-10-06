@@ -182,22 +182,113 @@ facts that the diagnostic
 
 Conflating (A) and (B) was the original error that this decomposition fixed:
 an earlier diagnostic swept $\dt$ looking for improvements in proposal
-\emph{quality}, which by (A) cannot exist. The two limits of (B) are
+\emph{quality}, which by (A) cannot exist.
+
+\subsection{The mathematics of (B)}
+\label{sec:Bmath}
+
+Statement (B) is not qualitative. $\pmatch$ has a closed form, and every claim
+made about it below is a property of that form.
+
+\paragraph{$\pmatch$ is the pointing probability evaluated at the gradient's
+own choice.} Comparing \eqref{eq:pmatch} with the definition of $a_{i\to j}$
+in \S\ref{sec:aij}, they are the same object with $j$ set to $j^{\star}$:
 \begin{equation}
-  \pmatch \longrightarrow \frac{1}{\Ncomp} = \frac{1}{19} \approx 0.0526
-  \quad (\dt \to 0),
-  \qquad
-  \pmatch \longrightarrow 1 \quad (\dt \to \infty),
+  \pmatch \;=\; a_{i\to j^{\star}}
+  \;=\; \int_{-\infty}^{\infty}\! \phi(u)
+        \prod_{k \neq i,\,j^{\star}}
+        \Phi\!\left(\alpha_{kj^{\star}} + u\right)\mathrm{d}u ,
 \end{equation}
-i.e.\ a uniform pick among the 19 competitors at small $\dt$, and a
-deterministic, greedy gradient-descent pick at large $\dt$. Note the
-small-$\dt$ limit is \emph{uniform}, not ``stay put'': nothing in
-\eqref{eq:leapfrog} references the current residue's identity, which is why an
-earlier design that tried to make small $\dt$ mean ``few sites change'' could
-not work and was abandoned.
+using $\beta \equiv 1$ for this sampler (\S\ref{sec:aij}). Substituting
+$\mu = -\frac{\dt^{2}}{2\Mass}\gradU$ and $\sigma = \dt\sqrt{T/\Mass}$ makes
+the $\dt$ dependence explicit:
+\begin{equation}
+  \boxed{\;
+  \pmatch(\dt)
+  \;=\; \int_{-\infty}^{\infty}\! \phi(u)
+        \prod_{k \neq i,\,j^{\star}}
+        \Phi\!\left(\frac{\dt\, g_{kj^{\star}}}{2\sqrt{\Mass T}} + u\right)
+        \mathrm{d}u ,
+  \qquad
+  g_{kj^{\star}} = (\gradU)_{k} - (\gradU)_{j^{\star}} \;\ge\; 0 ,
+  \;}
+  \label{eq:pmatch-closed}
+\end{equation}
+where $g_{kj^{\star}} \ge 0$ holds \emph{by definition} of $j^{\star}$ as the
+minimiser of $(\gradU)_{j}$ over the competitors. Four consequences follow,
+all verified numerically against \eqref{eq:pmatch-closed}.
+
+\paragraph{1. Monotonicity.} Every $\alpha_{kj^{\star}} = \dt
+g_{kj^{\star}}/(2\sqrt{\Mass T})$ is non-decreasing in $\dt$ because
+$g_{kj^{\star}}\ge0$; $\Phi$ is increasing; so each factor is non-decreasing
+in $\dt$ pointwise in $u$, the product of non-negative non-decreasing
+functions is non-decreasing, and integrating against $\phi \ge 0$ preserves
+it. Hence $\pmatch$ is \emph{monotonically non-decreasing in} $\dt$ --- there
+is no interior optimum to find, which is why choosing $\dt$ is a matter of
+picking a working point (\S5) rather than maximising anything. Checked over
+$\dt \in [10^{-2},10^{6}]$: monotone at every step.
+
+\paragraph{2. The small-$\dt$ limit is uniform, and equals $1/\Ncomp$
+exactly.} As $\dt\to0$ all $\alpha \to 0$ and
+\begin{equation}
+  \pmatch \longrightarrow \int \phi(u)\,\Phi(u)^{\Ncomp-1}\mathrm{d}u
+  \;=\; \frac{1}{\Ncomp} \;=\; \frac{1}{19} \approx 0.0526 ,
+\end{equation}
+by the standard identity $\int\phi\,\Phi^{n} = 1/(n+1)$ --- the probability
+that a designated one of $n+1$ i.i.d.\ variables is the largest. Reproduced to
+within quadrature error ($1.4\times10^{-13}$, 120-node Gauss--Hermite). Note this limit is \emph{uniform}, not ``stay put'':
+nothing in \eqref{eq:leapfrog} references the current residue's identity,
+which is why an earlier design that tried to make small $\dt$ mean ``few sites
+change'' could not work and was abandoned.
+
+\paragraph{3. The approach to that floor is linear in $\dt$.} Expanding
+$\Phi(\alpha+u) = \Phi(u) + \alpha\phi(u) + O(\alpha^{2})$ in
+\eqref{eq:pmatch-closed},
+\begin{equation}
+  \pmatch(\dt) \;=\; \frac{1}{\Ncomp}
+  \;+\; C_{\Ncomp}\,\frac{\dt}{2\sqrt{\Mass T}}
+        \sum_{k \neq i,j^{\star}} g_{kj^{\star}}
+  \;+\; O(\dt^{2}),
+  \qquad
+  C_{\Ncomp} = \int \phi(u)^{2}\,\Phi(u)^{\Ncomp-2}\mathrm{d}u ,
+\end{equation}
+with $C_{19} = 5.393\times10^{-3}$. So near the floor the useful signal grows
+linearly in $\dt$, with a slope set by the \emph{sum} of the gradient gaps ---
+which is why a sequence with larger gaps reaches a given $\pmatch$ at a
+proportionally smaller $\dt$, the effect measured in \S5.3.
+
+Verified against the exact integral on a synthetic 18-competitor case: the
+relative error of the linear form falls as the \emph{square} of the largest
+shift $\alpha_{\max} = \dt\,g_{\max}/(2\sqrt{\Mass T})$ --- $2.1\times10^{-7}$
+at $\alpha_{\max}=1.4\times10^{-3}$, $2.1\times10^{-5}$ at
+$1.4\times10^{-2}$, $1.8\times10^{-3}$ at $0.14$, i.e.\ a factor $\sim\!100$
+per decade --- which is exactly the $O(\alpha^{2})$ truncation a first-order
+expansion should leave. Above $\alpha_{\max}\sim1$ the linear form crosses the
+exact curve and then diverges from it, so this is a statement about the floor
+only, not a usable approximation at the working point.
+
+\paragraph{4. The large-$\dt$ limit is 1, with one exception.} As
+$\dt\to\infty$ every $\alpha_{kj^{\star}} \to +\infty$ provided
+$g_{kj^{\star}}>0$, so every factor $\to 1$ and $\pmatch \to 1$: a
+deterministic, greedy gradient-descent pick. Verified to machine precision at
+$\dt=10^{8}$. The exception is an exact tie, $g_{kj^{\star}}=0$ for some $k$:
+that factor stays $\Phi(u)$ for all $\dt$ and the limit becomes $1/2$ (one
+tie), or $1/(m+1)$ for $m$ tied competitors --- confirmed numerically at
+$0.50000000$ for $m=1$ and $0.33333333$ for $m=2$. This is not a pathology but the correct behaviour, and
+it is the formal version of the near-degeneracy that makes a specific reported
+substitution unstable between runs (see \path{docs/gradient_method.tex} §6.3).
+
+\paragraph{What $\dt$ therefore buys.} Between those limits, $\dt$ moves the
+proposal along a one-parameter family from ``uniform over the 19 competitors''
+to ``always the gradient's pick'', monotonically, with no interior structure.
+Since by (A) the \emph{identity} of that pick is fixed, $\dt$ selects only how
+strictly the sampler commits to it --- and \S5 argues that committing fully is
+undesirable, so the right $\dt$ is an interior working point chosen against
+the measured curve, not an extremum.
 
 % ===========================================================================
 \section{\texorpdfstring{The pointing probability $a_{i\to j}$}{The pointing probability a(i->j)}}
+\label{sec:aij}
 % ===========================================================================
 
 \subsection{Closed form}
