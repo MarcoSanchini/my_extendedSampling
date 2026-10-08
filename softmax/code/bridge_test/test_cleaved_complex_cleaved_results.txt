@@ -1,0 +1,66 @@
+nohup: ignoring input
+# reference: zero_polymer_cleaved (L=550 residues + 1 chainbreak, 551 positions)
+# decoding steps: 256   device: cuda:0
+
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 216099.97it/s]
+predicted sequence length: 551   coordinates: (551, 37, 3)
+
+--- confidence ---
+  ptm   0.2322   (floor 0.4)
+  plddt reported on a 0-1 scale, shown here as 0-100
+  plddt mean (all residues)    63.89
+  plddt mean polymer_one       63.22   ( 38.6% of residues >= 70)
+  plddt mean polymer_two       64.90   ( 55.7% of residues >= 70)
+  residues >= 70             45.5%
+  READ: high plddt with low ptm => domains folded, their
+        RELATIVE PLACEMENT failed. Low both => nothing folded.
+
+--- geometry sanity ---
+  min CB-CB (|i-j|>=2)        1.50 A   (clash below 3.0)
+  CB-CB clashes              15   (a physical fold has ~0)
+  CB absent (NaN) at 42 residues; 42 glycines in sequence
+    (infer_cbeta writes NaN at every G by default, so G is excluded
+     from all CB statistics by construction -- if these two numbers
+     agree, the clashes above are between REAL inferred CBs.)
+  worst clashing pairs:
+     1.50 A    two:154 N -- two:157   Y   |i-j|=3
+     1.70 A    two:153 R -- two:157   Y   |i-j|=4
+     1.79 A    two:156 T -- two:160   D   |i-j|=4
+     1.81 A    two:148 C -- two:164   D   |i-j|=16
+     1.99 A    one:326 K -- one:328   T   |i-j|=2
+     2.02 A    two:154 N -- two:156   T   |i-j|=2
+     2.09 A    two:151 S -- two:161   V   |i-j|=10
+     2.10 A    one:287 S -- one:289   P   |i-j|=2
+
+  [UNTRUSTWORTHY] ptm 0.232 below 0.4; 15 CB-CB clashes.
+  Distances below describe a structure the model does not
+  believe in. Check --ref protein_g passes before reading them.
+  polymer_one:14 -> position 13: C
+  polymer_two:137 -> position 466: C
+
+--- the bridge: polymer_one:Cys14 <-> polymer_two:Cys137 ---
+  SG-SG     n/a A   (bonded ~2.05, cutoff 2.5)
+  CB-CB   95.67 A   (bonded <4.5)
+  CA-CA   95.31 A   (bonded ~5.5-6.8)
+  plddt at the two anchors: 73.6 / 61.3
+
+  verdict: bridge NOT formed  [CB-CB=95.67 A, no SG predicted]  (but see UNTRUSTWORTHY above)
+
+--- all 136 cysteine pairs by CB-CB, closest first ---
+    1. *   4.27 A     one:64 -- one:97   
+    2.     4.52 A     one:76 -- one:139  
+    3.     6.22 A    two:144 -- two:148  
+    4.     7.08 A    two:217 -- two:220  
+    5.     7.39 A    two:195 -- two:199  
+    6.     8.75 A    two:210 -- two:217  
+    7.     9.73 A    one:277 -- one:281  
+    8.    11.96 A    two:137 -- two:144  
+    9.    15.40 A    two:210 -- two:220  
+   10.    18.14 A    two:137 -- two:148  
+   11.    18.70 A    two:199 -- two:210  
+   12.    18.78 A     one:52 -- one:97   
+   98.    95.67 A     one:14 -- two:137    <== the HA1-HA2 bridge
+
+  1 pairs in plausible bonding range [3.0, 4.5] A (*)
+  0 pairs CLASHING below 3.0 A (!) -- broken geometry,
+  not disulfides

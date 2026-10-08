@@ -1,0 +1,33 @@
+nohup: ignoring input
+# reference: zero_polymer_protein_g (L=56 residues)
+# decoding steps: 56   device: cuda:0
+# POSITIVE CONTROL: must reach ptm >= 0.7 with 0 clashes,
+# otherwise the harness is at fault and no other run from this
+# script means anything.
+
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 116068.79it/s]
+predicted sequence length: 56   coordinates: (56, 37, 3)
+
+--- confidence ---
+  ptm   0.7596   (floor 0.4, control needs 0.7)
+  plddt reported on a 0-1 scale, shown here as 0-100
+  plddt mean (all residues)    93.24
+  plddt mean protein_g         93.24   (100.0% of residues >= 70)
+  residues >= 70            100.0%
+  READ: high plddt with low ptm => domains folded, their
+        RELATIVE PLACEMENT failed. Low both => nothing folded.
+
+--- geometry sanity ---
+  min CB-CB (|i-j|>=2)        3.68 A   (clash below 3.0)
+  CB-CB clashes              0   (a physical fold has ~0)
+  CB absent (NaN) at 4 residues; 4 glycines in sequence
+    (infer_cbeta writes NaN at every G by default, so G is excluded
+     from all CB statistics by construction -- if these two numbers
+     agree, the clashes above are between REAL inferred CBs.)
+
+  CONTROL PASSED.
+  Harness is sound; zero_polymer results describe the TARGET.
+
+(ref 'protein_g' is a single chain -- no interchain bridge)
+
+(no cysteine pairs with inferred CB -- protein_g has no cysteines, as expected)
