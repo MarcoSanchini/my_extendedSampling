@@ -182,3 +182,86 @@ HA2 alone is the cheaper half of the same question: if it lands near its 70.8
 from mature, it is self-sufficient and the whole deficit is HA1's.
 Only after that is the trimer (one|two|one|two|one|two, 1653 positions) worth
 the GPU time.
+
+
+2026-10-08 -- HA2 ALONE FOLDS: plddt 93.9, zero clashes, the first zero_polymer structure to PASS the gate. It is self-sufficient and the complex HURTS it (93.9 -> 70.8 -> 64.9). But it places NO cysteine pair in disulfide geometry, closest 6.26 A against a HARD geometric ceiling of 5.67 A -- so the bridge criterion needs its own control. HA1 alone still pending
+--------------------------------------------------------------------------------
+    python tests/test_cleaved_complex.py --ref two --steps 221
+
+RESULT -- PASSES the sanity gate outright:
+    ptm                     0.5674   (floor 0.40)
+    plddt mean              93.93
+    residues plddt >= 70    97.7%
+    min CB-CB (|i-j|>=2)    4.14 A
+    CB-CB clashes              0
+    CB NaN / glycines      20 / 20
+    closest Cys-Cys CB-CB   6.26 A   (two:144 -- two:148)
+
+FINDING 5 -- HA2 IS SELF-SUFFICIENT, AND THE COMPLEX DEGRADES IT MONOTONICALLY.
+    HA2 alone                     93.93   (97.7% of residues >= 70)
+    HA2 in mature (with HA1)      70.78   (62.4%)
+    HA2 in cleaved (HA1 + break)  64.90   (55.7%)
+A 29-point plddt drop from adding HA1. So the 550-residue construct is WORSE
+THAN ITS PART for the half that can fold on its own, and HA2's plddt alone
+(93.93) is statistically indistinguishable from protein_g's (93.24) -- this
+domain is as foldable as the suite's known-good reference. Nothing about HA2
+is hard; the difficulty is HA1 and/or the pairing.
+
+This sharpens FINDING 1 without overturning it. The break still helps HA1
+(51.4 -> 63.2) and still costs HA2 (70.8 -> 64.9), so the break is the better
+way to present the pair. But the pair itself is the problem: both chains in
+company sit far below what HA2 reaches alone.
+
+FINDING 6 -- THE BRIDGE CRITERION HAS NO CONTROL, and this is a hole in MY
+experiment design, not in the data. In a fold at plddt 93.9 with zero
+clashes, the closest cysteine pair is 6.26 A CB-CB and NOT ONE of HA2's 28
+pairs falls inside the 4.5 A criterion. HA2 carries 8 cysteines, which in the
+native protein form intrachain disulfides. So either ESM3 systematically
+fails to tighten disulfides in this backbone+CB output, or HA2's disulfides
+genuinely are not formed even when the fold is confident.
+
+The geometry narrows it. For a bonded pair, CB-SG is ~1.81 A and SG-SG ~2.05
+A, so a fully extended collinear CB-SG-SG-CB gives a HARD CEILING of
+    1.81 + 2.05 + 1.81 = 5.67 A
+and real disulfides, whose CB-SG-SG-CB dihedral sits near +/-90 degrees, come
+in at 3.8-4.1 A. 6.26 A is therefore beyond the geometric maximum for a
+bonded pair, whatever threshold one picks: that pair is NOT a disulfide in
+this structure. And since CB here is inferred from N/CA/C by ideal geometry,
+CB error IS backbone error, which at plddt 94 is well under the ~2 A
+discrepancy involved. So this is not imprecision -- ESM3's confident HA2 fold
+simply does not place these cysteines in bonding geometry.
+
+CONSEQUENCE FOR EVERY "bridge NOT formed" VERDICT SO FAR: they may be
+measured against a threshold this model never meets. If ESM3 never resolves a
+disulfide to 4.5 A even where one certainly exists, then 95.7 A and 129.7 A
+remain damning (they are 20x the ceiling) but a near-miss result could never
+have been detected, and the criterion cannot distinguish "ESM3 declined to
+form the bridge" from "ESM3 cannot express a bridge".
+
+protein_g COULD NOT HAVE CAUGHT THIS: it has no cysteines, which the control
+output notes approvingly. A control that validates the fold but not the
+MEASUREMENT was only ever half a control.
+
+REQUIRED NEXT, before any further bridge claim: a DISULFIDE-CONTAINING
+positive control -- a small, disulfide-rich protein ESM3 folds confidently,
+through this same pipeline, with its known pairs checked.
+  - known disulfides come out at 3.8-4.5 A  =>  the criterion is sound, and
+    HA2's cysteines genuinely are unbonded in these predictions.
+  - they come out at 6-7 A                  =>  ESM3 under-tightens
+    disulfides as a rule, CB_BONDED must be recalibrated to that scale, and
+    every verdict in this log is re-read against the new number.
+Deliberately NOT choosing the sequence from memory here: typing a reference
+sequence from recall is precisely the class of error that produced the
+Arg329/Cys14 off-by-16, and it would be worse in a control whose whole job is
+to calibrate the yardstick. Sequence to be supplied or taken from a named PDB
+entry and checked before it enters references.py.
+
+ADMIN, worth recording because it cost the control output: the HA2 run was
+written to test_cleaved_complex_results.txt, the same generic path the
+protein_g control had used, and overwrote it. Recovered verbatim from the
+session transcript and stored as ctrl_protein_g_s56.txt (9e33f2e). Results
+files now want run-identifying names. The HA1 run (--ref one --steps 329) is
+MISSING -- either not yet run or overwritten by the same collision -- and it
+is still the decisive comparison for FINDING 1: HA1 alone against its 63.2 in
+the cleaved complex decides whether HA2's presence actively improves HA1 or
+merely stops interfering with it.
