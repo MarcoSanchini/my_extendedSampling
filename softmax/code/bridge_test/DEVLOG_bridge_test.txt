@@ -88,3 +88,97 @@ plddt, now reported:
 Either way the answer is about the target. What it is NOT about: the
 chainbreak (exonerated), the step budget (1 -> 256 bought +0.05 ptm), the CB
 inference (verified), or the harness (this entry).
+
+
+2026-10-08 -- per-chain plddt: the chainbreak does not merely fail to hurt, it HELPS -- HA1 goes 51.4 -> 63.2 and its Cys14 anchor 22.5 -> 73.6. But the pre-registered trimer signature is NOT met: the deficit is ASYMMETRIC (HA2 adequate, HA1 poor), and the bridge is unformed in both
+--------------------------------------------------------------------------------
+Re-runs of both references at 256 steps with the caeb436 instrumentation
+(per-chain plddt, residue mask excluding the break, clash listing, ref-aware
+labels). The control in the previous entry licenses all of it.
+
+                            cleaved (551 pos)   mature (550 pos)
+    ptm                          0.2322             0.2614
+    plddt mean, all              63.89              59.20
+    plddt mean polymer_one       63.22              51.42
+      % of HA1 residues >= 70    38.6%              11.2%
+    plddt mean polymer_two       64.90              70.78
+      % of HA2 residues >= 70    55.7%              62.4%
+    % all residues >= 70         45.5%              31.8%
+    plddt at Cys14 / Cys137   73.6 / 61.3        22.5 / 80.9
+    min CB-CB                    1.50 A             1.17 A
+    CB-CB clashes                  15                  9
+    clash |i-j| range            2 - 16            2 - 159
+    bridge CB-CB                95.67 A           129.74 A
+    Cys pairs in [3, 4.5]           1                  0
+    CB NaN / glycines           42 / 42            42 / 42
+
+FINDING 1 -- THE CHAINBREAK IS BENEFICIAL, not merely harmless. The previous
+entry could only say it was exonerated, because ptm alone slightly FAVOURS
+mature (0.261 vs 0.232). Per-chain plddt reverses that and is far more
+substantial than the 0.03 of ptm:
+    HA1 plddt        51.42 -> 63.22   (+11.8)
+    HA1 confident     11.2% -> 38.6%  (3.4x more residues above 70)
+    HA2 plddt        70.78 -> 64.90   (-5.9)
+    overall          59.20 -> 63.89   (+4.7), 31.8% -> 45.5% confident
+So telling ESM3 where the cut is helps HA1 a great deal, costs HA2 a little,
+and nets clearly positive. Marco's original premise -- that the two pieces
+should go in as one molecule rather than as separate monomers -- is
+vindicated as far as this evidence goes: the model does something better with
+the break than without it.
+
+FINDING 2 -- IT HELPS EXACTLY WHERE THE BRIDGE IS. plddt at Cys14 goes
+22.5 -> 73.6. In the break-free form HA1's N-terminal region is essentially
+unplaced (22.5 is noise), which is why mature's bridge separation is the
+absurd 129.7 A: the anchor is flailing, not merely misplaced. With the break
+the same anchor is confidently positioned (73.6). The bridge is still not
+formed, but one of its two ends stops being garbage.
+
+FINDING 3 -- THE CLASH TOPOLOGY DIFFERS QUALITATIVELY, and this is the
+sharper signal, which the raw count hides (mature has FEWER clashes, 9 vs
+15, and is nonetheless much worse):
+    cleaved  |i-j| = 3, 4, 4, 16, 2, 2, 10, 2        -- all LOCAL
+    mature   |i-j| = 140, 103, 159, 92, 2, 135, 80, 90 -- mostly LONG-RANGE
+Local clashes are sloppy backbone geometry over a few residues. Long-range
+clashes at |i-j| ~ 100-160 mean two distant segments of the chain are
+SUPERIMPOSED -- the chain passes through itself, which is topologically
+impossible rather than merely imprecise. mature is globally wrong; cleaved is
+locally rough. Reading clash counts without the separation distribution would
+have ranked these backwards. Standing lesson: report |i-j| with every clash.
+
+FINDING 4 -- THE PRE-REGISTERED TRIMER SIGNATURE IS NOT MET. The discriminator
+set out in the previous entry wanted BOTH chains above ~70 with ptm still low
+("domains fold, assembly fails"). Actual result is neither branch: the deficit
+is ASYMMETRIC. HA2 is adequate in both runs (64.9 / 70.8, roughly 60% of
+residues confident); HA1 is poor in both and dreadful without the break (63.2
+/ 51.4, 38.6% / 11.2%). So it is not "both pieces fold but cannot be placed",
+and not "nothing folds" either. The obligate-trimer explanation is NOT dead
+-- HA1 is the receptor-binding head, and heads do pack against neighbouring
+protomers in the native trimer -- but it is no longer the only reading, and
+the data localise the problem to HA1 specifically rather than to the
+assembly as a whole.
+
+THE MAIN QUESTION REMAINS UNANSWERED, and honestly so. Both folds fail the
+gate (ptm 0.23 / 0.26, real clashes), so neither licenses a statement about
+whether ESM3 finds the disulfide. Bridge CB-CB is 95.7 / 129.7 A against a
+4.5 A criterion, ranked 98th / 95th of 136 cysteine pairs. What can be said:
+the failure is not the harness (controlled), not the chainbreak (it helps),
+not the CB inference (42 NaN = 42 glycines, exactly, in both runs), and not
+the step budget in any cheap way.
+
+Minor: excluding the chainbreak position dropped cleaved's clash count 16 ->
+15, so exactly one of the originally reported clashes was the bogus CB
+inferred at "|". The 1.50 A minimum is unchanged, so the break was never the
+extreme. mature is unaffected, as predicted, having no break.
+
+NEXT, and it now tests Marco's premise directly rather than circling it:
+isolate the chains. --ref one (329 aa) and --ref two (221 aa), each with
+steps = its own length. The decisive comparison is HA1:
+  - HA1 alone scores BELOW its 63.2 in the cleaved complex  =>  HA2's
+    presence IMPROVES HA1, i.e. the two chains genuinely interact through the
+    break and "one molecule, not two monomers" is doing real work.
+  - HA1 alone scores AT or ABOVE 63.2  =>  the break merely stops HA2 from
+    interfering with HA1, which is a weaker and less interesting claim.
+HA2 alone is the cheaper half of the same question: if it lands near its 70.8
+from mature, it is self-sufficient and the whole deficit is HA1's.
+Only after that is the trimer (one|two|one|two|one|two, 1653 positions) worth
+the GPU time.
