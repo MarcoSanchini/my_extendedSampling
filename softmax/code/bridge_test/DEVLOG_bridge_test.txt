@@ -1,0 +1,90 @@
+================================================================================
+DEVLOG -- bridge_test sub-investigation
+================================================================================
+Scratch devlog for the HA1|HA2 disulfide-bridge work, kept separate so it can
+be reviewed as one piece and appended to softmax/DEVLOG.txt at the end of the
+session. Same format as the main log: dated headline, rule, then prose.
+
+The FIRST entry of this investigation is already in softmax/DEVLOG.txt
+(2026-10-08, "cleaved zero_polymer (HA1 | HA2): the chainbreak is
+EXONERATED..."). It covers: the references.py cleaved block, the mature-vs-
+absolute numbering trap, the num_steps=1 trap, the cleaved-vs-mature
+comparison at 256 steps, and the two caveats this file now resolves. Entries
+below continue from there.
+
+Code: tests/test_cleaved_complex.py (46bccd8, 1f35fbf, fcb86aa, caeb436)
+Results: this directory.
+================================================================================
+
+
+2026-10-08 -- POSITIVE CONTROL PASSES: protein_g folds to ptm 0.76 / plddt 93.2 with zero clashes. The harness is sound, so the zero_polymer failure is a fact about the TARGET. Caveat (a) retracted: the clash metric is real and now empirically calibrated
+--------------------------------------------------------------------------------
+The gap the previous entry closed with "THE CONTROL I FAILED TO RUN": nothing
+established that this script path folds ANYTHING well, so ptm=0.23 on
+zero_polymer could not be separated from a misconfigured harness. Run:
+    python tests/test_cleaved_complex.py --ref protein_g --steps 56
+
+RESULT -- PASSED on every criterion:
+    ptm                     0.7596   (control threshold 0.70)
+    plddt mean              93.24
+    residues plddt >= 70   100.0%
+    min CB-CB (|i-j|>=2)    3.68 A
+    CB-CB clashes              0
+    cysteine pairs             0     (protein_g has no C -- as expected)
+
+CONSEQUENCE 1 -- THE EARLIER NUMBERS ARE RETROACTIVELY LICENSED. The harness
+folds a 56-mer to plddt 93.2 with a clean clash record through the SAME code
+path, the same init_structure_config(), the same decoder and the same CB
+inference used for every zero_polymer run. So
+condition_on_coordinates_only=True is EXONERATED as a suspect -- it was the
+named first suspect and it is not the problem. Therefore ptm=0.232 (cleaved)
+and 0.261 (mature), the 95.7 / 129.7 A bridge separations and the 16 / 9
+CB-CB clashes are properties of what ESM3 does with THIS 550-residue HA
+construct, not artefacts of our plumbing. The previous entry's conclusions
+stand, and may now be stated without the "void until the control passes"
+hedge.
+
+CONSEQUENCE 2 -- CAVEAT (a) IS RETRACTED. The previous entry flagged that the
+clash count might be a glycine/CB artefact. Reading the provenance settled
+it: ProteinChain.infer_cbeta() derives CB from N/CA/C and, with its default
+infer_cbeta_for_glycine=False, writes NaN at every glycine, so glycines were
+excluded from every CB statistic by construction all along. The control now
+VERIFIES that rather than arguing it: "CB absent (NaN) at 4 residues; 4
+glycines in sequence" -- the two counts agree exactly, so no CB is missing
+for any other reason and every clash counted anywhere is between two real
+inferred CBs. Since inferred_cbeta is a deterministic function of the
+backbone, two finite CBs 1.2 A apart mean two nearly superimposed BACKBONES.
+The HA clashes are real geometry violations.
+
+CONSEQUENCE 3 -- THE CLASH THRESHOLD IS NOW CALIBRATED, not assumed. CB_CLASH
+= 3.0 A was picked from first principles (vdW contact ~3.4 A, C-C bond 1.54
+A). The control supplies the empirical side: a fold ESM3 is confident about
+has its closest non-adjacent CB pair at 3.68 A, i.e. ABOVE the cutoff with
+margin and without any tuning. The HA runs sit at 1.17-1.50 A. So 3.0 A
+separates "confident fold" from "broken geometry" cleanly on the two cases we
+have, and the gate is not merely a threshold we invented to fail HA.
+
+ALSO FIXED in caeb436, found while reading the CB provenance: the chainbreak
+is not a residue, but "|" is not glycine either, so infer_cbeta hands it a CB
+derived from meaningless backbone, and the earlier runs let that position into
+the CB matrix, the clash count AND the minimum. A residue mask now excludes
+it. The published cleaved figures (min CB-CB 1.50 A, 16 clashes) may therefore
+shift slightly on a re-run; the mature figures cannot, since that reference
+has no break. label() was also wrong for any break-free reference -- with no
+"|", find() returns -1 and every HA2 residue was labelled one:329+n, which is
+why the first mature table had to be hand-translated. Both now derive from
+chain_spans().
+
+STILL OPEN, and what the two pending 256-step re-runs decide: whether HA's
+failure is the obligate-trimer explanation. The discriminator is PER-CHAIN
+plddt, now reported:
+  - plddt high (>~70) within polymer_one and polymer_two while ptm stays
+    ~0.23  =>  the two chains FOLD and their RELATIVE PLACEMENT fails. That is
+    the signature of an obligate trimer whose HA2 central helix is an
+    inter-protomer coiled-coil, and it means the bridge question needs the
+    trimer, not more steps.
+  - plddt low everywhere  =>  nothing folds, and the 550-residue HA ectodomain
+    is simply outside what esm3-open does unconditioned.
+Either way the answer is about the target. What it is NOT about: the
+chainbreak (exonerated), the step budget (1 -> 256 bought +0.05 ptm), the CB
+inference (verified), or the harness (this entry).
