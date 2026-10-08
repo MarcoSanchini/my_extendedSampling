@@ -1,0 +1,46 @@
+nohup: ignoring input
+# reference: zero_polymer_mature (L=550 residues)
+# decoding steps: 256   device: cuda:0
+
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 147639.50it/s]
+predicted sequence length: 550   coordinates: (550, 37, 3)
+
+--- geometry sanity ---
+  ptm                        0.2614   (floor 0.4)
+  min CB-CB (|i-j|>=2)        1.17 A   (clash below 3.0)
+  CB-CB clashes              9   (a physical fold has ~0)
+
+  [UNTRUSTWORTHY] ptm 0.261 < 0.4; 9 CB-CB clashes.
+  Distances below describe a structure the model does not
+  believe in. Raise --steps and re-run before concluding
+  anything about the bridge. Compare --ref mature as a control.
+
+atoms predicted (residue 0): N CA C CB O
+  no side-chain S in the output -- the decoder emits backbone + CB only, so CB-CB is the operative criterion.
+  polymer_one:14 -> position 13: C
+  polymer_two:137 -> position 465: C
+
+--- the bridge: polymer_one:Cys14 <-> polymer_two:Cys137 ---
+  SG-SG     n/a A   (bonded ~2.05, cutoff 2.5)
+  CB-CB  129.74 A   (bonded <4.5)
+  CA-CA  129.54 A   (bonded ~5.5-6.8)
+
+  verdict: bridge NOT formed  [CB-CB=129.74 A, no SG predicted]  (but see UNTRUSTWORTHY above)
+
+--- all 136 cysteine pairs by CB-CB, closest first ---
+    1.     6.25 A     one:76 -- one:97   
+    2.     6.33 A    one:277 -- one:281  
+    3.     7.09 A    one:473 -- one:477  
+    4.     8.67 A    one:524 -- one:528  
+    5.    11.21 A    one:466 -- one:473  
+    6.    13.66 A    one:546 -- one:549  
+    7.    17.18 A     one:76 -- one:277  
+    8.    17.46 A     one:64 -- one:76   
+    9.    18.09 A    one:466 -- one:477  
+   10.    18.34 A     one:52 -- one:64   
+   11.    20.89 A     one:64 -- one:97   
+   12.    22.14 A     one:76 -- one:281  
+   95.   129.74 A     one:14 -- one:466    <== the HA1-HA2 bridge
+
+  0 pairs in plausible bonding range [3.0, 4.5] A (*)
+  0 pairs CLASHING below 3.0 A (!) -- these are not disulfides, they are broken geometry
