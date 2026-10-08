@@ -1,0 +1,39 @@
+# reference: zero_polymer_cleaved (L=550 residues + 1 chainbreak, 551 positions)
+# polymer_one (HA1): 329 aa      polymer_two (HA2): 221 aa
+# device: cuda:0
+
+predicted sequence length: 551  coordinates: (551, 37, 3)
+ptm: 0.1827
+  polymer_one:14 -> position 13: C
+  polymer_two:137 -> position 466: C
+
+atoms predicted at polymer_one:14: N CA C CB O
+atoms predicted at polymer_two:137: N CA C CB O
+
+--- the interchain bridge: polymer_one:Cys14 <-> polymer_two:Cys137 ---
+  SG-SG               n/a A   (bonded ~2.05, cutoff 2.5)
+  CB-CB             38.55 A   (bonded <4.5)
+  CA-CA             39.67 A   (bonded ~5.5-6.8)
+  closest approach  38.55 A
+
+  verdict: bridge NOT formed  [CB-CB=38.55 A (no side-chain S predicted)]
+
+--- all 136 cysteine pairs by CB-CB, closest first ---
+    1. *   1.64 A     one:52 -- one:64   
+    2.     5.13 A    one:277 -- one:281  
+    3.     5.62 A    two:217 -- two:220  
+    4.     6.74 A    two:195 -- two:199  
+    5.     8.43 A     one:14 -- one:281  
+    6.     8.54 A     one:52 -- one:281  
+    7.     8.84 A    two:144 -- two:148  
+    8.     9.59 A     one:64 -- one:76   
+    9.     9.60 A     one:64 -- one:281  
+   10.    10.21 A    two:210 -- two:217  
+   11.    10.39 A    one:139 -- one:305  
+   12.    11.15 A     one:14 -- one:277  
+   95.    38.55 A     one:14 -- two:137    <== the HA1-HA2 bridge
+
+  1 of 136 pairs within 4.5 A (* above) -- these are the disulfides ESM3 actually built.
+
+wrote /tmp/ha_cleaved.pdb
+to_protein_complex() split it into 2 chains (expected 2 -- confirms the break survived the round trip)
