@@ -4843,3 +4843,111 @@ log Phi).
 
 informedness.tex rebuilt: 12 pages (was 11), 0 overfull, 0 undefined
 references, 0 errors.
+
+2026-10-08 -- cleaved zero_polymer (HA1 | HA2): the chainbreak is EXONERATED, but neither form folds. ptm 0.23 cleaved / 0.26 mature, both with CB-CB clashes, so the disulfide question is NOT yet answerable
+--------------------------------------------------------------------------------
+Request: cleave zero_polymer at Arg329 into polymer_one/polymer_two and have
+ESM3 treat them as one molecule, tethered by the Cys14(HA1)-Cys137(HA2)
+interchain disulfide. references.py gained the chains, the bridge and the
+numbering helpers (46bccd8); tests/test_cleaved_complex.py asks whether ESM3
+puts the two cysteines in bonding geometry (1f35fbf, fcb86aa).
+
+WHAT IS SETTLED -- THE PLUMBING. The stock SDK route works and needs no
+change: model.encode(ESMProtein(sequence=...)) runs the real sequence
+tokenizer, for which "|" is a registered special token. 551 positions in,
+551 out, break intact, to_protein_complex() recovers 2 chains. chain_index()
+lands on C at 13 and 466. ESM3's structure decoder emits backbone + CB ONLY
+-- no side-chain S at any residue -- so SG-SG is permanently unavailable and
+CB-CB (<4.5 A) is the operative disulfide criterion for this project.
+
+Two routes that LOOK right and are not, both ruled out by reading the model:
+chain_id= on predict_attention is consumed only by geometric attention, and
+the soft path's all-NaN coords leave affine_mask all-False, so geometric
+attention is masked and zeroed -- chain_id is a SILENT no-op there.
+sequence_id= is an attention separator, so distinct ids would make the two
+chains ignore each other, the opposite of a tether. The chainbreak must
+travel as the token-31 EMBEDDING or not at all.
+
+NUMBERING, recorded because it cost real time: the HA landmarks are MATURE
+numbering, 16 behind the index into ZERO_POLYMER (which stores the precursor
+with its signal peptide). ZERO_POLYMER[328] ("Arg329") is T and
+ZERO_POLYMER[13] ("Cys14") is V. Neither raises. Use mature_to_index().
+
+THE DECODING-STEPS TRAP. The first run used init_structure_config() as-is,
+whose num_steps defaults to 1: all 551 structure tokens sampled in ONE step.
+It returned ptm=0.1827, a 1.64 A CB-CB "contact" (shorter than a C-C
+covalent bond, so a steric collapse, not a bond), and bridge CB-CB=38.55 A,
+which the script then reported as "bridge NOT formed". That verdict was
+worthless -- it measured a structure the model does not believe in. For
+scale, the SDK's own generation_test.py uses num_steps=10 for a FIVE-residue
+sequence. fcb86aa makes --steps explicit and adds a geometry sanity gate
+(ptm floor, min CB-CB at |i-j|>=2, clash count) that runs BEFORE the verdict.
+Standing lesson: a distance taken from an unvalidated fold is not a finding.
+
+THE PRE-REGISTERED COMPARISON, at 256 steps each:
+                        cleaved (551 pos)    mature (550 pos, no break)
+    ptm                      0.2322                0.2614
+    min CB-CB (|i-j|>=2)     1.50 A                1.17 A
+    CB-CB clashes               16                     9
+    bridge CB-CB            95.67 A               129.74 A
+    bridge rank            98 of 136             95 of 136
+    Cys pairs in [3,4.5]        1                      0
+
+VERDICT 1 -- THE CHAINBREAK IS NOT THE CULPRIT. The pre-registered table
+said "both bad => cleavage innocent", and that is the outcome. mature has NO
+break at all and folds no better; its ptm is marginally HIGHER (0.261 vs
+0.232) and its target-pair distance is WORSE (129.7 vs 95.7 A). Nothing here
+indicts ESM3's multi-chain handling.
+
+VERDICT 2 -- 256x MORE STEPS DID NOT RESCUE THE FOLD. ptm went 0.18 -> 0.23.
+The bridge distance got WORSE, 38.6 -> 95.7 A: the one-step number was not
+"nearly right", it was differently wrong. Extrapolating +0.05 ptm per 256x
+does not reach the 0.4 floor, so step count alone is not the answer and
+further step sweeps are not worth the GPU time.
+
+SCALE CHECK, which is what makes this decisive: 95.7 A and 129.7 A across a
+550-residue chain. A compact 550-residue domain has a maximum dimension
+around 70-80 A. 130 A means the chain is EXTENDED, not folded badly -- the
+model is not producing a globule at all. Consistent with ptm 0.23.
+
+THE ONE SIGNAL FAVOURING THE CLEAVED FORM, weak but recorded because it runs
+opposite to the obvious worry. At 256 steps cleaved found exactly one Cys
+pair in plausible disulfide range (one:64-one:97 at 4.27 A) and clustered
+several HA2 pairs at 6-9 A; mature found NOTHING below 6.25 A. On the six
+pairs both runs report, cleaved is closer on four:
+    HA2 144-148   6.22 / 7.09      HA1 277-281   9.73 / 6.33
+    HA2 195-199   7.39 / 8.67      HA1  64-97    4.27 / 20.89
+    HA2 217-220   7.08 / 13.66     HA2 137-144  11.96 / 11.21
+So the break, if anything, slightly IMPROVES local cysteine geometry.
+
+LEADING EXPLANATION: HA is an obligate TRIMER. HA2's central helix is a
+coiled-coil formed between protomers, so a lone HA1+HA2 protomer has no
+self-contained fold for it. An extended, low-confidence prediction may be
+the CORRECT answer to the question as posed -- a property of the target, not
+of ESM3 and not of this code. That reading is consistent with every number
+above but is NOT yet established.
+
+TWO CAVEATS ON MY OWN INSTRUMENT, both mine, both unresolved:
+(a) The clash count may be partly ARTEFACT. Glycine has no CB; if
+    infer_cbeta emits a finite but degenerate CB for Gly (origin, or
+    coincident with CA), several such residues sit at identical coordinates
+    and count as clashing. min CB-CB = 1.17 A is suspiciously sub-covalent.
+    ptm fails the gate independently so UNTRUSTWORTHY stands either way, but
+    the clash NUMBER should not be quoted until this is checked.
+(b) label() is wrong for the break-free ref: with no "|", find() returns -1
+    and all 550 positions print as one:N, so HA2 residue n reads as
+    one:329+n. The mature table above is hand-translated. Cosmetic, but it
+    makes the two result files uncomparable by eye.
+
+THE CONTROL I FAILED TO RUN, and the gate on everything above: nothing yet
+establishes that this script path produces a GOOD fold for ANY protein. With
+no positive control, "ptm 0.23" cannot be separated from "the harness is
+misconfigured" -- note init_structure_config carries
+condition_on_coordinates_only=True, written for contact-map work, not for de
+novo folding. protein_g (56 aa, known-foldable) through the same path is the
+cheap decisive test: ptm > 0.7 and 0 clashes means the harness is sound and
+the HA result is about HA; ptm ~0.2 means every number in this entry is void.
+Run that BEFORE interpreting any of the above as a fact about ESM3.
+
+Results: code/zero_polymer/bridge_test/cleaved_complex_steps1.txt, code/bridge_test/ha_c256.txt,
+code/bridge_test/ha_mature.txt, code/bridge_test/ha_c256.pdb, code/bridge_test/ha_cleaved.pdb
