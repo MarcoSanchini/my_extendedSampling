@@ -1,0 +1,48 @@
+# reference: zero_polymer_one (L=329 residues)
+# decoding steps: 256   device: cuda:0
+
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 73760.74it/s]
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_cleaved_complex.py", line 459, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_cleaved_complex.py", line 216, in main
+    model = ESM3.from_pretrained("esm3-open").to(device)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 332, in from_pretrained
+    model = load_local_model(model_name, device=device)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/pretrained.py", line 145, in load_local_model
+    return LOCAL_MODEL_REGISTRY[model_name](device)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/pretrained.py", line 105, in ESM3_sm_open_v0
+    model = ESM3(
+            ^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 306, in __init__
+    self.transformer = TransformerStack(
+                       ^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 43, in __init__
+    [
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 44, in <listcomp>
+    UnifiedTransformerBlock(
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 115, in __init__
+    self.ffn = swiglu_ln_ffn(d_model, expansion_ratio, bias)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 38, in swiglu_ln_ffn
+    nn.Linear(
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/linear.py", line 115, in __init__
+    self.reset_parameters()
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/linear.py", line 124, in reset_parameters
+    init.kaiming_uniform_(self.weight, a=math.sqrt(5))
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/init.py", line 598, in kaiming_uniform_
+    return torch.overrides.handle_torch_function(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/overrides.py", line 1774, in handle_torch_function
+    result = mode.__torch_function__(public_api, types, args, kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/utils/_device.py", line 122, in __torch_function__
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/init.py", line 616, in kaiming_uniform_
+    return tensor.uniform_(-bound, bound, generator=generator)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

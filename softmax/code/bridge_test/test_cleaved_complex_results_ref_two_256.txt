@@ -1,0 +1,46 @@
+nohup: ignoring input
+# note: --steps 256 exceeds 221 positions, clamping
+# reference: zero_polymer_two (L=221 residues)
+# decoding steps: 221   device: cuda:0
+
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 201913.98it/s]
+predicted sequence length: 221   coordinates: (221, 37, 3)
+
+--- confidence ---
+  ptm   0.5674   (floor 0.4)
+  plddt reported on a 0-1 scale, shown here as 0-100
+  plddt mean (all residues)    93.93
+  plddt mean two               93.93   ( 97.7% of residues >= 70)
+  residues >= 70             97.7%
+  READ: high plddt with low ptm => domains folded, their
+        RELATIVE PLACEMENT failed. Low both => nothing folded.
+
+--- geometry sanity ---
+  min CB-CB (|i-j|>=2)        4.14 A   (clash below 3.0)
+  CB-CB clashes              0   (a physical fold has ~0)
+  CB absent (NaN) at 20 residues; 20 glycines in sequence
+    (infer_cbeta writes NaN at every G by default, so G is excluded
+     from all CB statistics by construction -- if these two numbers
+     agree, the clashes above are between REAL inferred CBs.)
+
+  [OK] fold passes the sanity gate; distances are meaningful.
+
+(ref 'two' is a single chain -- no interchain bridge)
+
+--- all 28 cysteine pairs by CB-CB, closest first ---
+    1.     6.26 A    two:144 -- two:148  
+    2.     6.52 A    two:195 -- two:199  
+    3.     8.20 A    two:217 -- two:220  
+    4.     9.33 A    two:210 -- two:217  
+    5.    10.35 A    two:137 -- two:144  
+    6.    16.09 A    two:137 -- two:148  
+    7.    16.46 A    two:199 -- two:210  
+    8.    16.68 A    two:210 -- two:220  
+    9.    22.62 A    two:195 -- two:210  
+   10.    23.24 A    two:199 -- two:217  
+   11.    28.70 A    two:199 -- two:220  
+   12.    28.96 A    two:195 -- two:217  
+
+  0 pairs in plausible bonding range [3.0, 4.5] A (*)
+  0 pairs CLASHING below 3.0 A (!) -- broken geometry,
+  not disulfides
