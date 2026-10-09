@@ -1,0 +1,18 @@
+# crambin (L=46): experimental chain A, 46/46 residues resolved
+# prompting residues [3, 4, 16, 26, 32, 40] (CCCCCC), window 0
+# backbone N/CA/C given for 6 residues: [3, 4, 16, 26, 32, 40]
+  wrote /home/marco.sanchini/my_project/extendedSampling/softmax/code/bridge_test/rt/crambin_prompt_allbonds_w0.pdb
+
+  pTM 0.6832, mean pLDDT 88.3
+
+--- prompted with [3, 4, 16, 26, 32, 40]: known disulfides (CB-CB, A) ---
+  pair     experiment  this output   change  within 4.5?  pLDDT      prompted
+  3-40           3.61         4.55    +0.94  NO          91/75      yes
+  4-32           4.06         4.36    +0.31  yes         90/94      yes
+  16-26          3.78         4.08    +0.31  yes         97/96      yes
+  2/3 inside the criterion
+
+  Reading: the prompted pair is the direct test of whether imposed geometry survives
+  decoding. The OTHER bonds are the side effect: if they form too, telling the model
+  about one bridge helps the fold; if not, the prompt held its own pair and nothing more.
+  Run compare_to_pdb.py on the output for RMSD, contacts and the full cysteine table.

@@ -1,0 +1,134 @@
+nohup: ignoring input
+reference: protein_g  (L=56)
+experimental: bridge_test/pdb/protein_g_1PGB.pdb  chain A: 56 residues with CA
+predicted:    bridge_test/pred/protein_g.pdb  chain A: 56 residues with CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  56/56 reference positions present, 56 identical, 0 mismatched
+  predicted     56/56 reference positions present, 56 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      56
+  CA RMSD                  2.96 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.835     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      T11    10.87 A  pLDDT  90.4
+      K10     8.91 A  pLDDT  91.4
+      G14     7.35 A  pLDDT  80.5
+      G9      7.07 A  pLDDT  91.0
+      E15     6.22 A  pLDDT  82.4
+      L12     5.59 A  pLDDT  86.9
+      K13     5.26 A  pLDDT  83.1
+      E42     2.76 A  pLDDT  94.0
+  Spearman(pLDDT, CA deviation) = -0.70   (negative means low confidence marks the wrong residues)
+
+--- contacts (CB-CB <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  145  predicted  141  TP  117  precision  0.83  recall  0.81  F1  0.82
+  |i-j| >= 6   experimental contacts  104  predicted   95  TP   80  precision  0.84  recall  0.77  F1  0.80
+  |i-j| >= 12  experimental contacts   79  predicted   71  TP   64  precision  0.90  recall  0.81  F1  0.85
+  ranked by predicted distance, |i-j| >= 6: top-L (56) precision 0.93; top-L/2 (28) precision 0.96; top-L/5 (11) precision 0.91
+  distance error on pairs within 15 A in experiment (655): MAE 1.11 A, Pearson r 0.783
+
+--- disulfides ---
+  no known bonds supplied (--ref with KNOWN_DISULFIDES, or --bonds)
+reference: bpti  (L=58)
+experimental: bridge_test/pdb/bpti_5PTI.pdb  chain A: 58 residues with CA
+predicted:    bridge_test/pred/bpti.pdb  chain A: 58 residues with CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  58/58 reference positions present, 58 identical, 0 mismatched
+  predicted     58/58 reference positions present, 58 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      58
+  CA RMSD                  1.22 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.922     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      A58     7.54 A  pLDDT  69.1
+      R39     1.41 A  pLDDT  94.2
+      A40     1.35 A  pLDDT  94.9
+      E49     1.30 A  pLDDT  95.6
+      G56     1.30 A  pLDDT  85.4
+      K41     1.16 A  pLDDT  94.4
+      R53     1.12 A  pLDDT  92.5
+      A48     1.11 A  pLDDT  96.0
+  Spearman(pLDDT, CA deviation) = -0.34   (negative means low confidence marks the wrong residues)
+
+--- contacts (CB-CB <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  146  predicted  149  TP  136  precision  0.91  recall  0.93  F1  0.92
+  |i-j| >= 6   experimental contacts  113  predicted  114  TP  104  precision  0.91  recall  0.92  F1  0.92
+  |i-j| >= 12  experimental contacts   98  predicted  100  TP   91  precision  0.91  recall  0.93  F1  0.92
+  ranked by predicted distance, |i-j| >= 6: top-L (58) precision 0.97; top-L/2 (29) precision 0.97; top-L/5 (11) precision 0.91
+  distance error on pairs within 15 A in experiment (685): MAE 0.46 A, Pearson r 0.963
+
+--- disulfides ---
+  known bonds (supplied): 3
+  pair       exp SG-SG exp CB-CB exp CA-CA pred CB-CB pred CA-CA d(CB-CB)  exp bonded?  pLDDT
+  5-55            2.04      3.62      5.69       3.66       5.96     0.04  YES          89/90
+  14-38           2.03      3.87      5.67       3.61       5.35    -0.26  YES          96/95
+  30-51           2.02      3.82      6.28       4.45       6.76     0.63  YES          95/95
+  known bonds confirmed in the experimental file (SG-SG <= 2.5 A): 3/3
+
+  cysteine pairs: 15   predicted within 4.5 A: 3 (3 known bonds, 0 non-native)   experimental within 4.5 A: 3
+  pair       pred CB-CB  exp CB-CB  status
+  14-38            3.61       3.87  KNOWN bond
+  5-55             3.66       3.62  KNOWN bond
+  30-51            4.45       3.82  KNOWN bond
+  51-55            6.15       6.14  
+  30-55            7.53       7.29  
+  5-51             8.70       9.02  
+  5-30            10.06       9.92  
+  38-51           19.61      20.06  
+  14-51           20.15      21.02  
+  5-38            21.75      21.75  
+reference: crambin  (L=46)
+experimental: bridge_test/pdb/crambin_3NIR.pdb  chain A: 46 residues with CA
+predicted:    bridge_test/pred/crambin.pdb  chain A: 46 residues with CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  46/46 reference positions present, 46 identical, 0 mismatched
+  predicted     46/46 reference positions present, 46 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      46
+  CA RMSD                  7.91 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.316     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      P19    15.46 A  pLDDT  83.7
+      R10    12.65 A  pLDDT  85.0
+      N12    12.24 A  pLDDT  84.1
+      D43    12.23 A  pLDDT  55.6
+      G42    11.86 A  pLDDT  64.1
+      F13    11.54 A  pLDDT  85.5
+      N14    11.33 A  pLDDT  86.7
+      C16    11.26 A  pLDDT  86.5
+  Spearman(pLDDT, CA deviation) = -0.66   (negative means low confidence marks the wrong residues)
+
+--- contacts (CB-CB <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  113  predicted   87  TP   38  precision  0.44  recall  0.34  F1  0.38
+  |i-j| >= 6   experimental contacts   64  predicted   63  TP   22  precision  0.35  recall  0.34  F1  0.35
+  |i-j| >= 12  experimental contacts   51  predicted   50  TP   19  precision  0.38  recall  0.37  F1  0.38
+  ranked by predicted distance, |i-j| >= 6: top-L (46) precision 0.37; top-L/2 (23) precision 0.43; top-L/5 (9) precision 0.33
+  distance error on pairs within 15 A in experiment (454): MAE 4.72 A, Pearson r 0.288
+
+--- disulfides ---
+  known bonds (supplied): 3
+  pair       exp SG-SG exp CB-CB exp CA-CA pred CB-CB pred CA-CA d(CB-CB)  exp bonded?  pLDDT
+  3-40            2.03      3.61      5.66       7.75       7.84     4.14  YES          89/78
+  4-32            2.05      4.06      4.12       3.79       3.98    -0.27  YES          89/92
+  16-26           2.04      3.78      5.82      10.42      10.13     6.64  YES          87/90
+  known bonds confirmed in the experimental file (SG-SG <= 2.5 A): 3/3
+
+  cysteine pairs: 15   predicted within 4.5 A: 2 (1 known bonds, 1 non-native)   experimental within 4.5 A: 3
+  pair       pred CB-CB  exp CB-CB  status
+  16-40            3.33      17.90  NON-NATIVE, inside criterion in prediction
+  4-32             3.79       4.06  KNOWN bond
+  26-32            4.87       6.77  
+  3-16             5.58      14.76  
+  3-4              5.82       5.76  
+  4-26             6.49       9.93  
+  3-32             6.53       6.37  
+  3-40             7.75       3.61  KNOWN bond
+  4-16             7.95      11.11  
+  3-26             8.47      12.28  
+  16-26           10.42       3.78  KNOWN bond

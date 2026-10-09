@@ -1,0 +1,41 @@
+nohup: ignoring input
+# bpti (L=58): experimental chain A, 58/58 residues resolved
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 22413.09it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/vqvae.py:286: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.no_grad(), torch.cuda.amp.autocast(enabled=False):  # type: ignore
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/vqvae.py:175: UserWarning: Using a non-tuple sequence for multidimensional indexing is deprecated and will be changed in pytorch 2.9; use x[tuple(seq)] instead of x[seq]. In pytorch 2.9 this will be interpreted as tensor index, x[torch.tensor(seq)], which will result either in an error or a different result (Triggered internally at /pytorch/torch/csrc/autograd/python_variable_indexing.cpp:347.)
+  return data[ranges]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+  wrote /home/marco.sanchini/my_project/extendedSampling/softmax/code/bridge_test/rt/bpti_roundtrip.pdb
+
+--- round trip (experiment -> tokens -> coordinates): known disulfides (CB-CB, A) ---
+  pair     experiment  this output   change  within 4.5?  pLDDT      prompted
+  5-55           3.62         3.49    -0.13  yes         98/98      
+  14-38          3.87         3.70    -0.17  yes         98/98      
+  30-51          3.82         4.09    +0.27  yes         99/99      
+  3/3 inside the criterion
+
+  Reading: bonds that come back near their experimental distance mean the
+  representation can hold them. Bonds that loosen here mean it cannot, whatever
+  the prediction does.
+# crambin (L=46): experimental chain A, 46/46 residues resolved
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 190257.09it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/vqvae.py:286: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.no_grad(), torch.cuda.amp.autocast(enabled=False):  # type: ignore
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/vqvae.py:175: UserWarning: Using a non-tuple sequence for multidimensional indexing is deprecated and will be changed in pytorch 2.9; use x[tuple(seq)] instead of x[seq]. In pytorch 2.9 this will be interpreted as tensor index, x[torch.tensor(seq)], which will result either in an error or a different result (Triggered internally at /pytorch/torch/csrc/autograd/python_variable_indexing.cpp:347.)
+  return data[ranges]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+  wrote /home/marco.sanchini/my_project/extendedSampling/softmax/code/bridge_test/rt/crambin_roundtrip.pdb
+
+--- round trip (experiment -> tokens -> coordinates): known disulfides (CB-CB, A) ---
+  pair     experiment  this output   change  within 4.5?  pLDDT      prompted
+  3-40           3.61         3.28    -0.33  yes         99/98      
+  4-32           4.06         4.39    +0.33  yes         99/99      
+  16-26          3.78         4.06    +0.29  yes         99/99      
+  3/3 inside the criterion
+
+  Reading: bonds that come back near their experimental distance mean the
+  representation can hold them. Bonds that loosen here mean it cannot, whatever
+  the prediction does.

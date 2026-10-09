@@ -1,0 +1,18 @@
+# bpti (L=58): experimental chain A, 58/58 residues resolved
+# prompting residues [5, 14, 30, 38, 51, 55] (CCCCCC), window 0
+# backbone N/CA/C given for 6 residues: [5, 14, 30, 38, 51, 55]
+  wrote /home/marco.sanchini/my_project/extendedSampling/softmax/code/bridge_test/rt/bpti_prompt_allbonds_w0.pdb
+
+  pTM 0.7532, mean pLDDT 94.0
+
+--- prompted with [5, 14, 30, 38, 51, 55]: known disulfides (CB-CB, A) ---
+  pair     experiment  this output   change  within 4.5?  pLDDT      prompted
+  5-55           3.62         3.62    +0.00  yes         93/93      yes
+  14-38          3.87         3.92    +0.05  yes         96/96      yes
+  30-51          3.82         4.33    +0.51  yes         96/96      yes
+  3/3 inside the criterion
+
+  Reading: the prompted pair is the direct test of whether imposed geometry survives
+  decoding. The OTHER bonds are the side effect: if they form too, telling the model
+  about one bridge helps the fold; if not, the prompt held its own pair and nothing more.
+  Run compare_to_pdb.py on the output for RMSD, contacts and the full cysteine table.

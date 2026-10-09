@@ -1,0 +1,10 @@
+nohup: ignoring input
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 218660.40it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 77541.75it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 103563.06it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")

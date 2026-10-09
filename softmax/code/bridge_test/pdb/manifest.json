@@ -1,0 +1,67 @@
+{
+  "protein_g": {
+    "id": "1PGB",
+    "chain": "A",
+    "method": "X-RAY DIFFRACTION",
+    "resolution": 1.92,
+    "sequence_relation": "identical",
+    "resolved_CA": 56,
+    "url": "https://files.rcsb.org/download/1PGB.pdb",
+    "file": "protein_g_1PGB.pdb",
+    "sha256": "1f7a38180b264722853820aa636f9ff66b458f914061f5a12c1687fd951c2f6d",
+    "fetched": "2026-10-09",
+    "other_accepted": [
+      "1PGA",
+      "9CHT"
+    ]
+  },
+  "bpti": {
+    "id": "5PTI",
+    "chain": "A",
+    "method": "X-RAY DIFFRACTION; NEUTRON DIFFRACTION",
+    "resolution": 1.0,
+    "sequence_relation": "identical",
+    "resolved_CA": 58,
+    "url": "https://files.rcsb.org/download/5PTI.pdb",
+    "file": "bpti_5PTI.pdb",
+    "sha256": "5f7c9d165cc405e709c5e5437864356dac55534ecb4cea07f3692f9f23845c20",
+    "fetched": "2026-10-09",
+    "other_accepted": [
+      "1BPI",
+      "4PTI",
+      "1D0D",
+      "6PTI",
+      "1FY8",
+      "1BZX",
+      "1BTH",
+      "1BZ5",
+      "1CBW",
+      "1BHC",
+      "1B0C",
+      "1MTN",
+      "1EAW",
+      "1F7Z",
+      "1F5R",
+      "1CO7"
+    ]
+  },
+  "crambin": {
+    "id": "3NIR",
+    "chain": "A",
+    "method": "X-RAY DIFFRACTION",
+    "resolution": 0.48,
+    "sequence_relation": "identical",
+    "resolved_CA": 62,
+    "url": "https://files.rcsb.org/download/3NIR.pdb",
+    "file": "crambin_3NIR.pdb",
+    "sha256": "b1ecd8b00fe1b0e2a3cb8f71609d2fe5177a8f3be699d30c58e4109d5e4e5ab5",
+    "fetched": "2026-10-09",
+    "other_accepted": [
+      "1EJG",
+      "1CNR",
+      "4FC1",
+      "2FD9",
+      "2FD7"
+    ]
+  }
+}

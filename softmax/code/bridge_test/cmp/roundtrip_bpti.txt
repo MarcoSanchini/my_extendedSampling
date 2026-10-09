@@ -1,0 +1,13 @@
+# bpti (L=58): experimental chain A, 58/58 residues resolved
+  wrote /home/marco.sanchini/my_project/extendedSampling/softmax/code/bridge_test/rt/bpti_roundtrip.pdb
+
+--- round trip (experiment -> tokens -> coordinates): known disulfides (CB-CB, A) ---
+  pair     experiment  this output   change  within 4.5?  pLDDT      prompted
+  5-55           3.62         3.49    -0.13  yes         98/98      
+  14-38          3.87         3.70    -0.17  yes         98/98      
+  30-51          3.82         4.09    +0.27  yes         99/99      
+  3/3 inside the criterion
+
+  Reading: bonds that come back near their experimental distance mean the
+  representation can hold them. Bonds that loosen here mean it cannot, whatever
+  the prediction does.

@@ -1,0 +1,62 @@
+
+=== protein_g (L=56) ===
+  RCSB sequence search returned: 1GB1, 1PGA, 1PGB, 2GB1, 2KBT, 3GB1, 9CHT, 2N9K, 2N9L, 3MP9, 4KGR, 5Z4B, 9JA5, 9JA6, 2PLP
+  1PGA: ACCEPT  chain A, X-RAY DIFFRACTION, 2.07 A, 56 CA, identical
+  1PGB: ACCEPT  chain A, X-RAY DIFFRACTION, 1.92 A, 56 CA, identical
+  2GB1: reject  NMR entry skipped (SOLUTION NMR)
+  1GB1: reject  NMR entry skipped (SOLUTION NMR)
+  2KBT: reject  NMR entry skipped (SOLUTION NMR)
+  3GB1: reject  NMR entry skipped (SOLUTION NMR)
+  9CHT: ACCEPT  chain B, ELECTRON MICROSCOPY, 3.54 A, 199 CA, chain contains reference (extra residues, e.g. a tag)
+  2N9K: reject  NMR entry skipped (SOLUTION NMR)
+  2N9L: reject  NMR entry skipped (SOLUTION NMR)
+  3MP9: reject  sequence does not match: chain A: 64 residues, different length; chain B: 64 residues, different length
+  4KGR: reject  sequence does not match: chain A: 57 residues, different length; chain B: 57 residues, different length; chain C: 57 residues, different length; chain D: 57 residues, different length; chain E: 57 residues, different length; chain F: 57 residues, different length; chain G: 57 residues, different length; chain H: 57 residues, different length
+  5Z4B: reject  NMR entry skipped (SOLUTION NMR)
+  9JA5: reject  sequence does not match: chain A: 444 residues, different length; chain B: 444 residues, different length; chain C: 444 residues, different length; chain D: 444 residues, different length; chain E: 444 residues, different length; chain F: 444 residues, different length
+  9JA6: reject  sequence does not match: chain A: 332 residues, different length; chain B: 332 residues, different length; chain C: 332 residues, different length; chain D: 332 residues, different length
+  2PLP: reject  NMR entry skipped (SOLUTION NMR)
+  -> kept protein_g_1PGB.pdb  (chain A); other accepted: ['1PGA', '9CHT']
+
+=== bpti (L=58) ===
+  RCSB sequence search returned: 1B0C, 1BHC, 1BPI, 1BTH, 1BZ5, 1BZX, 1CBW, 1CO7, 1D0D, 1EAW, 1F5R, 1F7Z, 1FY8, 1MTN, 1OA5
+  5PTI: ACCEPT  chain A, X-RAY DIFFRACTION; NEUTRON DIFFRACTION, 1.00 A, 58 CA, identical
+  4PTI: ACCEPT  chain A, X-RAY DIFFRACTION, 1.50 A, 58 CA, identical
+  1BPI: ACCEPT  chain A, X-RAY DIFFRACTION, 1.09 A, 58 CA, identical
+  6PTI: ACCEPT  chain A, X-RAY DIFFRACTION, 1.70 A, 58 CA, identical
+  1B0C: ACCEPT  chain A, X-RAY DIFFRACTION, 2.80 A, 56 CA, identical
+  1BHC: ACCEPT  chain A, X-RAY DIFFRACTION, 2.70 A, 56 CA, identical
+  1BTH: ACCEPT  chain P, X-RAY DIFFRACTION, 2.30 A, 58 CA, identical
+  1BZ5: ACCEPT  chain A, X-RAY DIFFRACTION, 2.58 A, 56 CA, identical
+  1BZX: ACCEPT  chain I, X-RAY DIFFRACTION, 2.10 A, 58 CA, identical
+  1CBW: ACCEPT  chain D, X-RAY DIFFRACTION, 2.60 A, 58 CA, identical
+  1CO7: ACCEPT  chain I, X-RAY DIFFRACTION, 1.90 A, 41 CA, chain contains reference (extra residues, e.g. a tag)
+  1D0D: ACCEPT  chain B, X-RAY DIFFRACTION, 1.62 A, 58 CA, identical
+  1EAW: ACCEPT  chain B, X-RAY DIFFRACTION, 2.93 A, 56 CA, identical
+  1F5R: ACCEPT  chain I, X-RAY DIFFRACTION, 1.65 A, 57 CA, chain contains reference (extra residues, e.g. a tag)
+  1F7Z: ACCEPT  chain I, X-RAY DIFFRACTION, 1.55 A, 56 CA, chain contains reference (extra residues, e.g. a tag)
+  1FY8: ACCEPT  chain I, X-RAY DIFFRACTION, 1.70 A, 56 CA, identical
+  1MTN: ACCEPT  chain D, X-RAY DIFFRACTION, 2.80 A, 58 CA, identical
+  1OA5: reject  NMR entry skipped (SOLUTION NMR)
+  -> kept bpti_5PTI.pdb  (chain A); other accepted: ['1BPI', '4PTI', '1D0D', '6PTI', '1FY8', '1BZX', '1BTH', '1BZ5', '1CBW', '1BHC', '1B0C', '1MTN', '1EAW', '1F7Z', '1F5R', '1CO7']
+
+=== crambin (L=46) ===
+  RCSB sequence search returned: 1CCM, 1CCN, 1CNR, 1EJG, 1YV8, 1YVA, 2EYA, 2EYB, 2EYC, 2EYD, 2FD7, 2FD9, 3NIR, 4FC1
+  1CRN: reject  sequence does not match: chain A: 46 residues, 1 differences from the reference
+  1EJG: ACCEPT  chain A, X-RAY DIFFRACTION, 0.54 A, 55 CA, identical
+  3NIR: ACCEPT  chain A, X-RAY DIFFRACTION, 0.48 A, 62 CA, identical
+  1CCM: reject  NMR entry skipped (SOLUTION NMR)
+  1CCN: reject  NMR entry skipped (SOLUTION NMR)
+  1CNR: ACCEPT  chain A, X-RAY DIFFRACTION, 1.05 A, 46 CA, identical
+  1YV8: reject  NMR entry skipped (SOLUTION NMR)
+  1YVA: reject  NMR entry skipped (SOLUTION NMR)
+  2EYA: reject  NMR entry skipped (SOLUTION NMR)
+  2EYB: reject  NMR entry skipped (SOLUTION NMR)
+  2EYC: reject  NMR entry skipped (SOLUTION NMR)
+  2EYD: reject  NMR entry skipped (SOLUTION NMR)
+  2FD7: ACCEPT  chain A, X-RAY DIFFRACTION, 1.75 A, 46 CA, identical
+  2FD9: ACCEPT  chain A, X-RAY DIFFRACTION, 1.60 A, 43 CA, identical
+  4FC1: ACCEPT  chain A, NEUTRON DIFFRACTION, 1.10 A, 46 CA, identical
+  -> kept crambin_3NIR.pdb  (chain A); other accepted: ['1EJG', '1CNR', '4FC1', '2FD9', '2FD7']
+
+manifest: /home/marco.sanchini/my_project/extendedSampling/softmax/code/bridge_test/pdb/manifest.json
