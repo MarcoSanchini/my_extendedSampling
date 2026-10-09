@@ -543,3 +543,116 @@ changes how HA1 and HA2 pack, it should show there, and it is a structural
 quantity rather than the model's confidence. (2) Per-residue pLDDT at the
 crambin and BPTI bond residues. (3) A verified native disulfide list for HA.
 (4) The trimer.
+
+
+2026-10-09 -- NEXT STEP BUILT, NOT YET RUN: compare the short proteins to experiment, then test whether ESM3 can MAINTAIN a bridge or be made to HOLD one. Everything is tested on synthetic data only; the PDB host is blocked in the cloud session
+--------------------------------------------------------------------------------
+Request (Marco): check contacts and compare them to experimental structures from
+the PDB for the short sequences; then check whether ESM can maintain the bridge,
+or how it can be imposed.
+
+WHY THIS COMES BEFORE MORE HA RUNS. Every disulfide conclusion in this log rests
+on the model's own output, and on a 4.5 A CB-CB criterion that was picked from
+geometry and never checked against a real structure. The BPTI and crambin
+pairings were taken from sources and verified only for internal consistency. The
+crambin run put a non-native pair at 3.33 A inside the criterion and missed two
+real bonds, and nothing says whether the experiment agrees on those distances.
+pLDDT is confidence, not error. Ground truth comes first; the HA interchain
+contacts mean nothing until the same metric is validated on proteins whose
+structure is known.
+
+WHAT WAS BUILT (all in bridge_test/):
+  fetch_pdb.py         Downloads candidate entries and KEEPS one only if its own
+                       SEQRES matches references.py (identical, contains it, or is
+                       contained in it). No entry ID is trusted -- an ID recalled
+                       from memory is the same error class as the off-by-16 numbering.
+                       Writes pdb/<ref>_<ID>.pdb and a manifest with method,
+                       resolution, sequence relation, URL, date, SHA-256.
+  compare_to_pdb.py    Numpy only. Aligns the reference to each structure and lists
+                       every sequence mismatch (where a crambin isoform difference at
+                       22/25 would surface). CA RMSD, approximate TM-score, the
+                       residues that deviate most beside their pLDDT, contact
+                       precision/recall/F1 at 8 A for |i-j| >= 3, 6, 12, precision at
+                       top L, L/2, L/5, and the distance error. For each KNOWN
+                       disulfide: experimental SG-SG, CB-CB, CA-CA and predicted
+                       CB-CB, CA-CA. Whether the pairing is a bond in the experimental
+                       file is TESTED (SG-SG <= 2.5 A), which independently checks the
+                       supplied pairings. Then every cysteine pair, so crambin's 16-40
+                       can be set against what the experiment shows for it.
+  roundtrip_bridge.py  The two model-side experiments (below).
+  prompting.py         Coordinate helpers for it, tested without torch.
+  test_compare_to_pdb.py   Logic tests on synthetic structures.
+  run_pdb_comparison.sh    The runs, in order, each to its own output file.
+  tests/test_cleaved_complex.py now also writes <pdb>.plddt.tsv beside --pdb output.
+
+WHAT THE SYNTHETIC TESTS CAUGHT BEFORE ANY REAL DATA: the aligner scored a
+mismatch at -1 and a gap at -2, so a reference residue absent from the structure
+was forced onto an unrelated neighbour (an expression-tag residue). A real entry
+with a tag would have paired the wrong residues silently. Mismatch is now -3:
+interior point mutations still align (one costs -3, the two gaps needed to skip
+it cost -4), end residues no longer get misassigned. Two of my own test setups
+were also wrong (an off-by-one index; dropping a residue that is a bonded
+cysteine) and the script was right both times. A noisy copy scores RMSD 0.49 /
+TM 0.96 / F1 0.96; a scrambled one RMSD 15.9 / TM 0.12 / F1 0.13. Synthetic data
+say the arithmetic is right and nothing about any protein.
+
+THERE IS NO NATIVE "THESE TWO CYSTEINES ARE BONDED" INPUT TO ESM3. Its 24
+disulfide hits in the keyword vocabulary are family-level function keywords
+("disulfide isomerase", "disulfide oxidoreductase", "four disulfide"), not residue
+restraints, and say nothing about which pair. The only channel for telling the
+model where something is is COORDINATES, and the source confirms it is a real one:
+forward() receives structure_coords=input.coordinates (esm3.py:636); generation
+restores them on the output (generation.py:528-530); condition_on_coordinates_only,
+the project default, clears the structure tokens so the coordinates are the input
+(generation.py:372); and build_affine3d_from_coordinates drops every non-finite
+coordinate, so NaN means "no frame for this residue". A partial prompt is
+therefore well-defined. NOTE the project's soft-probability path never has
+coordinates (all NaN), so the geometry channel it would use is the one it cannot
+reach; this is a further reason the cleaved form cannot yet enter the energy
+machinery.
+
+THE TWO MODEL EXPERIMENTS, with the decision rules fixed in advance (the sweep
+taught that a claim needs its sign at several settings, so borderline cases are
+repeated at two other step counts before being believed):
+
+(A) ROUND TRIP -- can the representation hold a bond at all? Experimental
+    coordinates -> structure tokens -> decoded coordinates. Nothing is predicted.
+      all known bonds within 4.5 A of their experimental distance
+          => tokenizer and decoder CAN express them; failures to form a bridge
+             are failures of PREDICTION.
+      bonds loosen
+          => the REPRESENTATION cannot hold them even with the whole answer given.
+             Stop: no prompt or conditioning can beat that, and the route is a
+             restraint outside ESM3 (below).
+
+(B) COORDINATE PROMPT -- can the bridge be imposed? Only N/CA/C of chosen residues
+    given, rest NaN, then generate. BPTI and crambin first, where the answer is known.
+      prompted pair stays at its prompted distance      => imposition survives decoding
+      OTHER known bonds also come in                    => one bridge helps the fold
+      prompted pair drifts                              => the prompt is advisory, not binding
+    Variants: the pair alone (window 0); the pair with neighbours (window 2); every
+    known bond (all-bonds, the upper bound). HA is only worth attempting if the
+    short proteins show imposition works at all, and its geometry would then have to
+    come from an experimental HA entry.
+
+IF IMPOSITION THROUGH ESM3 FAILS, in order of cost: (1) restrained refinement of the
+decoded backbone with an SG-SG restraint, outside ESM3, keeping ESM3 for the fold;
+(2) an in-framework energy term: compute_U_structure_ce already takes reference
+structure TOKENS, and tokens taken from a bonded structure encode the bond, so the
+sampler could be pointed at them; (3) treating the bond as chemistry ESM3 does not
+model and reporting HA with the bridge explicitly unrepresented.
+
+NOT DONE / NOT KNOWN:
+  - nothing fetched: files.rcsb.org answers 403 to the cloud session's proxy (an
+    organisation network policy). Run fetch_pdb.py where the PDB is reachable, or
+    add that host to the environment's allowed domains.
+  - fetch_pdb.py's download and search calls, roundtrip_bridge.py and the
+    test_cleaved_complex.py edit are UNRUN (no network, no torch here); they are
+    syntax-checked, and the parsing / acceptance rules and all coordinate helpers
+    are tested. If something fails on first run, suspect the model calls in
+    roundtrip_bridge.py (encode -> custom_decode / predict_protein) first.
+  - the approximate TM-score is a lower bound; CB for the prediction is inferred
+    from N/CA/C and for the experiment is the deposited CB, glycine uses CA in both.
+  - protein_g has no cysteines and so enters only the contact comparison.
+
+RUN ORDER:  bash bridge_test/run_pdb_comparison.sh fetch | predict | compare | roundtrip | prompt

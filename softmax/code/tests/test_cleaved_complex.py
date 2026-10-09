@@ -71,6 +71,8 @@ import sys, os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../customs")))
 
+from pathlib import Path
+
 import torch
 
 from custom_esm.models.esm3 import ESM3
@@ -449,6 +451,20 @@ def main() -> None:
 	if pdb_out:
 		out.to_pdb(pdb_out)
 		print(f"\nwrote {pdb_out}")
+		# The PDB does not carry pLDDT (to_protein_complex() drops it), so write
+		# it beside the file: index (1-based, reference numbering, chain-break
+		# positions skipped), residue, pLDDT on 0-100. compare_to_pdb.py reads
+		# this to ask whether low confidence marks the residues that are wrong.
+		if plddt is not None:
+			scale_ = 100.0 if float(plddt.max()) <= 1.0 else 1.0
+			rows, k = [], 0
+			for pos, aa in enumerate(out.sequence):
+				if aa == CHAIN_BREAK:
+					continue
+				k += 1
+				rows.append(f"{k}\t{aa}\t{float(plddt[pos]) * scale_:.2f}")
+			Path(f"{pdb_out}.plddt.tsv").write_text("\n".join(rows) + "\n")
+			print(f"wrote {pdb_out}.plddt.tsv")
 		if nbreak:
 			pc = out.to_protein_complex()
 			print(f"to_protein_complex() -> {len(list(pc.chain_iter()))} chains "
