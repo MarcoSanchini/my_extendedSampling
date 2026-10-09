@@ -66,6 +66,161 @@ list.
 \tableofcontents
 
 % ===========================================================================
+\section{Notation}
+\label{sec:notation}
+% ===========================================================================
+
+Every symbol used in this report is defined here. Where a quantity is computed
+by one of the scripts, the script's own constant name is given, so a number in
+a table can be traced to the line that produced it.
+
+\subsection{Atoms, residues and indices}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lp{11.8cm}@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\ang$ & \aa ngstr\"om, $10^{-10}\,$m. All distances in this report are in
+  \aa ngstr\"oms. \\
+N, CA, C & The three backbone atoms of a residue: amide nitrogen, $\alpha$-carbon,
+  carbonyl carbon. CA is the atom used for all fold-level comparisons. \\
+C$\beta$ & The $\beta$-carbon, the first side-chain atom. Glycine has none. In
+  this work it is \emph{inferred} from N, CA and C rather than predicted; see
+  Section~\ref{sec:cbeta}. \\
+SG & The side-chain sulfur of cysteine. The atom that actually forms a
+  disulfide, and the atom ESM3 never emits. \\
+atom37 & The fixed $(L, 37, 3)$ array in which a structure is carried: 37 named
+  atom slots per residue, in a canonical order. Slots a residue does not have,
+  or that are not known, hold NaN. \\
+NaN & ``Not a number'', used throughout as \emph{not given}. ESM3 builds its
+  geometric frames by dropping non-finite coordinates, so a NaN row is a
+  residue the model has no geometry for, not a residue at the origin. \\
+$L$ & Number of residues in a construct (551 cleaved, 550 fused, 329 HA1,
+  221 HA2, 58 BPTI, 56 protein~G, 46 crambin). \\
+$i,j$ & Residue indices. $|i-j|$ is \emph{sequence separation}: how far apart
+  two residues are along the chain, irrespective of distance in space. A
+  separation floor excludes trivially close neighbours. \\
+$x_i^{A}$ & Position of atom $A$ of residue $i$; $d^{A}_{ij} =
+  \lVert x_i^{A} - x_j^{A}\rVert$ is the distance between the same atom type in
+  two residues. \\
+Cys14, Cys137 & Cysteines in \emph{mature} HA numbering, which runs 16 behind
+  the index into \texttt{ZERO\_POLYMER}. The two anchors of the interchain
+  bridge: Cys14 of HA1 and Cys137 of HA2. \\
+HA0, HA1, HA2 & The hemagglutinin precursor and the two chains it is cut into.
+  In the code: \texttt{polymer\_one} (HA1) and \texttt{polymer\_two} (HA2). \\
+token 31 & \texttt{SEQUENCE\_CHAINBREAK\_TOKEN}, the tokenizer's id for the
+  chain-break character \texttt{|}. \\
+SEQRES & The PDB record listing an entry's own sequence, used to accept or
+  reject a fetched entry independently of the reference. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Scores and measures}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lp{11.4cm}@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$\ptm$ & Predicted TM-score: the model's own single-number estimate, in
+  $[0,1]$, of how close its structure is to the truth. It is a
+  \emph{self-assessment}, not a comparison with anything. It depends on
+  length, so it is only comparable between constructs of similar size. \\
+\plddt{} & Predicted local distance difference test: the model's per-residue
+  confidence, on a $0$--$100$ scale. Reported here as a mean over residues, and
+  as the percentage of residues at or above 70. Also a self-assessment. \\
+CA RMSD & Root-mean-square deviation of CA positions after the optimal rigid
+  superposition (Kabsch), $\sqrt{\frac{1}{N}\sum_i \lVert R x_i + t - y_i
+  \rVert^2}$ over the $N$ aligned residues. A single global number, so one bad
+  loop inflates all of it; that is how the pass/fail rule below came to
+  misclassify protein~G. \\
+core RMSD & The same quantity with the single worst 7-residue window dropped.
+  The window is chosen by intra-window error, not tuned to minimise the result,
+  so it is a \emph{floor} on the improvement a hand-chosen cut would give. \\
+TM-score & Template-modelling score, $\frac{1}{L}\sum_i (1 + (d_i/d_0)^2)^{-1}$
+  maximised over superpositions, with $d_0 = 1.24\sqrt[3]{L-15} - 1.8$. Length
+  normalised and insensitive to a few large deviations, so unlike RMSD it
+  answers ``is this the same fold''. Above $0.5$ means a shared fold, below
+  $0.17$ means unrelated. The value here is from fragment-seeded iterative
+  superposition and is a \emph{lower bound} on the true optimum. \\
+local CA--CA error & Superposition-free: the mean $|d^{\mathrm{CA}}_{ij}
+  (\text{pred}) - d^{\mathrm{CA}}_{ij}(\text{exp})|$ over residue pairs. It needs
+  no alignment, so it cannot be flattered or spoiled by the choice of
+  superposition. Reported over all pairs, and within 7-residue windows
+  (\texttt{CA\_WINDOW}) to localise the error. \\
+contact & A residue pair with $d^{\mathrm{C}\beta}_{ij} \le 8.0\ang$
+  (\texttt{CONTACT}), CA substituted at glycine. The standard contact-map
+  definition. \\
+precision, recall, F1 & Of the predicted contact set against the experimental
+  one at a stated separation floor: precision is the fraction of predicted
+  contacts that are real, recall the fraction of real contacts that were
+  predicted, and F1 their harmonic mean $2PR/(P+R)$. \\
+B-factor & The deposited per-atom measure of positional uncertainty in a
+  crystal structure. Used here only to check that a disagreement is not
+  crystallographic disorder. \\
+$\rho$ & Spearman rank correlation, used to ask whether \plddt{} ranks
+  residues in the same order as the actual deviation. \\
+$n$ & Number of runs behind a figure. $n=3$ for the step sweeps, so spreads are
+  descriptive and no p-value is claimed. \\
+$U_{\mathrm{am}}$ & The sampler's energy term from the wider project, named here
+  only to record that it cannot yet be applied to a chain-broken construct. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{Thresholds}
+
+These are the fixed constants. Each was set before the runs it judges, and
+where one turned out to be wrong that is recorded in
+Section~\ref{sec:corrections} rather than quietly changed.
+
+\begin{center}
+\small
+\begin{tabular}{@{}llrp{7.6cm}@{}}
+\toprule
+Constant & Applies to & Value & Why that value \\
+\midrule
+\texttt{SG\_BONDED}  & $d^{\mathrm{SG}}_{ij}$ & $2.5\ang$ &
+  A disulfide is $2.02$--$2.05\ang$ SG--SG. Usable on experimental
+  structures only; ESM3 emits no SG. \\
+\texttt{CB\_BONDED}  & $d^{\mathrm{C}\beta}_{ij}$ & $4.5\ang$ &
+  The bond criterion. Section~\ref{sec:cbeta} derives it. \\
+\texttt{CB\_CLASH}   & $d^{\mathrm{C}\beta}_{ij}$ & $3.0\ang$ &
+  A van der Waals contact is about $3.4\ang$ and a C--C bond $1.54\ang$, so
+  below $3.0\ang$ between non-bonded C$\beta$ is unphysical. Applied at
+  $|i-j| \ge 2$. \\
+\texttt{PTM\_FLOOR}  & $\ptm$ & $0.40$ &
+  Below this the fold is not worth measuring, so no distance taken from it is
+  reported as a verdict. \\
+\texttt{PTM\_CONTROL}& $\ptm$ & $0.70$ &
+  What the fold control must clear for the harness itself to be trusted. \\
+\texttt{PLDDT\_GOOD} & \plddt{} & $70$ &
+  The conventional confident-residue band. \\
+\texttt{CONTACT}     & $d^{\mathrm{C}\beta}_{ij}$ & $8.0\ang$ &
+  Standard contact-map cutoff. \\
+\texttt{CA\_WINDOW}  & residues & $7$ &
+  Window for the local-structure check and the core RMSD. \\
+min.\ separation     & $|i-j|$ & $6$ &
+  Separation floor for the headline contact metrics: near-diagonal contacts are
+  implied by the chain and inflate every score. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{The geometry gate.} A construct passes only if $\ptm \ge
+\texttt{PTM\_FLOOR}$ ($\ge \texttt{PTM\_CONTROL}$ for a control) \emph{and} it
+has no C$\beta$ clash. The gate runs before any bridge verdict, because the
+first verdict of this investigation was taken from a collapsed structure.
+
+\paragraph{The pass/fail rule for a fold} was fixed in advance as CA RMSD $\le
+2.5\ang$ \emph{and} TM-score $\ge 0.7$ against experiment. It misclassified
+protein~G; see Section~\ref{sec:corrections}.
+
+% ===========================================================================
 \section{Summary}
 % ===========================================================================
 
@@ -171,10 +326,177 @@ statistics.
 \begin{itemize}
 \item \emph{Geometry gate:} pTM $\ge 0.40$, and no C$\beta$--C$\beta$ pair
   closer than $3.0\ang$ at sequence separation $\ge 2$.
-\item \emph{Bond criterion:} C$\beta$--C$\beta$ $\le 4.5\ang$.
+\item \emph{Bond criterion:} C$\beta$--C$\beta$ $\le 4.5\ang$. Derived and
+  calibrated in Section~\ref{sec:cbeta}.
 \item \emph{Controls:} protein~G (fold control, no cysteines); BPTI and
   crambin (three known disulfides each).
 \end{itemize}
+
+% ===========================================================================
+\section{The C\texorpdfstring{$\beta$}{-beta} criterion}
+\label{sec:cbeta}
+% ===========================================================================
+
+Every disulfide claim in this report rests on one number, so it gets its own
+section: where it comes from, what it was tested against, and the one thing it
+turned out not to be able to do.
+
+\subsection{Why C\texorpdfstring{$\beta$}{-beta} and not sulfur}
+
+A disulfide is a covalent bond between the SG atoms of two cysteines. The
+direct test is therefore $d^{\mathrm{SG}}_{ij} \le 2.5\ang$, and on an
+experimental structure that is what is used. It is unavailable on an ESM3
+prediction: the structure decoder emits the backbone (N, CA, C, O) and an
+inferred C$\beta$, and \emph{no side-chain atom at any residue}. There is no
+sulfur to measure, at any confidence, for any construct. This is a property of
+the output representation, not of a setting, so no amount of decoding effort
+makes SG--SG available.
+
+What remains is C$\beta$, the atom one bond closer to the backbone than SG. Two
+bonded cysteines hold their C$\beta$ atoms close together, so
+$d^{\mathrm{C}\beta}_{ij}$ is a proxy for the bond:
+\[
+  d^{\mathrm{C}\beta}_{ij} \;=\; \bigl\lVert x_i^{\mathrm{C}\beta} - x_j^{\mathrm{C}\beta} \bigr\rVert
+  \;\le\; 4.5\ang
+  \quad\Longrightarrow\quad \text{pair $(i,j)$ called bonded.}
+\]
+It is a proxy and not a measurement, and the distinction is the subject of
+Section~\ref{sec:cbeta-cannot}.
+
+\subsection{Where C\texorpdfstring{$\beta$}{-beta} comes from}
+\label{sec:cbeta-origin}
+
+C$\beta$ is not predicted either. It is \emph{derived} from the three backbone
+atoms by \texttt{infer\_cbeta()}, which places it at a fixed bond length,
+angle and dihedral from N, CA and C:
+\[
+  l = 1.522\ang, \qquad \theta = 1.927\ \mathrm{rad}\ (110.4^\circ), \qquad
+  \varphi = -2.143\ \mathrm{rad}\ (-122.8^\circ),
+\]
+the standard ideal-geometry constants. Three consequences follow, and all three
+matter for how the criterion should be read.
+
+\begin{itemize}
+\item \textbf{The criterion inherits every backbone error.} C$\beta$ carries no
+  information beyond N, CA and C, so $d^{\mathrm{C}\beta}_{ij}$ is a function of
+  the backbone alone. A wrong backbone gives a wrong C$\beta$ distance with no
+  warning.
+\item \textbf{Glycine has no C$\beta$,} and the routine writes NaN there.
+  Glycines are therefore invisible to both the bond criterion and the clash
+  count.
+\item \textbf{The chain break is neither a residue nor a glycine,} so it was
+  given a spurious C$\beta$ and admitted into the statistics until a residue
+  mask was added. Fixing that changed the cleaved clash count from 16 to 15.
+\end{itemize}
+
+Both sides of every comparison in this report are put on this same convention:
+the experimental C$\beta$ is discarded and re-derived from the experimental
+N, CA, C by the same function. The deposited and re-derived positions differ by
+about $0.1$--$0.2\ang$, which is small, but comparing a deposited C$\beta$ with
+an inferred one would be comparing two different quantities.
+
+\subsection{\texorpdfstring{Why $4.5\ang$}{Why 4.5 A}}
+
+Two bounds fix the scale. The upper one is geometric. In a bonded pair the path
+from one C$\beta$ to the other runs C$\beta$--SG--SG--C$\beta$, so the C$\beta$
+atoms cannot be further apart than those three bonds fully extended and
+collinear:
+\[
+  d^{\mathrm{C}\beta}_{\max}
+  = 2\,l_{\mathrm{C}\beta\text{--}\mathrm{SG}} + l_{\mathrm{SG}\text{--}\mathrm{SG}}
+  = 2(1.81) + 2.05 = 5.67\ang .
+\]
+The lower one is empirical: the two C$\beta$--SG bonds are never collinear in a
+real disulfide, so observed pairs sit well inside the ceiling, at about
+$3.8$--$4.1\ang$. The six control bonds measured here fall at
+$3.45$--$4.03\ang$, inside that band.
+
+So $4.5\ang$ sits above the observed band with margin, and about $1.2\ang$
+below the geometric ceiling. It is deliberately not placed at the ceiling: a
+pair at $5.5\ang$ is geometrically reachable but is not a disulfide in any
+structure measured here, and admitting it would cost specificity for no gain in
+sensitivity. The criterion is also well clear of the clash line
+(\texttt{CB\_CLASH} $= 3.0\ang$), so ``bonded'' and ``unphysically close'' do
+not overlap: a pair called bonded lies in $[3.0, 4.5]\ang$.
+
+\subsection{What it does on experimental geometry}
+
+Tested on the two disulfide controls, against the deposited structures (5PTI
+and 3NIR), it is exact.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+ & BPTI & crambin \\
+\midrule
+native bonds, confirmed SG--SG ($\ang$) & $2.02$--$2.04$ & $2.03$--$2.05$ \\
+native bonds within $4.5\ang$ C$\beta$ & 3 of 3 & 3 of 3 \\
+non-native cysteine pairs within $4.5\ang$ & 0 of 12 & 0 of 12 \\
+nearest non-bonded pair ($\ang$) & 6.14 & 5.79 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Sensitivity is 6 of 6 and specificity 24 of 24. The nearest
+non-bonded pair is $1.3$--$1.6\ang$ outside the criterion, so there is a clean
+gap on either side and the exact placement of the threshold within
+$4.5 \pm 1\ang$ would not change a single call. On real geometry the criterion
+does what it was built to do.
+
+\subsection{What it cannot do}
+\label{sec:cbeta-cannot}
+
+It cannot be trusted on a prediction, and this is the sharpest result in the
+report.
+
+ESM3's crambin places the \emph{non-native} pair Cys16--Cys40 at $2.99$,
+$3.69$ and $3.33\ang$ at three decoding step counts: inside the criterion every
+time, in the middle of the observed real-bond band. In the experimental
+structure those two C$\beta$ atoms are $17.88\ang$ apart. Meanwhile the native
+Cys16--Cys26 sits at $10.0$--$10.7\ang$, far outside. Nothing in the model's
+output marks the difference: the two cysteines of the false pair carry \plddt{}
+at or above the molecule's mean at every step count.
+
+The reason is the first bullet of Section~\ref{sec:cbeta-origin}. The criterion is a
+function of the backbone, and crambin's backbone is wrong (TM-score
+$0.26$--$0.32$). A wrong fold can place any two residues at any distance,
+including a distance that looks exactly like a bond. The criterion is not
+measuring a bond; it is measuring a consequence of the fold, and it is only as
+good as the fold under it.
+
+This is why every bridge verdict here is gated on the fold first, and why the
+in-range HA1 pair seen in the sweep (one:277--281 at $3.3$--$3.5\ang$) is
+\emph{not} reported as a disulfide: HA1 fails the gate, there is no experimental
+HA structure to check against, and crambin shows what such a pair can be.
+
+\paragraph{Summary of its standing.}
+\begin{center}
+\small
+\begin{tabular}{@{}llp{7.4cm}@{}}
+\toprule
+Question & Answer & On what basis \\
+\midrule
+Is $4.5\ang$ the right number? & Yes &
+  Above the $3.45$--$4.03\ang$ observed band, below the $5.67\ang$ ceiling,
+  clear of the $3.0\ang$ clash line. \\
+Does it find real bonds? & Yes, 6/6 &
+  Experimental BPTI and crambin, SG--SG confirmed. \\
+Does it reject non-bonds? & Yes, 24/24 &
+  Nearest non-bonded pair $5.79\ang$. \\
+Can it verify a bond in a prediction? & \textbf{No} &
+  Crambin's false pair is inside it at every step count, at confidence at or
+  above the mean. \\
+Can it ever use sulfur? & No &
+  The decoder emits no side-chain atoms. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent A negative call on a well-folded structure is still informative, and
+the HA bridge is negative by a factor of at least 10 at every step count, which
+no threshold subtlety can reach. It is the \emph{positive} calls on predictions
+that the criterion cannot support.
 
 % ===========================================================================
 \section{Results}
@@ -650,5 +972,18 @@ The experimental comparison is \path{bridge_test/run_pdb_comparison.sh}, with
 phases \texttt{fetch}, \texttt{predict}, \texttt{compare}, \texttt{controls},
 \texttt{roundtrip} and \texttt{prompt}. Output files are in
 \path{softmax/code/bridge_test/}.
+
+% ===========================================================================
+\section{Where this leaves it}
+% ===========================================================================
+
+The most informative object now is crambin's false bond. Two readings: ESM3 may
+be building a different but real structure, such as a homolog's fold, or simply
+misfolding. A structure search on what it actually built would separate them.
+That needs PDB access.
+
+Beyond that, HA has two routes left: an experimental HA structure to compare
+against, or imposing the bond outside ESM3 via restrained refinement or the
+structure-token energy pointed at a bonded reference.
 
 \end{document}
