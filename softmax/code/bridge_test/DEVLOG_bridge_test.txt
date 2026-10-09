@@ -344,3 +344,103 @@ past the 1.17-1.50 A seen in the assembled runs. ptm 0.4133 only just clears
 the floor. So HA1 resists ESM3 in every construct tried, and the obligate-
 trimer reading (HA1 being the receptor-binding head, which packs against
 neighbouring protomers natively) remains the leading explanation for why.
+
+
+2026-10-09 -- STEP-MATCHED: HA1 alone at 256 steps (65.2) is NOT below HA1 in the complex (63.2). FINDINGS 7 and 8 are RETRACTED -- "company helps HA1" came from comparing 329 steps against 256. Fusing HURTS HA1 and the break REMOVES the harm; nothing here shows HA2 actively helps
+--------------------------------------------------------------------------------
+    python tests/test_cleaved_complex.py --ref one --steps 256
+    python tests/test_cleaved_complex.py --ref two --steps 256
+Parsed with the new bridge_test/summarize_runs.py, which reads every result
+file's CONTENT and prints one row per run. It reproduced every number that had
+been copied into the devlogs and docs/bridge_test_report.tex by hand (cleaved
+15 clashes, mature 9, HA1 alone 16, bpti, crambin, protein_g all match), so the
+earlier tables are accurate to the result files. The retraction below is about
+interpretation, not transcription.
+
+RESULT -- HA1 alone, the two step counts side by side:
+                               256 steps     329 steps
+    ptm                         0.4642        0.4133
+    plddt mean                  65.16         59.83
+    % residues >= 70            37.1          18.5
+    min CB-CB                   2.01 A        0.44 A
+    CB-CB clashes               7             16
+    closest Cys pair            3.32 A        3.51 A   (one:277--281, both)
+
+THE MATCHED COMPARISON, all at 256 steps:
+    HA1 fused to HA2, no break (mature)    51.42   (11.2% >= 70)
+    HA1 with the break (cleaved)           63.22   (38.6%)
+    HA1 alone                              65.16   (37.1%)
+
+FINDING 11 -- "THE TWO CHAINS HELP EACH OTHER" IS NOT SUPPORTED, and FINDINGS
+7 and 8 are withdrawn. Finding 7 compared HA1 alone at 329 steps (59.83)
+against HA1 in the complex at 256 (63.22) and read the difference as HA2
+helping. That was the very confound the report listed as limitation number
+one. At equal steps HA1 alone is 65.16, i.e. 1.9 plddt ABOVE its value in the
+complex, with a confident fraction 1.5 points BELOW (37.1% against 38.6%).
+That is a tie, not a benefit. The clash counts cannot be compared directly: the
+cleaved total of 15 spans both chains and most of its listed clashes are in HA2.
+
+What the matched data DO show:
+  - FUSION HURTS. HA1 is 51.42 fused to HA2 and 65.16 with no HA2 at all: a
+    wrong covalent connection costs 13.7 plddt, worse than absence.
+  - THE BREAK REMOVES THAT HARM. 51.42 -> 63.22, +11.8, at matched steps.
+    This is Finding 1 and it stands, because cleaved and mature were always run
+    at the same 256.
+  - THE BREAK DOES NOT ADD BEYOND SEPARATION. 63.22 is not above 65.16.
+And for HA2, plddt is 93.93 alone against 64.90 in the complex, so by this
+measure NEITHER chain is more confident in company than apart. I said earlier,
+too strongly, that the premise "ESM3 should not treat them as separate" was
+confirmed. What is confirmed is narrower: treating them as ONE UNBROKEN chain is
+wrong, and declaring the break repairs it. Whether the two-chain complex is
+right in some way plddt cannot see -- a benefit would show in the interchain
+placement, which is exactly what the assembled pTM (0.23) is too low to
+resolve -- is untested.
+
+FINDING 12 -- STEP COUNT IS A LARGE, NON-OBVIOUS EFFECT. For HA1 alone,
+going from 256 to 329 steps made everything WORSE: plddt 65.16 -> 59.83, the
+confident fraction halved (37.1% -> 18.5%), clashes 7 -> 16, the minimum CB-CB
+2.01 -> 0.44 A, ptm 0.4642 -> 0.4133. More decoding steps are not
+automatically better here. Every cross-construct comparison in this log is
+therefore conditional on its step count, and a difference of around 5 plddt
+(the size of this step effect) should not be read as a finding by itself. The
+big effects -- fused 51.4 vs break 63.2 (11.8), HA2 alone 93.9 vs in-complex
+64.9 (29.0) -- exceed it, but have not been shown to survive a change of step
+count, and one point (HA2) cannot even be matched (see 14). It is also unknown
+whether the operative variable is steps or tokens decoded per step: the complex
+at 256 steps decodes about 2.2 tokens per step, HA1 at 256 about 1.3, HA1 at
+329 exactly 1.0. Two points do not separate them.
+
+FINDING 13 -- WHICH CYSTEINES PAIR MOVES WITH THE STEP COUNT ALONE, in the same
+construct. HA1 alone, 329 -> 256 steps:
+    one:277--281    3.51 -> 3.32 A    stable
+    one:64--76      3.92 -> 26.64 A   gone
+    one:52--64      16.61 -> 4.65 A   appeared
+Finding 10 showed the pairing changing across constructs; this shows it
+changing with nothing but the decoding schedule. One pair (277--281) is
+persistently close in the two HA1-alone runs and not in the assemblies (9.73
+cleaved, 6.33 mature). Combined with crambin's non-native pair at 3.33 A this
+leaves no basis for reading any single in-range distance as a bond.
+
+FINDING 14 -- HA2 CANNOT BE STEP-MATCHED, and the clamp doubles as a
+determinism check. --steps 256 on a 221-residue chain was clamped to 221 (the
+script's own "exceeds 221 positions, clamping" note) so the run is the same
+run as before, and every printed digit is identical: ptm 0.5674, plddt 93.93,
+all pair distances. That is a third deterministic repeat (after cleaved and
+mature), and it means HA2 alone has only ever been seen at one step count. Its
+step sensitivity is unmeasured, so its 29-point drop in the complex is
+untested for robustness in exactly the way Finding 12 warns about.
+
+HOUSEKEEPING: softmax/code/bri, pushed with these results, is a truncated
+output filename holding a KeyboardInterrupt traceback from an aborted model
+load (ESM3.from_pretrained, interrupted by hand). It contains no data and no
+script fault; removed.
+
+NEXT, and it replaces the earlier "step-matched rerun": a STEP SWEEP, since two
+points showed a non-monotone effect and one of them was the control. For each
+of cleaved, mature, one, two at steps in {64, 128, 256} (two: {64, 128, 221}):
+    for ref in cleaved mature one two; do for s in 64 128 256; do
+      python tests/test_cleaved_complex.py --ref $ref --steps $s \
+        > bridge_test/sweep_${ref}_${s}.txt; done; done
+    python bridge_test/summarize_runs.py
+A claim survives only if its SIGN holds at every step count tested: fused < break
+for HA1, alone vs in-complex for both chains, HA2 alone >> HA2 in complex.

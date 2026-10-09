@@ -44,8 +44,9 @@ mature protein it is cut once, after Arg329 in mature numbering, into HA1 and
 HA2, which stay together through an interchain disulfide between Cys14 of HA1
 and Cys137 of HA2. The question was whether ESM3 can be given that two-chain
 molecule and handle it. The mechanical answer is yes: the stock tokenizer
-accepts the chain-break character, and presenting the chains as separate but
-connected measurably helps HA1. The structural answer is no, with caveats: no
+accepts the chain-break character, and declaring the break repairs the damage
+that fusing the two chains does to HA1, though it does not improve on folding
+HA1 alone. The structural answer is no, with caveats: no
 assembled construct folds well enough to pass the geometry gate, and the
 interchain Cys14--Cys137 distance is $96\ang$ (cleaved) and $130\ang$ (no
 break), against a bonding criterion of $4.5\ang$. Two known-disulfide controls
@@ -66,9 +67,14 @@ list.
   accepts \texttt{|}; 551 positions go in and 551 come out;
   \texttt{to\_protein\_complex()} recovers two chains. No change to the
   model code was needed.
-\item \textbf{The chain-break helps.} HA1's mean \plddt{} goes from 51.4
-  (fused, no break) to 63.2 (with break), and the pLDDT at its Cys14 anchor
-  from 22.5 to 73.6. HA1 alone scores 59.8.
+\item \textbf{The chain-break repairs fusion; it does not add to separation.}
+  At matched 256 steps HA1's mean \plddt{} is 51.4 fused to HA2 with no break,
+  63.2 with the break, and 65.2 alone. Fusing costs HA1 13.7 points and the
+  break recovers 11.8 of them. An earlier claim that HA2's presence helps
+  HA1 compared unequal step counts and is withdrawn.
+\item \textbf{Step count is a large effect.} HA1 alone at 329 steps is much
+  worse than at 256 (\plddt{} 59.8 against 65.2; 16 clashes against 7).
+  Cross-construct differences of a few points are not findings.
 \item \textbf{HA2 alone folds well; the assembly does not.} HA2 alone: pLDDT
   93.9, no clashes, passes the gate. Every HA1-containing construct fails it.
 \item \textbf{The interchain bridge is not formed} in either assembled
@@ -78,7 +84,7 @@ list.
   3/3 known bonds inside it. Crambin: 1/3 inside it, and the closest pair in
   the molecule is a non-native one at $3.33\ang$.
 \item \textbf{Not tested:} the trimer, any experimental reference structure,
-  step-matched comparisons, partner identity for HA.
+  a step sweep, partner identity for HA.
 \end{itemize}
 
 % ===========================================================================
@@ -175,21 +181,22 @@ closest pair at $3.3$--$3.7\ang$).
 
 \begin{center}
 \small
-\begin{tabular}{@{}lrrrr@{}}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrr@{}}
 \toprule
- & cleaved & mature & HA1 alone & HA2 alone \\
+ & cleaved & mature & HA1 alone & HA1 alone & HA2 alone \\
 \midrule
-positions / steps & 551 / 256 & 550 / 256 & 329 / 329 & 221 / 221 \\
-pTM & 0.2322 & 0.2614 & 0.4133 & 0.5674 \\
-pLDDT, all residues & 63.89 & 59.20 & 59.83 & 93.93 \\
-\% residues $\ge 70$ & 45.5 & 31.8 & 18.5 & 97.7 \\
-pLDDT, HA1 (\% $\ge 70$) & 63.22 (38.6) & 51.42 (11.2) & 59.83 (18.5) & --- \\
-pLDDT, HA2 (\% $\ge 70$) & 64.90 (55.7) & 70.78 (62.4) & --- & 93.93 (97.7) \\
-min C$\beta$--C$\beta$ ($\ang$) & 1.50 & 1.17 & 0.44 & 4.14 \\
-clashes & 15 & 9 & 16 & 0 \\
-gate & fail & fail & fail & \textbf{pass} \\
-Cys14--Cys137 C$\beta$ ($\ang$) & 95.67 & 129.74 & --- & --- \\
-pLDDT at Cys14 / Cys137 & 73.6 / 61.3 & 22.5 / 80.9 & --- & --- \\
+positions / steps & 551 / 256 & 550 / 256 & 329 / 256 & 329 / 329 & 221 / 221$^{*}$ \\
+pTM & 0.2322 & 0.2614 & 0.4642 & 0.4133 & 0.5674 \\
+pLDDT, all residues & 63.89 & 59.20 & 65.16 & 59.83 & 93.93 \\
+\% residues $\ge 70$ & 45.5 & 31.8 & 37.1 & 18.5 & 97.7 \\
+pLDDT, HA1 (\% $\ge 70$) & 63.22 (38.6) & 51.42 (11.2) & 65.16 (37.1) & 59.83 (18.5) & --- \\
+pLDDT, HA2 (\% $\ge 70$) & 64.90 (55.7) & 70.78 (62.4) & --- & --- & 93.93 (97.7) \\
+min C$\beta$--C$\beta$ ($\ang$) & 1.50 & 1.17 & 2.01 & 0.44 & 4.14 \\
+clashes & 15 & 9 & 7 & 16 & 0 \\
+gate & fail & fail & fail & fail & \textbf{pass} \\
+Cys14--Cys137 C$\beta$ ($\ang$) & 95.67 & 129.74 & --- & --- & --- \\
+pLDDT at Cys14 / Cys137 & 73.6 / 61.3 & 22.5 / 80.9 & --- & --- & --- \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -197,34 +204,50 @@ pLDDT at Cys14 / Cys137 & 73.6 / 61.3 & 22.5 / 80.9 & --- & --- \\
 \noindent The first run, at one decoding step, gave pTM 0.1827 and a bridge
 distance of $38.55\ang$ with a $1.64\ang$ closest cysteine pair. It is not
 tabulated because it measured a structure the model did not believe in;
-see Section~\ref{sec:corrections}.
+see Section~\ref{sec:corrections}. $^{*}$HA2 alone was requested at 256 steps
+and clamped to 221 by the script (a chain cannot have more steps than
+positions), so it has been seen at one step count only.
 
 \paragraph{Reproducibility.} Cleaved and mature were each run twice, with
-different script versions, on the same machine. Both gave identical pTM
+different script versions, on the same machine, and gave identical pTM
 (0.2322 and 0.2614) and identical bridge distances (95.67 and $129.74\ang$).
-Decoding at temperature zero looks deterministic here. This is two repeat
-pairs on one machine, not a proof.
+HA2 alone was run twice as well (the second time by the clamp above) with
+identical output to every printed digit. Decoding at temperature zero looks
+deterministic here. This is three repeat pairs on one machine, not a proof.
 
 \subsection{Findings}
 
-\paragraph{The chain-break helps HA1, most at the bridge.}
-HA1 pLDDT rises 51.42 $\to$ 63.22 and its confident fraction 11.2\% $\to$
-38.6\% when the break is declared. At the Cys14 anchor the rise is
-22.5 $\to$ 73.6. HA2 pays a little (70.78 $\to$ 64.90).
+\paragraph{Fusing hurts HA1, and the break removes the harm.}
+At 256 steps HA1's pLDDT is 51.42 fused to HA2 with no break, 63.22 with the
+break (confident fraction 11.2\% $\to$ 38.6\%), and 65.16 alone. At the Cys14
+anchor the pLDDT rises 22.5 $\to$ 73.6 on declaring the break. HA2 pays a
+little (70.78 $\to$ 64.90).
 
 \paragraph{The clash \emph{topology} differs.} Mature has fewer clashes
 (9 against 15) but they sit at $|i-j|$ of 80--159, so distant segments are
 superimposed; cleaved's are all local ($|i-j|\le 16$). Counting clashes
 without their separation would rank the two backwards.
 
-\paragraph{The two chains help each other asymmetrically.} HA1 gains from HA2
-(alone 59.83, in the cleaved complex 63.22), and is \emph{worse} with HA2
-fused (51.42) than with no HA2 at all. HA2 loses heavily to company (93.93
-alone, 64.90 in the complex).
+\paragraph{Company does not raise either chain's confidence.} HA1 alone
+(65.16) is not below HA1 in the cleaved complex (63.22) at matched steps; the
+earlier appearance that it was came from comparing 329 steps with 256. HA2
+alone scores 93.93 against 64.90 in the complex, though HA2 alone has only
+been seen at one step count. By pLDDT neither chain is more confident in
+company than apart. Whether the complex is right in a way pLDDT cannot see,
+for example in the interchain placement, is untested: the assembled pTM
+(0.23) is too low to resolve it.
 
-\paragraph{HA1 is the hard half in every construct.} Alone, with a full step
-budget, it still fails the gate with 16 clashes and a minimum C$\beta$
-separation of $0.44\ang$.
+\paragraph{Step count is a large, non-obvious effect.} HA1 alone, 256
+$\to$ 329 steps: pLDDT 65.16 $\to$ 59.83, confident fraction 37.1\% $\to$
+18.5\%, clashes 7 $\to$ 16, pTM 0.4642 $\to$ 0.4133. More decoding steps
+made it worse. The cysteine pairing shifts too: one:64--76 goes from
+$3.92\ang$ to $26.64\ang$ while one:277--281 stays at $3.3$--$3.5\ang$.
+Whether steps or tokens decoded per step is the operative variable is not
+known: two points cannot separate them.
+
+\paragraph{HA1 is the hard half in every construct.} Alone it fails the gate
+at both step counts tried: 16 clashes at 329 steps (minimum C$\beta$
+separation $0.44\ang$) and 7 at 256 steps ($2.01\ang$).
 
 \paragraph{The bridge is not formed.} $95.67\ang$ and $129.74\ang$ are about
 $21\times$ and $29\times$ the criterion; ranks 98 and 95 of 136 cysteine
@@ -281,6 +304,13 @@ These are recorded because several first readings were wrong.
 \item \textbf{A pre-registered prediction failed.} I expected the trimer
   signature (both chains confident, assembly low). The result was
   asymmetric instead: HA2 adequate, HA1 poor.
+\item \textbf{``HA2's presence helps HA1'' retracted.} It rested on HA1
+  alone at 329 steps against HA1 in the complex at 256. At matched steps HA1
+  alone is 65.16 against 63.22. This report had listed that confound as its
+  first limitation, and the rerun resolved it against the claim. I had also
+  said the premise ``ESM3 should not treat the chains as separate'' was
+  confirmed; what is confirmed is narrower (an unbroken fusion is wrong, and
+  the break repairs it).
 \item \textbf{Small bugs.} The chain-break position was admitted into the
   C$\beta$ statistics; labels were wrong for the break-free reference;
   a results file was overwritten by a generic filename.
@@ -300,12 +330,13 @@ These are recorded because several first readings were wrong.
   C$\beta$ is inferred from the backbone. A bond criterion built on it
   inherits any backbone error, and glycines (which have no C$\beta$) are
   invisible to the clash count.
-\item \textbf{Steps are not matched across constructs.} HA1 and HA2 alone
-  used 329 and 221 steps; the assemblies used 256. Isolated chains therefore
-  decode about one token per step and the assemblies about two. The
-  HA1-alone against HA1-in-complex comparison is confounded by this, in a
-  direction I have not measured.
-\item \textbf{One run per condition.} The two repeat pairs agree exactly, but
+\item \textbf{Steps are matched for HA1 only, and step count matters a
+  lot.} HA1 alone at 256 against 329 steps differs by 5.3 pLDDT. HA2 alone
+  cannot be matched to the assemblies at all (clamped at 221), so its
+  29-point drop in the complex has not been shown robust to step count. Two
+  step counts per construct cannot say whether steps or tokens per step is
+  the variable.
+\item \textbf{One run per condition.} The three repeat pairs agree exactly, but
   no condition has been run across seeds or checkpoints, and nothing here
   gives error bars.
 \item \textbf{pTM depends on length,} so comparing it between a 46-residue
@@ -355,22 +386,27 @@ These are recorded because several first readings were wrong.
 
 \subsection{Recommended next step}
 
-Do the \textbf{step-matched rerun} first, because it is cheap and it is the
-one confound that touches a headline result:
+Run a \textbf{step sweep}. The step-matched rerun resolved one claim and
+exposed a larger problem: a non-monotone step effect that no pair of runs can
+characterise. For each of cleaved, mature, one and two at 64, 128 and 256
+steps (two: 64, 128, 221):
 
 \begin{verbatim}
-python tests/test_cleaved_complex.py --ref one --steps 256
-python tests/test_cleaved_complex.py --ref two --steps 256
+for ref in cleaved mature one two; do for s in 64 128 256; do
+  python tests/test_cleaved_complex.py --ref $ref --steps $s \
+    > bridge_test/sweep_${ref}_${s}.txt
+done; done
+python bridge_test/summarize_runs.py
 \end{verbatim}
 
-Then compare HA1 alone against the cleaved HA1 (63.22) at equal step count.
-If HA1 alone is still lower, ``HA2's presence helps HA1'' stands; if it
-catches up, the effect was partly the step budget.
+A claim survives only if its \emph{sign} holds at every step count tested:
+fused below break for HA1, HA1 alone against in-complex, and HA2 alone far
+above HA2 in the complex.
 
 \subsection{Prioritised list}
 
 \begin{enumerate}
-\item \textbf{Step-matched HA1 and HA2} (above).
+\item \textbf{Step sweep} (above).
 \item \textbf{Per-residue pLDDT at the known-bond residues} in the BPTI and
   crambin runs. If crambin's Cys3, Cys16, Cys26 and Cys40 are low-confidence,
   the misses are uncertainty and a pLDDT filter may repair the criterion; if
@@ -406,6 +442,8 @@ cat bridge_test/DEVLOG_bridge_test.txt \
 \item Give results files run-identifying names; the generic default
   overwrote the protein~G control once.
 \item Remove the dead \texttt{present\_atoms()} helper.
+\item \path{bridge_test/summarize_runs.py} tabulates every result file from
+  its content; use it instead of copying numbers by hand.
 \end{itemize}
 
 % ===========================================================================
@@ -421,6 +459,7 @@ python tests/test_cleaved_complex.py --ref crambin   --steps 46
 python tests/test_cleaved_complex.py --ref cleaved   --steps 256
 python tests/test_cleaved_complex.py --ref mature    --steps 256
 python tests/test_cleaved_complex.py --ref one       --steps 329
+python tests/test_cleaved_complex.py --ref one       --steps 256
 python tests/test_cleaved_complex.py --ref two       --steps 221
 \end{verbatim}
 
