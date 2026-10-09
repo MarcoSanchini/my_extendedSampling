@@ -156,6 +156,42 @@ CHAINS = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Disulfide calibration controls
+# ---------------------------------------------------------------------------
+# Added 2026-10-09. protein_g validates that the folding harness works, but it
+# has NO cysteines, so it cannot validate the MEASUREMENT -- and the HA2-alone
+# run exposed why that matters: a fold at plddt 93.9 with zero clashes put its
+# closest cysteine pair at 6.26 A, beyond the 5.67 A geometric ceiling for a
+# bonded pair, i.e. no disulfide at all. Two readings were open: ESM3 cannot
+# express a disulfide through this backbone+CB decoder, or HA2's disulfides
+# genuinely are not formed. These two references decide it, by asking what the
+# pipeline does with disulfides whose positions are KNOWN.
+#
+# Both are small, both carry exactly three disulfides, and between them they
+# use all six of their cysteines, so a mistyped sequence cannot satisfy
+# _check() below by accident.
+
+# BPTI (bovine pancreatic trypsin inhibitor), UniProt P00974, mature chain,
+# 58 aa. Cys at 5, 14, 30, 38, 51, 55.
+BPTI = "RPDFCLEPPYTGPCKARIIRYFYNAKAGLCQTFVYGGCRAKRNNFKSAEDCMRTCGGA"
+BPTI_DISULFIDES = ((5, 55), (14, 38), (30, 51))
+
+# Crambin, UniProt P01542, 46 aa. Cys at 3, 4, 16, 26, 32, 40.
+# NOTE THE ISOFORM: positions 22 and 25 vary naturally (Pro/Ser, Leu/Ile).
+# This is the Pro22/Leu25 variant -- seq[21] == "P" and seq[24] == "L", which
+# _check() asserts, so swapping in the other isoform cannot pass silently.
+# Any result from this reference should name the variant.
+CRAMBIN = "TTCCPSIVARSNFNVCRLPGTPEALCATYTGCIIIPGATCPGDYAN"
+CRAMBIN_DISULFIDES = ((3, 40), (4, 32), (16, 26))
+
+# Positions are 1-based and chain-local, same convention as DISULFIDE_BRIDGES.
+KNOWN_DISULFIDES = {
+	"bpti": BPTI_DISULFIDES,
+	"crambin": CRAMBIN_DISULFIDES,
+}
+
+
 def chain_index(chain: str, position: int) -> int:
 	"""0-based index into ZERO_POLYMER_CLEAVED of residue `position` (1-based,
 	chain-local) of `chain` ("polymer_one" or "polymer_two"). Accounts for the
@@ -184,6 +220,9 @@ REFERENCES = {
 	# differ from.
 	"polymer_one": POLYMER_ONE,
 	"polymer_two": POLYMER_TWO,
+	# Disulfide calibration controls -- see the block above KNOWN_DISULFIDES.
+	"bpti": BPTI,
+	"crambin": CRAMBIN,
 }
 
 # References carrying a chainbreak. Deliberately kept OUT of REFERENCES: the
@@ -282,6 +321,37 @@ def _check() -> None:
 			)
 			# chain_index() must agree with the chain-local lookup.
 			assert ZERO_POLYMER_CLEAVED[chain_index(chain, position)] == "C"
+
+	# Disulfide calibration controls. The pairings are the whole point of
+	# these references -- a sequence that drifted would calibrate the
+	# yardstick against the wrong molecule, which is worse than no control.
+	for name, seq, pairs, length in (
+		("bpti", BPTI, BPTI_DISULFIDES, 58),
+		("crambin", CRAMBIN, CRAMBIN_DISULFIDES, 46),
+	):
+		assert len(seq) == length, f"{name} should be {length} aa, got {len(seq)}"
+		listed = [p for pair in pairs for p in pair]
+		assert len(listed) == len(set(listed)), (
+			f"{name}: a cysteine appears in two disulfides: {sorted(listed)}"
+		)
+		for position in listed:
+			assert seq[position - 1] == "C", (
+				f"{name}:{position} should be a cysteine, found {seq[position - 1]}"
+			)
+		# Every cysteine must be accounted for, so a mistyped sequence cannot
+		# pass by happening to keep the listed positions intact.
+		found = {i + 1 for i, a in enumerate(seq) if a == "C"}
+		assert found == set(listed), (
+			f"{name}: cysteines {sorted(found)} but disulfides cover "
+			f"{sorted(listed)}"
+		)
+
+	# Crambin isoform guard: this is the Pro22/Leu25 variant, and the other
+	# natural isoform (Ser22/Ile25) would otherwise substitute silently.
+	assert CRAMBIN[21] == "P" and CRAMBIN[24] == "L", (
+		f"CRAMBIN should be the Pro22/Leu25 variant, found "
+		f"{CRAMBIN[21]}22/{CRAMBIN[24]}25"
+	)
 
 
 _check()
