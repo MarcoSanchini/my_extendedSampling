@@ -30,16 +30,12 @@ it does:
     GATE runs before any verdict.
   - Raising steps 1 -> 256 did NOT rescue it: ptm 0.18 -> 0.23 and the bridge
     distance got WORSE (38.6 -> 95.7 A). Step sweeps are not the answer.
-  - THE CHAINBREAK IS EXONERATED. --ref mature (same 550 residues, no break)
-    folds no better: ptm 0.261 vs 0.232, bridge 129.7 vs 95.7 A. Nothing
-    indicts ESM3's multi-chain handling.
+  - THE CHAINBREAK IS BENEFICIAL, not merely harmless: it takes HA1 from
+    plddt 51.4 (fused) to 63.2, and its Cys14 anchor from 22.5 to 73.6.
+  - HA2 alone folds at plddt 93.9 with zero clashes; HA1 alone fails the gate
+    at 59.8 with 16 clashes. HA1 is the hard half in every construct.
   - ESM3's decoder emits backbone + CB only; there is NO side-chain S at any
     residue, so SG-SG is permanently unavailable and CB-CB is the criterion.
-  - 95-130 A separations across 550 residues mean the chain is EXTENDED, not
-    merely misfolded (a compact 550-mer maxes out near 70-80 A). Leading
-    explanation: HA is an obligate TRIMER whose HA2 central helix is an
-    inter-protomer coiled-coil, so a lone protomer may have no self-contained
-    fold. That would make low confidence the CORRECT answer here.
 
 CB PROVENANCE, which decides whether the clash count is real. CB is not
 predicted: ProteinChain.infer_cbeta() derives it from N/CA/C, and with its
@@ -48,10 +44,25 @@ glycines are excluded from every CB statistic here by construction, NOT by
 accident -- two finite CBs 1.2 A apart therefore mean two nearly superimposed
 BACKBONES, i.e. a real clash. The one position whose CB is meaningless is the
 chainbreak itself ("|" is not G, so a CB gets inferred from nonsense
-backbone): it is excluded explicitly below. Earlier runs did not exclude it.
+backbone): it is excluded explicitly below.
+
+TWO CONTROLS, AND THEY ANSWER DIFFERENT QUESTIONS. protein_g settles whether
+the HARNESS folds (PASSED 2026-10-08: ptm 0.7596, plddt 93.24, 0 clashes) but
+it has no cysteines, so it cannot settle whether the MEASUREMENT works. That
+gap mattered: HA2 alone folded at plddt 93.9 with zero clashes and still put
+its closest cysteine pair at 6.26 A, past the 5.67 A geometric ceiling for a
+bonded pair. Two readings were open -- ESM3 cannot express a disulfide through
+this backbone+CB decoder, or HA2's disulfides genuinely are not formed. bpti
+and crambin decide it: three KNOWN disulfides each, so what the pipeline
+reports for bonds that certainly exist calibrates CB_BONDED, the criterion
+every bridge verdict here rests on. Run them before trusting any further
+bridge claim, and note that a calibration run which fails the fold gate
+calibrates nothing.
 
 Run from the softmax/code directory:
-    python tests/test_cleaved_complex.py --ref protein_g --steps 56   # CONTROL
+    python tests/test_cleaved_complex.py --ref protein_g --steps 56   # fold control
+    python tests/test_cleaved_complex.py --ref bpti    --steps 58     # disulfide control
+    python tests/test_cleaved_complex.py --ref crambin --steps 46     # disulfide control
     python tests/test_cleaved_complex.py --ref cleaved --steps 256
     python tests/test_cleaved_complex.py --ref mature  --steps 256
     python tests/test_cleaved_complex.py --ref cleaved --steps 256 --pdb out.pdb
@@ -70,6 +81,9 @@ from utils.predictions import init_structure_config
 
 from references import (
 	PROTEIN_G,
+	BPTI,
+	CRAMBIN,
+	KNOWN_DISULFIDES,
 	ZERO_POLYMER_CLEAVED,
 	ZERO_POLYMER_MATURE,
 	POLYMER_ONE,
@@ -91,14 +105,22 @@ REFS = {
 	"mature": ZERO_POLYMER_MATURE,
 	"one": POLYMER_ONE,
 	"two": POLYMER_TWO,
-	# POSITIVE CONTROL. 56 aa, the suite's long-standing reference, and a
-	# protein ESM3 must be able to fold. If this does not clear PTM_CONTROL
-	# with zero clashes, the harness is wrong -- note init_structure_config
-	# carries condition_on_coordinates_only=True, written for contact-map
-	# work, not de novo folding -- and every zero_polymer number from this
-	# script is void rather than being a fact about ESM3. protein_g has NO
-	# cysteines, so its pair scan is correctly empty.
+	# FOLD CONTROL. 56 aa, the suite's long-standing reference, and a protein
+	# ESM3 must be able to fold. If this does not clear PTM_CONTROL with zero
+	# clashes, the harness is wrong -- note init_structure_config carries
+	# condition_on_coordinates_only=True, written for contact-map work, not de
+	# novo folding -- and every zero_polymer number from this script is void
+	# rather than being a fact about ESM3. PASSED 2026-10-08: ptm 0.7596,
+	# plddt 93.24, 0 clashes. protein_g has NO cysteines, which is exactly why
+	# it validates the fold but not the MEASUREMENT.
 	"protein_g": PROTEIN_G,
+	# DISULFIDE CALIBRATION CONTROLS, the other half protein_g cannot supply.
+	# Three known disulfides each, positions in references.KNOWN_DISULFIDES,
+	# so the script can ask what this pipeline does with bonds it KNOWS are
+	# there. See the --- known disulfides --- block below for what the two
+	# outcomes mean.
+	"bpti": BPTI,
+	"crambin": CRAMBIN,
 }
 
 
@@ -155,6 +177,10 @@ def atom_distance(coords: torch.Tensor, i: int, j: int, atom: str) -> float | No
 	return torch.sqrt(((xi - xj) ** 2.).sum()).item()
 
 
+def present_atoms(coords: torch.Tensor, i: int) -> list[str]:
+	return [n for n, a in atom_order.items() if bool(torch.isfinite(coords[i, a]).all())]
+
+
 def fmt(d: float | None) -> str:
 	return "   n/a" if d is None else f"{d:6.2f}"
 
@@ -178,9 +204,13 @@ def main() -> None:
 		  + (f" + {nbreak} chainbreak, {len(seq)} positions)" if nbreak else ")"))
 	print(f"# decoding steps: {steps}   device: {device}")
 	if is_control:
-		print(f"# POSITIVE CONTROL: must reach ptm >= {PTM_CONTROL} with 0 clashes,")
+		print(f"# FOLD CONTROL: must reach ptm >= {PTM_CONTROL} with 0 clashes,")
 		print(f"# otherwise the harness is at fault and no other run from this")
 		print(f"# script means anything.")
+	if ref in KNOWN_DISULFIDES:
+		print(f"# DISULFIDE CONTROL: {len(KNOWN_DISULFIDES[ref])} known bonds,")
+		print(f"# used to calibrate the CB_BONDED = {CB_BONDED} A criterion that")
+		print(f"# every bridge verdict in this investigation rests on.")
 	print()
 
 	model = ESM3.from_pretrained("esm3-open").to(device)
@@ -262,11 +292,13 @@ def main() -> None:
 	print(f"     from all CB statistics by construction -- if these two numbers")
 	print(f"     agree, the clashes above are between REAL inferred CBs.)")
 	if clashes:
-		idx = clash_mask.nonzero()
+		# Not `idx`: that name is rebound to the bridge anchors further down,
+		# and letting the two share it is a footgun waiting for a reorder.
+		clash_idx = clash_mask.nonzero()
 		print(f"  worst clashing pairs:")
 		order = torch.argsort(d_cb[clash_mask])
 		for k in order[:8].tolist():
-			i, j = int(idx[k][0]), int(idx[k][1])
+			i, j = int(clash_idx[k][0]), int(clash_idx[k][1])
 			print(f"    {float(d_cb[i, j]):5.2f} A  "
 				  f"{label(i):>9s} {out.sequence[i]} -- "
 				  f"{label(j):<9s} {out.sequence[j]}   |i-j|={abs(i - j)}")
@@ -293,6 +325,66 @@ def main() -> None:
 		print(f"  believe in. Check --ref protein_g passes before reading them.")
 	else:
 		print(f"\n  [OK] fold passes the sanity gate; distances are meaningful.")
+
+	# Cysteine pairs, computed here because the calibration block below needs
+	# the ranking as well as the distances.
+	cys = [i for i, a in enumerate(out.sequence) if a == "C" and i < L and bool(ok[i])]
+	pairs = sorted(
+		(float(d_cb[a, b]), a, b)
+		for n, a in enumerate(cys) for b in cys[n + 1:]
+	)
+
+	# ------------------------------------------- known disulfides (control)
+	# protein_g validated the FOLD but carries no cysteines, so it could not
+	# validate the MEASUREMENT. These references have three disulfides each at
+	# known positions, so what the pipeline reports for bonds it KNOWS exist
+	# is what calibrates CB_BONDED -- the criterion every bridge verdict in
+	# this investigation rests on.
+	known = KNOWN_DISULFIDES.get(ref)
+	if known:
+		print(f"\n--- known disulfides: the calibration the fold control could not give ---")
+		rank_of = {frozenset((a, b)): r for r, (_, a, b) in enumerate(pairs, start=1)}
+		n_within, n_measured = 0, 0
+		for (p, q) in known:
+			i, j = p - 1, q - 1
+			d = atom_distance(coords, i, j, "CB")
+			r = rank_of.get(frozenset((i, j)))
+			within = d is not None and d <= CB_BONDED
+			n_within += int(within)
+			n_measured += int(d is not None)
+			verdict = "   n/a" if d is None else ("WITHIN " if within else "OUTSIDE")
+			print(f"  Cys{p:<3d}-Cys{q:<3d} {fmt(d)} A  {verdict} {CB_BONDED} A"
+				  f"   rank {r if r else '-'}/{len(pairs)}")
+
+		# Does ESM3 also pick the right PARTNERS? Separate question from
+		# whether the distances are tight: FINDING 10 showed the pairing
+		# moving with the construct, so recovery is worth its own number.
+		truth = {frozenset((p - 1, q - 1)) for p, q in known}
+		top = {frozenset((a, b)) for _, a, b in pairs[:len(known)]}
+		print(f"\n  {n_within}/{len(known)} known disulfides within {CB_BONDED} A"
+			  f"   ({n_measured}/{len(known)} measurable)")
+		print(f"  {len(top & truth)}/{len(known)} recovered as the "
+			  f"{len(known)} closest Cys pairs (partner assignment)")
+
+		if bad:
+			print(f"\n  CALIBRATION VOID: this fold failed the gate above, so")
+			print(f"  its distances calibrate nothing. Raise --steps or pick a")
+			print(f"  reference ESM3 folds confidently.")
+		elif n_within == len(known):
+			print(f"\n  => CB_BONDED = {CB_BONDED} A IS SOUND. The pipeline puts")
+			print(f"     known disulfides inside the criterion, so a formed")
+			print(f"     bridge is detectable and HA2's 6.26 A closest pair")
+			print(f"     means its disulfides genuinely are NOT formed.")
+		elif n_within == 0:
+			print(f"\n  => CB_BONDED = {CB_BONDED} A IS TOO STRICT. ESM3 does not")
+			print(f"     tighten even known disulfides to it, so every 'bridge")
+			print(f"     NOT formed' verdict so far was measured against a")
+			print(f"     threshold this model never meets. Recalibrate to the")
+			print(f"     scale above and re-read the whole devlog.")
+		else:
+			print(f"\n  => MIXED, so the criterion is unreliable rather than")
+			print(f"     simply wrong. Report the per-pair numbers, not a")
+			print(f"     single threshold, until this is understood.")
 
 	# ------------------------------------------------------------ bridge
 	idx = bridge_indices(ref)
@@ -327,21 +419,23 @@ def main() -> None:
 			  + ("  (but see UNTRUSTWORTHY above)" if bad else ""))
 
 	# --------------------------------------------------------- pair scan
-	cys = [i for i, a in enumerate(out.sequence) if a == "C" and i < L and bool(ok[i])]
-	pairs = sorted(
-		(float(d_cb[a, b]), a, b)
-		for n, a in enumerate(cys) for b in cys[n + 1:]
-	)
 	if not pairs:
 		print(f"\n(no cysteine pairs with inferred CB -- "
 			  f"{'protein_g has no cysteines, as expected' if is_control else 'unexpected'})")
 	else:
 		target = set(idx) if idx else set()
+		truth = {frozenset((p - 1, q - 1)) for p, q in (known or ())}
 		print(f"\n--- all {len(pairs)} cysteine pairs by CB-CB, closest first ---")
 		for rank, (d, a, b) in enumerate(pairs, start=1):
-			if rank > 12 and {a, b} != target:
+			is_truth = frozenset((a, b)) in truth
+			if rank > 12 and {a, b} != target and not is_truth:
 				continue
-			mark = "  <== the HA1-HA2 bridge" if {a, b} == target else ""
+			if {a, b} == target:
+				mark = "  <== the HA1-HA2 bridge"
+			elif is_truth:
+				mark = "  <== KNOWN disulfide"
+			else:
+				mark = ""
 			tag = "!" if d < CB_CLASH else ("*" if d <= CB_BONDED else " ")
 			print(f"  {rank:3d}. {tag} {d:6.2f} A  "
 				  f"{label(a):>9s} -- {label(b):<9s}{mark}")
