@@ -1,0 +1,64 @@
+# reference: zero_polymer_cleaved (L=550 residues + 1 chainbreak, 551 positions)
+# decoding steps: 128   device: cuda:0
+
+predicted sequence length: 551   coordinates: (551, 37, 3)
+
+--- confidence ---
+  ptm   0.4039   (floor 0.4)
+  plddt reported on a 0-1 scale, shown here as 0-100
+  plddt mean (all residues)    63.90
+  plddt mean polymer_one       64.32   ( 31.3% of residues >= 70)
+  plddt mean polymer_two       63.27   ( 58.8% of residues >= 70)
+  residues >= 70             42.4%
+  READ: high plddt with low ptm => domains folded, their
+        RELATIVE PLACEMENT failed. Low both => nothing folded.
+
+--- geometry sanity ---
+  min CB-CB (|i-j|>=2)        0.93 A   (clash below 3.0)
+  CB-CB clashes              19   (a physical fold has ~0)
+  CB absent (NaN) at 42 residues; 42 glycines in sequence
+    (infer_cbeta writes NaN at every G by default, so G is excluded
+     from all CB statistics by construction -- if these two numbers
+     agree, the clashes above are between REAL inferred CBs.)
+  worst clashing pairs:
+     0.93 A    one:280 E -- one:287   S   |i-j|=7
+     1.80 A    two:166 A -- two:168   N   |i-j|=2
+     1.93 A      one:3 L -- one:11    A   |i-j|=8
+     2.00 A      one:6 N -- one:188   D   |i-j|=182
+     2.05 A    one:278 N -- one:282   I   |i-j|=4
+     2.17 A    one:277 C -- one:281   C   |i-j|=4
+     2.18 A    one:208 R -- one:228   S   |i-j|=20
+     2.31 A      one:1 Q -- one:13    L   |i-j|=12
+
+  [UNTRUSTWORTHY] 19 CB-CB clashes.
+  Distances below describe a structure the model does not
+  believe in. Check --ref protein_g passes before reading them.
+  polymer_one:14 -> position 13: C
+  polymer_two:137 -> position 466: C
+
+--- the bridge: polymer_one:Cys14 <-> polymer_two:Cys137 ---
+  SG-SG     n/a A   (bonded ~2.05, cutoff 2.5)
+  CB-CB  137.93 A   (bonded <4.5)
+  CA-CA  138.98 A   (bonded ~5.5-6.8)
+  plddt at the two anchors: 58.0 / 66.7
+
+  verdict: bridge NOT formed  [CB-CB=137.93 A, no SG predicted]  (but see UNTRUSTWORTHY above)
+
+--- all 136 cysteine pairs by CB-CB, closest first ---
+    1. !   2.17 A    one:277 -- one:281  
+    2.     5.08 A     one:64 -- one:76   
+    3.     5.61 A     one:97 -- one:139  
+    4.     7.14 A    two:217 -- two:220  
+    5.     7.20 A    two:144 -- two:148  
+    6.    10.11 A    two:195 -- two:199  
+    7.    11.00 A    two:137 -- two:144  
+    8.    11.88 A     one:14 -- one:64   
+    9.    13.37 A     one:14 -- one:76   
+   10.    15.66 A    two:210 -- two:217  
+   11.    15.90 A     one:14 -- one:52   
+   12.    17.74 A     one:52 -- one:64   
+  103.   137.93 A     one:14 -- two:137    <== the HA1-HA2 bridge
+
+  0 pairs in plausible bonding range [3.0, 4.5] A (*)
+  1 pairs CLASHING below 3.0 A (!) -- broken geometry,
+  not disulfides

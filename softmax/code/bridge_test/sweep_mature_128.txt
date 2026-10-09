@@ -1,0 +1,58 @@
+# reference: zero_polymer_mature (L=550 residues)
+# decoding steps: 128   device: cuda:0
+
+predicted sequence length: 550   coordinates: (550, 37, 3)
+
+--- confidence ---
+  ptm   0.2322   (floor 0.4)
+  plddt reported on a 0-1 scale, shown here as 0-100
+  plddt mean (all residues)    65.71
+  plddt mean polymer_one       61.90   ( 33.7% of residues >= 70)
+  plddt mean polymer_two       71.40   ( 53.8% of residues >= 70)
+  residues >= 70             41.8%
+  READ: high plddt with low ptm => domains folded, their
+        RELATIVE PLACEMENT failed. Low both => nothing folded.
+
+--- geometry sanity ---
+  min CB-CB (|i-j|>=2)        0.68 A   (clash below 3.0)
+  CB-CB clashes              2   (a physical fold has ~0)
+  CB absent (NaN) at 42 residues; 42 glycines in sequence
+    (infer_cbeta writes NaN at every G by default, so G is excluded
+     from all CB statistics by construction -- if these two numbers
+     agree, the clashes above are between REAL inferred CBs.)
+  worst clashing pairs:
+     0.68 A    one:151 L -- one:222   R   |i-j|=71
+     1.97 A    one:150 R -- one:220   R   |i-j|=70
+
+  [UNTRUSTWORTHY] ptm 0.232 below 0.4; 2 CB-CB clashes.
+  Distances below describe a structure the model does not
+  believe in. Check --ref protein_g passes before reading them.
+  polymer_one:14 -> position 13: C
+  polymer_two:137 -> position 465: C
+
+--- the bridge: polymer_one:Cys14 <-> polymer_two:Cys137 ---
+  SG-SG     n/a A   (bonded ~2.05, cutoff 2.5)
+  CB-CB   47.96 A   (bonded <4.5)
+  CA-CA   49.95 A   (bonded ~5.5-6.8)
+  plddt at the two anchors: 69.9 / 83.5
+
+  verdict: bridge NOT formed  [CB-CB=47.96 A, no SG predicted]  (but see UNTRUSTWORTHY above)
+
+--- all 136 cysteine pairs by CB-CB, closest first ---
+    1.     5.49 A     one:52 -- one:97   
+    2.     6.60 A    two:144 -- two:148  
+    3.     7.23 A    two:195 -- two:199  
+    4.     7.67 A    two:217 -- two:220  
+    5.     8.32 A    two:210 -- two:217  
+    6.     8.91 A    one:277 -- one:281  
+    7.    11.02 A    two:137 -- two:144  
+    8.    15.76 A    two:210 -- two:220  
+    9.    17.25 A    two:199 -- two:217  
+   10.    17.30 A    two:137 -- two:148  
+   11.    17.34 A    two:199 -- two:210  
+   12.    17.44 A     one:64 -- one:76   
+   31.    47.96 A     one:14 -- two:137    <== the HA1-HA2 bridge
+
+  0 pairs in plausible bonding range [3.0, 4.5] A (*)
+  0 pairs CLASHING below 3.0 A (!) -- broken geometry,
+  not disulfides
