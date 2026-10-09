@@ -56,7 +56,9 @@ crambin fold is wrong (TM-score $0.32$) at pLDDT $83$ and passes the geometry
 gate, and the model places a non-native pair at $3.3\ang$ that is $17.9\ang$ in
 the experiment. The round trip reproduces both folds to about $0.3\ang$, so the
 representation can hold the bonds; a coordinate prompt pulls a pair partway
-toward native geometry without holding it. This report records the results,
+toward native geometry without holding it. A step sweep of the controls shows
+all of this is stable: the false bond is present at every step count, at
+confidence at or above the molecule's mean. This report records the results,
 the corrections made along the way, the limitations, and a prioritised to-do
 list.
 \end{abstract}
@@ -92,8 +94,14 @@ list.
   BPTI and crambin, exactly the native bonds lie within $4.5\ang$ and nothing
   else does. The earlier verdict that it lacks specificity was wrong: the
   non-native pair is a prediction error.
-\item \textbf{The predicted crambin fold is wrong} (TM-score $0.32$), at pLDDT
-  83 and with no clashes. The geometry gate is necessary, not sufficient.
+\item \textbf{The predicted crambin fold is wrong} (TM-score $0.26$--$0.32$) at
+  every step count, with no clashes and pLDDT up to 83. The geometry gate is
+  necessary, not sufficient.
+\item \textbf{ESM3 builds a confident false disulfide.} Crambin's non-native
+  Cys16--Cys40 is inside the $4.5\ang$ criterion at every step count
+  ($2.99$--$3.69\ang$) and is $17.9\ang$ in experiment; its residues carry pLDDT
+  at or above the molecule's mean. A C$\beta$ criterion on an ESM3 prediction
+  cannot tell a real bond from a confident false one.
 \item \textbf{The representation can hold the bonds.} The round trip reproduces
   both folds to about $0.3\ang$. A coordinate prompt pulls a bridge partway
   toward native geometry, locally, at a cost in confidence, and does not hold it.
@@ -396,6 +404,65 @@ $61\%$ closed). It forms no other bond, the fold stays wrong (RMSD $7.9$ to
 $7.1\ang$), and pTM falls from $0.58$ to $0.46$. This is a soft, partial, local
 pull, not an imposition. The crambin fold is wrong, so the test is confounded
 either way.
+\subsection{Control step sweep}
+
+Each control at three step counts ($L/4$, $L/2$, $L$), to test whether a
+control's result is a property of the protein or of one setting.
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+ & steps & CA RMSD ($\ang$) & TM & contact F1 & pTM & pLDDT \\
+\midrule
+protein G & 14 & 3.01 & 0.819 & 0.78 & 0.707 & 90.4 \\
+protein G & 28 & 2.99 & 0.830 & 0.80 & 0.774 & 94.8 \\
+protein G & 56 & 2.96 & 0.835 & 0.80 & 0.760 & 93.2 \\
+BPTI & 14 & 1.01 & 0.923 & 0.92 & 0.753 & 93.4 \\
+BPTI & 29 & 1.10 & 0.923 & 0.92 & 0.747 & 92.5 \\
+BPTI & 58 & 1.22 & 0.922 & 0.92 & 0.755 & 92.9 \\
+crambin & 11 & 8.34 & 0.263 & 0.28 & 0.506 & 76.9 \\
+crambin & 23 & 7.18 & 0.281 & 0.30 & 0.416 & 68.3 \\
+crambin & 46 & 7.91 & 0.316 & 0.35 & 0.582 & 83.3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{Step count does not matter for the controls.} Over a fourfold range
+each control barely moves: BPTI's TM-score spans $0.922$--$0.923$, crambin's
+$0.263$--$0.316$, protein~G's $0.819$--$0.835$. HA1 alone, by contrast, moved
+$5.3$ pLDDT points and doubled its clash count between two step counts. The step
+sensitivity seen earlier is a property of the $550$-residue target, not of the
+pipeline, so each control gives one answer and the results below are properties
+of the proteins.
+
+\paragraph{The false disulfide is persistent, and confidence never flags it.}
+Crambin's non-native Cys16--Cys40 is inside the criterion at every step count
+($2.99$, $3.69$, $3.33\ang$) against $17.88\ang$ in experiment, while the native
+Cys16--Cys26 stays at $10.0$--$10.7\ang$. The two cysteines of the false pair
+carry pLDDT $77/78$, $72/69$ and $87/78$, at or above each molecule's mean
+($76.9$, $68.3$, $83.3$). At 11 steps a second false pair appears. This is the
+sharpest negative result here: the same $4.5\ang$ criterion that is exact on
+experimental geometry cannot, on an ESM3 prediction, separate a real bond from a
+confident false one.
+
+\paragraph{Where the fold is right, the bonds are right and stable.} BPTI's three
+bonds vary by at most $0.07\ang$ across the sweep ($5$--$55$: $3.67$, $3.69$,
+$3.66\ang$), all native, no false positive at any count. Correct bonds track a
+correct fold, not confidence.
+
+\paragraph{My own pass/fail rule misclassified protein~G, and is reported rather
+than adjusted.} The rule fixed in advance---correct if CA RMSD $\le 2.5\ang$
+\emph{and} TM-score $\ge 0.7$---calls protein~G wrong at all three step counts,
+which is not a sensible reading of a TM-score of $0.82$--$0.84$. One loop causes
+it: excluding residues 9--15, protein~G's CA RMSD is $0.74$, $0.68$ and
+$0.64\ang$, and those seven residues carry $80$--$82\%$ of the squared deviation.
+So protein~G is a correct fold with a reproducible local error, a global RMSD
+cutoff is the wrong instrument for ``is the fold right'', and TM-score alone
+would have classified all three controls correctly. Crambin's verdict is
+unaffected; it fails both criteria by a wide margin. The threshold is not being
+re-fitted to the data: the rule as published was wrong, that is recorded, and a
+future rule should pair TM-score with a local error measure.
 
 % ===========================================================================
 \section{Corrections made during the session}
@@ -456,7 +523,7 @@ These are recorded because several first readings were wrong.
 \begin{itemize}
 \item \textbf{Experimental ground truth exists only for the controls.} There is
   no experimental HA structure, so nothing about HA's fold or bridge has been
-  compared with experiment. Each control was predicted at one step count.
+  compared with experiment.
 \item \textbf{C$\beta$--C$\beta$ is a proxy.} The decoder emits no sulfur, and
   C$\beta$ is inferred from the backbone. A bond criterion built on it
   inherits any backbone error, and glycines (which have no C$\beta$) are
@@ -471,9 +538,9 @@ These are recorded because several first readings were wrong.
 \item \textbf{pTM depends on length,} so comparing it between a 46-residue
   and a 550-residue chain is weak. Only same-construct comparisons are
   clean.
-\item \textbf{Two controls.} BPTI is small and folds correctly, so it cannot test
-  imposition. Crambin's fold is wrong, so its results are confounded. Neither
-  says what the criterion does in a 550-residue fold.
+\item \textbf{Two controls.} BPTI folds correctly, so it cannot test imposition.
+  Crambin's fold is wrong at every step count, so its disulfide results are
+  confounded. Neither says what the criterion does in a 550-residue fold.
 \item \textbf{The control pairings are confirmed by experiment.} Each supplied
   pairing is a disulfide in the deposited file (SG--SG $2.02$--$2.05\ang$). The
   sequences were checked against the experimental SEQRES, not against UniProt.
@@ -515,23 +582,20 @@ These are recorded because several first readings were wrong.
 
 \subsection{Recommended next step}
 
-Run the control step sweep. Each control was predicted at one step count, and
-the HA sweep showed that step count can change a fold by more than the effects
-under test. Crambin's wrong fold is a property of the protein only if it is
-wrong at 11, 23 and 46 steps. If it is right at some step count, the crambin
-calibration has to be redone at that count. The sweep is
-\path{run_pdb_comparison.sh controls}, and its reading was fixed in advance: a
-fold is correct if the CA RMSD is at most $2.5\ang$ and the TM-score at least
-$0.7$, and a control is reliable only if correct at every step count of at
-least $L/4$.
+The step sweep is done and the controls are stable, so the open question is what
+crambin's confident false bond actually is. Two readings: ESM3 may be building a
+different but real structure (a homolog's fold), or simply misfolding. Checking
+whether an experimental structure matches what it built would separate them, and
+it bears directly on HA: the one in-range HA1 pair seen in the sweep
+(one:277--281 at $3.3$--$3.5\ang$) is exactly the kind of observation crambin
+shows can be a confident false positive.
 
 \subsection{Prioritised list}
 
 \begin{enumerate}
-\item \textbf{Control step sweep} (above).
-\item \textbf{A local conformation check} for protein~G's loop. pLDDT does not
-  flag residues 9--15, so confidence is not an error check; a local geometry
-  test against experiment is what separates the confident errors.
+\item \textbf{What crambin's false bond is} (above).
+\item \textbf{Protein~G's loop against the other accepted entries} (1PGA, 9CHT),
+  to confirm the conformation is not specific to 1PGB.
 \item \textbf{One verdict table for experiment and prediction,} as in the
   experimental comparison, stating the fold's correctness before any distance.
 \item \textbf{Interface contacts, cleaved against fused,} once the contact

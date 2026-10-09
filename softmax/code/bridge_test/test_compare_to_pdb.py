@@ -189,6 +189,14 @@ def main():
 		print(f"[ok] local check: worst window {start}-{end} at {win_stretch:.2f} A when 10-16 is stretched, "
 			  f"vs {win_noise:.2f} A for the noise-only copy")
 
+		# the core RMSD must separate "one bad segment" from "a wrong fold"
+		glob = grab(text, r"CA RMSD\s+([\d.]+)")
+		core = grab(text, r"CA RMSD excluding that window[^\n]*?\s([\d.]+) A")
+		# A clear drop, not a factor: the window is a fixed 7 residues and need not
+		# coincide with the stretched segment, so it recovers only part of the error.
+		assert core < 0.8 * glob, f"core RMSD {core} should be clearly below the global {glob}"
+		print(f"[ok] core RMSD {core:.2f} A against global {glob:.2f} A: a bad segment is not a wrong fold")
+
 		# negative control: scrambled coordinates must score badly
 		perm = rng.permutation(n)
 		scrambled = [full[k] for k in perm]
