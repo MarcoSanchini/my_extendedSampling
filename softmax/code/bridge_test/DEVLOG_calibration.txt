@@ -1,0 +1,109 @@
+================================================================================
+DEVLOG -- disulfide calibration (bridge_test)
+================================================================================
+Companion to DEVLOG_bridge_test.txt. Kept as a separate small file so it can
+be appended to the main devlog at session end. Continues from the bridge
+devlog entries of 2026-10-08 (FINDINGS 1-10).
+
+Code: tests/test_cleaved_complex.py (346b3de), tests/references.py (4056d91)
+Results: test_cleaved_complex_results_ref_bpti.txt,
+         test_cleaved_complex_results_ref_crambin.txt
+================================================================================
+
+
+2026-10-09 -- DISULFIDE CALIBRATION: BPTI is clean. Crambin shows the 4.5 A criterion has SENSITIVITY but no SPECIFICITY. A distance threshold cannot be the bridge verdict on its own
+--------------------------------------------------------------------------------
+Two controls with known disulfides, run at full step budget through the same
+pipeline as every other result. The fold gate passes for both, so the
+measurements are licensed; only the interpretation is in question.
+
+                              BPTI (58 aa)            crambin (46 aa)
+    ptm                        0.7545                  0.5816
+    plddt mean (% >= 70)       92.89 (98.3%)           83.31 (89.1%)
+    min CB-CB, |i-j|>=2        3.35 A                  3.33 A
+    CB-CB clashes                  0                       0
+    gate                        PASS                    PASS
+
+    KNOWN bonds (CB-CB, rank among 15 pairs):
+      BPTI    Cys14-Cys38    3.60 A  rank 1   within 4.5
+      BPTI    Cys5 -Cys55    3.66 A  rank 2   within 4.5
+      BPTI    Cys30-Cys51    4.45 A  rank 3   within 4.5
+      crambin Cys4 -Cys32    3.79 A  rank 2   within 4.5
+      crambin Cys3 -Cys40    7.75 A  rank 8   OUTSIDE
+      crambin Cys16-Cys26   10.42 A  rank 12  OUTSIDE
+
+    NON-NATIVE pairs inside 4.5 A:
+      BPTI     none. First non-native pair is Cys51-Cys55 at 6.15 A.
+      crambin  Cys16-Cys40   3.33 A  rank 1   FALSE POSITIVE
+
+    Partner recovery (known pairs = 3 closest):
+      BPTI 3/3    crambin 1/3
+
+FINDING 1 -- THE 4.5 A CRITERION IS NOT WHAT FAILS IN BPTI. Its three true
+bonds sit at 3.60-4.45 A, and the first false pair is 1.7 A further out, at
+6.15 A. In the protein where the model is most confident about the bonds, the
+threshold separates them cleanly. The range 3.6-4.5 A is achievable for a real
+bond in this pipeline. That part of the earlier conclusion survives.
+
+FINDING 2 -- CRAMBIN FAILS IN TWO OPPOSITE WAYS, and this is the important
+result. (a) MISSED BONDS: Cys3-Cys40 and Cys16-Cys26 are real bonds that the
+model places 7.75 and 10.42 A apart. (b) FALSE BONDS: Cys16-Cys40 is the
+closest pair in the whole molecule at 3.33 A, inside the criterion, and is not
+a native bond. A distance threshold therefore has sensitivity that depends on
+the protein (3/3 in BPTI, 1/3 in crambin) and no specificity at all, since it
+accepts a non-native pair as readily as a native one.
+
+Consequence for every bridge verdict: "formed" cannot mean "inside 4.5 A". It
+needs the partner identity as well, and that requires a verified native list
+for the molecule in question. Distance is necessary for a bond, not
+sufficient.
+
+FINDING 3 -- MY EARLIER WORDING WAS TOO STRONG, and I am retracting it. The
+calibration script printed, for BPTI alone, "CB_BONDED = 4.5 A IS SOUND ...
+HA2's disulfides genuinely are NOT formed". That treated sensitivity in one
+protein as if it validated the criterion, and it did not test specificity at
+all. Crambin is the first run that shows the other side. The 6.26 A closest
+pair in HA2 is still a measured number; the inference drawn from it is
+weaker than the devlog said.
+
+FINDING 4 -- FINDING 9 OF THE BRIDGE DEVLOG OVERSTATED. It described HA1-alone
+pairs at 3.51 A (one:277-281) and 3.92 A (one:64-76) as "inside real disulfide
+geometry". They are inside the distance range, which is necessary, and by
+crambin's Cys16-Cys40 they could equally be non-native. They are withdrawn as
+evidence of native bonds. They remain an observation that ESM3 places those
+cysteines close together in the HA1-alone fold, which is all they show.
+
+FINDING 5 -- WHAT SURVIVES. The bridge verdicts that rest on large separations
+do not depend on specificity. The cleaved bridge (Cys14-Cys137) at 95.7 A and
+the mature bridge at 129.7 A are around 20 times the criterion, so no
+specificity question can rescue them. The result that the bridge is not formed
+in the cleaved and mature constructs at 256 steps stands.
+
+The HA2-alone result is weaker. No pair falls within 4.5 A in the one
+gate-passing HA2 fold. Given that BPTI does place its native bonds in range,
+and crambin places only one of three, this reads as a real but soft signal
+that ESM3 is not forming HA2's bonds with confidence. It is not proof that the
+HA2 cysteines are unbonded in nature, and it cannot be strengthened without a
+verified native list for HA.
+
+FINDING 6 -- THE HA PARTNER QUESTION CANNOT BE ASKED YET. For HA we have no
+verified native disulfide list in references.py. Without one, partner
+recovery, which is the test crambin just exposed as the weak point, cannot be
+run on HA at all. That is the same gap that the BPTI and crambin controls
+closed for the calibration, and it is needed before any positive bridge claim
+about HA. Any list must come from a named structure entry and be checked
+against its sequence before it enters references.py. It must not be recalled.
+
+OPEN, and the next run that would settle the crambin misses:
+  - Per-residue pLDDT at each known-bond residue. The calibration block does
+    not print it yet, so the crambin misses are not yet attributable. If
+    Cys3, Cys16, Cys26 and Cys40 sit in low-confidence residues, the misses
+    are uncertainty; if they are confident, the placement is wrong. These two
+    readings call for different responses.
+  - The calibration verdict should report specificity as well as sensitivity:
+    the count of in-range non-native pairs alongside the count of in-range
+    known bonds. Currently only sensitivity is printed, which is how BPTI
+    came to look like a clean pass.
+
+Neither change requires new science, only the two reruns above and a verdict
+rule that counts both sides.
