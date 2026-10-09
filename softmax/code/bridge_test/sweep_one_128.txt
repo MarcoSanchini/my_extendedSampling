@@ -1,0 +1,51 @@
+# reference: zero_polymer_one (L=329 residues)
+# decoding steps: 128   device: cuda:0
+
+predicted sequence length: 329   coordinates: (329, 37, 3)
+
+--- confidence ---
+  ptm   0.4692   (floor 0.4)
+  plddt reported on a 0-1 scale, shown here as 0-100
+  plddt mean (all residues)    67.01
+  plddt mean one               67.01   ( 35.0% of residues >= 70)
+  residues >= 70             35.0%
+  READ: high plddt with low ptm => domains folded, their
+        RELATIVE PLACEMENT failed. Low both => nothing folded.
+
+--- geometry sanity ---
+  min CB-CB (|i-j|>=2)        2.10 A   (clash below 3.0)
+  CB-CB clashes              5   (a physical fold has ~0)
+  CB absent (NaN) at 22 residues; 22 glycines in sequence
+    (infer_cbeta writes NaN at every G by default, so G is excluded
+     from all CB statistics by construction -- if these two numbers
+     agree, the clashes above are between REAL inferred CBs.)
+  worst clashing pairs:
+     2.10 A    one:153 W -- one:171   N   |i-j|=18
+     2.44 A    one:150 R -- one:172   E   |i-j|=22
+     2.57 A    one:233 Y -- one:267   I   |i-j|=34
+     2.75 A     one:97 C -- one:139   C   |i-j|=42
+     2.77 A    one:113 A -- one:131   T   |i-j|=18
+
+  [UNTRUSTWORTHY] 5 CB-CB clashes.
+  Distances below describe a structure the model does not
+  believe in. Check --ref protein_g passes before reading them.
+
+(ref 'one' is a single chain -- no interchain bridge)
+
+--- all 36 cysteine pairs by CB-CB, closest first ---
+    1. !   2.75 A     one:97 -- one:139  
+    2.     4.84 A    one:277 -- one:281  
+    3.     4.97 A     one:52 -- one:64   
+    4.    14.07 A    one:281 -- one:305  
+    5.    16.28 A    one:277 -- one:305  
+    6.    18.48 A     one:52 -- one:76   
+    7.    19.80 A     one:64 -- one:76   
+    8.    22.51 A     one:14 -- one:52   
+    9.    27.45 A     one:14 -- one:64   
+   10.    28.60 A     one:14 -- one:76   
+   11.    29.13 A    one:139 -- one:305  
+   12.    31.04 A     one:76 -- one:97   
+
+  0 pairs in plausible bonding range [3.0, 4.5] A (*)
+  1 pairs CLASHING below 3.0 A (!) -- broken geometry,
+  not disulfides

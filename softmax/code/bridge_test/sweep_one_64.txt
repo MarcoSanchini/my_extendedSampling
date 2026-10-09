@@ -1,0 +1,54 @@
+# reference: zero_polymer_one (L=329 residues)
+# decoding steps: 64   device: cuda:0
+
+predicted sequence length: 329   coordinates: (329, 37, 3)
+
+--- confidence ---
+  ptm   0.3146   (floor 0.4)
+  plddt reported on a 0-1 scale, shown here as 0-100
+  plddt mean (all residues)    48.43
+  plddt mean one               48.43   (  0.0% of residues >= 70)
+  residues >= 70              0.0%
+  READ: high plddt with low ptm => domains folded, their
+        RELATIVE PLACEMENT failed. Low both => nothing folded.
+
+--- geometry sanity ---
+  min CB-CB (|i-j|>=2)        0.73 A   (clash below 3.0)
+  CB-CB clashes              17   (a physical fold has ~0)
+  CB absent (NaN) at 22 residues; 22 glycines in sequence
+    (infer_cbeta writes NaN at every G by default, so G is excluded
+     from all CB statistics by construction -- if these two numbers
+     agree, the clashes above are between REAL inferred CBs.)
+  worst clashing pairs:
+     0.73 A    one:179 I -- one:277   C   |i-j|=98
+     1.16 A     one:91 S -- one:170   N   |i-j|=79
+     1.53 A    one:211 Q -- one:226   I   |i-j|=15
+     1.87 A     one:88 V -- one:139   C   |i-j|=51
+     2.18 A    one:189 K -- one:246   N   |i-j|=57
+     2.25 A     one:95 S -- one:172   E   |i-j|=77
+     2.36 A     one:94 Y -- one:173   Q   |i-j|=79
+     2.36 A    one:277 C -- one:281   C   |i-j|=4
+
+  [UNTRUSTWORTHY] ptm 0.315 below 0.4; 17 CB-CB clashes.
+  Distances below describe a structure the model does not
+  believe in. Check --ref protein_g passes before reading them.
+
+(ref 'one' is a single chain -- no interchain bridge)
+
+--- all 36 cysteine pairs by CB-CB, closest first ---
+    1. !   2.36 A    one:277 -- one:281  
+    2. !   2.98 A     one:14 -- one:76   
+    3.     5.34 A     one:52 -- one:64   
+    4.     7.14 A     one:97 -- one:139  
+    5.    16.98 A     one:14 -- one:52   
+    6.    17.69 A     one:97 -- one:277  
+    7.    17.84 A     one:52 -- one:76   
+    8.    18.78 A     one:14 -- one:64   
+    9.    18.84 A     one:64 -- one:76   
+   10.    19.76 A     one:97 -- one:281  
+   11.    22.76 A    one:139 -- one:277  
+   12.    25.02 A    one:139 -- one:281  
+
+  0 pairs in plausible bonding range [3.0, 4.5] A (*)
+  2 pairs CLASHING below 3.0 A (!) -- broken geometry,
+  not disulfides
