@@ -51,7 +51,7 @@
     "method": "X-RAY DIFFRACTION",
     "resolution": 0.48,
     "sequence_relation": "identical",
-    "resolved_CA": 62,
+    "resolved_CA": 46,
     "url": "https://files.rcsb.org/download/3NIR.pdb",
     "file": "crambin_3NIR.pdb",
     "sha256": "b1ecd8b00fe1b0e2a3cb8f71609d2fe5177a8f3be699d30c58e4109d5e4e5ab5",

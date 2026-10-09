@@ -2,9 +2,11 @@
 Coordinate helpers for roundtrip_bridge.py, in plain numpy so they can be tested
 without torch or the ESM3 weights.
 
-Three jobs:
+Four jobs:
   * turn an experimental PDB chain into an atom37 array that lines up with the
     reference sequence in references.py (missing residues and atoms stay NaN);
+  * put the experimental C-beta on the MODEL's convention (inferred from N/CA/C),
+    so experiment and model are compared like with like;
   * build a PARTIAL coordinate prompt from it -- only the backbone N/CA/C of the
     chosen residues, everything else NaN -- which is how ESM3 is told where
     something is without being told what the rest looks like;
@@ -49,6 +51,23 @@ def experimental_coords37(ref_seq, exp_path, chain, atom_order):
 		"absent": [k + 1 for k, j in enumerate(mapping) if j is None],
 	}
 	return coords, info
+
+
+def with_inferred_cb(coords37, seq, atom_order):
+	"""Copy of coords37 with CB replaced by the model's convention: inferred from
+	N, CA, C with ESM3's infer_CB. Glycine stays NaN, as in the model's own output.
+	Use this on experimental coordinates before comparing C-beta distances with
+	the model's output, which already carries inferred C-beta."""
+	if len(seq) != coords37.shape[0]:
+		raise ValueError(f"sequence length {len(seq)} != coordinate length {coords37.shape[0]}")
+	out = coords37.copy()
+	N, CA, Cc = (coords37[:, atom_order[k]] for k in BACKBONE)
+	for i, aa in enumerate(seq):
+		if aa == "G" or not np.isfinite(np.concatenate([N[i], CA[i], Cc[i]])).all():
+			out[i, atom_order["CB"]] = np.nan
+			continue
+		out[i, atom_order["CB"]] = C.infer_CB(Cc[i], N[i], CA[i])
+	return out
 
 
 def partial_prompt(coords37, residues, window, atom_order):

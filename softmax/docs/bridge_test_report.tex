@@ -49,9 +49,14 @@ up consistently across decoding step counts. The structural answer is no, with
 caveats: no
 assembled construct folds well enough to pass the geometry gate, and the
 interchain Cys14--Cys137 distance is $96\ang$ (cleaved) and $130\ang$ (no
-break), against a bonding criterion of $4.5\ang$. Two known-disulfide controls
-then showed that the distance criterion itself is weaker than I first said:
-it has some sensitivity but no specificity. This report records the results,
+break), against a bonding criterion of $4.5\ang$. Experimental structures of the two disulfide controls then showed that the
+$4.5\ang$ criterion is exact on real geometry: the native bonds, and nothing
+else, lie within it. The failures are in the predictions. The predicted
+crambin fold is wrong (TM-score $0.32$) at pLDDT $83$ and passes the geometry
+gate, and the model places a non-native pair at $3.3\ang$ that is $17.9\ang$ in
+the experiment. The round trip reproduces both folds to about $0.3\ang$, so the
+representation can hold the bonds; a coordinate prompt pulls a pair partway
+toward native geometry without holding it. This report records the results,
 the corrections made along the way, the limitations, and a prioritised to-do
 list.
 \end{abstract}
@@ -83,11 +88,16 @@ list.
 \item \textbf{The interchain bridge is not formed} in either assembled
   construct, by a margin (at least $10\times$ the criterion at every step count) that no
   threshold subtlety can change.
-\item \textbf{The $4.5\ang$ criterion is not a reliable bond detector.} BPTI:
-  3/3 known bonds inside it. Crambin: 1/3 inside it, and the closest pair in
-  the molecule is a non-native one at $3.33\ang$.
-\item \textbf{Not tested:} the trimer, any experimental reference structure,
-  an interchain interface measure, partner identity for HA.
+\item \textbf{The $4.5\ang$ criterion is exact on experimental structures.} In
+  BPTI and crambin, exactly the native bonds lie within $4.5\ang$ and nothing
+  else does. The earlier verdict that it lacks specificity was wrong: the
+  non-native pair is a prediction error.
+\item \textbf{The predicted crambin fold is wrong} (TM-score $0.32$), at pLDDT
+  83 and with no clashes. The geometry gate is necessary, not sufficient.
+\item \textbf{The representation can hold the bonds.} The round trip reproduces
+  both folds to about $0.3\ang$. A coordinate prompt pulls a bridge partway
+  toward native geometry, locally, at a cost in confidence, and does not hold it.
+\item \textbf{Not yet tested:} the controls at other step counts, the trimer, an experimental HA structure, partner identity for HA.
 \end{itemize}
 
 % ===========================================================================
@@ -305,31 +315,87 @@ $4.5\ang$ criterion. No assembled run passes the gate either (cleaved 22, 19,
 15 clashes; fused 9, 2, 9, the 2-clash run failing on pTM), and HA1 alone fails
 at every step count tried.
 
-\subsection{Disulfide calibration}
+\subsection{Against experimental structures}
+
+Three experimental entries were fetched, and each was accepted only if its own
+sequence matched the reference: BPTI (5PTI, $1.00\ang$), crambin (3NIR,
+$0.48\ang$) and protein~G (1PGB, $1.92\ang$). C$\beta$ is taken by the model's
+own convention on both sides; the deposited C$\beta$ differs by about
+$0.1$--$0.2\ang$.
 
 \begin{center}
-\begin{tabular}{@{}llrrl@{}}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lrrr@{}}
 \toprule
-Protein & Bond & C$\beta$--C$\beta$ ($\ang$) & rank & within $4.5\ang$ \\
+ & protein G & BPTI & crambin \\
 \midrule
-BPTI    & Cys14--Cys38 & 3.60 & 1/15 & yes \\
-BPTI    & Cys5--Cys55  & 3.66 & 2/15 & yes \\
-BPTI    & Cys30--Cys51 & 4.45 & 3/15 & yes \\
-crambin & Cys4--Cys32  & 3.79 & 2/15 & yes \\
-crambin & Cys3--Cys40  & 7.75 & 8/15 & no \\
-crambin & Cys16--Cys26 & 10.42 & 12/15 & no \\
-\midrule
-crambin & Cys16--Cys40 (\emph{non-native}) & 3.33 & 1/15 & \textbf{yes} \\
-BPTI    & Cys51--Cys55 (\emph{non-native, closest}) & 6.15 & 4/15 & no \\
+CA RMSD ($\ang$) & 2.96 & 1.22 & 7.91 \\
+TM-score (approx.) & 0.835 & 0.922 & 0.316 \\
+contact F1, $|i-j|\ge 6$ & 0.80 & 0.92 & 0.35 \\
+local CA--CA error, all pairs ($\ang$) & 1.10 & 0.41 & 4.06 \\
+worst 7-residue window ($\ang$) & 2.68 (11--17) & 0.78 (52--58) & 3.41 (12--18) \\
+pTM / mean pLDDT (model) & 0.76 / 93 & 0.75 / 93 & 0.58 / 83 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-BPTI separates cleanly: the last true bond is at $4.45\ang$ and the first
-false pair at $6.15\ang$. Crambin fails twice over. It misses two real bonds,
-and it puts a non-native pair inside the criterion. Partner recovery (known
-pairs among the three closest) is 3/3 for BPTI and 1/3 for crambin. A
-distance threshold is therefore necessary for a bond and not sufficient.
+\paragraph{The crambin fold is wrong, and passes the gate.} A TM-score of $0.32$
+is well below the $0.5$ that marks a shared fold, and the local error is $4\ang$
+on average. The model gives it pTM $0.58$ and pLDDT $83$, with no clashes. The
+geometry gate is necessary, not sufficient.
+
+\paragraph{Protein~G's fold is right, and one loop is confidently wrong.}
+Residues 9--15 lie $5$--$11\ang$ from experiment at pLDDT $80$--$91$. Their
+internal shape is wrong too: the intra-loop CA--CA error averages $1.8\ang$, and
+the end-to-end distance is $15.3\ang$ against $11.3\ang$. Their experimental
+B-factors are normal, so this is not crystal disorder, and confidence does not
+flag the worst residues.
+
+\paragraph{The $4.5\ang$ criterion is exact on experimental geometry.} All six
+supplied pairings are disulfides in the files (SG--SG $2.02$--$2.05\ang$). Exactly
+the native bonds lie within $4.5\ang$ in both proteins. The nearest non-bonded
+pair is $6.14\ang$ in BPTI and $5.79\ang$ in crambin. The earlier claim that the
+criterion lacks specificity was wrong: the non-native crambin pair Cys16--Cys40
+is predicted at $3.33\ang$ and is $17.9\ang$ in the experiment. That specificity
+failure belongs to the prediction.
+
+\begin{center}
+\small
+\begin{tabular}{@{}llrrrl@{}}
+\toprule
+Protein & Pair & SG--SG ($\ang$) & exp.\ C$\beta$ & pred.\ C$\beta$ & pred.\ within $4.5\ang$ \\
+\midrule
+BPTI    & Cys5--Cys55  & 2.04 & 3.49 & 3.66 & yes \\
+BPTI    & Cys14--Cys38 & 2.03 & 3.89 & 3.61 & yes \\
+BPTI    & Cys30--Cys51 & 2.02 & 3.71 & 4.45 & yes \\
+crambin & Cys3--Cys40  & 2.03 & 3.45 & 7.75 & no \\
+crambin & Cys4--Cys32  & 2.05 & 4.03 & 3.79 & yes \\
+crambin & Cys16--Cys26 & 2.04 & 3.82 & 10.42 & no \\
+\midrule
+crambin & Cys16--Cys40 (non-native) & -- & 17.88 & 3.33 & \textbf{yes} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{The round trip holds both folds.} Experimental coordinates encoded to
+structure tokens and decoded reproduce the native fold to $0.31\ang$ (BPTI) and
+$0.30\ang$ (crambin), with TM-scores $0.99$ and $0.98$. The known bonds come back
+within about $0.4\ang$. The representation can hold these folds and these bonds.
+For crambin the failure is in generation, not in the representation.
+
+\paragraph{BPTI cannot test imposition.} Its bonds form without any prompt. A
+prompt on Cys14 and Cys38 leaves all three bond distances within $0.02\ang$ of
+the unprompted values.
+
+\paragraph{A coordinate prompt pulls crambin's pair partway, and costs confidence.}
+Prompting the backbone of residues 3 and 40 moves their CA--CA distance from
+$7.84$ to $6.68\ang$ (experiment $5.66\ang$; $53\%$ of the gap closed) and their
+C$\beta$--C$\beta$ distance from $7.75$ to $5.14\ang$ (experiment $3.45\ang$;
+$61\%$ closed). It forms no other bond, the fold stays wrong (RMSD $7.9$ to
+$7.1\ang$), and pTM falls from $0.58$ to $0.46$. This is a soft, partial, local
+pull, not an imposition. The crambin fold is wrong, so the test is confounded
+either way.
 
 % ===========================================================================
 \section{Corrections made during the session}
@@ -370,6 +436,12 @@ These are recorded because several first readings were wrong.
   support. The sweep also exposed a bug in my own contrast script, which kept
   an old pre-pLDDT result file for the 256-step runs; an empty column gave it
   away.
+\item \textbf{Two calibration verdicts, retracted.} The crambin calibration
+  called the $4.5\ang$ criterion unreliable, but it was computed on a misfolded
+  protein and says nothing about the criterion. The claim that the criterion
+  lacks specificity was also wrong: experimental geometry shows it exact, and
+  the non-native crambin pair is a model error. The supplied disulfide pairings
+  are now confirmed as bonds in the experimental files.
 \item \textbf{Small bugs.} The chain-break position was admitted into the
   C$\beta$ statistics; labels were wrong for the break-free reference;
   a results file was overwritten by a generic filename.
@@ -382,9 +454,9 @@ These are recorded because several first readings were wrong.
 \subsection{Of the measurements}
 
 \begin{itemize}
-\item \textbf{No ground truth.} There is no experimental structure in the
-  loop, so no RMSD or TM-score. pLDDT and pTM are the model's own confidence;
-  crambin's pLDDT of 83 coexists with wrong partners.
+\item \textbf{Experimental ground truth exists only for the controls.} There is
+  no experimental HA structure, so nothing about HA's fold or bridge has been
+  compared with experiment. Each control was predicted at one step count.
 \item \textbf{C$\beta$--C$\beta$ is a proxy.} The decoder emits no sulfur, and
   C$\beta$ is inferred from the backbone. A bond criterion built on it
   inherits any backbone error, and glycines (which have no C$\beta$) are
@@ -399,12 +471,12 @@ These are recorded because several first readings were wrong.
 \item \textbf{pTM depends on length,} so comparing it between a 46-residue
   and a 550-residue chain is weak. Only same-construct comparisons are
   clean.
-\item \textbf{Calibration is two proteins.} BPTI and crambin are small and
-  well-ordered. Neither says what the criterion does in a 550-residue fold.
-\item \textbf{Sequences were supplied, not independently verified.} The BPTI
-  and crambin sequences and pairings came with sources. I checked them for
-  internal consistency (length, cysteine positions, one-to-one pairing,
-  crambin's Pro22/Leu25 isoform) but not against UniProt directly.
+\item \textbf{Two controls.} BPTI is small and folds correctly, so it cannot test
+  imposition. Crambin's fold is wrong, so its results are confounded. Neither
+  says what the criterion does in a 550-residue fold.
+\item \textbf{The control pairings are confirmed by experiment.} Each supplied
+  pairing is a disulfide in the deposited file (SG--SG $2.02$--$2.05\ang$). The
+  sequences were checked against the experimental SEQRES, not against UniProt.
 \item \textbf{Only \texttt{esm3-open}.} No other checkpoint was tried.
 \end{itemize}
 
@@ -443,49 +515,25 @@ These are recorded because several first readings were wrong.
 
 \subsection{Recommended next step}
 
-Put the measurements on a footing of experimental ground truth, using the short
-proteins whose structures are known, and then ask whether the bridge can be held
-or imposed. The scripts exist (\path{bridge_test/}) and are tested on synthetic
-data only; nothing has been fetched or run yet. In order:
-
-\begin{enumerate}
-\item \textbf{Fetch experimental entries} for protein~G, BPTI and crambin with
-  \path{fetch_pdb.py}. An entry is kept only if its own sequence matches the
-  reference, so no entry identifier is trusted. The cloud session's network
-  policy blocks the PDB, so run this where it is reachable.
-\item \textbf{Compare predictions with experiment} with \path{compare_to_pdb.py}:
-  CA RMSD, an approximate TM-score, contact precision and recall at $8\ang$, and
-  for each known disulfide the experimental SG--SG and C$\beta$--C$\beta$ against
-  the predicted C$\beta$--C$\beta$. This also tests the supplied pairings (is each
-  pair really bonded in the file?) and shows what the experiment says about
-  crambin's non-native $3.33\ang$ pair.
-\item \textbf{Round trip} (\path{roundtrip_bridge.py}): encode the experimental
-  coordinates to structure tokens and decode them. If the known bonds survive,
-  the representation can hold them and the failure is one of prediction; if they
-  loosen, no prompt can help.
-\item \textbf{Coordinate prompt:} give only the backbone of the two cysteines
-  (then with neighbours, then every known bond) and generate. ESM3 has no
-  residue-level disulfide input; coordinates are the only channel, and they do
-  reach the geometric attention. Decision rules were fixed in advance in the
-  devlog.
-\end{enumerate}
-
-HA is attempted only if imposition works on the short proteins, and its geometry
-would then have to come from an experimental HA entry. If imposition through
-ESM3 fails, the fallbacks are a restrained refinement outside ESM3, or pointing
-the sampler's structure-token energy at tokens taken from a bonded structure.
+Run the control step sweep. Each control was predicted at one step count, and
+the HA sweep showed that step count can change a fold by more than the effects
+under test. Crambin's wrong fold is a property of the protein only if it is
+wrong at 11, 23 and 46 steps. If it is right at some step count, the crambin
+calibration has to be redone at that count. The sweep is
+\path{run_pdb_comparison.sh controls}, and its reading was fixed in advance: a
+fold is correct if the CA RMSD is at most $2.5\ang$ and the TM-score at least
+$0.7$, and a control is reliable only if correct at every step count of at
+least $L/4$.
 
 \subsection{Prioritised list}
 
 \begin{enumerate}
-\item \textbf{Experimental comparison, round trip and coordinate prompt} (above).
-\item \textbf{Per-residue pLDDT at the known-bond residues} in the BPTI and
-  crambin runs. If crambin's Cys3, Cys16, Cys26 and Cys40 are low-confidence,
-  the misses are uncertainty and a pLDDT filter may repair the criterion; if
-  confident, the placement is wrong. The calibration block does not print this
-  yet.
-\item \textbf{Report specificity in the calibration verdict:} the count of
-  in-range non-native pairs next to the count of in-range known bonds.
+\item \textbf{Control step sweep} (above).
+\item \textbf{A local conformation check} for protein~G's loop. pLDDT does not
+  flag residues 9--15, so confidence is not an error check; a local geometry
+  test against experiment is what separates the confident errors.
+\item \textbf{One verdict table for experiment and prediction,} as in the
+  experimental comparison, stating the fold's correctness before any distance.
 \item \textbf{Interface contacts, cleaved against fused,} once the contact
   metric is validated against experiment on the short proteins.
 \item \textbf{A verified native disulfide list for HA,} from a named
@@ -534,6 +582,9 @@ python tests/test_cleaved_complex.py --ref one       --steps 256
 python tests/test_cleaved_complex.py --ref two       --steps 221
 \end{verbatim}
 
-Output files are in \path{softmax/code/bridge_test/}.
+The experimental comparison is \path{bridge_test/run_pdb_comparison.sh}, with
+phases \texttt{fetch}, \texttt{predict}, \texttt{compare}, \texttt{controls},
+\texttt{roundtrip} and \texttt{prompt}. Output files are in
+\path{softmax/code/bridge_test/}.
 
 \end{document}

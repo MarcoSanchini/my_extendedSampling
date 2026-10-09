@@ -124,6 +124,8 @@ def main():
 	steps = min(args.steps or L, L)
 
 	exp37, info = P.experimental_coords37(seq, args.exp, args.exp_chain, atom_order)
+	# C-beta on the model's convention, so experiment and output are compared like with like
+	exp37i = P.with_inferred_cb(exp37, seq, atom_order)
 	print(f"# {args.ref} (L={L}): experimental chain {info['chain']}, {info['resolved']}/{L} residues resolved")
 	if info["mismatches"]:
 		print(f"# WARNING: {len(info['mismatches'])} residue types differ from the reference: {info['mismatches']}")
@@ -143,7 +145,7 @@ def main():
 		tensor = model.encode(protein)
 		out = model.custom_decode(tensor)
 		save(out, outdir / f"{args.ref}_roundtrip.pdb")
-		bond_report("round trip (experiment -> tokens -> coordinates)", out, exp37, bonds)
+		bond_report("round trip (experiment -> tokens -> coordinates)", out, exp37i, bonds)
 		print("\n  Reading: bonds that come back near their experimental distance mean the")
 		print("  representation can hold them. Bonds that loosen here mean it cannot, whatever")
 		print("  the prediction does.")
@@ -173,7 +175,7 @@ def main():
 	ptm = float(out.ptm) if out.ptm is not None else float("nan")
 	print(f"\n  pTM {ptm:.4f}, mean pLDDT "
 		  f"{(P.to_numpy(out.plddt).mean() * (100 if P.to_numpy(out.plddt).max() <= 1 else 1)):.1f}")
-	bond_report(f"prompted with {residues}", out, exp37, bonds, prompted=set(residues))
+	bond_report(f"prompted with {residues}", out, exp37i, bonds, prompted=set(residues))
 	print("\n  Reading: the prompted pair is the direct test of whether imposed geometry survives")
 	print("  decoding. The OTHER bonds are the side effect: if they form too, telling the model")
 	print("  about one bridge helps the fold; if not, the prompt held its own pair and nothing more.")

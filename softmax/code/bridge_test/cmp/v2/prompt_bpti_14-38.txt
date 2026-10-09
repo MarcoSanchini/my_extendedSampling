@@ -1,0 +1,59 @@
+reference: bpti  (L=58)
+experimental: bridge_test/pdb/bpti_5PTI.pdb  chain A: 58 residues with CA
+predicted:    bridge_test/rt/bpti_prompt_14-38_w0.pdb  chain A: 58 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  58/58 reference positions present, 58 identical, 0 mismatched
+  predicted     58/58 reference positions present, 58 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      58
+  CA RMSD                  0.91 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.929     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      A58     4.73 A  pLDDT  63.3
+      A40     1.33 A  pLDDT  95.5
+      R39     1.30 A  pLDDT  94.6
+      G56     1.22 A  pLDDT  88.7
+      K41     1.18 A  pLDDT  95.3
+      E49     1.15 A  pLDDT  95.7
+      G57     1.02 A  pLDDT  77.6
+      A48     1.02 A  pLDDT  96.2
+  Spearman(pLDDT, CA deviation) = -0.23   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  0.34 A   max  4.32 A
+  worst 7-residue windows (intra-window CA-CA error):
+      M52-A58   0.59 A
+      I19-A25   0.25 A
+      C51-G57   0.24 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  152  predicted  147  TP  140  precision  0.95  recall  0.92  F1  0.94
+  |i-j| >= 6   experimental contacts  117  predicted  112  TP  105  precision  0.94  recall  0.90  F1  0.92
+  |i-j| >= 12  experimental contacts  102  predicted   98  TP   92  precision  0.94  recall  0.90  F1  0.92
+  ranked by predicted distance, |i-j| >= 6: top-L (58) precision 1.00; top-L/2 (29) precision 1.00; top-L/5 (11) precision 1.00
+  distance error on pairs within 15 A in experiment (682): MAE 0.41 A, Pearson r 0.979
+
+--- disulfides ---
+  known bonds (supplied): 3
+  pair     exp SG-SG  exp CB  exp CB  exp CA  pred CB  pred CA   d(CB)  exp bonded?   pLDDT
+                     (model)  (dep.)     -CA               -CA        
+  5-55          2.04    3.49    3.62    5.69     3.67     5.96    0.18  YES           92/92
+  14-38         2.03    3.89    3.87    5.67     3.60     5.39   -0.29  YES           96/95
+  30-51         2.02    3.71    3.82    6.28     4.47     6.79    0.76  YES           96/96
+  known bonds confirmed in the experimental file (SG-SG <= 2.5 A): 3/3
+
+  cysteine pairs: 15   predicted within 4.5 A: 3 (3 known bonds, 0 non-native)   experimental within 4.5 A: 3
+  pair        pred CB   exp CB  status
+  14-38          3.60     3.89  KNOWN bond
+  5-55           3.67     3.49  KNOWN bond
+  30-51          4.47     3.71  KNOWN bond
+  51-55          6.09     6.14  
+  30-55          7.40     7.24  
+  5-51           8.60     8.85  
+  5-30           9.95     9.67  
+  38-51         19.57    20.10  
+  14-51         20.21    20.87  
+  5-38          21.70    21.75  

@@ -1,42 +1,41 @@
 """
-Compare a predicted structure with an experimental one: geometry, contacts,
-and the disulfide bonds.
+Compare a predicted structure with an experimental one: geometry, local
+structure, contacts, and the disulfide bonds.
 
-Written 2026-10-09. Every disulfide conclusion so far in this investigation
-rests on the model's own output and on distances nobody had checked against a
-real structure: the 4.5 A CB-CB criterion was chosen from geometry, the
-BPTI/crambin pairings were taken from sources and checked only for internal
-consistency, and pLDDT is the model's confidence, not an error. This script
-supplies the missing ground truth.
+Written 2026-10-09. Every disulfide conclusion in this investigation rests on
+the model's output and on distances nobody had checked against a real
+structure. This script supplies that ground truth.
 
 WHAT IT REPORTS, in order:
-  1. Sequence check -- the reference aligned to the experimental chain, with
-     every mismatch listed. This is where a crambin isoform difference at
-     residues 22/25 would show up.
-  2. Geometry -- CA RMSD after optimal superposition, an approximate TM-score,
-     and the residues that deviate most (with pLDDT beside them if supplied).
-  3. Contacts -- CB (CA for Gly) contact map at 8 A, experimental against
-     predicted: precision, recall, F1, precision at the top L, L/2, L/5
-     shortest predicted pairs, and the error in the distances themselves.
-  4. Disulfides -- for each KNOWN bond: the experimental SG-SG, CB-CB, CA-CA,
-     the predicted CB-CB and CA-CA, and the difference. Whether the bond is
-     really formed in the experimental file is TESTED here (SG-SG <= 2.5 A),
-     not assumed, which independently checks the supplied pairings.
-     Then every cysteine pair, so a non-native pair that the prediction puts
-     inside the criterion (crambin 16-40 at 3.33 A) can be compared with what
-     the experiment shows for the same pair.
+  1. Sequence check -- the reference aligned to each structure, with every
+     mismatch listed (where a crambin isoform difference at 22/25 would show).
+  2. Geometry -- CA RMSD after one optimal superposition, and an approximate
+     TM-score, plus the residues that deviate most beside their pLDDT.
+  3. Local structure, superposition-free -- the CA-CA distance error over all
+     pairs, and the worst 7-residue windows. A global superposition can be
+     dominated by one badly placed region; intra-chain distances cannot, because
+     they do not change under rigid motion. This is the check that finds a
+     confidently wrong loop.
+  4. Contacts -- C-beta contact maps at 8 A (CA for glycine), precision, recall,
+     F1, precision at the top L, L/2, L/5, and the distance error.
+  5. Disulfides -- each KNOWN bond: experimental SG-SG (is the pairing a bond in
+     the file? SG-SG <= 2.5 A), experimental C-beta, predicted C-beta, and the
+     CA-CA distances. Then every cysteine pair, so a non-native pair that the
+     prediction puts inside the criterion can be set against the experiment.
 
-Numpy only, no torch or biotite, so it runs anywhere the PDB files are.
-
-    python bridge_test/compare_to_pdb.py --ref bpti \\
-        --exp bridge_test/pdb/bpti_5PTI.pdb --pred bridge_test/pred_bpti.pdb \\
-        [--exp-chain A] [--pred-chain A] [--plddt bridge_test/pred_bpti.pdb.plddt.tsv]
+C-BETA CONVENTION. Both structures use the model's own convention: C-beta is
+inferred from N, CA and C with ESM3's infer_CB (copied below), since the model
+reports exactly that. The deposited experimental C-beta is printed alongside
+for reference. The two differ by about 0.1-0.2 A on average, so this choice
+moves experimental distances by a few tenths of an angstrom and no more.
 
 APPROXIMATIONS, stated so they are not mistaken for more: the TM-score is the
-score at a superposition found by fragment-seeded iterative refinement, which
-is a lower bound on the true TM-score; CB for the experimental structure is the
-deposited CB, for the prediction it is the CB inferred from N/CA/C, and both
-fall back to CA at glycine.
+score at a superposition found by fragment-seeded refinement, a lower bound on
+the true TM-score.
+
+    python bridge_test/compare_to_pdb.py --ref bpti \\
+        --exp bridge_test/pdb/bpti_5PTI.pdb --pred bridge_test/pred/bpti.pdb \\
+        [--plddt bridge_test/pred/bpti.pdb.plddt.tsv]
 """
 import argparse
 import sys
@@ -54,12 +53,31 @@ AA3 = {
 	"TYR": "Y", "VAL": "V", "MSE": "M",
 }
 
-CONTACT = 8.0     # A, CB-CB
+CONTACT = 8.0     # A, C-beta contact
 BONDED_SG = 2.5   # A, SG-SG in the experimental file
-CRITERION = 4.5   # A, the CB-CB bond criterion under test
+CRITERION = 4.5   # A, the C-beta bond criterion under test
+CA_WINDOW = 7     # residues, for the local-structure check
 
 
-# --------------------------------------------------------------------- parsing
+# ----------------------------------------------------------------- C-beta
+def infer_CB(C, N, Ca, L=1.522, A=1.927, D=-2.143):
+	"""C-beta from the backbone. Copied from custom_esm/utils/structure/protein_chain.py
+	(infer_CB, after trDesign) so that this file runs without torch. It is the
+	function ESM3 itself uses for the C-beta it reports, so applying it to both
+	structures compares like with like. Kept in step with the original by hand;
+	tests/test_compare_to_pdb.py checks the bond length and angle it must produce."""
+	norm = lambda x: x / np.sqrt(np.square(x).sum(-1, keepdims=True) + 1e-8)
+	with np.errstate(invalid="ignore"):
+		vec_bc = N - Ca
+		vec_ba = N - C
+	bc = norm(vec_bc)
+	n = norm(np.cross(vec_ba, bc))
+	m = [bc, np.cross(n, bc), n]
+	d = [L * np.cos(A), L * np.sin(A) * np.cos(D), -L * np.sin(A) * np.sin(D)]
+	return Ca + sum([m * d for m, d in zip(m, d)])
+
+
+# ---------------------------------------------------------------- parsing
 def read_pdb(path, chain=None):
 	"""Residues of one chain from the first model: a list of dicts with
 	chain, resseq, icode, aa, atoms{name: xyz}. Alternate locations other than
@@ -143,7 +161,7 @@ def align(ref, other):
 	return mapping, n_match, mism
 
 
-# -------------------------------------------------------------------- geometry
+# --------------------------------------------------------------- geometry
 def kabsch(P, Q):
 	"""Rotation R and translation t with P @ R.T + t closest to Q."""
 	pc, qc = P.mean(0), Q.mean(0)
@@ -194,14 +212,25 @@ def spearman(a, b):
 	return float(np.corrcoef(ra, rb)[0, 1])
 
 
-# ------------------------------------------------------------------- reporting
+# --------------------------------------------------------------- reporting
 def cb(res):
+	"""C-beta as the MODEL defines it: inferred from N, CA, C. Glycine uses CA,
+	as in standard contact maps. Applied to both structures."""
 	if res is None:
 		return None
 	a = res["atoms"]
 	if res["aa"] == "G":
 		return a.get("CA")
-	return a.get("CB")
+	if not all(k in a for k in ("N", "CA", "C")):
+		return None
+	return infer_CB(a["C"], a["N"], a["CA"])
+
+
+def cb_deposited(res):
+	"""C-beta as deposited in the experimental file, for reference only."""
+	if res is None:
+		return None
+	return res["atoms"].get("CB")
 
 
 def dist(a, b):
@@ -223,6 +252,17 @@ def read_plddt(path):
 
 def parse_bonds(text):
 	return [tuple(int(x) for x in b.split("-")) for b in text.split(",") if b.strip()]
+
+
+def _ranges(nums):
+	out, start, prev = [], nums[0], nums[0]
+	for n in nums[1:]:
+		if n != prev + 1:
+			out.append((start, prev))
+			start = n
+		prev = n
+	out.append((start, prev))
+	return ", ".join(f"{a}" if a == b else f"{a}-{b}" for a, b in out)
 
 
 def main():
@@ -264,6 +304,7 @@ def main():
 	print(f"reference: {args.ref or 'custom'}  (L={L})")
 	print(f"experimental: {args.exp}  chain {exp_ch}: {len(exp)} residues with CA")
 	print(f"predicted:    {args.pred}  chain {pred_ch}: {len(pred)} residues with CA")
+	print("C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA")
 
 	# ---- 1. sequence check
 	print("\n--- sequence check (reference vs each structure) ---")
@@ -306,7 +347,28 @@ def main():
 			print(f"  Spearman(pLDDT, CA deviation) = {spearman(pls[ok], per_res[ok]):+.2f}"
 				  f"   (negative means low confidence marks the wrong residues)")
 
-	# ---- 3. contacts
+	# ---- 3. local structure, superposition-free
+	De_ca = np.linalg.norm(Qc[:, None] - Qc[None], axis=-1)
+	Dp_ca = np.linalg.norm(Pc[:, None] - Pc[None], axis=-1)
+	iu = np.triu_indices(len(paired), 1)
+	err = np.abs(Dp_ca - De_ca)[iu]
+	print("\n--- local structure (superposition-free) ---")
+	print(f"  CA-CA distance error, all pairs    MAE {err.mean():5.2f} A   max {err.max():5.2f} A")
+	wins = []
+	for s in range(len(paired) - CA_WINDOW + 1):
+		if paired[s + CA_WINDOW - 1] - paired[s] != CA_WINDOW - 1:
+			continue  # only windows of consecutive, resolved residues
+		idx = np.arange(s, s + CA_WINDOW)
+		sub = np.abs(Dp_ca[np.ix_(idx, idx)] - De_ca[np.ix_(idx, idx)])
+		wins.append((float(sub[np.triu_indices(CA_WINDOW, 1)].mean()),
+					 paired[s], paired[s + CA_WINDOW - 1]))
+	if wins:
+		wins.sort(reverse=True)
+		print(f"  worst {CA_WINDOW}-residue windows (intra-window CA-CA error):")
+		for m, a, b in wins[:3]:
+			print(f"      {seq[a]}{a + 1}-{seq[b]}{b + 1}  {m:5.2f} A")
+
+	# ---- 4. contacts
 	De = np.full((L, L), np.nan)
 	Dp = np.full((L, L), np.nan)
 	for i in paired:
@@ -315,7 +377,7 @@ def main():
 				De[i, j] = dist(cb(E[i]), cb(E[j]))
 				Dp[i, j] = dist(cb(P[i]), cb(P[j]))
 	ii, jj = np.triu_indices(L, 1)
-	print(f"\n--- contacts (CB-CB <= {CONTACT:.0f} A; CA for Gly) ---")
+	print(f"\n--- contacts (C-beta-C-beta <= {CONTACT:.0f} A; CA for Gly) ---")
 	for sep in sorted({3, args.min_sep, 12}):
 		m = (jj - ii >= sep) & ~np.isnan(De[ii, jj]) & ~np.isnan(Dp[ii, jj])
 		if not m.any():
@@ -342,29 +404,35 @@ def main():
 			print(f"  distance error on pairs within 15 A in experiment ({int(near.sum())}): "
 				  f"MAE {np.mean(np.abs(dp[near] - de[near])):.2f} A, Pearson r {np.corrcoef(dp[near], de[near])[0, 1]:.3f}")
 
-	# ---- 4. disulfides
+	# ---- 5. disulfides
 	cys = [i for i in range(L) if seq[i] == "C"]
-	print(f"\n--- disulfides ---")
+	print("\n--- disulfides ---")
 	if known:
 		print(f"  known bonds (supplied): {len(known)}")
-		print(f"  {'pair':<10s}{'exp SG-SG':>10s}{'exp CB-CB':>10s}{'exp CA-CA':>10s}"
-			  f"{'pred CB-CB':>11s}{'pred CA-CA':>11s}{'d(CB-CB)':>9s}  exp bonded?  pLDDT")
+		print(f"  {'pair':<8s}{'exp SG-SG':>10s}{'exp CB':>8s}{'exp CB':>8s}{'exp CA':>8s}"
+			  f"{'pred CB':>9s}{'pred CA':>9s}{'d(CB)':>8s}  exp bonded?   pLDDT")
+		print(f"  {'':<8s}{'':>10s}{'(model)':>8s}{'(dep.)':>8s}{'-CA':>8s}{'':>9s}{'-CA':>9s}{'':>8s}")
 		n_formed = 0
 		for (p, q) in known:
 			i, j = p - 1, q - 1
-			sg = dist(E[i]["atoms"].get("SG") if E[i] else None, E[j]["atoms"].get("SG") if E[j] else None)
-			ecb, eca = dist(cb(E[i]), cb(E[j])), dist(E[i]["atoms"].get("CA") if E[i] else None, E[j]["atoms"].get("CA") if E[j] else None)
-			pcb, pca = dist(cb(P[i]), cb(P[j])), dist(P[i]["atoms"].get("CA") if P[i] else None, P[j]["atoms"].get("CA") if P[j] else None)
+			ea = E[i]["atoms"] if E[i] else {}
+			eb = E[j]["atoms"] if E[j] else {}
+			sg = dist(ea.get("SG"), eb.get("SG"))
+			ecb = dist(cb(E[i]), cb(E[j]))
+			ecb_d = dist(cb_deposited(E[i]), cb_deposited(E[j]))
+			eca = dist(ea.get("CA"), eb.get("CA"))
+			pcb = dist(cb(P[i]), cb(P[j]))
+			pca = dist(P[i]["atoms"].get("CA") if P[i] else None, P[j]["atoms"].get("CA") if P[j] else None)
 			formed = (not np.isnan(sg)) and sg <= BONDED_SG
 			n_formed += int(formed)
 			status = "n/a (unresolved)" if np.isnan(sg) else ("YES" if formed else "NO")
 			pl = (f"{plddt[p]:.0f}/{plddt[q]:.0f}" if p in plddt and q in plddt else "-")
-			print(f"  {f'{p}-{q}':<10s}{fmt(sg, 10)}{fmt(ecb, 10)}{fmt(eca, 10)}{fmt(pcb, 11)}{fmt(pca, 11)}"
-				  f"{fmt(pcb - ecb, 9)}  {status:<12s} {pl}")
+			print(f"  {f'{p}-{q}':<8s}{fmt(sg, 10)}{fmt(ecb, 8)}{fmt(ecb_d, 8)}{fmt(eca, 8)}"
+				  f"{fmt(pcb, 9)}{fmt(pca, 9)}{fmt(pcb - ecb, 8)}  {status:<14s}{pl}")
 		print(f"  known bonds confirmed in the experimental file (SG-SG <= {BONDED_SG} A): {n_formed}/{len(known)}")
 		if n_formed < len(known):
-			print(f"  WARNING: not every supplied pairing is a bond in this structure; check the "
-				  f"pairings or the entry (reduced form, wrong chain, unresolved atoms).")
+			print("  WARNING: not every supplied pairing is a bond in this structure; check the pairings or the entry "
+				  "(reduced form, wrong chain, unresolved atoms).")
 	else:
 		print("  no known bonds supplied (--ref with KNOWN_DISULFIDES, or --bonds)")
 
@@ -381,7 +449,7 @@ def main():
 		print(f"\n  cysteine pairs: {len(rows)}   predicted within {CRITERION} A: {len(pred_in)} "
 			  f"({len(pred_in_known)} known bonds, {len(pred_in) - len(pred_in_known)} non-native)   "
 			  f"experimental within {CRITERION} A: {len(exp_in)}")
-		print(f"  {'pair':<10s}{'pred CB-CB':>11s}{'exp CB-CB':>11s}  status")
+		print(f"  {'pair':<10s}{'pred CB':>9s}{'exp CB':>9s}  status")
 		shown = 0
 		for pcb, ecb, a, b in rows:
 			native = frozenset((a, b)) in known_set
@@ -391,19 +459,8 @@ def main():
 				continue
 			tag = "KNOWN bond" if native else ("NON-NATIVE, inside criterion in prediction"
 											   if (not np.isnan(pcb) and pcb <= CRITERION) else "")
-			print(f"  {f'{a + 1}-{b + 1}':<10s}{fmt(pcb, 11)}{fmt(ecb, 11)}  {tag}")
+			print(f"  {f'{a + 1}-{b + 1}':<10s}{fmt(pcb, 9)}{fmt(ecb, 9)}  {tag}")
 			shown += 1
-
-
-def _ranges(nums):
-	out, start, prev = [], nums[0], nums[0]
-	for n in nums[1:]:
-		if n != prev + 1:
-			out.append((start, prev))
-			start = n
-		prev = n
-	out.append((start, prev))
-	return ", ".join(f"{a}" if a == b else f"{a}-{b}" for a, b in out)
 
 
 if __name__ == "__main__":

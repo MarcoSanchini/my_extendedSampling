@@ -125,7 +125,7 @@ def evaluate(ref_name, ref_seq, pdb_id, allow_nmr):
 						 + (f", {h} differences from the reference" if h is not None else ", different length"))
 		return {"id": pdb_id, "ok": False, "why": "sequence does not match: " + "; ".join(notes)}
 	ch, seq, rel = best
-	n_ca = sum(1 for l in text.splitlines() if l.startswith("ATOM") and l[12:16].strip() == "CA" and l[21] == ch)
+	n_ca = len({(l[22:26], l[26]) for l in text.splitlines() if l.startswith("ATOM") and l[12:16].strip() == "CA" and l[21] == ch})
 	return {"id": pdb_id, "ok": True, "chain": ch, "method": method, "resolution": res,
 			"relation": rel, "url": url, "n_ca": n_ca, "text": text, "raw": raw}
 
