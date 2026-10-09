@@ -799,3 +799,98 @@ GPU and weights needed) and push the results. (2) Only then, interpret crambin a
 the prompt. (3) Protein G's loop: a per-residue pLDDT is not enough; a local
 conformation check is the thing to add. (4) The HA question as posed (Cys14-Cys137)
 stays open until a verified HA structure exists to compare against.
+
+
+2026-10-09 -- CONTROL STEP SWEEP: all three controls are STEP-STABLE. BPTI correct everywhere, crambin wrong everywhere, protein G's fold right but its 9-15 loop wrong everywhere. So crambin's misfold IS a property of the protein, and the earlier calibration failure is a real, reproducible model error -- not a one-setting artefact. My own pass/fail rule is flawed and is being reported, not quietly adjusted
+--------------------------------------------------------------------------------
+Run: bash bridge_test/run_pdb_comparison.sh controls -- each control at three step
+counts (L/4, L/2, L), compared with experiment by compare_to_pdb.py.
+
+    run          steps   RMSD     TM     F1  localMAE     pTM  pLDDT  clashes
+    protein_g       14   3.01  0.819   0.78      1.17  0.7066  90.41        0
+    protein_g       28   2.99  0.830   0.80      1.13  0.7741  94.83        0
+    protein_g       56   2.96  0.835   0.80      1.10  0.7596  93.24        0
+    bpti            14   1.01  0.923   0.92      0.36  0.7530  93.35        0
+    bpti            29   1.10  0.923   0.92      0.39  0.7471  92.53        0
+    bpti            58   1.22  0.922   0.92      0.41  0.7545  92.89        0
+    crambin         11   8.34  0.263   0.28      3.66  0.5055  76.90        2
+    crambin         23   7.18  0.281   0.30      3.52  0.4161  68.28        0
+    crambin         46   7.91  0.316   0.35      4.06  0.5816  83.31        0
+
+FINDING 30 -- STEP COUNT DOES NOT MATTER FOR THE CONTROLS, which is the opposite
+of what it does for HA. Across a 4x range of step counts each control moves very
+little: BPTI's RMSD spans 1.01-1.22 A and its TM-score 0.922-0.923; crambin's
+TM-score spans 0.263-0.316 and never approaches 0.7; protein G's TM-score spans
+0.819-0.835. For comparison, HA1 alone moved 5.3 plddt points and doubled its
+clash count between two step counts. So the HA step sensitivity is a property of
+that 550-residue target, not of the pipeline, and these short controls give one
+answer each. Finding 29's precondition is met and the results below are properties
+of the proteins.
+
+FINDING 31 -- CRAMBIN'S MISFOLD IS REAL AND REPRODUCIBLE. Wrong at 11, 23 and 46
+steps, by the rule fixed in advance. TM-score 0.26-0.32 against the 0.5 that marks
+a shared fold, local CA-CA error 3.5-4.1 A. The crambin calibration verdict
+("MIXED") stays VOID -- it was computed on a misfolded protein -- but the reason
+it was void is now itself established rather than suspected.
+
+FINDING 32 -- THE FALSE DISULFIDE IS PERSISTENT, AND CONFIDENCE NEVER FLAGS IT.
+The non-native crambin pair Cys16-Cys40 is inside the 4.5 A criterion at EVERY
+step count: 2.99, 3.69, 3.33 A, against 17.88 A in the experiment. Its two
+cysteines carry plddt 77.1/77.6, 71.9/68.8 and 86.5/77.8 -- at or above each
+molecule's mean (76.9, 68.3, 83.3). At 11 steps a second false pair appears
+(Cys3-Cys26 at 3.93 A, experimentally 12.27 A). Meanwhile the native Cys16-Cys26
+is 10.0-10.7 A at every step count. So ESM3 confidently and repeatedly builds a
+disulfide that does not exist, between the right residue types in the wrong
+pairing, and nothing in its own output marks it. This is the sharpest negative
+result in the investigation: a C-beta distance criterion applied to an ESM3
+prediction cannot distinguish a real bond from a confident false one, EVEN THOUGH
+the same criterion is exact on experimental geometry (Finding 24).
+
+FINDING 33 -- BPTI'S BONDS ARE STEP-INVARIANT. 5-55 at 3.67, 3.69, 3.66 A; 14-38
+at 3.56, 3.54, 3.61; 30-51 at 4.43, 4.49, 4.45. A spread of at most 0.07 A across
+a 4x change in step count, all three native, no false positive at any count, and
+cysteine plddt 88.8-96.0 throughout. Where ESM3 has the fold right it has the
+bonds right and stably so. Taken with Finding 32: correct bonds track a correct
+FOLD, not confidence.
+
+FINDING 34 -- MY OWN PASS/FAIL RULE IS FLAWED, reported rather than quietly fixed.
+The rule fixed in advance (correct = RMSD <= 2.5 A AND TM >= 0.7) classes protein
+G as "wrong" at all three step counts, which is not a sensible reading of a
+TM-score of 0.82-0.84. The cause is one bad loop: excluding residues 9-15, protein
+G's CA RMSD is 0.74, 0.68 and 0.64 A at 14, 28 and 56 steps, and those seven
+residues carry 80-82% of the total squared deviation. So the fold is right to
+better than 0.75 A and a single loop drags the global RMSD past the cutoff.
+Consequences: (a) protein G is a CORRECT fold with a reproducible local error,
+not a wrong fold; (b) a global RMSD cutoff is the wrong instrument for "is the
+fold right", and TM-score alone would have given the right answer on all three
+controls (0.82-0.84, 0.92, 0.26-0.32); (c) crambin's verdict is unaffected --
+it fails both criteria by a wide margin. I am not retro-fitting the threshold to
+the data: the rule as published misclassified protein G, that is recorded, and
+any future rule should use TM-score plus a LOCAL error measure rather than a
+global RMSD.
+
+FINDING 35 -- PROTEIN G'S LOOP ERROR IS ALSO STEP-INVARIANT. The 9-15 deviation is
+present at all three step counts (global RMSD 2.96-3.01 A, core RMSD 0.64-0.74 A,
+loop share 80-82%). Combined with the earlier observation that its experimental
+B-factors are normal and its plddt there is 80-91, this is a confident,
+reproducible local error in an otherwise accurate fold -- the same failure mode as
+crambin's false disulfide, at smaller scale.
+
+WHAT THIS MEANS FOR THE BRIDGE QUESTION. The controls now say: ESM3's disulfide
+geometry is only as good as its fold, and its confidence does not reveal when
+either is wrong. For HA that is the worst case, because there is no experimental
+HA structure in hand to check the fold against, the assembled folds fail the gate
+outright (pTM 0.23-0.40), and the one in-range HA1 pair observed in the sweep
+(one:277-281 at 3.3-3.5 A) is exactly the kind of observation crambin shows can be
+a confident false positive. No claim that ESM3 does or does not form the
+Cys14-Cys137 bridge can be made from C-beta distances alone.
+
+NEXT: (1) the crambin false pair is now the most informative object here -- check
+whether a sequence-identity-matched experimental structure exists for what ESM3
+actually built (is it folding a homolog?), or whether the 16-40 proximity is simply
+a misfold; (2) protein G's loop: compare against the other accepted entries (1PGA,
+9CHT) to confirm the loop conformation is not entry-specific; (3) for HA, the only
+routes left are an experimental HA structure to compare against, or imposing the
+bond outside ESM3 (restrained refinement, or the structure-token energy pointed at
+a bonded reference); (4) compare_to_pdb.py should report a core RMSD with the worst
+window excluded, which is what exposed Finding 34.

@@ -367,6 +367,22 @@ def main():
 		print(f"  worst {CA_WINDOW}-residue windows (intra-window CA-CA error):")
 		for m, a, b in wins[:3]:
 			print(f"      {seq[a]}{a + 1}-{seq[b]}{b + 1}  {m:5.2f} A")
+		# Core RMSD: the global RMSD with the single worst window dropped. A
+		# global RMSD conflates "the fold is wrong" with "one loop is wrong" --
+		# protein G scores 2.96 A overall and 0.64 A without residues 9-15, which
+		# is the difference between a wrong fold and a right one with a bad loop.
+		# The window is a fixed CA_WINDOW residues chosen by intra-window error, so
+		# it need not coincide with the bad region (for protein G it lands on
+		# 11-17, giving 1.94 A rather than the 0.64 A of a hand-chosen 9-15). Read
+		# it as a floor on the improvement, not as the core RMSD of a tuned cut.
+		_, wa, wb = wins[0]
+		keep = [k for k, i in enumerate(paired) if not (wa <= i <= wb)]
+		if len(keep) >= 4:
+			core, _ = rmsd_after_fit(Pc[keep], Qc[keep])
+			share = float((per_res[[k for k in range(len(paired)) if k not in keep]] ** 2).sum()
+						  / (per_res ** 2).sum()) if (per_res ** 2).sum() > 0 else float("nan")
+			print(f"  CA RMSD excluding that window ({seq[wa]}{wa + 1}-{seq[wb]}{wb + 1})"
+				  f"   {core:5.2f} A   (those residues carry {share:.0%} of the squared deviation)")
 
 	# ---- 4. contacts
 	De = np.full((L, L), np.nan)
