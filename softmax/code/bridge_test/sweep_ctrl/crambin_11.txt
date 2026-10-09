@@ -1,0 +1,67 @@
+# reference: zero_polymer_crambin (L=46 residues)
+# decoding steps: 11   device: cuda:0
+# DISULFIDE CONTROL: 3 known bonds,
+# used to calibrate the CB_BONDED = 4.5 A criterion that
+# every bridge verdict in this investigation rests on.
+
+predicted sequence length: 46   coordinates: (46, 37, 3)
+
+--- confidence ---
+  ptm   0.5055   (floor 0.4)
+  plddt reported on a 0-1 scale, shown here as 0-100
+  plddt mean (all residues)    76.90
+  plddt mean crambin           76.90   ( 73.9% of residues >= 70)
+  residues >= 70             73.9%
+  READ: high plddt with low ptm => domains folded, their
+        RELATIVE PLACEMENT failed. Low both => nothing folded.
+
+--- geometry sanity ---
+  min CB-CB (|i-j|>=2)        2.93 A   (clash below 3.0)
+  CB-CB clashes              2   (a physical fold has ~0)
+  CB absent (NaN) at 4 residues; 4 glycines in sequence
+    (infer_cbeta writes NaN at every G by default, so G is excluded
+     from all CB statistics by construction -- if these two numbers
+     agree, the clashes above are between REAL inferred CBs.)
+  worst clashing pairs:
+     2.93 A  crambin:9 A -- crambin:15 V   |i-j|=6
+     2.99 A  crambin:16 C -- crambin:40 C   |i-j|=24
+
+  [UNTRUSTWORTHY] 2 CB-CB clashes.
+  Distances below describe a structure the model does not
+  believe in. Check --ref protein_g passes before reading them.
+
+--- known disulfides: the calibration the fold control could not give ---
+  Cys3  -Cys40    8.35 A  OUTSIDE 4.5 A   rank 10/15
+  Cys4  -Cys32    6.82 A  OUTSIDE 4.5 A   rank 7/15
+  Cys16 -Cys26   10.74 A  OUTSIDE 4.5 A   rank 13/15
+
+  0/3 known disulfides within 4.5 A   (3/3 measurable)
+  0/3 recovered as the 3 closest Cys pairs (partner assignment)
+
+  CALIBRATION VOID: this fold failed the gate above, so
+  its distances calibrate nothing. Raise --steps or pick a
+  reference ESM3 folds confidently.
+
+(ref 'crambin' is a single chain -- no interchain bridge)
+
+--- all 15 cysteine pairs by CB-CB, closest first ---
+    1. !   2.99 A  crambin:16 -- crambin:40
+    2. *   3.93 A  crambin:3 -- crambin:26
+    3.     4.64 A  crambin:26 -- crambin:32
+    4.     4.89 A  crambin:4 -- crambin:16
+    5.     5.41 A  crambin:3 -- crambin:32
+    6.     5.88 A  crambin:3 -- crambin:4
+    7.     6.82 A  crambin:4 -- crambin:32  <== KNOWN disulfide
+    8.     7.31 A  crambin:4 -- crambin:40
+    9.     7.47 A  crambin:3 -- crambin:16
+   10.     8.35 A  crambin:3 -- crambin:40  <== KNOWN disulfide
+   11.     8.93 A  crambin:4 -- crambin:26
+   12.    10.22 A  crambin:16 -- crambin:32
+   13.    10.74 A  crambin:16 -- crambin:26  <== KNOWN disulfide
+
+  1 pairs in plausible bonding range [3.0, 4.5] A (*)
+  1 pairs CLASHING below 3.0 A (!) -- broken geometry,
+  not disulfides
+
+wrote bridge_test/sweep_ctrl/crambin_11.pdb
+wrote bridge_test/sweep_ctrl/crambin_11.pdb.plddt.tsv

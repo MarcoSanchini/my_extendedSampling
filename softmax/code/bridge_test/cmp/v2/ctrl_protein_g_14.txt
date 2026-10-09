@@ -1,0 +1,40 @@
+reference: protein_g  (L=56)
+experimental: bridge_test/pdb/protein_g_1PGB.pdb  chain A: 56 residues with CA
+predicted:    bridge_test/sweep_ctrl/protein_g_14.pdb  chain A: 56 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  56/56 reference positions present, 56 identical, 0 mismatched
+  predicted     56/56 reference positions present, 56 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      56
+  CA RMSD                  3.01 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.819     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      T11    11.17 A  pLDDT  87.2
+      K10     9.29 A  pLDDT  89.2
+      G9      7.41 A  pLDDT  89.1
+      G14     6.86 A  pLDDT  77.1
+      E15     6.02 A  pLDDT  75.4
+      L12     5.60 A  pLDDT  83.2
+      K13     5.12 A  pLDDT  79.8
+      E42     2.75 A  pLDDT  90.8
+  Spearman(pLDDT, CA deviation) = -0.71   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  1.17 A   max 10.88 A
+  worst 7-residue windows (intra-window CA-CA error):
+      T11-T17   2.62 A
+      L5-T11   2.36 A
+      L12-T18   2.18 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  143  predicted  148  TP  117  precision  0.79  recall  0.82  F1  0.80
+  |i-j| >= 6   experimental contacts  102  predicted  102  TP   80  precision  0.78  recall  0.78  F1  0.78
+  |i-j| >= 12  experimental contacts   77  predicted   76  TP   63  precision  0.83  recall  0.82  F1  0.82
+  ranked by predicted distance, |i-j| >= 6: top-L (56) precision 0.93; top-L/2 (28) precision 0.93; top-L/5 (11) precision 1.00
+  distance error on pairs within 15 A in experiment (652): MAE 1.21 A, Pearson r 0.764
+
+--- disulfides ---
+  no known bonds supplied (--ref with KNOWN_DISULFIDES, or --bonds)
