@@ -44,9 +44,9 @@ mature protein it is cut once, after Arg329 in mature numbering, into HA1 and
 HA2, which stay together through an interchain disulfide between Cys14 of HA1
 and Cys137 of HA2. The question was whether ESM3 can be given that two-chain
 molecule and handle it. The mechanical answer is yes: the stock tokenizer
-accepts the chain-break character, and declaring the break repairs the damage
-that fusing the two chains does to HA1, though it does not improve on folding
-HA1 alone. The structural answer is no, with caveats: no
+accepts the chain-break character, but no benefit of declaring the break shows
+up consistently across decoding step counts. The structural answer is no, with
+caveats: no
 assembled construct folds well enough to pass the geometry gate, and the
 interchain Cys14--Cys137 distance is $96\ang$ (cleaved) and $130\ang$ (no
 break), against a bonding criterion of $4.5\ang$. Two known-disulfide controls
@@ -67,24 +67,27 @@ list.
   accepts \texttt{|}; 551 positions go in and 551 come out;
   \texttt{to\_protein\_complex()} recovers two chains. No change to the
   model code was needed.
-\item \textbf{The chain-break repairs fusion; it does not add to separation.}
-  At matched 256 steps HA1's mean \plddt{} is 51.4 fused to HA2 with no break,
-  63.2 with the break, and 65.2 alone. Fusing costs HA1 13.7 points and the
-  break recovers 11.8 of them. An earlier claim that HA2's presence helps
-  HA1 compared unequal step counts and is withdrawn.
-\item \textbf{Step count is a large effect.} HA1 alone at 329 steps is much
-  worse than at 256 (\plddt{} 59.8 against 65.2; 16 clashes against 7).
-  Cross-construct differences of a few points are not findings.
-\item \textbf{HA2 alone folds well; the assembly does not.} HA2 alone: pLDDT
-  93.9, no clashes, passes the gate. Every HA1-containing construct fails it.
+\item \textbf{No consistent benefit of the chain-break.} At 256 steps HA1's
+  mean \plddt{} is 51.4 fused to HA2, 63.2 with the break and 65.2 alone, which
+  looked like a benefit. Across 64, 128 and 256 steps the break-minus-fused
+  difference is $-5.2$, $+2.4$, $+11.8$: the sign is not stable, and the
+  earlier claims that the break helps HA1 and its Cys14 anchor are withdrawn.
+\item \textbf{Step count is a large, non-monotone effect.} HA1 alone scores
+  48.4, 67.0, 65.2 and 59.8 at 64, 128, 256 and 329 steps. Each step count is a
+  deterministic but effectively independent draw, and draws differ by more
+  than most effects claimed so far. Only sign-stable differences are findings.
+\item \textbf{HA2 alone folds well; every assembly degrades it.} HA2 alone
+  passes the gate at all three step counts (pLDDT 88--94, no clashes) and is
+  17--29 points more confident than HA2 in any assembly. No assembled
+  construct, and no HA1-alone run, passes the gate at any step count.
 \item \textbf{The interchain bridge is not formed} in either assembled
-  construct, by a margin (more than $20\times$ the criterion) that no
+  construct, by a margin (at least $10\times$ the criterion at every step count) that no
   threshold subtlety can change.
 \item \textbf{The $4.5\ang$ criterion is not a reliable bond detector.} BPTI:
   3/3 known bonds inside it. Crambin: 1/3 inside it, and the closest pair in
   the molecule is a non-native one at $3.33\ang$.
 \item \textbf{Not tested:} the trimer, any experimental reference structure,
-  a step sweep, partner identity for HA.
+  an interchain interface measure, partner identity for HA.
 \end{itemize}
 
 % ===========================================================================
@@ -215,43 +218,92 @@ HA2 alone was run twice as well (the second time by the clamp above) with
 identical output to every printed digit. Decoding at temperature zero looks
 deterministic here. This is three repeat pairs on one machine, not a proof.
 
+\subsection{Step sweep}
+
+\begin{center}
+\small
+\setlength{\tabcolsep}{6pt}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+ & 64 steps & 128 steps & 256 steps \\
+\midrule
+pLDDT, HA1 in cleaved   & 56.16 & 64.32 & 63.22 \\
+pLDDT, HA1 fused        & 61.35 & 61.90 & 51.42 \\
+pLDDT, HA1 alone        & 48.43 & 67.01 & 65.16 \\
+pLDDT, HA2 in cleaved   & 68.49 & 63.27 & 64.90 \\
+pLDDT, HA2 fused        & 68.94 & 71.40 & 70.78 \\
+pLDDT, HA2 alone$^{*}$  & 93.67 & 88.47 & 93.93 \\
+pLDDT at Cys14, cleaved & 31.7 & 58.0 & 73.6 \\
+pLDDT at Cys14, fused   & 41.1 & 69.9 & 22.5 \\
+clashes, cleaved / fused & 22 / 9 & 19 / 2 & 15 / 9 \\
+clashes, HA1 alone / HA2 alone & 17 / 0 & 5 / 0 & 7 / 0 \\
+bridge C$\beta$--C$\beta$, cleaved ($\ang$) & 98.8 & 137.9 & 95.7 \\
+bridge C$\beta$--C$\beta$, fused ($\ang$)   & 164.3 & 48.0 & 129.7 \\
+\bottomrule
+\end{tabular}
+
+\smallskip
+\begin{tabular}{@{}lrrrl@{}}
+\toprule
+Contrast at equal steps & 64 & 128 & 256 & sign \\
+\midrule
+HA1 pLDDT: break $-$ fused  & $-5.2$ & $+2.4$ & $+11.8$ & mixed \\
+HA1 pLDDT: alone $-$ cleaved & $-7.7$ & $+2.7$ & $+1.9$ & mixed \\
+Cys14 pLDDT: break $-$ fused & $-9.4$ & $-11.9$ & $+51.1$ & mixed \\
+HA2 pLDDT: alone $-$ cleaved & $+25.2$ & $+25.2$ & $+29.0$ & $+$ at all \\
+HA2 pLDDT: alone $-$ fused   & $+24.7$ & $+17.1$ & $+23.2$ & $+$ at all \\
+HA2 pLDDT: break $-$ fused   & $-0.5$ & $-8.1$ & $-5.9$ & $-$ at all \\
+\bottomrule
+\end{tabular}
+\end{center}
+\noindent $^{*}$HA2 alone is capped at its 221 residues, so its 256-step
+column is the 221-step run. Computed by \path{bridge_test/sweep_contrasts.py};
+$n=3$, so means and spreads are descriptive and no p-value is claimed.
+
 \subsection{Findings}
 
-\paragraph{Fusing hurts HA1, and the break removes the harm.}
-At 256 steps HA1's pLDDT is 51.42 fused to HA2 with no break, 63.22 with the
-break (confident fraction 11.2\% $\to$ 38.6\%), and 65.16 alone. At the Cys14
-anchor the pLDDT rises 22.5 $\to$ 73.6 on declaring the break. HA2 pays a
-little (70.78 $\to$ 64.90).
+\paragraph{The chain-break's benefit to HA1 is a 256-step effect.} Break minus
+fused is $-5.2$, $+2.4$, $+11.8$ at 64, 128, 256 steps. The $+11.8$ comes from
+fused HA1 dipping to 51.42 at 256 steps (61.35 and 61.90 at the other two),
+while cleaved HA1 stays at 56--64. The Cys14 anchor result is the same
+artefact: at 64 and 128 steps the break gives the \emph{lower} anchor
+confidence. Neither claim passes the sign-at-every-step rule.
 
-\paragraph{The clash \emph{topology} differs.} Mature has fewer clashes
-(9 against 15) but they sit at $|i-j|$ of 80--159, so distant segments are
-superimposed; cleaved's are all local ($|i-j|\le 16$). Counting clashes
-without their separation would rank the two backwards.
+\paragraph{The clash \emph{topology} differs.} At 256 steps mature has fewer
+clashes (9 against 15) but they sit at $|i-j|$ of 80--159, so distant segments
+are superimposed; cleaved's are local ($|i-j|\le 16$). Across the sweep this
+holds at two of three step counts (fused is long-range at 128 and 256 but not
+at 64; cleaved has one long-range clash, at 182, at 128 steps), so it is
+suggestive, not clean.
 
-\paragraph{Company does not raise either chain's confidence.} HA1 alone
-(65.16) is not below HA1 in the cleaved complex (63.22) at matched steps; the
-earlier appearance that it was came from comparing 329 steps with 256. HA2
-alone scores 93.93 against 64.90 in the complex, though HA2 alone has only
-been seen at one step count. By pLDDT neither chain is more confident in
-company than apart. Whether the complex is right in a way pLDDT cannot see,
-for example in the interchain placement, is untested: the assembled pTM
-(0.23) is too low to resolve it.
+\paragraph{HA2 is far more confident alone than in any assembly.} HA2 alone
+minus HA2 in the cleaved complex is $+25.2$, $+25.2$, $+29.0$, and against the
+fused one $+24.7$, $+17.1$, $+23.2$: the same sign at every step count, with
+spreads of 2--4 points on differences of 17--29. This is the one robust
+contrast in the study. The break costs HA2 a little ($-0.5$, $-8.1$, $-5.9$,
+negative throughout, but of the same size as the step noise).
 
-\paragraph{Step count is a large, non-obvious effect.} HA1 alone, 256
-$\to$ 329 steps: pLDDT 65.16 $\to$ 59.83, confident fraction 37.1\% $\to$
-18.5\%, clashes 7 $\to$ 16, pTM 0.4642 $\to$ 0.4133. More decoding steps
-made it worse. The cysteine pairing shifts too: one:64--76 goes from
-$3.92\ang$ to $26.64\ang$ while one:277--281 stays at $3.3$--$3.5\ang$.
-Whether steps or tokens decoded per step is the operative variable is not
-known: two points cannot separate them.
+\paragraph{HA1 alone against HA1 in the complex is undetermined:} $-7.7$,
+$+2.7$, $+1.9$. At 64 steps HA1 alone is unfolded (0.0\% of residues above
+70). Whether the complex is right in a way pLDDT cannot see, for example in
+the interchain placement, is untested; the assembled pTM is too low to
+resolve it.
+
+\paragraph{Step count is a large, non-monotone effect.} HA1 alone scores
+48.43, 67.01, 65.16 and 59.83 at 64, 128, 256 and 329 steps; it rises,
+plateaus and falls. Fused HA1 drops 10 points between 128 and 256 steps while
+cleaved HA1 does not. Which cysteines pair also moves with steps alone
+(one:64--76 goes from $3.92\ang$ to $26.64\ang$ between 329 and 256 steps).
 
 \paragraph{HA1 is the hard half in every construct.} Alone it fails the gate
 at both step counts tried: 16 clashes at 329 steps (minimum C$\beta$
-separation $0.44\ang$) and 7 at 256 steps ($2.01\ang$).
+separation $0.44\ang$) and 7 at 256 steps ($2.01\ang$); it fails at 64 and 128 too.
 
-\paragraph{The bridge is not formed.} $95.67\ang$ and $129.74\ang$ are about
-$21\times$ and $29\times$ the criterion; ranks 98 and 95 of 136 cysteine
-pairs. This holds under any reasonable criterion.
+\paragraph{The bridge is not formed, at any step count.} Cleaved gives
+$98.8$, $137.9$, $95.7\ang$ and fused $164.3$, $48.0$, $129.7\ang$, against a
+$4.5\ang$ criterion. No assembled run passes the gate either (cleaved 22, 19,
+15 clashes; fused 9, 2, 9, the 2-clash run failing on pTM), and HA1 alone fails
+at every step count tried.
 
 \subsection{Disulfide calibration}
 
@@ -311,6 +363,13 @@ These are recorded because several first readings were wrong.
   said the premise ``ESM3 should not treat the chains as separate'' was
   confirmed; what is confirmed is narrower (an unbroken fusion is wrong, and
   the break repairs it).
+\item \textbf{Three more findings withdrawn after the step sweep.} The
+  chain-break benefit to HA1, its benefit to the Cys14 anchor, and the
+  narrower ``break repairs fusion'' that replaced the first claim all rested
+  on 256 steps. I stated each with more confidence than one step count could
+  support. The sweep also exposed a bug in my own contrast script, which kept
+  an old pre-pLDDT result file for the 256-step runs; an empty column gave it
+  away.
 \item \textbf{Small bugs.} The chain-break position was admitted into the
   C$\beta$ statistics; labels were wrong for the break-free reference;
   a results file was overwritten by a generic filename.
@@ -330,12 +389,10 @@ These are recorded because several first readings were wrong.
   C$\beta$ is inferred from the backbone. A bond criterion built on it
   inherits any backbone error, and glycines (which have no C$\beta$) are
   invisible to the clash count.
-\item \textbf{Steps are matched for HA1 only, and step count matters a
-  lot.} HA1 alone at 256 against 329 steps differs by 5.3 pLDDT. HA2 alone
-  cannot be matched to the assemblies at all (clamped at 221), so its
-  29-point drop in the complex has not been shown robust to step count. Two
-  step counts per construct cannot say whether steps or tokens per step is
-  the variable.
+\item \textbf{Three step counts per construct.} Enough to show that the sign
+  of several contrasts flips, not enough to characterise the step
+  dependence. HA2 alone is capped at 221 steps. It is unknown whether steps or
+  tokens decoded per step is the operative variable.
 \item \textbf{One run per condition.} The three repeat pairs agree exactly, but
   no condition has been run across seeds or checkpoints, and nothing here
   gives error bars.
@@ -386,27 +443,16 @@ These are recorded because several first readings were wrong.
 
 \subsection{Recommended next step}
 
-Run a \textbf{step sweep}. The step-matched rerun resolved one claim and
-exposed a larger problem: a non-monotone step effect that no pair of runs can
-characterise. For each of cleaved, mature, one and two at 64, 128 and 256
-steps (two: 64, 128, 221):
-
-\begin{verbatim}
-for ref in cleaved mature one two; do for s in 64 128 256; do
-  python tests/test_cleaved_complex.py --ref $ref --steps $s \
-    > bridge_test/sweep_${ref}_${s}.txt
-done; done
-python bridge_test/summarize_runs.py
-\end{verbatim}
-
-A claim survives only if its \emph{sign} holds at every step count tested:
-fused below break for HA1, HA1 alone against in-complex, and HA2 alone far
-above HA2 in the complex.
+Measure an \textbf{interface}, which does not depend on the model's own
+confidence: the number of inter-chain C$\beta$--C$\beta$ contacts below
+$8\ang$ in the cleaved and fused predictions at each step count. If declaring
+the break changes how HA1 and HA2 pack, it should show there. pLDDT cannot
+show it, and the assembled pTM is too low to.
 
 \subsection{Prioritised list}
 
 \begin{enumerate}
-\item \textbf{Step sweep} (above).
+\item \textbf{Interface contacts, cleaved against fused} (above).
 \item \textbf{Per-residue pLDDT at the known-bond residues} in the BPTI and
   crambin runs. If crambin's Cys3, Cys16, Cys26 and Cys40 are low-confidence,
   the misses are uncertainty and a pLDDT filter may repair the criterion; if
