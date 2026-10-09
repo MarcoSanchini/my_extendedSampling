@@ -444,3 +444,102 @@ of cleaved, mature, one, two at steps in {64, 128, 256} (two: {64, 128, 221}):
     python bridge_test/summarize_runs.py
 A claim survives only if its SIGN holds at every step count tested: fused < break
 for HA1, alone vs in-complex for both chains, HA2 alone >> HA2 in complex.
+
+
+2026-10-09 -- STEP SWEEP (64/128/256): the chain-break "benefit" to HA1 and to the Cys14 anchor does NOT survive -- it appears at 256 steps only and reverses at 64 and 128. Findings 1, 2 and 11 are withdrawn. What does survive: HA2 alone is far more confident than HA2 in any assembly, no assembled run passes the gate, the bridge is never formed, decoding is deterministic
+--------------------------------------------------------------------------------
+Rule fixed in advance (previous entry): a claim survives only if its SIGN holds at
+every step count tested. Applied with the new bridge_test/sweep_contrasts.py,
+which differences two constructs at the SAME step count. n=3, so means and
+spreads are descriptive; no p-value is claimed.
+
+    pLDDT                      64       128      256
+    HA1 in cleaved            56.16    64.32    63.22
+    HA1 fused (mature)        61.35    61.90    51.42
+    HA1 alone                 48.43    67.01    65.16     (329 steps: 59.83)
+    HA2 in cleaved            68.49    63.27    64.90
+    HA2 fused (mature)        68.94    71.40    70.78
+    HA2 alone                 93.67    88.47    93.93     (221 steps in the 256 slot)
+    Cys14 anchor, cleaved     31.7     58.0     73.6
+    Cys14 anchor, fused       41.1     69.9     22.5
+    clashes cleaved / fused   22 / 9   19 / 2   15 / 9
+    bridge CB-CB, cleaved     98.8     137.9    95.7 A
+    bridge CB-CB, fused       164.3    48.0     129.7 A
+
+CONTRASTS (same steps):
+                                  64       128      256     verdict
+    HA1: break - fused           -5.19    +2.42   +11.80    MIXED   mean +3.0  sd 8.5
+    HA1: alone - cleaved         -7.73    +2.69    +1.94    MIXED
+    HA1 % >= 70: break - fused   -13.1    -2.4    +27.4     MIXED
+    Cys14 anchor: break - fused  -9.4     -11.9    +51.1     MIXED
+    HA2: alone - cleaved        +25.18   +25.20   +29.03    + at all  mean +26.5  sd 2.2
+    HA2: alone - fused          +24.73   +17.07   +23.15    + at all  mean +21.7  sd 4.0
+    HA2: break - fused           -0.45    -8.13    -5.88    - at all  mean -4.8   sd 4.0
+
+FINDING 15 -- THE BREAK'S BENEFIT TO HA1 IS A 256-STEP EFFECT. Break minus fused is
+-5.2, +2.4, +11.8. The +11.8 that Findings 1 and 11 rested on comes almost
+entirely from fused HA1 dipping to 51.42 at 256 steps (it is 61.35 and 61.90 at
+64 and 128); cleaved HA1 sits at 56-64 throughout. The Cys14 anchor result
+(Finding 2: 22.5 -> 73.6) is the same artefact: at 64 and 128 the break gives the
+LOWER anchor confidence (31.7 vs 41.1, 58.0 vs 69.9). Findings 1, 2 and the
+"break repairs fusion" half of 11 are withdrawn. I stated each of them with more
+confidence than one step count could support.
+
+FINDING 16 -- HA1 ALONE VERSUS IN COMPLEX IS UNDETERMINED: -7.7, +2.7, +1.9. At 64
+steps HA1 alone is 48.43 with 0.0% of residues >= 70, i.e. unfolded; at 128 and
+256 it is slightly above its in-complex value. No claim either way.
+
+FINDING 17 -- ROBUST: HA2 IS FAR MORE CONFIDENT ALONE THAN IN ANY ASSEMBLY. +25.2,
++25.2, +29.0 against the cleaved complex; +24.7, +17.1, +23.2 against the fused
+one. Same sign at all three step counts, spreads of 2-4 points on differences of
+17-29. HA2 alone also passes the gate at every step count (0 clashes; ptm 0.554,
+0.499, 0.567; minimum CB-CB 4.65, 3.87, 4.14 A). Adding HA1 degrades HA2.
+
+FINDING 18 -- TENTATIVE: THE BREAK COSTS HA2 A LITTLE. Cleaved minus fused HA2 is
+-0.5, -8.1, -5.9: negative at all three, mean -4.8, but the spread (4.0) is as
+large as the step-to-step noise seen elsewhere, so this is a sign without a size.
+
+FINDING 19 -- ROBUST: NO ASSEMBLED RUN PASSES THE GATE, AND THE BRIDGE IS NEVER
+FORMED. Cleaved fails with 22/19/15 clashes; fused with 9/2/9, and the 2-clash
+run (128 steps) still fails on ptm 0.2322. HA1 alone fails at every step count
+(17, 5, 7 clashes; 16 at 329). The Cys14-Cys137 distance is 95.7-137.9 A in the
+cleaved runs and 48.0-164.3 A in the fused ones: never within a factor of ten of
+the 4.5 A criterion. (mature@128 and cleaved@256 share ptm 0.2322 to four
+digits; they are distinct runs, different lengths and plddt, so a coincidence.)
+
+FINDING 20 -- THE CLASH-TOPOLOGY FINDING (3) HOLDS AT TWO OF THREE STEP COUNTS.
+|i-j| of the eight worst clashes: mature 64 steps mostly 2-4 with one at 68;
+mature 128: 71, 70; mature 256: 140, 103, 159, 92, 135, 80, 90 (long range).
+Cleaved: local at 64 and 256, one at 182 at 128. So fused is long-range at 128
+and 256 but not at 64; cleaved is mostly local. Suggestive, not clean.
+
+FINDING 21 -- STEP SENSITIVITY IS NOT MONOTONE AND IS LARGE. HA1 alone: 48.4 (64),
+67.0 (128), 65.2 (256), 59.8 (329). It rises, plateaus and falls. Fused HA1 drops
+10 points between 128 and 256 while cleaved HA1 does not. Each step count is a
+deterministic but effectively independent draw, and draws differ by more than
+most of the effects this log has claimed.
+
+DETERMINISM, REPEATED: the four 256-step sweep runs are byte-identical to the
+earlier runs once progress-bar lines are removed (cleaved, mature, one, two),
+and HA2's clamped runs repeat to every printed digit.
+
+INSTRUMENT BUG, caught and fixed: my first pass of sweep_contrasts.py picked the
+old ha_c256.txt / ha_mature.txt (written before the plddt block existed) because
+they sort first, leaving the 256 column empty and reporting 16 clashes for
+cleaved instead of 15. The loader now prefers the row with the most parsed
+chains. The empty column is what exposed it.
+
+WHAT THIS SAYS ABOUT THE ORIGINAL QUESTION. By per-chain confidence this test
+cannot show that declaring the break helps. It also cannot show that it hurts
+HA1; the only consistent sign is a small cost to HA2. The structural outcome is
+independent of the break: the bridge is not formed under any condition tried,
+HA1 does not fold in isolation or in company, and HA2 folds only on its own.
+Not tested: the trimer, any interchain-placement measure (the assembled ptm is
+too low to resolve one), and experimental references.
+
+NEXT: (1) an interface measure that does not depend on pLDDT: count inter-chain
+CB-CB contacts below 8 A in cleaved vs fused at each step count. If the break
+changes how HA1 and HA2 pack, it should show there, and it is a structural
+quantity rather than the model's confidence. (2) Per-residue pLDDT at the
+crambin and BPTI bond residues. (3) A verified native disulfide list for HA.
+(4) The trimer.
