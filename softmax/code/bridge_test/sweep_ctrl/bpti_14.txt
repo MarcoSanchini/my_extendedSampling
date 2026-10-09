@@ -1,0 +1,62 @@
+# reference: zero_polymer_bpti (L=58 residues)
+# decoding steps: 14   device: cuda:0
+# DISULFIDE CONTROL: 3 known bonds,
+# used to calibrate the CB_BONDED = 4.5 A criterion that
+# every bridge verdict in this investigation rests on.
+
+predicted sequence length: 58   coordinates: (58, 37, 3)
+
+--- confidence ---
+  ptm   0.7530   (floor 0.4)
+  plddt reported on a 0-1 scale, shown here as 0-100
+  plddt mean (all residues)    93.35
+  plddt mean bpti              93.35   ( 98.3% of residues >= 70)
+  residues >= 70             98.3%
+  READ: high plddt with low ptm => domains folded, their
+        RELATIVE PLACEMENT failed. Low both => nothing folded.
+
+--- geometry sanity ---
+  min CB-CB (|i-j|>=2)        3.56 A   (clash below 3.0)
+  CB-CB clashes              0   (a physical fold has ~0)
+  CB absent (NaN) at 6 residues; 6 glycines in sequence
+    (infer_cbeta writes NaN at every G by default, so G is excluded
+     from all CB statistics by construction -- if these two numbers
+     agree, the clashes above are between REAL inferred CBs.)
+
+  [OK] fold passes the sanity gate; distances are meaningful.
+
+--- known disulfides: the calibration the fold control could not give ---
+  Cys5  -Cys55    3.67 A  WITHIN  4.5 A   rank 2/15
+  Cys14 -Cys38    3.56 A  WITHIN  4.5 A   rank 1/15
+  Cys30 -Cys51    4.43 A  WITHIN  4.5 A   rank 3/15
+
+  3/3 known disulfides within 4.5 A   (3/3 measurable)
+  3/3 recovered as the 3 closest Cys pairs (partner assignment)
+
+  => CB_BONDED = 4.5 A IS SOUND. The pipeline puts
+     known disulfides inside the criterion, so a formed
+     bridge is detectable and HA2's 6.26 A closest pair
+     means its disulfides genuinely are NOT formed.
+
+(ref 'bpti' is a single chain -- no interchain bridge)
+
+--- all 15 cysteine pairs by CB-CB, closest first ---
+    1. *   3.56 A    bpti:14 -- bpti:38    <== KNOWN disulfide
+    2. *   3.67 A     bpti:5 -- bpti:55    <== KNOWN disulfide
+    3. *   4.43 A    bpti:30 -- bpti:51    <== KNOWN disulfide
+    4.     6.08 A    bpti:51 -- bpti:55  
+    5.     7.38 A    bpti:30 -- bpti:55  
+    6.     8.44 A     bpti:5 -- bpti:51  
+    7.     9.88 A     bpti:5 -- bpti:30  
+    8.    19.79 A    bpti:38 -- bpti:51  
+    9.    20.36 A    bpti:14 -- bpti:51  
+   10.    21.70 A     bpti:5 -- bpti:38  
+   11.    22.17 A    bpti:14 -- bpti:30  
+   12.    22.21 A    bpti:30 -- bpti:38  
+
+  3 pairs in plausible bonding range [3.0, 4.5] A (*)
+  0 pairs CLASHING below 3.0 A (!) -- broken geometry,
+  not disulfides
+
+wrote bridge_test/sweep_ctrl/bpti_14.pdb
+wrote bridge_test/sweep_ctrl/bpti_14.pdb.plddt.tsv

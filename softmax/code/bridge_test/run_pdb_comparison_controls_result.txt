@@ -1,0 +1,504 @@
+Fetching 22 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 191044.90it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+reference: protein_g  (L=56)
+experimental: bridge_test/pdb/protein_g_1PGB.pdb  chain A: 56 residues with CA
+predicted:    bridge_test/sweep_ctrl/protein_g_14.pdb  chain A: 56 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  56/56 reference positions present, 56 identical, 0 mismatched
+  predicted     56/56 reference positions present, 56 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      56
+  CA RMSD                  3.01 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.819     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      T11    11.17 A  pLDDT  87.2
+      K10     9.29 A  pLDDT  89.2
+      G9      7.41 A  pLDDT  89.1
+      G14     6.86 A  pLDDT  77.1
+      E15     6.02 A  pLDDT  75.4
+      L12     5.60 A  pLDDT  83.2
+      K13     5.12 A  pLDDT  79.8
+      E42     2.75 A  pLDDT  90.8
+  Spearman(pLDDT, CA deviation) = -0.71   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  1.17 A   max 10.88 A
+  worst 7-residue windows (intra-window CA-CA error):
+      T11-T17   2.62 A
+      L5-T11   2.36 A
+      L12-T18   2.18 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  143  predicted  148  TP  117  precision  0.79  recall  0.82  F1  0.80
+  |i-j| >= 6   experimental contacts  102  predicted  102  TP   80  precision  0.78  recall  0.78  F1  0.78
+  |i-j| >= 12  experimental contacts   77  predicted   76  TP   63  precision  0.83  recall  0.82  F1  0.82
+  ranked by predicted distance, |i-j| >= 6: top-L (56) precision 0.93; top-L/2 (28) precision 0.93; top-L/5 (11) precision 1.00
+  distance error on pairs within 15 A in experiment (652): MAE 1.21 A, Pearson r 0.764
+
+--- disulfides ---
+  no known bonds supplied (--ref with KNOWN_DISULFIDES, or --bonds)
+Fetching 22 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 213105.52it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+reference: protein_g  (L=56)
+experimental: bridge_test/pdb/protein_g_1PGB.pdb  chain A: 56 residues with CA
+predicted:    bridge_test/sweep_ctrl/protein_g_28.pdb  chain A: 56 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  56/56 reference positions present, 56 identical, 0 mismatched
+  predicted     56/56 reference positions present, 56 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      56
+  CA RMSD                  2.99 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.830     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      T11    11.16 A  pLDDT  93.0
+      K10     9.15 A  pLDDT  94.3
+      G9      7.34 A  pLDDT  94.3
+      G14     6.91 A  pLDDT  85.3
+      E15     6.02 A  pLDDT  84.4
+      L12     5.66 A  pLDDT  89.4
+      K13     5.15 A  pLDDT  87.9
+      N8      2.53 A  pLDDT  94.9
+  Spearman(pLDDT, CA deviation) = -0.61   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  1.13 A   max 10.99 A
+  worst 7-residue windows (intra-window CA-CA error):
+      T11-T17   2.62 A
+      L5-T11   2.39 A
+      L12-T18   2.18 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  143  predicted  140  TP  115  precision  0.82  recall  0.80  F1  0.81
+  |i-j| >= 6   experimental contacts  102  predicted   94  TP   78  precision  0.83  recall  0.76  F1  0.80
+  |i-j| >= 12  experimental contacts   77  predicted   69  TP   63  precision  0.91  recall  0.82  F1  0.86
+  ranked by predicted distance, |i-j| >= 6: top-L (56) precision 0.95; top-L/2 (28) precision 0.96; top-L/5 (11) precision 1.00
+  distance error on pairs within 15 A in experiment (652): MAE 1.17 A, Pearson r 0.775
+
+--- disulfides ---
+  no known bonds supplied (--ref with KNOWN_DISULFIDES, or --bonds)
+Fetching 22 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 205970.29it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+reference: protein_g  (L=56)
+experimental: bridge_test/pdb/protein_g_1PGB.pdb  chain A: 56 residues with CA
+predicted:    bridge_test/sweep_ctrl/protein_g_56.pdb  chain A: 56 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  56/56 reference positions present, 56 identical, 0 mismatched
+  predicted     56/56 reference positions present, 56 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      56
+  CA RMSD                  2.96 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.835     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      T11    10.87 A  pLDDT  90.4
+      K10     8.91 A  pLDDT  91.4
+      G14     7.35 A  pLDDT  80.5
+      G9      7.07 A  pLDDT  91.0
+      E15     6.22 A  pLDDT  82.4
+      L12     5.59 A  pLDDT  86.9
+      K13     5.26 A  pLDDT  83.1
+      E42     2.76 A  pLDDT  94.0
+  Spearman(pLDDT, CA deviation) = -0.70   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  1.10 A   max 10.82 A
+  worst 7-residue windows (intra-window CA-CA error):
+      T11-T17   2.68 A
+      L5-T11   2.39 A
+      L12-T18   2.27 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  143  predicted  141  TP  116  precision  0.82  recall  0.81  F1  0.82
+  |i-j| >= 6   experimental contacts  102  predicted   95  TP   79  precision  0.83  recall  0.77  F1  0.80
+  |i-j| >= 12  experimental contacts   77  predicted   71  TP   63  precision  0.89  recall  0.82  F1  0.85
+  ranked by predicted distance, |i-j| >= 6: top-L (56) precision 0.93; top-L/2 (28) precision 0.96; top-L/5 (11) precision 0.91
+  distance error on pairs within 15 A in experiment (652): MAE 1.11 A, Pearson r 0.778
+
+--- disulfides ---
+  no known bonds supplied (--ref with KNOWN_DISULFIDES, or --bonds)
+Fetching 22 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 124025.12it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+reference: bpti  (L=58)
+experimental: bridge_test/pdb/bpti_5PTI.pdb  chain A: 58 residues with CA
+predicted:    bridge_test/sweep_ctrl/bpti_14.pdb  chain A: 58 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  58/58 reference positions present, 58 identical, 0 mismatched
+  predicted     58/58 reference positions present, 58 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      58
+  CA RMSD                  1.01 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.923     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      A58     5.52 A  pLDDT  60.5
+      R39     1.49 A  pLDDT  93.5
+      A40     1.28 A  pLDDT  94.5
+      G56     1.27 A  pLDDT  88.3
+      E49     1.22 A  pLDDT  95.6
+      K41     1.06 A  pLDDT  94.5
+      I19     1.06 A  pLDDT  97.1
+      R53     1.05 A  pLDDT  93.4
+  Spearman(pLDDT, CA deviation) = -0.31   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  0.36 A   max  4.99 A
+  worst 7-residue windows (intra-window CA-CA error):
+      M52-A58   0.57 A
+      I19-A25   0.28 A
+      R39-F45   0.28 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  152  predicted  146  TP  140  precision  0.96  recall  0.92  F1  0.94
+  |i-j| >= 6   experimental contacts  117  predicted  111  TP  105  precision  0.95  recall  0.90  F1  0.92
+  |i-j| >= 12  experimental contacts  102  predicted   97  TP   92  precision  0.95  recall  0.90  F1  0.92
+  ranked by predicted distance, |i-j| >= 6: top-L (58) precision 0.98; top-L/2 (29) precision 1.00; top-L/5 (11) precision 1.00
+  distance error on pairs within 15 A in experiment (682): MAE 0.43 A, Pearson r 0.974
+
+--- disulfides ---
+  known bonds (supplied): 3
+  pair     exp SG-SG  exp CB  exp CB  exp CA  pred CB  pred CA   d(CB)  exp bonded?   pLDDT
+                     (model)  (dep.)     -CA               -CA        
+  5-55          2.04    3.49    3.62    5.69     3.67     6.06    0.18  YES           92/92
+  14-38         2.03    3.89    3.87    5.67     3.56     5.39   -0.33  YES           95/94
+  30-51         2.02    3.71    3.82    6.28     4.43     6.74    0.72  YES           96/95
+  known bonds confirmed in the experimental file (SG-SG <= 2.5 A): 3/3
+
+  cysteine pairs: 15   predicted within 4.5 A: 3 (3 known bonds, 0 non-native)   experimental within 4.5 A: 3
+  pair        pred CB   exp CB  status
+  14-38          3.56     3.89  KNOWN bond
+  5-55           3.67     3.49  KNOWN bond
+  30-51          4.43     3.71  KNOWN bond
+  51-55          6.07     6.14  
+  30-55          7.37     7.24  
+  5-51           8.44     8.85  
+  5-30           9.88     9.67  
+  38-51         19.79    20.10  
+  14-51         20.36    20.87  
+  5-38          21.70    21.75  
+Fetching 22 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 113638.78it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+reference: bpti  (L=58)
+experimental: bridge_test/pdb/bpti_5PTI.pdb  chain A: 58 residues with CA
+predicted:    bridge_test/sweep_ctrl/bpti_29.pdb  chain A: 58 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  58/58 reference positions present, 58 identical, 0 mismatched
+  predicted     58/58 reference positions present, 58 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      58
+  CA RMSD                  1.10 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.923     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      A58     6.43 A  pLDDT  54.0
+      A40     1.39 A  pLDDT  94.7
+      E49     1.29 A  pLDDT  94.8
+      G57     1.28 A  pLDDT  72.1
+      R39     1.17 A  pLDDT  93.5
+      K41     1.14 A  pLDDT  94.5
+      G56     1.12 A  pLDDT  85.1
+      A48     1.12 A  pLDDT  95.3
+  Spearman(pLDDT, CA deviation) = -0.37   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  0.39 A   max  6.17 A
+  worst 7-residue windows (intra-window CA-CA error):
+      M52-A58   0.88 A
+      C51-G57   0.34 A
+      R39-F45   0.26 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  152  predicted  147  TP  139  precision  0.95  recall  0.91  F1  0.93
+  |i-j| >= 6   experimental contacts  117  predicted  112  TP  105  precision  0.94  recall  0.90  F1  0.92
+  |i-j| >= 12  experimental contacts  102  predicted   98  TP   92  precision  0.94  recall  0.90  F1  0.92
+  ranked by predicted distance, |i-j| >= 6: top-L (58) precision 0.98; top-L/2 (29) precision 0.97; top-L/5 (11) precision 1.00
+  distance error on pairs within 15 A in experiment (682): MAE 0.44 A, Pearson r 0.972
+
+--- disulfides ---
+  known bonds (supplied): 3
+  pair     exp SG-SG  exp CB  exp CB  exp CA  pred CB  pred CA   d(CB)  exp bonded?   pLDDT
+                     (model)  (dep.)     -CA               -CA        
+  5-55          2.04    3.49    3.62    5.69     3.69     6.03    0.20  YES           90/90
+  14-38         2.03    3.89    3.87    5.67     3.54     5.34   -0.35  YES           95/94
+  30-51         2.02    3.71    3.82    6.28     4.49     6.79    0.78  YES           95/95
+  known bonds confirmed in the experimental file (SG-SG <= 2.5 A): 3/3
+
+  cysteine pairs: 15   predicted within 4.5 A: 3 (3 known bonds, 0 non-native)   experimental within 4.5 A: 3
+  pair        pred CB   exp CB  status
+  14-38          3.54     3.89  KNOWN bond
+  5-55           3.69     3.49  KNOWN bond
+  30-51          4.49     3.71  KNOWN bond
+  51-55          6.16     6.14  
+  30-55          7.50     7.24  
+  5-51           8.48     8.85  
+  5-30          10.03     9.67  
+  38-51         19.67    20.10  
+  14-51         20.22    20.87  
+  5-38          21.76    21.75  
+Fetching 22 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 213105.52it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+reference: bpti  (L=58)
+experimental: bridge_test/pdb/bpti_5PTI.pdb  chain A: 58 residues with CA
+predicted:    bridge_test/sweep_ctrl/bpti_58.pdb  chain A: 58 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  58/58 reference positions present, 58 identical, 0 mismatched
+  predicted     58/58 reference positions present, 58 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      58
+  CA RMSD                  1.22 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.922     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      A58     7.54 A  pLDDT  69.1
+      R39     1.41 A  pLDDT  94.2
+      A40     1.35 A  pLDDT  94.9
+      E49     1.30 A  pLDDT  95.6
+      G56     1.30 A  pLDDT  85.4
+      K41     1.16 A  pLDDT  94.4
+      R53     1.12 A  pLDDT  92.5
+      A48     1.11 A  pLDDT  96.0
+  Spearman(pLDDT, CA deviation) = -0.34   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  0.41 A   max  7.45 A
+  worst 7-residue windows (intra-window CA-CA error):
+      M52-A58   0.78 A
+      R39-F45   0.26 A
+      A40-K46   0.26 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  152  predicted  149  TP  140  precision  0.94  recall  0.92  F1  0.93
+  |i-j| >= 6   experimental contacts  117  predicted  114  TP  106  precision  0.93  recall  0.91  F1  0.92
+  |i-j| >= 12  experimental contacts  102  predicted  100  TP   93  precision  0.93  recall  0.91  F1  0.92
+  ranked by predicted distance, |i-j| >= 6: top-L (58) precision 0.97; top-L/2 (29) precision 0.97; top-L/5 (11) precision 0.91
+  distance error on pairs within 15 A in experiment (682): MAE 0.45 A, Pearson r 0.963
+
+--- disulfides ---
+  known bonds (supplied): 3
+  pair     exp SG-SG  exp CB  exp CB  exp CA  pred CB  pred CA   d(CB)  exp bonded?   pLDDT
+                     (model)  (dep.)     -CA               -CA        
+  5-55          2.04    3.49    3.62    5.69     3.66     5.96    0.17  YES           89/90
+  14-38         2.03    3.89    3.87    5.67     3.61     5.35   -0.28  YES           96/95
+  30-51         2.02    3.71    3.82    6.28     4.45     6.76    0.74  YES           95/95
+  known bonds confirmed in the experimental file (SG-SG <= 2.5 A): 3/3
+
+  cysteine pairs: 15   predicted within 4.5 A: 3 (3 known bonds, 0 non-native)   experimental within 4.5 A: 3
+  pair        pred CB   exp CB  status
+  14-38          3.61     3.89  KNOWN bond
+  5-55           3.66     3.49  KNOWN bond
+  30-51          4.45     3.71  KNOWN bond
+  51-55          6.16     6.14  
+  30-55          7.53     7.24  
+  5-51           8.70     8.85  
+  5-30          10.06     9.67  
+  38-51         19.61    20.10  
+  14-51         20.15    20.87  
+  5-38          21.75    21.75  
+Fetching 22 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 155083.51it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+reference: crambin  (L=46)
+experimental: bridge_test/pdb/crambin_3NIR.pdb  chain A: 46 residues with CA
+predicted:    bridge_test/sweep_ctrl/crambin_11.pdb  chain A: 46 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  46/46 reference positions present, 46 identical, 0 mismatched
+  predicted     46/46 reference positions present, 46 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      46
+  CA RMSD                  8.34 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.263     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      D43    18.27 A  pLDDT  72.6
+      G42    15.39 A  pLDDT  74.0
+      A45    14.72 A  pLDDT  65.0
+      N46    14.61 A  pLDDT  62.4
+      Y44    14.50 A  pLDDT  68.1
+      P19    13.74 A  pLDDT  80.5
+      N12    12.18 A  pLDDT  61.7
+      S11    11.96 A  pLDDT  61.8
+  Spearman(pLDDT, CA deviation) = -0.68   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  3.66 A   max 19.61 A
+  worst 7-residue windows (intra-window CA-CA error):
+      C40-N46   1.92 A
+      N14-G20   1.86 A
+      N12-L18   1.75 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  112  predicted  105  TP   44  precision  0.42  recall  0.39  F1  0.41
+  |i-j| >= 6   experimental contacts   63  predicted   73  TP   19  precision  0.26  recall  0.30  F1  0.28
+  |i-j| >= 12  experimental contacts   50  predicted   61  TP   15  precision  0.25  recall  0.30  F1  0.27
+  ranked by predicted distance, |i-j| >= 6: top-L (46) precision 0.30; top-L/2 (23) precision 0.22; top-L/5 (9) precision 0.11
+  distance error on pairs within 15 A in experiment (455): MAE 3.85 A, Pearson r 0.267
+
+--- disulfides ---
+  known bonds (supplied): 3
+  pair     exp SG-SG  exp CB  exp CB  exp CA  pred CB  pred CA   d(CB)  exp bonded?   pLDDT
+                     (model)  (dep.)     -CA               -CA        
+  3-40          2.03    3.45    3.61    5.66     8.35     7.70    4.90  YES           79/78
+  4-32          2.05    4.03    4.06    4.12     6.82     5.62    2.79  YES           77/84
+  16-26         2.04    3.82    3.78    5.82    10.74    10.37    6.92  YES           77/86
+  known bonds confirmed in the experimental file (SG-SG <= 2.5 A): 3/3
+
+  cysteine pairs: 15   predicted within 4.5 A: 2 (0 known bonds, 2 non-native)   experimental within 4.5 A: 3
+  pair        pred CB   exp CB  status
+  16-40          2.99    17.88  NON-NATIVE, inside criterion in prediction
+  3-26           3.93    12.27  NON-NATIVE, inside criterion in prediction
+  26-32          4.64     6.78  
+  4-16           4.89    11.19  
+  3-32           5.41     6.42  
+  3-4            5.89     5.79  
+  4-32           6.82     4.03  KNOWN bond
+  4-40           7.31     8.14  
+  3-16           7.47    14.83  
+  3-40           8.35     3.45  KNOWN bond
+  16-26         10.74     3.82  KNOWN bond
+Fetching 22 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 148830.14it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+reference: crambin  (L=46)
+experimental: bridge_test/pdb/crambin_3NIR.pdb  chain A: 46 residues with CA
+predicted:    bridge_test/sweep_ctrl/crambin_23.pdb  chain A: 46 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  46/46 reference positions present, 46 identical, 0 mismatched
+  predicted     46/46 reference positions present, 46 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      46
+  CA RMSD                  7.18 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.281     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      P41    15.06 A  pLDDT  64.3
+      G42    14.43 A  pLDDT  63.0
+      P19    12.75 A  pLDDT  71.8
+      D43    11.95 A  pLDDT  62.2
+      F13    11.20 A  pLDDT  60.6
+      C40    10.02 A  pLDDT  68.8
+      N14     9.66 A  pLDDT  67.4
+      R10     9.48 A  pLDDT  57.1
+  Spearman(pLDDT, CA deviation) = -0.49   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  3.52 A   max 20.76 A
+  worst 7-residue windows (intra-window CA-CA error):
+      N12-L18   2.32 A
+      F13-P19   2.29 A
+      N14-G20   2.14 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  112  predicted  106  TP   40  precision  0.38  recall  0.36  F1  0.37
+  |i-j| >= 6   experimental contacts   63  predicted   82  TP   22  precision  0.27  recall  0.35  F1  0.30
+  |i-j| >= 12  experimental contacts   50  predicted   69  TP   19  precision  0.28  recall  0.38  F1  0.32
+  ranked by predicted distance, |i-j| >= 6: top-L (46) precision 0.26; top-L/2 (23) precision 0.26; top-L/5 (9) precision 0.44
+  distance error on pairs within 15 A in experiment (455): MAE 3.60 A, Pearson r 0.330
+
+--- disulfides ---
+  known bonds (supplied): 3
+  pair     exp SG-SG  exp CB  exp CB  exp CA  pred CB  pred CA   d(CB)  exp bonded?   pLDDT
+                     (model)  (dep.)     -CA               -CA        
+  3-40          2.03    3.45    3.61    5.66     4.85     6.68    1.40  YES           65/69
+  4-32          2.05    4.03    4.06    4.12     3.95     4.63   -0.09  YES           63/74
+  16-26         2.04    3.82    3.78    5.82    10.04    10.55    6.22  YES           72/75
+  known bonds confirmed in the experimental file (SG-SG <= 2.5 A): 3/3
+
+  cysteine pairs: 15   predicted within 4.5 A: 2 (1 known bonds, 1 non-native)   experimental within 4.5 A: 3
+  pair        pred CB   exp CB  status
+  16-40          3.69    17.88  NON-NATIVE, inside criterion in prediction
+  4-32           3.95     4.03  KNOWN bond
+  3-40           4.85     3.45  KNOWN bond
+  26-32          4.97     6.78  
+  3-26           5.39    12.27  
+  3-16           5.46    14.83  
+  3-4            5.63     5.79  
+  4-16           6.37    11.19  
+  4-26           6.67     9.93  
+  3-32           7.30     6.42  
+  16-26         10.04     3.82  KNOWN bond
+Fetching 22 files: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 224512.62it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/structure/protein_complex.py:223: UserWarning: Entity ID not found in metadata, using None as default
+  warnings.warn("Entity ID not found in metadata, using None as default")
+reference: crambin  (L=46)
+experimental: bridge_test/pdb/crambin_3NIR.pdb  chain A: 46 residues with CA
+predicted:    bridge_test/sweep_ctrl/crambin_46.pdb  chain A: 46 residues with CA
+C-beta: inferred from N/CA/C on both sides (the model's convention); glycine uses CA
+
+--- sequence check (reference vs each structure) ---
+  experimental  46/46 reference positions present, 46 identical, 0 mismatched
+  predicted     46/46 reference positions present, 46 identical, 0 mismatched
+
+--- geometry (CA, predicted onto experimental) ---
+  residues compared      46
+  CA RMSD                  7.91 A   (all compared residues, one superposition)
+  TM-score (approx.)      0.316     (lower bound; >0.5 same fold, <0.17 random)
+  largest CA deviations:   (pLDDT in the last column)
+      P19    15.46 A  pLDDT  83.7
+      R10    12.65 A  pLDDT  85.0
+      N12    12.24 A  pLDDT  84.1
+      D43    12.23 A  pLDDT  55.6
+      G42    11.86 A  pLDDT  64.1
+      F13    11.54 A  pLDDT  85.5
+      N14    11.33 A  pLDDT  86.7
+      C16    11.26 A  pLDDT  86.5
+  Spearman(pLDDT, CA deviation) = -0.66   (negative means low confidence marks the wrong residues)
+
+--- local structure (superposition-free) ---
+  CA-CA distance error, all pairs    MAE  4.06 A   max 19.99 A
+  worst 7-residue windows (intra-window CA-CA error):
+      N12-L18   3.41 A
+      S11-R17   2.91 A
+      F13-P19   2.75 A
+
+--- contacts (C-beta-C-beta <= 8 A; CA for Gly) ---
+  |i-j| >= 3   experimental contacts  112  predicted   87  TP   38  precision  0.44  recall  0.34  F1  0.38
+  |i-j| >= 6   experimental contacts   63  predicted   63  TP   22  precision  0.35  recall  0.35  F1  0.35
+  |i-j| >= 12  experimental contacts   50  predicted   50  TP   19  precision  0.38  recall  0.38  F1  0.38
+  ranked by predicted distance, |i-j| >= 6: top-L (46) precision 0.37; top-L/2 (23) precision 0.43; top-L/5 (9) precision 0.33
+  distance error on pairs within 15 A in experiment (455): MAE 4.70 A, Pearson r 0.288
+
+--- disulfides ---
+  known bonds (supplied): 3
+  pair     exp SG-SG  exp CB  exp CB  exp CA  pred CB  pred CA   d(CB)  exp bonded?   pLDDT
+                     (model)  (dep.)     -CA               -CA        
+  3-40          2.03    3.45    3.61    5.66     7.75     7.84    4.30  YES           89/78
+  4-32          2.05    4.03    4.06    4.12     3.79     3.98   -0.24  YES           89/92
+  16-26         2.04    3.82    3.78    5.82    10.42    10.13    6.60  YES           87/90
+  known bonds confirmed in the experimental file (SG-SG <= 2.5 A): 3/3
+
+  cysteine pairs: 15   predicted within 4.5 A: 2 (1 known bonds, 1 non-native)   experimental within 4.5 A: 3
+  pair        pred CB   exp CB  status
+  16-40          3.33    17.88  NON-NATIVE, inside criterion in prediction
+  4-32           3.79     4.03  KNOWN bond
+  26-32          4.88     6.78  
+  3-16           5.59    14.83  
+  3-4            5.82     5.79  
+  4-26           6.49     9.93  
+  3-32           6.53     6.42  
+  3-40           7.75     3.45  KNOWN bond
+  4-16           7.95    11.19  
+  3-26           8.47    12.27  
+  16-26         10.42     3.82  KNOWN bond
