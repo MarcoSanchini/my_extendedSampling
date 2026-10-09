@@ -443,16 +443,42 @@ These are recorded because several first readings were wrong.
 
 \subsection{Recommended next step}
 
-Measure an \textbf{interface}, which does not depend on the model's own
-confidence: the number of inter-chain C$\beta$--C$\beta$ contacts below
-$8\ang$ in the cleaved and fused predictions at each step count. If declaring
-the break changes how HA1 and HA2 pack, it should show there. pLDDT cannot
-show it, and the assembled pTM is too low to.
+Put the measurements on a footing of experimental ground truth, using the short
+proteins whose structures are known, and then ask whether the bridge can be held
+or imposed. The scripts exist (\path{bridge_test/}) and are tested on synthetic
+data only; nothing has been fetched or run yet. In order:
+
+\begin{enumerate}
+\item \textbf{Fetch experimental entries} for protein~G, BPTI and crambin with
+  \path{fetch_pdb.py}. An entry is kept only if its own sequence matches the
+  reference, so no entry identifier is trusted. The cloud session's network
+  policy blocks the PDB, so run this where it is reachable.
+\item \textbf{Compare predictions with experiment} with \path{compare_to_pdb.py}:
+  CA RMSD, an approximate TM-score, contact precision and recall at $8\ang$, and
+  for each known disulfide the experimental SG--SG and C$\beta$--C$\beta$ against
+  the predicted C$\beta$--C$\beta$. This also tests the supplied pairings (is each
+  pair really bonded in the file?) and shows what the experiment says about
+  crambin's non-native $3.33\ang$ pair.
+\item \textbf{Round trip} (\path{roundtrip_bridge.py}): encode the experimental
+  coordinates to structure tokens and decode them. If the known bonds survive,
+  the representation can hold them and the failure is one of prediction; if they
+  loosen, no prompt can help.
+\item \textbf{Coordinate prompt:} give only the backbone of the two cysteines
+  (then with neighbours, then every known bond) and generate. ESM3 has no
+  residue-level disulfide input; coordinates are the only channel, and they do
+  reach the geometric attention. Decision rules were fixed in advance in the
+  devlog.
+\end{enumerate}
+
+HA is attempted only if imposition works on the short proteins, and its geometry
+would then have to come from an experimental HA entry. If imposition through
+ESM3 fails, the fallbacks are a restrained refinement outside ESM3, or pointing
+the sampler's structure-token energy at tokens taken from a bonded structure.
 
 \subsection{Prioritised list}
 
 \begin{enumerate}
-\item \textbf{Interface contacts, cleaved against fused} (above).
+\item \textbf{Experimental comparison, round trip and coordinate prompt} (above).
 \item \textbf{Per-residue pLDDT at the known-bond residues} in the BPTI and
   crambin runs. If crambin's Cys3, Cys16, Cys26 and Cys40 are low-confidence,
   the misses are uncertainty and a pLDDT filter may repair the criterion; if
@@ -460,9 +486,8 @@ show it, and the assembled pTM is too low to.
   yet.
 \item \textbf{Report specificity in the calibration verdict:} the count of
   in-range non-native pairs next to the count of in-range known bonds.
-\item \textbf{Experimental references for BPTI and crambin} (named PDB
-  entries, checked against the sequences) and a per-residue C$\alpha$ RMSD.
-  That turns ``pLDDT 83'' into a measured error.
+\item \textbf{Interface contacts, cleaved against fused,} once the contact
+  metric is validated against experiment on the short proteins.
 \item \textbf{A verified native disulfide list for HA,} from a named
   structure entry, asserted at import the way the controls are. Required
   before any partner-recovery claim about HA.
