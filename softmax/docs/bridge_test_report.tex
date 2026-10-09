@@ -1,0 +1,429 @@
+% ---------------------------------------------------------------------------
+% Cleaved HA (HA1 | HA2) in ESM3: what was built, what was measured, what is
+% still open
+%
+% Session report for the bridge_test investigation of 2026-10-08/09.
+% Companion to softmax/code/bridge_test/DEVLOG_bridge_test.txt and
+% DEVLOG_calibration.txt: those are the chronological record, this is the
+% standing summary with the limitations and the to-do list.
+%
+% Build:  cd softmax/docs && pdflatex bridge_test_report.tex && pdflatex bridge_test_report.tex
+% (twice, for the table of contents and cross-references)
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+% File paths are set with hyperref's \path, which breaks at slashes and needs
+% no underscore escaping; \sloppy absorbs the rest.
+\sloppy
+
+% \mbox keeps \AA in text mode, so \ang works both inside and outside $...$.
+\newcommand{\ang}{\,\mbox{\AA}}
+\newcommand{\ptm}{\mathrm{pTM}}
+\newcommand{\plddt}{pLDDT}
+
+\title{Cleaved hemagglutinin in ESM3:\\
+       \large Can the model treat HA1 and HA2 as one molecule\\
+       joined by a disulfide bridge?}
+\author{\texttt{my\_extendedSampling} / \texttt{softmax} / \texttt{bridge\_test}}
+\date{2026--10--09}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+\texttt{zero\_polymer} is an influenza hemagglutinin precursor (HA0). In the
+mature protein it is cut once, after Arg329 in mature numbering, into HA1 and
+HA2, which stay together through an interchain disulfide between Cys14 of HA1
+and Cys137 of HA2. The question was whether ESM3 can be given that two-chain
+molecule and handle it. The mechanical answer is yes: the stock tokenizer
+accepts the chain-break character, and presenting the chains as separate but
+connected measurably helps HA1. The structural answer is no, with caveats: no
+assembled construct folds well enough to pass the geometry gate, and the
+interchain Cys14--Cys137 distance is $96\ang$ (cleaved) and $130\ang$ (no
+break), against a bonding criterion of $4.5\ang$. Two known-disulfide controls
+then showed that the distance criterion itself is weaker than I first said:
+it has some sensitivity but no specificity. This report records the results,
+the corrections made along the way, the limitations, and a prioritised to-do
+list.
+\end{abstract}
+
+\tableofcontents
+
+% ===========================================================================
+\section{Summary}
+% ===========================================================================
+
+\begin{itemize}
+\item \textbf{Mechanics work.} \texttt{model.encode(ESMProtein(sequence=...))}
+  accepts \texttt{|}; 551 positions go in and 551 come out;
+  \texttt{to\_protein\_complex()} recovers two chains. No change to the
+  model code was needed.
+\item \textbf{The chain-break helps.} HA1's mean \plddt{} goes from 51.4
+  (fused, no break) to 63.2 (with break), and the pLDDT at its Cys14 anchor
+  from 22.5 to 73.6. HA1 alone scores 59.8.
+\item \textbf{HA2 alone folds well; the assembly does not.} HA2 alone: pLDDT
+  93.9, no clashes, passes the gate. Every HA1-containing construct fails it.
+\item \textbf{The interchain bridge is not formed} in either assembled
+  construct, by a margin (more than $20\times$ the criterion) that no
+  threshold subtlety can change.
+\item \textbf{The $4.5\ang$ criterion is not a reliable bond detector.} BPTI:
+  3/3 known bonds inside it. Crambin: 1/3 inside it, and the closest pair in
+  the molecule is a non-native one at $3.33\ang$.
+\item \textbf{Not tested:} the trimer, any experimental reference structure,
+  step-matched comparisons, partner identity for HA.
+\end{itemize}
+
+% ===========================================================================
+\section{What was built}
+% ===========================================================================
+
+All of it is on branch \path{claude/esm3-disulfide-polymer-chains-rwvpoq}.
+
+\begin{center}
+\small
+\begin{tabular}{@{}p{5.6cm}p{9.8cm}@{}}
+\toprule
+Commit & Content \\
+\midrule
+\texttt{46bccd8} & \path{tests/references.py}: chains, bridge, numbering helpers \\
+\texttt{1f35fbf}, \texttt{fcb86aa}, \texttt{caeb436} &
+  \path{tests/test_cleaved_complex.py}, three revisions \\
+\texttt{4056d91}, \texttt{346b3de} &
+  BPTI and crambin controls; known-disulfide measurement \\
+\texttt{086e2cd}, \texttt{1b0d3ce}, \texttt{6b34313}, \texttt{8efcd2c} &
+  \path{bridge_test/DEVLOG_bridge_test.txt} \\
+\texttt{87dc571} & \path{bridge_test/DEVLOG_calibration.txt} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{The construct.} Chain one is mature HA1 (329 aa, ends
+\texttt{\ldots QTR}); chain two is HA2 (221 aa, starts \texttt{GIFGAI}); the
+16-residue signal peptide is dropped, so 550 residues in total. Both chains
+are slices of \texttt{ZERO\_POLYMER}, never retyped, and \texttt{\_check()}
+asserts the junction, the lengths, and that both anchors are cysteines.
+
+\paragraph{A numbering trap worth keeping.} The HA landmarks are in
+\emph{mature} numbering, which runs 16 behind the index into
+\texttt{ZERO\_POLYMER}. Read naively, \texttt{ZERO\_POLYMER[328]} (``Arg329'')
+is \texttt{T} and \texttt{ZERO\_POLYMER[13]} (``Cys14'') is \texttt{V}.
+Neither raises. \texttt{mature\_to\_index()} and \texttt{chain\_index()} exist
+so the conversion is never done by hand.
+
+% ===========================================================================
+\section{Method}
+% ===========================================================================
+
+\paragraph{Route into the model.} The sampler's usual path
+(\texttt{ExtendedProtein} with \texttt{predict\_attention} on soft
+\texttt{sequence\_probs}) cannot carry a chain break: \texttt{expand()} maps
+through a 25-letter vocabulary with no \texttt{|}, and the encoder zero-pads
+over token 31. The stock \texttt{encode}/\texttt{predict\_protein} route runs
+the real tokenizer and has none of these problems. Two shortcuts that look
+right are wrong: \texttt{chain\_id=} is consumed only by geometric attention,
+which the soft path masks and zeroes, so it is a silent no-op; and
+\texttt{sequence\_id=} is an attention separator, so distinct ids would make
+the chains ignore each other.
+
+\paragraph{What the decoder returns.} Backbone plus an inferred C$\beta$, and
+no side-chain sulfur at any residue. So SG--SG is unavailable and
+C$\beta$--C$\beta$ distance is the only disulfide proxy. C$\beta$ is not
+predicted: \texttt{infer\_cbeta()} derives it from N/CA/C and writes NaN at
+every glycine. The chain-break position is excluded from all C$\beta$
+statistics.
+
+\paragraph{The instrument.}
+\begin{itemize}
+\item \emph{Geometry gate:} pTM $\ge 0.40$, and no C$\beta$--C$\beta$ pair
+  closer than $3.0\ang$ at sequence separation $\ge 2$.
+\item \emph{Bond criterion:} C$\beta$--C$\beta$ $\le 4.5\ang$.
+\item \emph{Controls:} protein~G (fold control, no cysteines); BPTI and
+  crambin (three known disulfides each).
+\end{itemize}
+
+% ===========================================================================
+\section{Results}
+% ===========================================================================
+
+\subsection{The controls}
+
+\begin{center}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Reference & steps & pTM & pLDDT & \% $\ge 70$ & min C$\beta$ ($\ang$) & clashes \\
+\midrule
+protein G (56 aa) & 56 & 0.7596 & 93.24 & 100.0 & 3.68 & 0 \\
+BPTI (58 aa)      & 58 & 0.7545 & 92.89 &  98.3 & 3.35 & 0 \\
+crambin (46 aa)   & 46 & 0.5816 & 83.31 &  89.1 & 3.33 & 0 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+All three pass the gate, so the harness folds, and the choice of $3.0\ang$
+as the clash line is borne out empirically (confident folds have their
+closest pair at $3.3$--$3.7\ang$).
+
+\subsection{HA constructs}
+
+\begin{center}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & cleaved & mature & HA1 alone & HA2 alone \\
+\midrule
+positions / steps & 551 / 256 & 550 / 256 & 329 / 329 & 221 / 221 \\
+pTM & 0.2322 & 0.2614 & 0.4133 & 0.5674 \\
+pLDDT, all residues & 63.89 & 59.20 & 59.83 & 93.93 \\
+\% residues $\ge 70$ & 45.5 & 31.8 & 18.5 & 97.7 \\
+pLDDT, HA1 (\% $\ge 70$) & 63.22 (38.6) & 51.42 (11.2) & 59.83 (18.5) & --- \\
+pLDDT, HA2 (\% $\ge 70$) & 64.90 (55.7) & 70.78 (62.4) & --- & 93.93 (97.7) \\
+min C$\beta$--C$\beta$ ($\ang$) & 1.50 & 1.17 & 0.44 & 4.14 \\
+clashes & 15 & 9 & 16 & 0 \\
+gate & fail & fail & fail & \textbf{pass} \\
+Cys14--Cys137 C$\beta$ ($\ang$) & 95.67 & 129.74 & --- & --- \\
+pLDDT at Cys14 / Cys137 & 73.6 / 61.3 & 22.5 / 80.9 & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent The first run, at one decoding step, gave pTM 0.1827 and a bridge
+distance of $38.55\ang$ with a $1.64\ang$ closest cysteine pair. It is not
+tabulated because it measured a structure the model did not believe in;
+see Section~\ref{sec:corrections}.
+
+\paragraph{Reproducibility.} Cleaved and mature were each run twice, with
+different script versions, on the same machine. Both gave identical pTM
+(0.2322 and 0.2614) and identical bridge distances (95.67 and $129.74\ang$).
+Decoding at temperature zero looks deterministic here. This is two repeat
+pairs on one machine, not a proof.
+
+\subsection{Findings}
+
+\paragraph{The chain-break helps HA1, most at the bridge.}
+HA1 pLDDT rises 51.42 $\to$ 63.22 and its confident fraction 11.2\% $\to$
+38.6\% when the break is declared. At the Cys14 anchor the rise is
+22.5 $\to$ 73.6. HA2 pays a little (70.78 $\to$ 64.90).
+
+\paragraph{The clash \emph{topology} differs.} Mature has fewer clashes
+(9 against 15) but they sit at $|i-j|$ of 80--159, so distant segments are
+superimposed; cleaved's are all local ($|i-j|\le 16$). Counting clashes
+without their separation would rank the two backwards.
+
+\paragraph{The two chains help each other asymmetrically.} HA1 gains from HA2
+(alone 59.83, in the cleaved complex 63.22), and is \emph{worse} with HA2
+fused (51.42) than with no HA2 at all. HA2 loses heavily to company (93.93
+alone, 64.90 in the complex).
+
+\paragraph{HA1 is the hard half in every construct.} Alone, with a full step
+budget, it still fails the gate with 16 clashes and a minimum C$\beta$
+separation of $0.44\ang$.
+
+\paragraph{The bridge is not formed.} $95.67\ang$ and $129.74\ang$ are about
+$21\times$ and $29\times$ the criterion; ranks 98 and 95 of 136 cysteine
+pairs. This holds under any reasonable criterion.
+
+\subsection{Disulfide calibration}
+
+\begin{center}
+\begin{tabular}{@{}llrrl@{}}
+\toprule
+Protein & Bond & C$\beta$--C$\beta$ ($\ang$) & rank & within $4.5\ang$ \\
+\midrule
+BPTI    & Cys14--Cys38 & 3.60 & 1/15 & yes \\
+BPTI    & Cys5--Cys55  & 3.66 & 2/15 & yes \\
+BPTI    & Cys30--Cys51 & 4.45 & 3/15 & yes \\
+crambin & Cys4--Cys32  & 3.79 & 2/15 & yes \\
+crambin & Cys3--Cys40  & 7.75 & 8/15 & no \\
+crambin & Cys16--Cys26 & 10.42 & 12/15 & no \\
+\midrule
+crambin & Cys16--Cys40 (\emph{non-native}) & 3.33 & 1/15 & \textbf{yes} \\
+BPTI    & Cys51--Cys55 (\emph{non-native, closest}) & 6.15 & 4/15 & no \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+BPTI separates cleanly: the last true bond is at $4.45\ang$ and the first
+false pair at $6.15\ang$. Crambin fails twice over. It misses two real bonds,
+and it puts a non-native pair inside the criterion. Partner recovery (known
+pairs among the three closest) is 3/3 for BPTI and 1/3 for crambin. A
+distance threshold is therefore necessary for a bond and not sufficient.
+
+% ===========================================================================
+\section{Corrections made during the session}
+\label{sec:corrections}
+% ===========================================================================
+
+These are recorded because several first readings were wrong.
+
+\begin{enumerate}
+\item \textbf{One decoding step.} The first verdict (``bridge not formed,
+  $38.55\ang$'') came from a script that used the default
+  \texttt{num\_steps=1}, which samples all 551 structure tokens at once. It
+  scored pTM 0.18 with a $1.64\ang$ ``contact'' shorter than a C--C bond.
+  The verdict was worthless. The gate now runs before any verdict.
+\item \textbf{A control that did not control.} Protein~G validated the fold
+  but has no cysteines, so it could not validate the measurement. BPTI and
+  crambin were added for that reason.
+\item \textbf{Two overstated claims, retracted.} The calibration script
+  printed ``$4.5\ang$ is sound; HA2's disulfides are not formed'' from BPTI
+  alone. That tested sensitivity on one protein and specificity not at all.
+  Separately, HA1-alone pairs at $3.51$ and $3.92\ang$ had been described as
+  ``real disulfide geometry''; by the crambin result they could be
+  non-native.
+\item \textbf{A pre-registered prediction failed.} I expected the trimer
+  signature (both chains confident, assembly low). The result was
+  asymmetric instead: HA2 adequate, HA1 poor.
+\item \textbf{Small bugs.} The chain-break position was admitted into the
+  C$\beta$ statistics; labels were wrong for the break-free reference;
+  a results file was overwritten by a generic filename.
+\end{enumerate}
+
+% ===========================================================================
+\section{Limitations}
+% ===========================================================================
+
+\subsection{Of the measurements}
+
+\begin{itemize}
+\item \textbf{No ground truth.} There is no experimental structure in the
+  loop, so no RMSD or TM-score. pLDDT and pTM are the model's own confidence;
+  crambin's pLDDT of 83 coexists with wrong partners.
+\item \textbf{C$\beta$--C$\beta$ is a proxy.} The decoder emits no sulfur, and
+  C$\beta$ is inferred from the backbone. A bond criterion built on it
+  inherits any backbone error, and glycines (which have no C$\beta$) are
+  invisible to the clash count.
+\item \textbf{Steps are not matched across constructs.} HA1 and HA2 alone
+  used 329 and 221 steps; the assemblies used 256. Isolated chains therefore
+  decode about one token per step and the assemblies about two. The
+  HA1-alone against HA1-in-complex comparison is confounded by this, in a
+  direction I have not measured.
+\item \textbf{One run per condition.} The two repeat pairs agree exactly, but
+  no condition has been run across seeds or checkpoints, and nothing here
+  gives error bars.
+\item \textbf{pTM depends on length,} so comparing it between a 46-residue
+  and a 550-residue chain is weak. Only same-construct comparisons are
+  clean.
+\item \textbf{Calibration is two proteins.} BPTI and crambin are small and
+  well-ordered. Neither says what the criterion does in a 550-residue fold.
+\item \textbf{Sequences were supplied, not independently verified.} The BPTI
+  and crambin sequences and pairings came with sources. I checked them for
+  internal consistency (length, cysteine positions, one-to-one pairing,
+  crambin's Pro22/Leu25 isoform) but not against UniProt directly.
+\item \textbf{Only \texttt{esm3-open}.} No other checkpoint was tried.
+\end{itemize}
+
+\subsection{Of the scope}
+
+\begin{itemize}
+\item \textbf{Monomer only.} HA is a trimer. A single HA1+HA2 protomer may
+  have no self-contained fold, and a low score may then be correct. Not
+  tested.
+\item \textbf{No verified native disulfide list for HA,} so partner recovery
+  cannot be run on HA at all. Positive bridge claims about HA are not
+  possible yet.
+\item \textbf{The energy machinery cannot take a chain break.} The sampler's
+  soft-probability path has no way to carry token 31, so none of the
+  \(U_{\mathrm{am}}\) work has been applied to the cleaved form.
+\item \textbf{Glycans, the fusion peptide, and everything outside the
+  sequence} are absent by construction.
+\end{itemize}
+
+\subsection{Of the session itself}
+
+\begin{itemize}
+\item For most of the session I could not run code: the shell was blocked
+  until auto mode was switched off in this final turn. Every script was
+  therefore written unexecuted and validated by your runs. One consequence:
+  \texttt{test\_cleaved\_complex.py} still carries an unused
+  \texttt{present\_atoms()} helper that I reintroduced by mistake.
+\item One commit message (\texttt{87dc571}) has a stray line that refers to
+  non-existent session notes. The file content is fine; the message cannot be
+  amended without rewriting history.
+\end{itemize}
+
+% ===========================================================================
+\section{To do}
+% ===========================================================================
+
+\subsection{Recommended next step}
+
+Do the \textbf{step-matched rerun} first, because it is cheap and it is the
+one confound that touches a headline result:
+
+\begin{verbatim}
+python tests/test_cleaved_complex.py --ref one --steps 256
+python tests/test_cleaved_complex.py --ref two --steps 256
+\end{verbatim}
+
+Then compare HA1 alone against the cleaved HA1 (63.22) at equal step count.
+If HA1 alone is still lower, ``HA2's presence helps HA1'' stands; if it
+catches up, the effect was partly the step budget.
+
+\subsection{Prioritised list}
+
+\begin{enumerate}
+\item \textbf{Step-matched HA1 and HA2} (above).
+\item \textbf{Per-residue pLDDT at the known-bond residues} in the BPTI and
+  crambin runs. If crambin's Cys3, Cys16, Cys26 and Cys40 are low-confidence,
+  the misses are uncertainty and a pLDDT filter may repair the criterion; if
+  confident, the placement is wrong. The calibration block does not print this
+  yet.
+\item \textbf{Report specificity in the calibration verdict:} the count of
+  in-range non-native pairs next to the count of in-range known bonds.
+\item \textbf{Experimental references for BPTI and crambin} (named PDB
+  entries, checked against the sequences) and a per-residue C$\alpha$ RMSD.
+  That turns ``pLDDT 83'' into a measured error.
+\item \textbf{A verified native disulfide list for HA,} from a named
+  structure entry, asserted at import the way the controls are. Required
+  before any partner-recovery claim about HA.
+\item \textbf{The trimer:} \texttt{one|two|one|two|one|two}, 1653 positions.
+  The biologically correct question, and expensive.
+\item \textbf{Condition on a real HA structure} and ask whether ESM3
+  \emph{maintains} the bridge rather than discovers it. A different and more
+  tractable question.
+\item \textbf{Only if the cleaved form is needed in the energy machinery:}
+  inject a one-hot at token 31 in the padded region, set the structure token
+  at the break to \texttt{STRUCTURE\_CHAINBREAK\_TOKEN} in
+  \texttt{\_default()}, and exclude the break site from \texttt{mutate()}.
+\end{enumerate}
+
+\subsection{Housekeeping}
+
+\begin{itemize}
+\item At session end, append the two devlogs to the main one:
+\begin{verbatim}
+cat bridge_test/DEVLOG_bridge_test.txt \
+    bridge_test/DEVLOG_calibration.txt >> DEVLOG.txt
+\end{verbatim}
+\item Give results files run-identifying names; the generic default
+  overwrote the protein~G control once.
+\item Remove the dead \texttt{present\_atoms()} helper.
+\end{itemize}
+
+% ===========================================================================
+\section{Reproducing the runs}
+% ===========================================================================
+
+From \path{softmax/code}:
+
+\begin{verbatim}
+python tests/test_cleaved_complex.py --ref protein_g --steps 56
+python tests/test_cleaved_complex.py --ref bpti      --steps 58
+python tests/test_cleaved_complex.py --ref crambin   --steps 46
+python tests/test_cleaved_complex.py --ref cleaved   --steps 256
+python tests/test_cleaved_complex.py --ref mature    --steps 256
+python tests/test_cleaved_complex.py --ref one       --steps 329
+python tests/test_cleaved_complex.py --ref two       --steps 221
+\end{verbatim}
+
+Output files are in \path{softmax/code/bridge_test/}.
+
+\end{document}
