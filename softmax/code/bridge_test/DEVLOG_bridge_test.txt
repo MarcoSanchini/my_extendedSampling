@@ -656,3 +656,146 @@ NOT DONE / NOT KNOWN:
   - protein_g has no cysteines and so enters only the contact comparison.
 
 RUN ORDER:  bash bridge_test/run_pdb_comparison.sh fetch | predict | compare | roundtrip | prompt
+
+
+2026-10-09 -- EXPERIMENTAL GROUND TRUTH IN. The 4.5 A bond criterion is RIGHT on real structures; the failures are in the predictions. This CORRECTS the calibration verdicts: the crambin "MIXED" result measured a misfolded protein, and the "criterion lacks specificity" claim is retracted. Round trip holds both folds; coordinate prompts give a partial, local pull that does not hold the bond
+--------------------------------------------------------------------------------
+Run: bridge_test/run_pdb_comparison.sh (fetch -> predict -> compare -> roundtrip ->
+prompt). Experimental entries: 5PTI (BPTI, 1.00 A), 3NIR (crambin, 0.48 A),
+1PGB (protein G, 1.92 A). Comparison with compare_to_pdb.py, now on the model's
+C-beta convention on BOTH sides. Output in bridge_test/cmp/v2/. The earlier cmp/
+files used deposited C-beta for experiment and inferred C-beta for prediction;
+that asymmetry is gone. It moved experimental distances by at most 0.2 A.
+
+FOLD AGAINST EXPERIMENT:
+                         protein G        BPTI            crambin
+    CA RMSD (A)              2.96          1.22            7.91
+    TM-score (approx.)       0.835         0.922           0.316
+    contact F1, |i-j|>=6     0.80          0.92            0.35
+    local CA-CA MAE (A)      1.10          0.41            4.06
+    worst 7-res window       T11-T17 2.68  M52-A58 0.78    N12-L18 3.41
+    gate (pTM, clashes)      pass          pass            pass
+
+FINDING 22 -- THE PREDICTED CRAMBIN FOLD IS WRONG, and it passes the gate. pTM
+0.58, pLDDT 83, zero clashes, and TM 0.32 against experiment (0.5 = same fold,
+0.17 = random). Local error is 4 A on average. The gate is necessary, not
+sufficient, and confidence does not reveal the error. This is the most important
+single result here. It also means every crambin result in this log is a result
+about a misfolded molecule (see Finding 24).
+
+FINDING 23 -- PROTEIN G HAS A CONFIDENTLY WRONG LOOP. The fold is right (TM 0.84),
+but residues 9-15 sit 5-11 A from experiment at pLDDT 80-91. Their internal shape
+is wrong too: intra-loop CA-CA error averages 1.8 A (max 6.1), and the
+end-to-end distance is 15.3 A predicted against 11.3 A experimental. Their
+experimental B-factors are normal (mean 13.8 against 14.6 for the chain), so
+this is not crystal disorder. pLDDT does not flag it: Spearman(pLDDT, deviation)
+is -0.70 overall, which means the LOW-confidence residues are wrong, but the
+worst ones sit at high confidence.
+
+FINDING 24 -- THE CRITERION WAS RIGHT, AND THE CALIBRATION VERDICTS WERE WRONG.
+Experimental disulfide geometry, C-beta by the model's convention:
+    BPTI     5-55 3.49,  14-38 3.89,  30-51 3.71   (all 3 SG-SG 2.02-2.04 A)
+             nearest non-bonded pair 51-55 at 6.14 A
+    crambin  3-40 3.45,  4-32 4.03,  16-26 3.82    (all 3 SG-SG 2.03-2.05 A)
+             nearest non-bonded pair 3-4 at 5.79 A
+Experimentally, exactly the native bonds fall within 4.5 A and nothing else does,
+with margins of 1.8 A (crambin) and 2.3 A (BPTI). So the criterion is both
+sensitive and specific on real geometry. Two earlier claims are therefore
+WRONG and are retracted:
+  (a) "the criterion has sensitivity but no specificity". The non-native crambin
+      pair 16-40, predicted at 3.33 A and inside the criterion, is 17.88 A in the
+      experiment: a 14.5 A error in the MODEL. The specificity failure belongs to
+      the prediction. The criterion applied to the experimental structure has no
+      false positive.
+  (b) the crambin calibration verdict ("MIXED: the criterion is unreliable"). It
+      was computed on a misfolded protein (Finding 22), so it says nothing about
+      the criterion. The crambin calibration is VOID.
+The BPTI calibration stands: its predicted fold is correct (RMSD 1.2 A), and its
+three predicted bonds are the three native bonds (3.66, 3.61, 4.45 A).
+
+FINDING 25 -- THE SUPPLIED PAIRINGS ARE REAL BONDS. All six supplied pairings
+have SG-SG 2.02-2.05 A in the deposited experimental files. The caveat from the
+calibration entry (pairings checked only for internal consistency) is closed.
+
+FINDING 26 -- THE ROUND TRIP HOLDS BOTH FOLDS. Experimental coordinates ->
+structure tokens -> decoded coordinates:
+                       BPTI                crambin
+    CA RMSD (A)         0.31                0.30
+    TM-score            0.986               0.980
+    CA-CA MAE (A)       0.20 (max 1.09)     0.18 (max 0.87)
+    known-bond shifts   0.00, -0.19, +0.38  -0.17, +0.35, +0.24
+The representation can express these folds and these bonds to about a third of an
+angstrom. So for crambin the fault lies in GENERATION, not in the representation:
+the tokens for the correct fold exist, and the model does not reach them from
+sequence. This answers the first half of the question: yes, the representation
+can hold the bonds.
+
+FINDING 27 -- BPTI CANNOT TEST IMPOSITION. Its bonds already form without a prompt,
+and a prompt on 14 and 38 leaves all three distances within 0.02 A of the
+unprompted values (3.67, 3.60, 4.47 against 3.66, 3.61, 4.45). The RMSD moves from
+1.22 to 0.91 A, but that is one run with no error bar, and it is not evidence of
+anything about the bonds.
+
+FINDING 28 -- CRAMBIN'S PROMPT PULLS THE PAIR PARTWAY, LOCALLY, AND COSTS
+CONFIDENCE. Prompting backbone of residues 3 and 40 only:
+    pair 3-40, CA-CA     unprompted 7.84   prompted 6.68   experiment 5.66   -> 53% of gap closed
+    pair 3-40, C-beta    unprompted 7.75   prompted 5.14   experiment 3.45   -> 61% of gap closed
+    pair 4-32, C-beta    unprompted 3.79   prompted 4.38   experiment 4.03   (drifted)
+    pair 16-26, C-beta   unprompted 10.42  prompted 10.64  experiment 3.82   (untouched)
+    fold                 RMSD 7.91 -> 7.11, TM 0.32 -> 0.36 (still wrong)
+    confidence           pTM 0.58 -> 0.46,  mean pLDDT 83 -> 76
+So the prompt is a SOFT, PARTIAL, LOCAL pull: it moves the prompted pair toward its
+native geometry without reaching it, it forms no collateral bond, and it lowers
+confidence across the molecule. It does not impose the bond. This is a result about
+ESM3's coordinate conditioning as used here; it is not yet a test of imposition,
+because the fold it was applied to is wrong (Finding 22).
+
+FINDING 29 -- WHAT IS STILL MISSING. The controls each have a fold that is right
+(protein G, BPTI) or wrong (crambin), and each was run at ONE step count (its
+length). The HA sweep showed step count moves folds by more than the effects under
+test. So neither "BPTI folds correctly" nor "crambin folds wrongly" is yet a property
+of the protein rather than of one setting. The sweep is in the run script
+(controls), with its reading fixed in advance:
+  - a fold is CORRECT if CA RMSD <= 2.5 A and TM-score >= 0.7;
+  - a control is RELIABLE only if correct at every step count >= L/4;
+  - crambin's wrong fold is a property of the protein only if wrong at 11, 23 AND 46.
+If crambin is correct at some step count, the 46-step result was specific to that
+setting, and the crambin calibration has to be redone at that step count. Only then
+does crambin test the criterion, and only then can the imposition question be asked
+of a protein the model folds correctly and whose bonds it misses. Neither current
+control is that protein: BPTI forms all its bonds, and protein G has no cysteines.
+
+THE ORIGINAL QUESTION, answered as far as it goes:
+  - Can ESM3's representation hold the bridge? YES. The round trip reproduces the
+    native fold and the native bonds to about 0.3 A (Finding 26).
+  - Does ESM3 maintain the bridge from sequence? Not established. BPTI forms its
+    bonds correctly, but its test cannot distinguish that from the bonds the model
+    would form anyway. Crambin does not form its bonds, but its fold is wrong, so
+    the result is confounded.
+  - Can it be imposed through coordinates? Only partially and locally, at a cost in
+    confidence (Finding 28). Not as a hard restraint.
+  - Hard imposition, if it is needed, has to come from outside ESM3: restrained
+    refinement of the decoded backbone with an SG-SG restraint, or the sampler's
+    structure-token energy pointed at a bonded reference (see the earlier entry).
+
+SMALLER THINGS, RECORDED:
+  - fetch_pdb.py counted CA LINES, so alternate conformations inflated the manifest:
+    crambin was logged as 62 residues; it is 46. Its 62 CA lines are 31 with no altloc,
+    15 with altloc A, 15 with B and 1 with C.
+    Corrected in the manifest and in the code.
+  - 1CRN, the best-known crambin entry, was REJECTED for differing from the reference
+    by one residue. The gate did its job, but I have not checked which residue. If it
+    is 22 or 25 that confirms the isoform point; it is still an open check.
+  - compare_to_pdb.py's new local-structure section (superposition-free) found the
+    protein G loop and the crambin failure without being told where to look. Its
+    test: a 30% stretch of residues 10-16 gives a worst window of 2.34 A against
+    0.58 A for the noise-only copy, placed on 10-16.
+  - My first ad hoc loop for the cmp/v2 comparisons wrote to paths relative to the
+    wrong directory and produced no files. It was a shell error in my own command,
+    not in run_pdb_comparison.sh; re-run with absolute paths. No result depends on it.
+
+NEXT: (1) run `bash bridge_test/run_pdb_comparison.sh controls` (12 short runs, the
+GPU and weights needed) and push the results. (2) Only then, interpret crambin and
+the prompt. (3) Protein G's loop: a per-residue pLDDT is not enough; a local
+conformation check is the thing to add. (4) The HA question as posed (Cys14-Cys137)
+stays open until a verified HA structure exists to compare against.
