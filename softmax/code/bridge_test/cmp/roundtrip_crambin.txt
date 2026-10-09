@@ -1,0 +1,13 @@
+# crambin (L=46): experimental chain A, 46/46 residues resolved
+  wrote /home/marco.sanchini/my_project/extendedSampling/softmax/code/bridge_test/rt/crambin_roundtrip.pdb
+
+--- round trip (experiment -> tokens -> coordinates): known disulfides (CB-CB, A) ---
+  pair     experiment  this output   change  within 4.5?  pLDDT      prompted
+  3-40           3.61         3.28    -0.33  yes         99/98      
+  4-32           4.06         4.39    +0.33  yes         99/99      
+  16-26          3.78         4.06    +0.29  yes         99/99      
+  3/3 inside the criterion
+
+  Reading: bonds that come back near their experimental distance mean the
+  representation can hold them. Bonds that loosen here mean it cannot, whatever
+  the prediction does.
