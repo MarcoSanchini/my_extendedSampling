@@ -5042,10 +5042,19 @@ Completed runs.
 - T1e4 (hot): acc_rate 0.567 at move 1000, with 347 of 566 sites different
   from the reference.
 
-Open, not investigated. The entropy column in the status log reads 6.77682 at
-every move I checked, in both completed runs, including T1e4 where 347 sites
-changed. So it does not track the sequence. The site-entropy analysis
-(analyze_ensemble.py) reads the saved sequences, so it is not affected.
+Entropy column: resolved, and removed. It was the total entropy of
+softmax(logits/T_sftm) summed over all sites. expand() sets each site's
+logits to a one-hot vector minus its mean, and substitution rebuilds the
+sequence through expand(), so every site stays one-hot. For one site at
+T_sftm=0.1 with 25 classes the entropy is 0.011973 nats whatever the residue,
+so the column is L * 0.011973 for the whole run: 6.77678 at L=566 (logged
+6.77682; float32 rounding), 0.6705 at L=56. It could not track the sequence
+or T. Removed from the sampler output and status print, from summarize_sweep.py
+(mean_entropy) and from plot_run.py. Logs from earlier runs, including the
+2026-10-13 re-run, still contain the column. The per-site entropy inside the
+energy (rate_sampler.py, lambda_S term) is unchanged; lambda_S is 0 in every
+run, so it has no effect. The site-entropy analysis (analyze_ensemble.py)
+reads saved sequences and is the measure to use.
 
 Fix (main, commit d733dbb). Defaults are now MAX_RUNNING=2 and
 MIN_FREE_MB=12000, and TS_OVERRIDE runs a subset of T values. Re-run the nine
