@@ -1,0 +1,78 @@
+PID: 106859
+
+Loading inputs...
+# reference: zero_polymer (L=566 residues)
+Reference sequence: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Sequence length: 566
+Initializing rate sampler...
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 59264.41it/s]
+Starting the simulation!
+
+
+#################################################################################
+# ExtendedProteinRateSampler parameters summary:                                #
+#                                                                               #
+# moves:                      1.0e+03                                           #
+# sampling temperature:       1.0e-01                                           #
+# step size (dt):             1.4e+01                                           #
+# logits mass:                1.00                                              #
+# softmax temperature:        0.10                                              #
+# Gauss-Hermite nodes:        40                                                #
+# attention multiplier:       1.0e+00                                           #
+# structure_ce multiplier:    0.0e+00                                           #
+# entropy multiplier:         0.0e+00                                           #
+#                                                                               #
+# results directory: tests_rate_sweep_temperature_zero_polymer/T1e-1/sim0       #
+# eprot directory:   tests_rate_sweep_temperature_zero_polymer/T1e-1/sim0/eprot #
+# restart:           False                                                      #
+#                                                                               #
+#################################################################################
+
+// ExtendedProteinRateSampler status register:
+--------------------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    |  entropy   | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+--------------------------------------------------------------------------------------------     -----------------------------------------------------
+|     0      |  0.00000   |  0.00000   |  0.00000   |  6.77682   |     0      |     0      |     |  0.00000   |  0.00000   |     0      |   1.000    
+--------------------------------------------------------------------------------------------     -----------------------------------------------------
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/main_rate.py", line 133, in <module>
+    main(args)
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/main_rate.py", line 84, in main
+    sampler.sample(
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 131, in sample
+    eprot, info = self._step(eprot, data["U"], pars)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 178, in _step
+    grad_A = self._grad_pass_site(eprot, site, pars)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 254, in _grad_pass_site
+    am = self.model.predict_attention(sequence_probs=probs)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 802, in predict_attention
+    attention = self._last_attention(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 786, in _last_attention
+    attention = self.transformer.last_attention(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 125, in last_attention
+    x = block(x, sequence_id, affine, affine_mask, chain_id)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 156, in forward
+    r2 = self.geom_attn(x, frames, frames_mask, sequence_id, chain_id)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/geom_attention.py", line 104, in forward
+    rotation_term = query_rot.matmul(key_rot) / sqrt(3)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 158.00 MiB. GPU 0 has a total capacity of 23.52 GiB of which 81.62 MiB is free. Including non-PyTorch memory, this process has 4.64 GiB memory in use. Process 106883 has 5.10 GiB memory in use. Process 106875 has 4.79 GiB memory in use. Process 106867 has 8.66 GiB memory in use. Of the allocated memory 4.21 GiB is allocated by PyTorch, and 193.12 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
