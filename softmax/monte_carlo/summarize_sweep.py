@@ -43,7 +43,6 @@ def summarize_run(results_dir, T, burn_in_frac):
 
 	moves = [int(r["move"]) for r in post]
 	U = [float(r["U"]) for r in post]
-	entropy = [float(r["entropy"]) for r in post]
 	Hd = [int(r["Hd_to_ref"]) for r in post]
 	dU_all = [float(r["dU"]) for r in post]
 	accepted = [r["accepted"] for r in post]
@@ -71,7 +70,6 @@ def summarize_run(results_dir, T, burn_in_frac):
 		"acceptance_rate_post_burn_in": acc_rate_window,
 		"acceptance_rate_final_cumulative": acc_rate_final_cumulative,
 		"time_per_move_s": time_per_move_s,
-		"mean_entropy": statistics.mean(entropy) if entropy else float("nan"),
 		"mean_Hd_to_ref": statistics.mean(Hd) if Hd else float("nan"),
 	}
 

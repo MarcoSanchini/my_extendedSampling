@@ -33,7 +33,7 @@ from analyze_run import load_rows
 # adds real information for those specifically (a windowed acceptance
 # rate isn't otherwise available anywhere in this project's tooling).
 NUMERIC_COLUMNS = [
-	"time", "U", "U_am", "U_structure_ce", "entropy", "Hd_to_ref", "dU",
+	"time", "U", "U_am", "U_structure_ce", "Hd_to_ref", "dU",
 	"log_a_AB", "log_a_BA", "log_ratio", "accepted", "acc_moves", "acc_rate",
 ]
 
@@ -69,9 +69,6 @@ COLUMN_INFO = {
 	"U":               ("U", "potential energy of the current accepted sequence", "standard"),
 	"U_am":            ("U_am", "attention-map contribution to U", "standard"),
 	"U_structure_ce":  ("U_structure_ce", "structure-token cross-entropy contribution to U (0 if unused)", "standard"),
-	"entropy":         ("entropy", "Shannon entropy of the PROPOSED SITE's softmax probabilities (per-move, "
-						 "single-site -- NOT the K-sites ensemble site entropy S(i) from identify_k_sites.py, "
-						 "a different quantity computed over many sampled sequences)", "standard"),
 	"Hd_to_ref":       ("Hd_to_ref", "Hamming distance, current accepted sequence vs reference", "standard"),
 	"dU":              ("dU", "U(proposed) - U(current)", "standard"),
 	"log_a_AB":        ("log_a_AB", "log-probability of proposing THIS substitution (forward, A->B)", "standard"),
