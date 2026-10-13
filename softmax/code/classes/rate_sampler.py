@@ -137,9 +137,6 @@ class ExtendedProteinRateSampler():
 				data["U_structure_ce"] = info["U_structure_ce_B"]
 				data["Hd_to_ref"] = compute_Hd(eprot.logits, self.ref_eprot.logits)
 
-			with torch.no_grad():
-				data["entropy"] = compute_entropy(eprot.get_probs(pars["T_sftm"]), pars["eps"]).item()
-
 			data["move"] = move
 			data["site"] = info["site"]
 			data["cur_aa"] = info["cur_aa"]
@@ -435,7 +432,6 @@ class ExtendedProteinRateSampler():
 				'U': 0.,
 				'U_am': 0.,
 				'U_structure_ce': 0.,
-				'entropy': 0.,
 				'Hd_to_ref': 0,
 				'site': 0,
 				'cur_aa': '',
@@ -453,7 +449,6 @@ class ExtendedProteinRateSampler():
 			data = merge_dict(
 				{
 					'U': U, 'U_am': U_am, 'U_structure_ce': eprot.U_structure_ce.item(),
-					'entropy': compute_entropy(eprot.get_probs(pars["T_sftm"]), pars["eps"]).item(),
 					'Hd_to_ref': compute_Hd(eprot.logits, self.ref_eprot.logits),
 				},
 				data,
@@ -484,7 +479,6 @@ class ExtendedProteinRateSampler():
 				"# U           : potential energy of the current accepted sequence\n"
 				"# U_am        : attention-map contribution to U\n"
 				"# U_structure_ce : structure-token cross-entropy contribution to U (0 if lambda_structure_ce=0)\n"
-				"# entropy     : Shannon entropy of the softmax probabilities\n"
 				"# Hd_to_ref   : Hamming distance between current accepted sequence and reference sequence\n"
 				"# site        : sequence position proposed this move (0-indexed)\n"
 				"# cur_aa      : amino acid at that site before this move\n"
@@ -642,7 +636,6 @@ class ExtendedProteinRateSampler():
 				['U',                'U',                5],
 				['U_am',             'U_am',             5],
 				['U_structure_ce',   'U_ce',             5],
-				['entropy',          'entropy',          5],
 				['Hd_to_ref',		 'Hd_to_ref',        0],
 				['site',             'site',             0],
 			],
