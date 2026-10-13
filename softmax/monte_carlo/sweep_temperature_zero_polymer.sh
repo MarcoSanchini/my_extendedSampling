@@ -45,7 +45,7 @@ CONSTANTS="${SCRIPT_DIR}/../CONSTANTS.txt"
 # exported in the shell cannot redirect this sweep.
 REF_NAME="zero_polymer"
 
-TS=(1e0 3.162e0 1e1 3.162e1 1e2 3.162e2 1e3)
+TS=(1e-1 1e0 1e1 31.6 56.2 1e2 177 316 562 1e3 1e4)
 
 DT_AT_T2="${DT_AT_T2:-63.0}"   # dt at T=2 where mean p_match~0.15 on zero_polymer
 DT_EXP="${DT_EXP:-0.5}"        # 0.5: dt/sqrt(T) held fixed. 0: fixed dt
