@@ -5013,3 +5013,49 @@ Decisions needed (none made here):
    across T.
 
 No code changed in this entry.
+
+--------------------------------------------------------------------------------
+2026-10-13 -- zero_polymer test sweep: 9 of 11 runs died with CUDA OOM on move 1
+--------------------------------------------------------------------------------
+Logs pushed to main (b1ea568). Two runs completed (T1e0, T1e4); nine crashed.
+
+Cause. The scheduler launched the first four jobs back to back. Every check
+read 23853 MB free, so the gate could not see memory the earlier jobs had not
+allocated yet. Each job then used 4.6-8.7 GB, and the four together nearly
+filled the 23.5 GB card. Nine runs died with torch.OutOfMemoryError on move 1
+(the last status row before each traceback is move 0).
+
+Corrections to my earlier reading. I said the crashes came between moves 100
+and 199, and that the GPU was shared. Both were wrong. The crashes are on move
+1. Nothing else was on the GPU: the ~8.7 GB drop in free memory was T1e0's own
+allocation, and the OOM message lists only our four processes. The analysis
+error came from these runs. Their only checkpoint is sequence_0.pt, which
+setup saves (rate_sampler.py:463), so the q step has no pairs.
+
+Scheduler. cleanup_finished printed "PID n finished." for any process that
+exited, so the crashes read as clean finishes. It now reports the exit
+status (gpu_scheduler.sh).
+
+Completed runs.
+- T1e0 (frozen): acc_rate 0.000 at move 1000, so no move was accepted. The
+  last proposals had dU of roughly 750-940. Consistent with DEVLOG 2026-10-02.
+- T1e4 (hot): acc_rate 0.567 at move 1000, with 347 of 566 sites different
+  from the reference.
+
+Open, not investigated. The entropy column in data.dat reads 6.77682 at every
+move I checked, in both completed runs, including T1e4 where 347 sites
+changed. So it does not track the sequence. The site-entropy analysis
+(analyze_ensemble.py) reads the saved sequences, so it is not affected.
+
+Fix (main, commit d733dbb). Defaults are now MAX_RUNNING=2 and
+MIN_FREE_MB=12000, and TS_OVERRIDE runs a subset of T values. Re-run the nine
+failed points, leaving the completed runs alone:
+
+  TS_OVERRIDE="1e-1 1e1 31.6 56.2 1e2 177 316 562 1e3" MOVES=1000 \
+    RUN_DIR=softmax/monte_carlo/zero_polymer_test_1000_1mut \
+    bash softmax/monte_carlo/sweep_temperature_zero_polymer.sh
+
+With restart 0 the sampler clears each failed run's sim0 before it starts.
+Tested with a fake nvidia-smi and python: subset selection, the concurrency
+cap, and exit-status reporting. Not run on the GPU.
+--------------------------------------------------------------------------------
