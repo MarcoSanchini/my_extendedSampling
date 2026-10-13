@@ -12,13 +12,13 @@ CUSTOMS_DIR = os.path.abspath(
 
 sys.path.insert(0, CODE_DIR)
 sys.path.insert(0, CUSTOMS_DIR)
+# references.py (code/tests/) is the single source of truth for the reference
+# sequences. Appended, not inserted, so it cannot shadow any module above.
+sys.path.append(os.path.join(CODE_DIR, "tests"))
 
 from classes.rate_sampler import ExtendedProteinRateSampler
 from utils.general import load_inputs, create_path, find_path
-
-
-# Reference protein sequence
-REF_SEQ = "MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE"
+from references import get_reference, header
 
 
 def prepare_directory(args):
@@ -38,9 +38,12 @@ def prepare_directory(args):
     # Load structure/configuration settings
     config_settings = load_inputs(args.cs_file)
 
-    # Use the sequence defined above instead of loading it from a PDB
+    # Reference sequence, by name from tests/references.py, instead of loading
+    # it from a PDB. --ref defaults to protein_g so existing sweeps are unchanged.
+    ref_name, ref_seq = get_reference(args.ref)
     pars["protein"] = {
-        "ref_seq": REF_SEQ
+        "ref_name": ref_name,
+        "ref_seq": ref_seq
     }
 
     # Prepare results directory
@@ -67,6 +70,7 @@ def main(args):
     print("Loading inputs...")
     pars, settings, config_settings = prepare_directory(args)
 
+    print(header(pars['protein']['ref_name'], pars['protein']['ref_seq']))
     print(f"Reference sequence: {pars['protein']['ref_seq']}")
     print(f"Sequence length: {len(pars['protein']['ref_seq'])}")
 
@@ -109,6 +113,15 @@ def create_parser():
         type=str,
         default="../CONSTANTS.txt",
         help="Path to the structure prediction configuration file."
+    )
+
+    parser.add_argument(
+        "--ref",
+        type=str,
+        default="protein_g",
+        help="Reference sequence, by name from code/tests/references.py "
+             "(protein_g, zero_polymer, zero_polymer_mature, ...). Default "
+             "protein_g, the reference every existing sweep was run with."
     )
 
     return parser

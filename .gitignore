@@ -39,6 +39,15 @@ softmax/monte_carlo/protein_g*/**/eprot/
 # untracked -- this only stops NEW large ones from being added.
 softmax/monte_carlo/protein_g*/**/data.dat
 
+# zero_polymer sweeps (zero_polymer_results/, sweep_temperature_zero_polymer.sh)
+# follow the same local-only rules: eprot/ checkpoints, data.dat, and each
+# run's log.pt / generator.npy stay out of the repo. Their .txt inputs and the
+# rate_inputs/ base stay tracked.
+softmax/monte_carlo/zero_polymer*/**/eprot/
+softmax/monte_carlo/zero_polymer*/**/data.dat
+softmax/monte_carlo/zero_polymer*/**/*.pt
+softmax/monte_carlo/zero_polymer*/**/*.npy
+
 # Plots (plot_run.py, plot_structural_metrics.py, identify_k_sites.py) are
 # generated locally from data.dat/eprot checkpoints -- local-only for the
 # same reason eprot/ itself is: regeneratable from data already gitignored,
