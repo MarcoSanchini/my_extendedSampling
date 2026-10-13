@@ -5042,8 +5042,8 @@ Completed runs.
 - T1e4 (hot): acc_rate 0.567 at move 1000, with 347 of 566 sites different
   from the reference.
 
-Open, not investigated. The entropy column in data.dat reads 6.77682 at every
-move I checked, in both completed runs, including T1e4 where 347 sites
+Open, not investigated. The entropy column in the status log reads 6.77682 at
+every move I checked, in both completed runs, including T1e4 where 347 sites
 changed. So it does not track the sequence. The site-entropy analysis
 (analyze_ensemble.py) reads the saved sequences, so it is not affected.
 
