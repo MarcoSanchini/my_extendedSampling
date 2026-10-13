@@ -45,7 +45,9 @@ CONSTANTS="${SCRIPT_DIR}/../CONSTANTS.txt"
 # exported in the shell cannot redirect this sweep.
 REF_NAME="zero_polymer"
 
-TS=(1e-1 1e0 1e1 31.6 56.2 1e2 177 316 562 1e3 1e4)
+# Full grid by default. TS_OVERRIDE="1e-1 31.6 ..." runs only the listed T
+# values, e.g. to re-run failed points without re-running completed ones.
+TS=(${TS_OVERRIDE:-1e-1 1e0 1e1 31.6 56.2 1e2 177 316 562 1e3 1e4})
 
 DT_AT_T2="${DT_AT_T2:-63.0}"   # dt at T=2 where mean p_match~0.15 on zero_polymer
 DT_EXP="${DT_EXP:-0.5}"        # 0.5: dt/sqrt(T) held fixed. 0: fixed dt
@@ -54,10 +56,12 @@ INIT_MUTS=0
 LOG_STEP=100
 SEED=42
 
-# Memory gate for the shared scheduler. Not measured for L=566: check
-# nvidia-smi after the first launch and adjust.
-MIN_FREE_MB="${MIN_FREE_MB:-8000}"
-MAX_RUNNING="${MAX_RUNNING:-4}"
+# Memory gate for the shared scheduler. One zero_polymer job used 4.6-8.7 GB
+# in the 2026-10-13 test, and four at once filled the 23.5 GB GPU: 9 of 11 runs
+# died with CUDA OOM on move 1 (DEVLOG 2026-10-13). Two at a time leaves
+# headroom. Raise MAX_RUNNING only after measuring a larger job.
+MIN_FREE_MB="${MIN_FREE_MB:-12000}"
+MAX_RUNNING="${MAX_RUNNING:-2}"
 
 source "${SCRIPT_DIR}/gpu_scheduler.sh"
 

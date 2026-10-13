@@ -68,7 +68,10 @@ cleanup_finished() {
         if kill -0 "$pid" 2>/dev/null; then
             new_pids+=("$pid")
         else
-            echo "PID $pid finished."
+            # Report the exit status, so a job that died (e.g. CUDA OOM) does
+            # not read like a clean finish.
+            wait "$pid" 2>/dev/null
+            echo "PID $pid finished (exit $?)."
         fi
     done
     running_pids=("${new_pids[@]}")
