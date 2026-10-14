@@ -61,11 +61,10 @@ SEED=42
 
 # Memory gate for the shared scheduler. One zero_polymer job used 4.6-8.7 GB
 # in the 2026-10-13 test. Four at once filled the 23.5 GB GPU and 9 of 11 runs
-# died with CUDA OOM on move 1 (DEVLOG 2026-10-13). MAX_RUNNING is 3 (request
-# of 2026-10-14). Three fits at typical use (about 5 GB per job) but not if all
-# three reach the 8.7 GB peak; set MAX_RUNNING=2 if OOM comes back.
+# died with CUDA OOM on move 1 (DEVLOG 2026-10-13). MAX_RUNNING is 2, the cap
+# chosen on 2026-10-14. Raise it only after measuring a larger job.
 MIN_FREE_MB="${MIN_FREE_MB:-12000}"
-MAX_RUNNING="${MAX_RUNNING:-3}"
+MAX_RUNNING="${MAX_RUNNING:-2}"
 
 source "${SCRIPT_DIR}/gpu_scheduler.sh"
 
