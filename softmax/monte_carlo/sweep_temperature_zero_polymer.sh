@@ -33,6 +33,8 @@ set -u
 #    MOVES=300000 bash sweep_temperature_zero_polymer.sh
 #    DT_EXP=0 bash sweep_temperature_zero_polymer.sh      # protein G's fixed dt
 #    DRY_RUN=1 bash sweep_temperature_zero_polymer.sh     # write inputs only
+#    LOG_STEP=3000 PRINT_STEP=1000 MOVES=3000000 bash sweep_temperature_zero_polymer.sh
+#                                                         # long runs: fewer checkpoints and status lines
 # ============================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -53,7 +55,8 @@ DT_AT_T2="${DT_AT_T2:-63.0}"   # dt at T=2 where mean p_match~0.15 on zero_polym
 DT_EXP="${DT_EXP:-0.5}"        # 0.5: dt/sqrt(T) held fixed. 0: fixed dt
 MOVES="${MOVES:-50000}"
 INIT_MUTS=0
-LOG_STEP=100
+LOG_STEP="${LOG_STEP:-100}"
+PRINT_STEP="${PRINT_STEP:-1}"
 SEED=42
 
 # Memory gate for the shared scheduler. One zero_polymer job used 4.6-8.7 GB
@@ -144,6 +147,7 @@ for T in "${TS[@]}"; do
     sed \
         -e "s|^results_dir[[:space:]].*|results_dir ${RESULTS_DIR}|" \
         -e "s/^log_step[[:space:]].*/log_step    ${LOG_STEP}            # checkpoint every N moves, for site-entropy\/q-distribution analysis/" \
+        -e "s/^print_step[[:space:]].*/print_step  ${PRINT_STEP}            # number of moves between status printouts/" \
         "$BASE_SETTINGS" > "$RUN_SETTINGS"
 
 
@@ -155,7 +159,7 @@ for T in "${TS[@]}"; do
     echo "  results:  $RESULTS_DIR"
     echo "  log:      logs_temperature_zero_polymer/T${T}.log"
 
-    nohup python "${SCRIPT_DIR}/main_rate.py" \
+    nohup python -u "${SCRIPT_DIR}/main_rate.py" \
         --ref "$REF_NAME" \
         --pars-file "sweep_temperature_zero_polymer_inputs/pars_T${T}.txt" \
         --settings-file "$RUN_SETTINGS" \
