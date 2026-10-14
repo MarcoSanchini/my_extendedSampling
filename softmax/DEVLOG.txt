@@ -5068,3 +5068,63 @@ With restart 0 the sampler clears each failed run's sim0 before it starts.
 Tested with a fake nvidia-smi and python: subset selection, the concurrency
 cap, and exit-status reporting. Not run on the GPU.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-14 -- 1000-step test: results. Next sweep on 10-300, steps scaled from the paper's 3e5
+--------------------------------------------------------------------------------
+Results of the second 1000-step run (35757fa). All 11 runs completed, with no
+OOM, traceback or NaN. Figures are from each run's per-move status rows, moves
+500 to 1000 (print_step=1, so 1001 rows per log). accept is the fraction of
+moves accepted in that window; mean Hd and mean U are over the same window.
+
+  T       accept   Hd_to_ref 500 -> 1000   mean Hd   mean U
+  0.1     0.000    0 -> 0                  0.0            0
+  1       0.000    0 -> 0                  0.0            0
+  10      0.010    0 -> 3                  1.2           35
+  31.6    0.052    14 -> 32                24.0         859
+  56.2    0.168    54 -> 114               87.0        4023
+  100     0.325    99 -> 198               153.0       7979
+  177     0.489    161 -> 290              231.4      14361
+  316     0.557    196 -> 313              263.5      20392
+  562     0.639    228 -> 357              302.5      29016
+  1000    0.665    237 -> 370              311.9      33445
+  1e4     0.491    241 -> 347              295.7      42648
+
+- Frozen at T <= 1, where no move is accepted. Nearly frozen at T = 10.
+- The transition is between about 30 and 300: acceptance climbs from 5% to 56%.
+- Not equilibrated. Hd_to_ref is still rising in the second half of every run
+  with T >= 56, by 60 to 135 between moves 500 and 1000. 1000 moves is a
+  pipeline test, not a sweep result.
+- At T = 1e4 acceptance is lower than at 1000 (49% vs 67%). The log has no inf,
+  and log_ratio stays in [-21, 2.4] at 1e4, against [-1404, 2.4] at 1e3, so
+  this is not overflow. The cause is not established. First suspect: the
+  proposal at dt ~ 4450. Not tested.
+
+Reference: Zambon et al. 2024, Phys. Biol. 21 026002, Sections 2.1 and 3.1.
+Each protein G simulation ran for at least ~3e5 steps, one single-site
+Metropolis proposal per step. The first part of each run is dropped where the
+Hamming autocorrelation to the reference is above 0.1, and the rest is checked
+with non-overlapping block averages. The paper's temperatures are in ESMFold
+effective-energy units, so they do not transfer to U_am (see the header of
+sweep_temperature_paper_scale.sh).
+
+Plan
+1. Test sweep on 10-300: TS = 10 17.8 31.6 56.2 100 177.8 300 (quarter-decade
+   spacing, ending at 300 as requested). MOVES=1000, log_step left at 100 so
+   there are checkpoints for the analysis. Checks the new grid, the scheduler
+   and the analysis before the long run.
+2. Proper sweep on the same grid with MOVES = 3e6. The paper gives 3e5 steps
+   for 56 sites, about 5.4e3 proposals per site. Keeping that per-site count
+   for 566 sites gives 3.0e6. The length scaling is my assumption; the paper
+   does not scale steps with length.
+   LOG_STEP=3000 gives 1000 checkpoints per run. log_step=100 would write
+   30,000 checkpoints of about 1.3 MB each, about 38 GB per run. PRINT_STEP=1000,
+   since printing every move would make each status log about 3e6 lines.
+3. Before committing to the full run, measure seconds per move from data.dat:
+   the time column at move 1000, divided by 1000.
+
+Open: the paper's equilibration check (drop the initial transient where the
+Hamming autocorrelation exceeds 0.1, then block averages) is not implemented.
+analyze_ensemble.py uses a fixed 50% burn-in and a trending flag. data.dat has
+Hd_to_ref for every move, so the paper's check could be added.
+--------------------------------------------------------------------------------
