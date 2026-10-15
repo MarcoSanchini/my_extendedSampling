@@ -5306,6 +5306,12 @@ Expected, not bugs: the column-definition comment at the top of data.dat changed
 for new runs. The rows did not change for n_sites=1 (checked by reading). Starts
 with init_muts > 0 changed, so old runs with init_muts > 0 do not replay.
 
+Also fixed (e59fe57): check A ran with dt=1 and T_sftm=0.1, where the gradient
+term is about 1e-3 and the proposal is nearly uniform, so the detailed-balance
+check could not see a wrong reverse gradient. It now uses dt=20 and T_sftm=1.0,
+and asserts a forward log-probability spread above 0.01. The spread figure is an
+estimate from the toy energy; the assertion will show if it is wrong.
+
 Still NOT RUN. Run softmax/code/tests/test_nsite_kernel.py on the machine that runs
 the sweeps before the pilot.
 --------------------------------------------------------------------------------
