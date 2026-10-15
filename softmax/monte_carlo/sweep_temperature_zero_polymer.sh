@@ -61,7 +61,7 @@ MOVES="${MOVES:-50000}"
 # the reference, which every sweep so far has used.
 INIT_MUTS="${INIT_MUTS:-0}"
 # Sites changed per move. 1 is the single-site sampler every run so far used.
-# Above 1, n_sites is appended to pars.txt. Absent means 1, so existing pars
+# Above 1, n_sites is written to pars.txt, after init_muts. Absent means 1, so existing pars
 # files, and the restart and --extend matching against them, are unchanged.
 N_SITES="${N_SITES:-1}"
 LOG_STEP="${LOG_STEP:-100}"
@@ -128,7 +128,7 @@ for T in "${TS[@]}"; do
         "$BASE_PARS" > "$PARS_FILE"
 
     if [ "$N_SITES" != "1" ]; then
-        echo "n_sites     ${N_SITES}            # sites changed per move" >> "$PARS_FILE"
+        sed -i "/^init_muts/a n_sites     ${N_SITES}            # sites changed per move" "$PARS_FILE"
     fi
 
     echo "T=${T}, dt=${DT}, moves=${MOVES}, init_muts=${INIT_MUTS}, n_sites=${N_SITES}, seed=${SEED}, ref=${REF_NAME}"

@@ -176,7 +176,7 @@ class ExtendedProteinRateSampler():
 	# ------------------------------------------------------------------ #
 	def _step(self, eprot: ExtendedProtein, U_A: float, pars: dict):
 		L = len(eprot.sequence)
-		sites = self._draw_sites(L, pars['n_sites'])
+		sites = self._draw_sites(L, pars.get('n_sites', 1))
 
 		grad_A = self._grad_pass_sites(eprot, sites, pars)
 		cur_idx = [int(eprot.logits[site].argmax(dim=-1).item()) for site in sites]
@@ -187,7 +187,7 @@ class ExtendedProteinRateSampler():
 
 		tgt_idx, log_a_AB = self._draw_targets(mu_A, cur_idx, sigma, pars)
 
-		eprot_B = self._substitute(eprot, sites, tgt_idx)
+		eprot_B = self._substitute_sites(eprot, sites, tgt_idx)
 		grad_B = self._grad_pass_sites(eprot_B, sites, pars)
 		mu_B = -step_coef*grad_B
 		log_a_BA = self._reverse_logprob(mu_B, cur_idx, tgt_idx, sigma, pars)
@@ -331,7 +331,11 @@ class ExtendedProteinRateSampler():
 		eprot.am = am.detach().clone().to("cpu")
 		return U.item(), U_am.item(), eprot
 
-	def _substitute(self, eprot: ExtendedProtein, sites: list, new_idxs: list) -> ExtendedProtein:
+	def _substitute(self, eprot: ExtendedProtein, site: int, new_idx: int) -> ExtendedProtein:
+		# Single-site form, kept for callers such as validate_boltzmann_toy.py.
+		return self._substitute_sites(eprot, [site], [new_idx])
+
+	def _substitute_sites(self, eprot: ExtendedProtein, sites: list, new_idxs: list) -> ExtendedProtein:
 		vocab = C.SEQUENCE_USED_VOCAB
 		seq = list(eprot.sequence)
 		for site, new_idx in zip(sites, new_idxs):

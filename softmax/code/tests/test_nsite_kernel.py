@@ -1,22 +1,30 @@
 """Checks for the n_sites move of ExtendedProteinRateSampler (classes/rate_sampler.py).
 
-Run from softmax/code/tests (needs torch and the customs package; no ESM3 weights):
+Run from softmax/code/tests:
 
     python -u test_nsite_kernel.py
 
-The "attention map" is the probability matrix itself, and the energy is a random
-pairwise (Potts-type) function of it. The sampler's own relaxed gradient,
-proposal, reverse proposal, Metropolis ratio and output code run unchanged.
+Needs what the sampler itself needs: torch, numpy, pandas, huggingface_hub and the
+customs package. No ESM3 weights: the "attention map" is the probability matrix
+itself, and the energy is a random pairwise (Potts-type) function of it, so the
+sampler's relaxed gradient, proposal, reverse proposal and output code run as
+written. One piece is re-implemented here: the Metropolis ratio inside
+exact_kernel. Check F runs _step itself against those exact rows.
 
-  A. Detailed balance and stationarity. The kernel is enumerated exactly on every
+  A. Detailed balance and stationarity. exact_kernel enumerates the kernel on every
      sequence of length L over a 3-letter canonical alphabet, for several
-     (L, n_sites, T). Detailed balance and stationarity of exp(-U/T) must hold.
+     (L, n_sites, T), from _grad_pass_sites, _substitute_sites, _reverse_logprob,
+     _exact_energy and log_pointing_prob. Detailed balance and stationarity of
+     exp(-U/T) must hold.
   B. Sampling. _draw_targets must realize the pointing probabilities that
      log_pointing_prob reports (Monte Carlo over the momentum draws).
   C. Starts. _mutate_canonical writes canonical residues only.
   D. Guard. _setup refuses a reference that holds a non-canonical residue.
   E. Output and restart. sample() with n_sites=3 writes the expected data.dat rows,
      and a restarted run reproduces the straight run exactly.
+  F. _step itself. From fixed starts, its transition frequencies and acceptance
+     match the exact kernel rows.
+  G. A pars dict without n_sites, as run_equilibration.py passes, runs single-site.
 """
 import itertools
 import math
@@ -150,7 +158,7 @@ def exact_kernel(sampler, pars, L, letters):
                     tgt.append(int(comps[k][local[k]].item()))
                 total += math.exp(log_qf)
 
-                eB = sampler._substitute(eA, sites, tgt)
+                eB = sampler._substitute_sites(eA, sites, tgt)
                 muB = -step_coef*sampler._grad_pass_sites(eB, sites, pars)
                 log_qr = sampler._reverse_logprob(muB, cur, tgt, sigma, pars)
                 UB, _, _ = sampler._exact_energy(eB, pars)
@@ -295,6 +303,57 @@ def check_sample_and_restart():
     print("  60 moves with n_sites=3, then restart to 100: rows match the straight run exactly")
 
 
+# ------------------------------------------------------------------------ #
+# F. _step itself: from fixed starts, its transition frequencies and       #
+#    acceptance must match the exact kernel rows. exact_kernel re-implements #
+#    the accept rule, so this is the check of _step's own ratio and draws.  #
+# ------------------------------------------------------------------------ #
+def check_step_matches_kernel(L=4, n=2, T=1.0, letters=("A", "G", "K"), seed=3, draws=4000):
+    set_toy_energy(L, seed=seed)
+    sampler = make_sampler(seed=0, letters=list(letters))
+    set_reference(sampler, letters[0]*L)
+    pars = make_pars(n, T=T)
+    states, _, P = exact_kernel(sampler, pars, L, list(letters))
+    index = {s: k for k, s in enumerate(states)}
+
+    for a in (0, len(states)//2, len(states) - 1):
+        eA = ExtendedProtein(sequence=states[a], requires_grad=True, device="cpu")
+        eA.expand()
+        U_A, _, eA = sampler._exact_energy(eA, pars)
+        counts = np.zeros(len(states))
+        accepted = 0
+        for _ in range(draws):
+            eNew, info = sampler._step(eA, U_A, pars)
+            counts[index[eNew.sequence]] += 1
+            accepted += info["accepted"]
+        row = P[a]
+        se = np.sqrt(row*(1. - row)/draws)
+        assert np.all(np.abs(counts/draws - row) < 5*se + 2e-3), f"_step frequencies differ from the kernel at {states[a]}"
+        acc = 1. - row[a]
+        assert abs(accepted/draws - acc) < 5*np.sqrt(acc*(1. - acc)/draws) + 2e-3, \
+            f"_step accepts {accepted/draws:.4f}, kernel {acc:.4f} at {states[a]}"
+    print(f"  3 fixed starts, {draws} _step calls each: frequencies and acceptance match the kernel rows")
+
+
+# ------------------------------------------------------------------------ #
+# G. A pars dict without n_sites (run_equilibration.py builds one and       #
+#    bypasses _setup) must run as a single-site move.                       #
+# ------------------------------------------------------------------------ #
+def check_step_without_n_sites(draws=20):
+    set_toy_energy(4, seed=3)
+    sampler = make_sampler(seed=0, letters=["A", "G", "K"])
+    set_reference(sampler, "AAAA")
+    pars = make_pars(1)
+    del pars["n_sites"]
+    eA = ExtendedProtein(sequence="AGKA", requires_grad=True, device="cpu")
+    eA.expand()
+    U_A, _, eA = sampler._exact_energy(eA, pars)
+    for _ in range(draws):
+        _, info = sampler._step(eA, U_A, pars)
+        assert len(info["site"].split(",")) == 1, info["site"]
+    print("  pars without n_sites: _step makes single-site moves")
+
+
 if __name__ == "__main__":
     print("A. detailed balance and stationarity (exact enumeration)")
     for L, n, T in [(4, 1, 1.0), (4, 2, 1.0), (4, 2, 0.5), (5, 2, 1.0), (5, 3, 2.0)]:
@@ -307,4 +366,8 @@ if __name__ == "__main__":
     check_reference_guard()
     print("E. output, restart")
     check_sample_and_restart()
+    print("F. _step against the exact kernel rows")
+    check_step_matches_kernel()
+    print("G. pars without n_sites")
+    check_step_without_n_sites()
     print("ALL N-SITE CHECKS PASSED")
