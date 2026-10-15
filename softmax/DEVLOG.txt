@@ -5223,9 +5223,9 @@ still exact.
 Output. Each row of data.dat has the same columns. For n_sites > 1, site, cur_aa
 and proposed_aa are comma-separated lists, and dU, log_a_AB, log_a_BA and
 log_ratio are sums over the sites. Scripts that read the site column as an
-integer assume one site per move: identify_k_sites.py, analyze_run.py,
-run_equilibration.py and aggregate_seeds.py. analyze_ensemble.py,
-summarize_sweep.py and plot_run.py use checkpoints or numeric columns only.
+integer stop with a ValueError when n_sites > 1: analyze_run.py and
+aggregate_seeds.py. analyze_ensemble.py, summarize_sweep.py,
+compare_equilibration.py and plot_run.py do not read the site column.
 
 Sweep. INIT_MUTS and N_SITES are environment variables with defaults 0 and 1, so
 the old runs reproduce. N_SITES != 1 writes n_sites to pars.txt. An absent key
@@ -5271,4 +5271,41 @@ RUN_DIR/tests_rate_sweep_temperature_zero_polymer/T<T>/sim0/):
 Compare N * accept(N=10) with accept(N=1) at each temperature. Keep N=10 if it
 wins at both temperatures and the Hd trend has flattened by 2500 moves; otherwise
 the pilot points to a smaller N.
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-15 -- review of the n_sites change: four fixes and one known gap
+--------------------------------------------------------------------------------
+An independent read of the n_sites change (commit fe6cf12) found four problems.
+Fixed:
+
+1. run_equilibration.py builds its own pars dict without n_sites and bypasses
+   _setup. _step read pars['n_sites'] directly, so move 1 would have raised
+   KeyError, and sweep_equilibration.sh would have failed. _step now reads
+   pars.get('n_sites', 1).
+2. validate_boltzmann_toy.py calls _substitute(eprot, site, int). The list form
+   broke it. _substitute takes one site and an int again; the list form is
+   _substitute_sites, which _step uses.
+3. The sweep appended n_sites at the end of pars.txt. That is inside the
+   '## sampler' section only while no later '##' line exists. It is now written
+   directly after init_muts. A dry run confirmed this: the N=10 file has n_sites on
+   the line after init_muts, and the N=1 file has none.
+4. test_nsite_kernel.py: exact_kernel re-implements the Metropolis ratio and does
+   not call _step, so its docstring was wrong to say the ratio runs unchanged.
+   Check F now runs _step from fixed starts and compares its transition
+   frequencies and acceptance with the exact kernel rows. Check G runs _step with
+   a pars dict that has no n_sites.
+
+Known, not fixed: analyze_run.py (lines 51 and 141) and aggregate_seeds.py
+(line 34) call int() on the site column, so with n_sites > 1 they stop with a
+ValueError rather than give wrong numbers. They were written for single-site runs.
+The reader list in the n_sites entry above had identify_k_sites.py wrongly; that
+script reads eprot checkpoints, not data.dat.
+
+Expected, not bugs: the column-definition comment at the top of data.dat changed
+for new runs. The rows did not change for n_sites=1 (checked by reading). Starts
+with init_muts > 0 changed, so old runs with init_muts > 0 do not replay.
+
+Still NOT RUN. Run softmax/code/tests/test_nsite_kernel.py on the machine that runs
+the sweeps before the pilot.
 --------------------------------------------------------------------------------
