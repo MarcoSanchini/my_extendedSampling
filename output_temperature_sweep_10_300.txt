@@ -1,0 +1,140 @@
+--- T=10 ---
+Loaded 6/11 checkpoints post burn-in (kept moves >= 50% of 1000)
+
+U trajectory: move 0=0.000  move 1000=74.626
+  moves      0-    99: mean U =    0.000
+  moves    100-   199: mean U =    0.000
+  moves    200-   299: mean U =    0.000
+  moves    300-   399: mean U =    0.000
+  moves    400-   499: mean U =    0.000
+  moves    500-   599: mean U =    0.000
+  moves    600-   699: mean U =    0.000
+  moves    700-   799: mean U =   18.065
+  moves    800-   899: mean U =   88.593
+  moves    900-   999: mean U =   68.829
+  moves   1000-  1000: mean U =   74.626
+Hd_to_ref trajectory: move 0=0  move 1000=3
+
+=== site entropy (natural log; 0=perfectly conserved, log(20)=2.9957=uniform) ===
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 192, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 132, in main
+    entropies, counts = site_entropy(sequences, L)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 74, in site_entropy
+    counts[i][aa] = counts[i].get(aa, 0) + 1
+                    ~~~~~~^^^
+IndexError: list index out of range
+--- T=17.8 ---
+Loaded 6/11 checkpoints post burn-in (kept moves >= 50% of 1000)
+
+U trajectory: move 0=0.000  move 1000=395.131
+  moves      0-    99: mean U =    0.000
+  moves    100-   199: mean U =    0.000
+  moves    200-   299: mean U =   50.917
+  moves    300-   399: mean U =  113.015
+  moves    400-   499: mean U =  113.015
+  moves    500-   599: mean U =  176.352
+  moves    600-   699: mean U =  183.447
+  moves    700-   799: mean U =  222.272
+  moves    800-   899: mean U =  291.354
+  moves    900-   999: mean U =  347.946
+  moves   1000-  1000: mean U =  395.131
+Hd_to_ref trajectory: move 0=0  move 1000=14
+
+=== site entropy (natural log; 0=perfectly conserved, log(20)=2.9957=uniform) ===
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 192, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 132, in main
+    entropies, counts = site_entropy(sequences, L)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 74, in site_entropy
+    counts[i][aa] = counts[i].get(aa, 0) + 1
+                    ~~~~~~^^^
+IndexError: list index out of range
+--- T=31.6 ---
+Loaded 6/11 checkpoints post burn-in (kept moves >= 50% of 1000)
+
+U trajectory: move 0=0.000  move 1000=1225.984
+  moves      0-    99: mean U =    0.000
+  moves    100-   199: mean U =  118.355
+  moves    200-   299: mean U =  310.929
+  moves    300-   399: mean U =  398.376
+  moves    400-   499: mean U =  494.368
+  moves    500-   599: mean U =  631.524
+  moves    600-   699: mean U =  695.465
+  moves    700-   799: mean U =  782.682
+  moves    800-   899: mean U = 1045.045
+  moves    900-   999: mean U = 1135.897
+  moves   1000-  1000: mean U = 1225.984
+Hd_to_ref trajectory: move 0=0  move 1000=32
+
+=== site entropy (natural log; 0=perfectly conserved, log(20)=2.9957=uniform) ===
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 192, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 132, in main
+    entropies, counts = site_entropy(sequences, L)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 74, in site_entropy
+    counts[i][aa] = counts[i].get(aa, 0) + 1
+                    ~~~~~~^^^
+IndexError: list index out of range
+--- T=56.2 ---
+Loaded 6/11 checkpoints post burn-in (kept moves >= 50% of 1000)
+
+U trajectory: move 0=0.000  move 1000=5044.403
+  moves      0-    99: mean U =  109.864
+  moves    100-   199: mean U =  648.328
+  moves    200-   299: mean U = 1271.087
+  moves    300-   399: mean U = 1695.438
+  moves    400-   499: mean U = 2043.890
+  moves    500-   599: mean U = 2821.368
+  moves    600-   699: mean U = 3433.379
+  moves    700-   799: mean U = 4093.699
+  moves    800-   899: mean U = 4721.967
+  moves    900-   999: mean U = 5033.700
+  moves   1000-  1000: mean U = 5044.403
+Hd_to_ref trajectory: move 0=0  move 1000=114
+
+=== site entropy (natural log; 0=perfectly conserved, log(20)=2.9957=uniform) ===
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 192, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 132, in main
+    entropies, counts = site_entropy(sequences, L)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 74, in site_entropy
+    counts[i][aa] = counts[i].get(aa, 0) + 1
+                    ~~~~~~^^^
+IndexError: list index out of range
+--- T=100 ---
+Loaded 6/11 checkpoints post burn-in (kept moves >= 50% of 1000)
+
+U trajectory: move 0=0.000  move 1000=8970.359
+  moves      0-    99: mean U =  762.500
+  moves    100-   199: mean U = 2185.675
+  moves    200-   299: mean U = 3377.207
+  moves    300-   399: mean U = 3791.635
+  moves    400-   499: mean U = 4771.136
+  moves    500-   599: mean U = 5625.783
+  moves    600-   699: mean U = 7325.598
+  moves    700-   799: mean U = 8398.014
+  moves    800-   899: mean U = 9308.318
+  moves    900-   999: mean U = 9226.257
+  moves   1000-  1000: mean U = 8970.359
+Hd_to_ref trajectory: move 0=0  move 1000=198
+
+=== site entropy (natural log; 0=perfectly conserved, log(20)=2.9957=uniform) ===
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 192, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 132, in main
+    entropies, counts = site_entropy(sequences, L)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py", line 74, in site_entropy
+    counts[i][aa] = counts[i].get(aa, 0) + 1
+                    ~~~~~~^^^
+IndexError: list index out of range
