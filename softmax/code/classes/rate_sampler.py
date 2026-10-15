@@ -19,7 +19,7 @@ from generator.custom_generator import CustomGenerator
 from utils.general import create_path
 from utils.predictions import init_structure_config
 from utils.energies import compute_U_am, compute_U_structure_ce, compute_entropy
-from utils.operations import compute_Hd, mutate, is_subset, merge_dict
+from utils.operations import compute_Hd, is_subset, merge_dict
 from utils.proposals import log_pointing_prob
 
 
@@ -42,19 +42,21 @@ _NONCANONICAL_RESIDUES = ('X', 'B', 'U', 'Z', 'O')
 
 
 # -------------------------------------------------------------------------- #
-# Single-Site Locally-Balanced Rate ExtendedProtein Sampler                  #
+# Locally-Balanced Rate ExtendedProtein Sampler (single-site by default)     #
 #                                                                             #
-# Each move: (1) picks ONE site uniformly at random -- this is a symmetric,  #
-# state-independent choice, so it cancels exactly out of the Metropolis-     #
-# Hastings ratio and needs no correction term; (2) at that site only, draws  #
-# a gradient-informed displacement and proposes a substitution EXCLUDING the #
-# site's current amino acid from the competition (product over k != i,j, the #
-# original per-site formula this sampler started from -- once a site is      #
-# chosen to change, "staying" is not a candidate any more, only which OTHER  #
-# amino acid to move to is); (3) accepts/rejects with an exact Metropolis-   #
-# Hastings correction using the true (recomputed) energy of the candidate    #
-# and the true reverse-proposal probability, so the target distribution is   #
-# exp(-U/T) exactly, not merely to first order.                             #
+# Each move: (1) picks n_sites distinct sites uniformly at random (pars key   #
+# n_sites, default 1, which is the single-site move this sampler started     #
+# from). The choice is symmetric and state-independent, so it cancels exactly #
+# out of the Metropolis-Hastings ratio and needs no correction term; (2) at   #
+# those sites only, draws a gradient-informed displacement and proposes a     #
+# substitution at each one EXCLUDING its current amino acid from the          #
+# competition (product over k != i,j, the original per-site formula this      #
+# sampler started from -- once a site is chosen to change, "staying" is not a #
+# candidate any more, only which OTHER amino acid to move to is); (3)         #
+# accepts/rejects with an exact Metropolis-Hastings correction using the true #
+# (recomputed) energy of the candidate and the true reverse-proposal          #
+# probability, so the target distribution is exp(-U/T) exactly, not merely   #
+# to first order.                                                             #
 #                                                                             #
 # This replaces an earlier version of this sampler that proposed all sites   #
 # jointly every move (each site voting to stay or change via a K-way         #
@@ -67,19 +69,21 @@ _NONCANONICAL_RESIDUES = ('X', 'B', 'U', 'Z', 'O')
 # produced dU in the hundreds and were essentially always rejected. Fixing   #
 # "how many sites change" to exactly one per move removes that failure mode  #
 # by construction: with only one site changing, there is nothing for it to   #
-# couple with. See DEVLOG.txt for the full history.                          #
+# couple with. See DEVLOG.txt for the full history. n_sites > 1 brings joint  #
+# moves back on purpose (2026-10-15): the coupling is then handled by the     #
+# acceptance test rather than avoided by construction.                        #
 #                                                                             #
-# The gradient used for a given site is computed by relaxing ONLY that site  #
-# (softmax(logits/T_sftm), differentiable) while every OTHER site is held    #
-# at its exact discrete (hard one-hot) value -- not a whole-sequence         #
+# The gradient used for the chosen sites is computed by relaxing ONLY those  #
+# sites (softmax(logits/T_sftm), differentiable) while every OTHER site is    #
+# held at its exact discrete (hard one-hot) value -- not a whole-sequence    #
 # softened relaxation. This costs the same (attention/embedding cost does    #
 # not depend on how many positions are "soft" vs "hard") and is a more       #
 # faithful partial derivative: it matches the exact discrete context used    #
 # everywhere else (accept/reject, the reverse-probability pass).            #
 #                                                                             #
-# Per move: 2 backward passes (grad at A, grad at B, each over just one      #
-# relaxed site) + 1 forward pass (exact U at B) through ESM3 -- same order   #
-# as the joint-move version, but now with a real (not ~0) acceptance rate.   #
+# Per move: 2 backward passes (grad at A, grad at B, each over the relaxed   #
+# chosen site(s)) + 1 forward pass (exact U at B) through ESM3. The cost does #
+# not grow with n_sites: one relaxed pass covers all of them.                #
 #                                                                             #
 # The total energy U is lambda_am*U_am + lambda_structure_ce*U_structure_ce  #
 # + lambda_S*entropy. U_am (utils/energies.py:compute_U_am) is a squared     #
@@ -163,56 +167,30 @@ class ExtendedProteinRateSampler():
 
 
 	# ------------------------------------------------------------------ #
-	# One Monte Carlo move: pick one site, propose a substitution at it  #
-	# (current amino acid excluded from the competition), accept/reject  #
-	# it exactly. Returns (eprot, info), where eprot is either the       #
-	# accepted candidate or the (unchanged) input.                      #
+	# One Monte Carlo move (see the class header). Picks n_sites sites,  #
+	# proposes a gradient-informed substitution at each, and accepts or  #
+	# rejects the joint change with an exact Metropolis-Hastings ratio.  #
+	# Returns (eprot, info): eprot is the accepted candidate or the      #
+	# unchanged input. With n_sites=1 it makes the same random draws, in #
+	# the same order, as the single-site move it replaced.               #
 	# ------------------------------------------------------------------ #
 	def _step(self, eprot: ExtendedProtein, U_A: float, pars: dict):
 		L = len(eprot.sequence)
-		site = int(torch.randint(0, L, (1,), generator=self.generator.get(), device=self.generator.device).item())
+		sites = self._draw_sites(L, pars['n_sites'])
 
-		grad_A = self._grad_pass_site(eprot, site, pars)
-		cur_idx = eprot.logits[site].argmax(dim=-1)
+		grad_A = self._grad_pass_sites(eprot, sites, pars)
+		cur_idx = [int(eprot.logits[site].argmax(dim=-1).item()) for site in sites]
 
 		sigma = pars['dt'] * math.sqrt(pars['T']/pars['M'])
 		step_coef = pars['dt']**2. / (2.*pars['M'])
 		mu_A = -step_coef*grad_A
 
-		momentum = self._extract_momenta(grad_A.shape, pars['T'], pars['M'])
-		delta_x = pars['dt']*momentum/pars['M'] - step_coef*grad_A
-		delta_x = delta_x - delta_x.mean(dim=-1, keepdim=True)   # gauge-fix over the FULL space, before any slicing
+		tgt_idx, log_a_AB = self._draw_targets(mu_A, cur_idx, sigma, pars)
 
-		# Candidates at A: canonical residues, minus the site's own current one.
-		# delta_x/mu_A are computed over the full 25-dim space above (that's what
-		# the physics/gauge-fixing needs); only the final argmax/probability is
-		# restricted to this slice -- non-canonical classes never entered the
-		# competition to begin with, and cur_idx is structurally absent from it,
-		# not merely disfavored.
-		competitors_A = self._competition_indices(int(cur_idx.item()))
-		local_tgt = delta_x[competitors_A].argmax(dim=-1)     # index into competitors_A
-		tgt_idx = competitors_A[local_tgt]                    # global vocab index, guaranteed != cur_idx
-
-		log_a_AB = log_pointing_prob(mu_A[competitors_A], sigma, local_tgt, pars['n_quad']).item()
-
-		eprot_B = self._substitute(eprot, site, int(tgt_idx.item()))
-
-		grad_B = self._grad_pass_site(eprot_B, site, pars)
+		eprot_B = self._substitute(eprot, sites, tgt_idx)
+		grad_B = self._grad_pass_sites(eprot_B, sites, pars)
 		mu_B = -step_coef*grad_B
-
-		# Reverse direction: candidates at B are canonical residues minus B's own
-		# current one (tgt_idx). If cur_idx isn't canonical (rare -- e.g. an
-		# init_muts draw landed on an ambiguity code), it can never legally be
-		# proposed by this kernel at all, so the reverse move is structurally
-		# unreachable: reject exactly (-inf), not approximately, to preserve
-		# detailed balance rather than fake it with a large finite penalty.
-		competitors_B = self._competition_indices(int(tgt_idx.item()))
-		local_cur_matches = (competitors_B == cur_idx).nonzero(as_tuple=True)[0]
-		if local_cur_matches.numel() == 0:
-			log_a_BA = float('-inf')
-		else:
-			local_cur = local_cur_matches[0]
-			log_a_BA = log_pointing_prob(mu_B[competitors_B], sigma, local_cur, pars['n_quad']).item()
+		log_a_BA = self._reverse_logprob(mu_B, cur_idx, tgt_idx, sigma, pars)
 
 		U_B, U_am_B, eprot_B = self._exact_energy(eprot_B, pars)
 
@@ -224,9 +202,9 @@ class ExtendedProteinRateSampler():
 
 		vocab = C.SEQUENCE_USED_VOCAB
 		info = {
-			"site": site,
-			"cur_aa": vocab[int(cur_idx.item())],
-			"proposed_aa": vocab[int(tgt_idx.item())],
+			"site": ",".join(str(site) for site in sites),
+			"cur_aa": ",".join(vocab[idx] for idx in cur_idx),
+			"proposed_aa": ",".join(vocab[idx] for idx in tgt_idx),
 			"proposed_sequence": eprot_B.sequence,
 			"U_B": U_B, "U_am_B": U_am_B, "U_structure_ce_B": eprot_B.U_structure_ce.item(),
 			"dU": dU, "log_a_AB": log_a_AB, "log_a_BA": log_a_BA, "log_ratio": log_ratio,
@@ -236,21 +214,71 @@ class ExtendedProteinRateSampler():
 		return (eprot_B, info) if accepted else (eprot, info)
 
 
+	# n distinct sites, uniform over subsets of size n. For n=1 this is the
+	# single draw of the single-site sampler, so n_sites=1 replays old runs.
+	def _draw_sites(self, L: int, n: int) -> list:
+		sites = []
+		while len(sites) < n:
+			site = int(torch.randint(0, L, (1,), generator=self.generator.get(), device=self.generator.device).item())
+			if site not in sites:
+				sites.append(site)
+		return sites
+
+
+	# Gradient-informed targets, one per chosen site. At each site the
+	# displacement dx_k = mu_k + sigma*xi_k (xi iid standard normal, from the
+	# momentum draw) is maximized over that site's competitors, and the argmax
+	# is the target. log_a is the exact log-probability of the realized
+	# targets (log_pointing_prob); the joint proposal is the product over sites.
+	def _draw_targets(self, mu: torch.Tensor, cur_idx: list, sigma: float, pars: dict):
+		momentum = self._extract_momenta(mu.shape, pars['T'], pars['M'])
+		delta_x = pars['dt']*momentum/pars['M'] + mu
+		delta_x = delta_x - delta_x.mean(dim=-1, keepdim=True)   # gauge-fix over the FULL space, before any slicing
+
+		tgt_idx, log_a = [], 0.
+		for site, cur in enumerate(cur_idx):
+			competitors = self._competition_indices(cur)
+			local_tgt = delta_x[site][competitors].argmax(dim=-1)   # index into competitors
+			tgt_idx.append(int(competitors[local_tgt].item()))      # global vocab index, never cur
+			log_a += log_pointing_prob(mu[site][competitors], sigma, local_tgt, pars['n_quad']).item()
+		return tgt_idx, log_a
+
+
+	# Log-probability of the reverse move, from the candidate B back to A:
+	# at each chosen site, the current amino acid must be proposed from B's
+	# competitors, using the gradient at B. A non-canonical current residue is
+	# never a competitor, so that reverse move has probability zero and the
+	# forward move is rejected (see _mutate_canonical).
+	def _reverse_logprob(self, mu_B: torch.Tensor, cur_idx: list, tgt_idx: list, sigma: float, pars: dict) -> float:
+		log_a = 0.
+		for site, (cur, tgt) in enumerate(zip(cur_idx, tgt_idx)):
+			competitors = self._competition_indices(tgt)
+			local_cur = (competitors == cur).nonzero(as_tuple=True)[0]
+			if local_cur.numel() == 0:
+				return float('-inf')
+			log_a += log_pointing_prob(mu_B[site][competitors], sigma, local_cur[0], pars['n_quad']).item()
+		return log_a
+
+
 
 	# ------------------------------------------------------------------ #
-	# Differentiable pass, restricted to ONE site: every OTHER site is   #
-	# held at its exact discrete (hard one-hot) value; only `site`'s     #
-	# logits are relaxed through softmax(./T_sftm) and differentiated.   #
+	# Differentiable pass, restricted to the chosen sites: every OTHER   #
+	# site is held at its exact discrete (hard one-hot) value; only the  #
+	# logits of `sites` are relaxed through softmax(./T_sftm) and        #
+	# differentiated. One forward and one backward pass whatever the     #
+	# number of sites. Returns one gradient row per site, in `sites`     #
+	# order.                                                             #
 	# ------------------------------------------------------------------ #
-	def _grad_pass_site(self, eprot: ExtendedProtein, site: int, pars: dict) -> torch.Tensor:
+	def _grad_pass_sites(self, eprot: ExtendedProtein, sites: list, pars: dict) -> torch.Tensor:
 		hard = eprot.get_probs()  # exact one-hot for the whole sequence, no grad
-		site_logits = eprot.logits[site].detach().clone().requires_grad_(True)
-		soft_row = torch.softmax(site_logits/pars['T_sftm'], dim=-1).unsqueeze(0)
-		probs = torch.cat([hard[:site], soft_row, hard[site+1:]], dim=0)
+		site_logits = eprot.logits[sites].detach().clone().requires_grad_(True)
+		soft_rows = torch.softmax(site_logits/pars['T_sftm'], dim=-1)
+		probs = hard.clone()
+		probs[torch.tensor(sites, device=hard.device)] = soft_rows
 
 		am = self.model.predict_attention(sequence_probs=probs)
 		U_am = compute_U_am(am, self.ref_eprot.am)
-		entropy = compute_entropy(soft_row, pars['eps'])
+		entropy = compute_entropy(soft_rows, pars['eps'])
 		U = pars['lambda_am']*U_am + pars['lambda_S']*entropy
 
 		lambda_structure_ce = pars.get('lambda_structure_ce', 0.)
@@ -265,6 +293,10 @@ class ExtendedProteinRateSampler():
 		U.backward()
 		grad = site_logits.grad.detach().clone()
 		return grad
+
+	# Single-site form, as used by the gradient-method comparison tests.
+	def _grad_pass_site(self, eprot: ExtendedProtein, site: int, pars: dict) -> torch.Tensor:
+		return self._grad_pass_sites(eprot, [site], pars)[0]
 
 	# ------------------------------------------------------------------ #
 	# Exact pass: U evaluated on the true discrete sequence (no softmax  #
@@ -299,12 +331,29 @@ class ExtendedProteinRateSampler():
 		eprot.am = am.detach().clone().to("cpu")
 		return U.item(), U_am.item(), eprot
 
-	def _substitute(self, eprot: ExtendedProtein, site: int, new_idx: int) -> ExtendedProtein:
+	def _substitute(self, eprot: ExtendedProtein, sites: list, new_idxs: list) -> ExtendedProtein:
 		vocab = C.SEQUENCE_USED_VOCAB
-		new_seq = eprot.sequence[:site] + vocab[new_idx] + eprot.sequence[site+1:]
-		eprot_new = ExtendedProtein(sequence=new_seq, requires_grad=True, device=eprot.device)
+		seq = list(eprot.sequence)
+		for site, new_idx in zip(sites, new_idxs):
+			seq[site] = vocab[new_idx]
+		eprot_new = ExtendedProtein(sequence="".join(seq), requires_grad=True, device=eprot.device)
 		eprot_new.expand()
 		return eprot_new
+
+	# Starting mutations, drawn from the 20 canonical residues. The old start
+	# used utils.operations.mutate, which draws from all of SEQUENCE_USED_VOCAB,
+	# including X, B, U, Z and O. The sampler never proposes those, and a site
+	# that holds one can never change (see _reverse_logprob), so about one start
+	# in five was frozen for the whole run (DEVLOG 2026-10-15). Used only when
+	# init_muts > 0; init_muts=0 starts at the reference and draws nothing.
+	def _mutate_canonical(self, ref_seq: str, mutations: int) -> str:
+		canonical = [c for c in C.SEQUENCE_USED_VOCAB if c not in _NONCANONICAL_RESIDUES]
+		sites = torch.randint(0, len(ref_seq), (mutations,), generator=self.generator.get(), device=self.generator.device).tolist()
+		idxs = torch.randint(0, len(canonical), (mutations,), generator=self.generator.get(), device=self.generator.device).tolist()
+		seq = list(ref_seq)
+		for site, idx in zip(sites, idxs):
+			seq[site] = canonical[idx]
+		return "".join(seq)
 
 	def _competition_indices(self, exclude_idx: int) -> torch.Tensor:
 		"""Canonical vocab indices eligible to compete for a given site, minus
@@ -352,6 +401,9 @@ class ExtendedProteinRateSampler():
 			f'{self.name}._setup(): invalid value for one of the following keys ("moves", "T", "dt", "M", "T_sftm", "eps", "n_quad"). Allowed values: v>0.'
 		)
 		pars = self._correct_types(pars, "pars")
+		assert 1 <= pars["n_sites"] <= len(ref_seq), (
+			f'{self.name}._setup(): invalid value for "n_sites" ({pars["n_sites"]}). Allowed values: 1 <= n_sites <= {len(ref_seq)}.'
+		)
 
 		# 2. SETTINGS
 		if settings is not None:
@@ -391,6 +443,11 @@ class ExtendedProteinRateSampler():
 		self.ref_eprot.expand()
 		self.ref_eprot.am = self.model.predict_attention(sequence_probs=self.ref_eprot.get_probs())
 
+		# A non-canonical residue in the reference could never change (see
+		# _reverse_logprob), so refuse it rather than sample with frozen sites.
+		frozen = sorted(set(ref_seq) & set(_NONCANONICAL_RESIDUES))
+		assert not frozen, f"{self.name}._setup(): reference contains non-canonical residues {frozen}, which the sampler can never change."
+
 		if pars['lambda_structure_ce'] > 0.:
 			with torch.no_grad():
 				ref_structure_logits = self.model.predict_structure_logits(sequence_probs=self.ref_eprot.get_probs())
@@ -422,7 +479,7 @@ class ExtendedProteinRateSampler():
 					if os.path.isfile(f'{d}/{fn}'):
 						os.remove(f'{d}/{fn}')
 
-			sequence = mutate(self.ref_eprot.sequence, pars['init_muts'], self.generator.get()) if pars["init_muts"]>0 else self.ref_eprot.sequence
+			sequence = self._mutate_canonical(self.ref_eprot.sequence, pars['init_muts']) if pars["init_muts"]>0 else self.ref_eprot.sequence
 			eprot = ExtendedProtein(sequence=sequence, requires_grad=True, device=self.generator.device)
 			eprot.expand()
 
@@ -480,12 +537,12 @@ class ExtendedProteinRateSampler():
 				"# U_am        : attention-map contribution to U\n"
 				"# U_structure_ce : structure-token cross-entropy contribution to U (0 if lambda_structure_ce=0)\n"
 				"# Hd_to_ref   : Hamming distance between current accepted sequence and reference sequence\n"
-				"# site        : sequence position proposed this move (0-indexed)\n"
-				"# cur_aa      : amino acid at that site before this move\n"
-				"# proposed_aa : amino acid proposed at that site this move\n"
+				"# site        : sequence position(s) proposed this move (0-indexed), comma-separated when n_sites > 1\n"
+				"# cur_aa      : amino acid(s) at the site(s) before this move, comma-separated when n_sites > 1\n"
+				"# proposed_aa : amino acid(s) proposed at the site(s) this move, comma-separated when n_sites > 1\n"
 				"# dU          : U(proposed) - U(current)\n"
-				"# log_a_AB    : log-probability of proposing this substitution\n"
-				"# log_a_BA    : log-probability of proposing the reverse substitution from the candidate\n"
+				"# log_a_AB    : log-probability of proposing this move (summed over its sites)\n"
+				"# log_a_BA    : log-probability of proposing the reverse move from the candidate (summed over its sites)\n"
 				"# log_ratio   : log Metropolis-Hastings ratio, -dU/T + log_a_BA - log_a_AB\n"
 				"# accepted    : 1 if proposed move is accepted, 0 if rejected\n"
 				"# acc_moves   : cumulative number of accepted Monte Carlo moves\n"
@@ -529,7 +586,9 @@ class ExtendedProteinRateSampler():
 
 		line = ''
 		for key, _, fp in self.formatter['sampling']:
-			line = f'{line}|{format(data[f"{key}"], f".{fp}f"):^12}'
+			value = data[key]
+			value = value if isinstance(value, str) else format(value, f".{fp}f")   # site is a string when n_sites > 1
+			line = f'{line}|{value:^12}'
 
 		line = f'{line}|' + ''.join([' ']*5)
 
@@ -558,6 +617,7 @@ class ExtendedProteinRateSampler():
 		lines.append(f'# logits mass:                {pars["M"]:.2f}')
 		lines.append(f'# softmax temperature:        {pars["T_sftm"]:.2f}')
 		lines.append(f'# Gauss-Hermite nodes:        {pars["n_quad"]:.0f}')
+		lines.append(f'# sites per move:             {pars["n_sites"]}')
 		lines.append(f'# attention multiplier:       {pars["lambda_am"]:.1e}')
 		lines.append(f'# structure_ce multiplier:    {pars["lambda_structure_ce"]:.1e}')
 		lines.append(f'# entropy multiplier:         {pars["lambda_S"]:.1e}')
@@ -580,14 +640,14 @@ class ExtendedProteinRateSampler():
 
 	def _correct_types(self, d, dname):
 		if dname == "pars":
-			types_and_keys = [(int, ['moves', 'n_quad', 'init_muts', 'seed'])]
+			types_and_keys = [(int, ['moves', 'n_quad', 'init_muts', 'n_sites', 'seed'])]
 		else:
+			# 'site' is not cast: it holds the comma-separated sites of the move.
 			types_and_keys = [
 				(int, [
 					'move',
 					'acc_moves',
 					'Hd_to_ref',
-					'site',
 				])
 			]
 
@@ -616,6 +676,7 @@ class ExtendedProteinRateSampler():
 				"lambda_S": (0.0, float),
 				"n_quad": (40, int),
 				"init_muts": (0, int),
+				"n_sites": (1, int),
 				"eps": (1.0e-9, float),
 				"seed": (0, int),
 		}
