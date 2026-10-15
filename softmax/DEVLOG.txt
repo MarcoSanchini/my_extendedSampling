@@ -5177,3 +5177,98 @@ traceback and ends with "Simulation completed!". Push the logs if they should
 be on record.
 
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-15 -- init_muts drew non-canonical residues, which froze those sites (fixed)
+--------------------------------------------------------------------------------
+Start mutations came from utils.operations.mutate(), which draws from all 25
+vocabulary entries: the 20 canonical residues plus X, B, U, Z and O. The sampler
+proposes only canonical residues, and the reverse proposal from a site holding a
+non-canonical residue has probability zero (log_a_BA = -inf in _step). The move
+away from that site is therefore always rejected, and the site never changes.
+Each start mutation hit one of the five with probability 5/25 = 20%. The
+2026-10-04 MUTS=51 example had 12 of 51.
+
+Scope: init_muts=0, which every sweep so far used, is unaffected. The 2026-09-21/22
+runs used init_muts=5, so each had about a two-in-three chance (1 - 0.8^5) of a
+frozen site. Their final sequences should be checked for X, B, U, Z or O.
+
+The comment in _step called this case rare. It is not.
+
+Fix (classes/rate_sampler.py): _mutate_canonical draws the start from the 20
+canonical residues, and _setup refuses a reference that contains non-canonical
+residues, since those would be frozen in the same way.
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-15 -- n_sites: several sites per move, exact Metropolis-Hastings (for the N=10 pilot)
+--------------------------------------------------------------------------------
+Design. pars key n_sites, default 1. A move picks n_sites distinct sites
+uniformly at random, a symmetric choice that cancels from the ratio. One relaxed
+gradient pass, with all chosen sites soft and the rest one-hot, serves all of
+them, so the cost matches a single-site move: one forward and one backward pass.
+Each site gets the same informed draw as before (momentum, argmax over its
+competitors, pointing probability from log_pointing_prob). The joint proposal is
+the product of those per-site probabilities. The reverse move uses the same
+sites, the current residues as targets and the gradient at the candidate. So
+log_ratio = -dU/T + log q(A|B) - log q(B|A), an exact Metropolis-Hastings kernel
+for exp(-U/T).
+
+Soft rows. At T_sftm = 0.1 each relaxed row keeps about 99.9% of its mass on the
+current residue (one-hot logits differ by 1.0, so e^9.6 against 24 e^-0.4). The
+joint-soft gradient therefore matches the per-site gradient to about 1e-3. The
+proposal is computed from the gradient the move actually uses, so the kernel is
+still exact.
+
+Output. Each row of data.dat has the same columns. For n_sites > 1, site, cur_aa
+and proposed_aa are comma-separated lists, and dU, log_a_AB, log_a_BA and
+log_ratio are sums over the sites. Scripts that read the site column as an
+integer assume one site per move: identify_k_sites.py, analyze_run.py,
+run_equilibration.py and aggregate_seeds.py. analyze_ensemble.py,
+summarize_sweep.py and plot_run.py use checkpoints or numeric columns only.
+
+Sweep. INIT_MUTS and N_SITES are environment variables with defaults 0 and 1, so
+the old runs reproduce. N_SITES != 1 writes n_sites to pars.txt. An absent key
+means 1, so old pars files and restart or --extend matching are unchanged.
+
+Status: NOT RUN. This session has no torch and cannot install it (the CUDA wheel
+stalls, and download.pytorch.org is denied). The changes were checked by reading
+only. In particular, the claim that n_sites=1 makes the same draws in the same
+order as the old single-site move has not been compared with an old run. Before
+the pilot, run on the machine that runs the sweeps:
+    cd softmax/code/tests && python -u test_nsite_kernel.py
+It checks, with a toy energy and the real sampler methods: exact detailed balance
+and stationarity on 3-letter systems for n_sites = 1, 2, 3; sampled targets
+against the pointing probabilities; canonical starts; the reference guard; and a
+sample() run with n_sites=3 whose restart reproduces the straight run.
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-15 -- pilot before the 3e5 runs: 10 sites per move against single-site
+--------------------------------------------------------------------------------
+Question: does a 10-site move accept more site changes per unit time than a
+single-site move, at the sweep's temperatures? Both runs use the same start
+(INIT_MUTS=51, canonical), the same MOVES and the same dt rule, so only N differs.
+
+Why 51, not 0 or 5. At Hd 4-5 (drift 5), the median 8- to 12-site move costs
++1200 to +4000 in U, and its acceptance is 1e-6 or less at T = 32 and 107
+(zero_polymer/multisite_tradeoff.txt, drift=5). From the reference itself every
+move is uphill, since U = 0 there is the global minimum. At drift 51 the median
+8-site move is downhill at all three temperatures; the median 12-site move has
+acceptance exp(-median dU/T) of 0.16, 0.58 and 0.84 at T = 32, 107 and 322. These
+are relaxation numbers, not equilibrium; the pilot is the test.
+
+Commands (the two sweeps run one after the other; each runs up to 2 jobs):
+    cd /home/user/my_extendedSampling/softmax/monte_carlo
+    mkdir -p pilot_n10 && cp -r zero_polymer_results/rate_inputs pilot_n10/
+    RUN_DIR=$PWD/pilot_n10 INIT_MUTS=51 N_SITES=10 TS_OVERRIDE="107 300" MOVES=5000 LOG_STEP=100 PRINT_STEP=100 nohup bash sweep_temperature_zero_polymer.sh > pilot_n10.log 2>&1 &
+    mkdir -p pilot_single && cp -r zero_polymer_results/rate_inputs pilot_single/
+    RUN_DIR=$PWD/pilot_single INIT_MUTS=51 TS_OVERRIDE="107 300" MOVES=5000 LOG_STEP=100 PRINT_STEP=100 nohup bash sweep_temperature_zero_polymer.sh > pilot_single.log 2>&1 &
+
+Read-out, per run, after the first 2500 moves (data.dat in
+RUN_DIR/tests_rate_sweep_temperature_zero_polymer/T<T>/sim0/):
+    awk -F'\t' '$1 ~ /^[0-9]+$/ && $1 >= 2500 {n++; a += $14; h += $6} END {print "accept", a/n, "mean Hd", h/n}' data.dat
+Compare N * accept(N=10) with accept(N=1) at each temperature. Keep N=10 if it
+wins at both temperatures and the Hd trend has flattened by 2500 moves; otherwise
+the pilot points to a smaller N.
+--------------------------------------------------------------------------------

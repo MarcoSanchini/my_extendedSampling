@@ -36,6 +36,8 @@ set -u
 #    LOG_STEP=3000 PRINT_STEP=1000 MOVES=3000000 bash sweep_temperature_zero_polymer.sh
 #                                                         # long runs: fewer checkpoints and status lines
 #    EXTEND=1 MOVES=1000000 LOG_STEP=1000 bash sweep_temperature_zero_polymer.sh   # continue finished runs
+#    RUN_DIR=<new dir with rate_inputs/> INIT_MUTS=51 N_SITES=10 TS_OVERRIDE="107 300" MOVES=5000 LOG_STEP=100 PRINT_STEP=100 bash sweep_temperature_zero_polymer.sh
+#                                                         # 10-sites-per-move pilot, see DEVLOG 2026-10-15
 # ============================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -55,7 +57,13 @@ TS=(${TS_OVERRIDE:-1e-1 1e0 1e1 31.6 56.2 1e2 177 316 562 1e3 1e4})
 DT_AT_T2="${DT_AT_T2:-63.0}"   # dt at T=2 where mean p_match~0.15 on zero_polymer
 DT_EXP="${DT_EXP:-0.5}"        # 0.5: dt/sqrt(T) held fixed. 0: fixed dt
 MOVES="${MOVES:-50000}"
-INIT_MUTS=0
+# Starting mutations, drawn from canonical residues (main_rate.py). 0 starts at
+# the reference, which every sweep so far has used.
+INIT_MUTS="${INIT_MUTS:-0}"
+# Sites changed per move. 1 is the single-site sampler every run so far used.
+# Above 1, n_sites is appended to pars.txt. Absent means 1, so existing pars
+# files, and the restart and --extend matching against them, are unchanged.
+N_SITES="${N_SITES:-1}"
 LOG_STEP="${LOG_STEP:-100}"
 PRINT_STEP="${PRINT_STEP:-1}"
 
@@ -119,7 +127,11 @@ for T in "${TS[@]}"; do
         -e "s/^seed[[:space:]].*/seed      ${SEED}            # generator seed/" \
         "$BASE_PARS" > "$PARS_FILE"
 
-    echo "T=${T}, dt=${DT}, moves=${MOVES}, init_muts=${INIT_MUTS}, seed=${SEED}, ref=${REF_NAME}"
+    if [ "$N_SITES" != "1" ]; then
+        echo "n_sites     ${N_SITES}            # sites changed per move" >> "$PARS_FILE"
+    fi
+
+    echo "T=${T}, dt=${DT}, moves=${MOVES}, init_muts=${INIT_MUTS}, n_sites=${N_SITES}, seed=${SEED}, ref=${REF_NAME}"
 
 done
 
@@ -164,6 +176,8 @@ for T in "${TS[@]}"; do
     echo "Launching T=$T"
     echo "  dt:       $(dt_for_T "$T")"
     echo "  moves:    $MOVES"
+    echo "  init:     $INIT_MUTS"
+    echo "  n_sites:  $N_SITES"
     echo "  ref:      $REF_NAME"
     echo "  log_step: $LOG_STEP"
     echo "  results:  $RESULTS_DIR"
