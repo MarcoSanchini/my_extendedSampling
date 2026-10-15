@@ -5162,3 +5162,18 @@ T300_extend.log has no traceback and ends with "Simulation completed!".
 Cost, CPU-time basis (0.365 s/move, a lower bound): 3e5 for seven runs at two
 at a time is about 5 days. Extending to 1e6 adds about 12 days.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-15 -- extension test (--extend, T=300, 1000 to 2000 moves) worked on the GPU
+--------------------------------------------------------------------------------
+Test from the plan above: T=300, production settings (log_step and print_step
+1000), 1000 moves, then --extend to 2000. The user ran it on the GPU and reports
+that it worked.
+
+Per-check output is not recorded here, because the logs are not in the repo.
+The checks were: data.dat has moves 0 to 2000, each once, with U continuing
+from the move-1000 value; eprot has sequence_2000.pt; T300_extend.log has no
+traceback and ends with "Simulation completed!". Push the logs if they should
+be on record.
+
+--------------------------------------------------------------------------------
