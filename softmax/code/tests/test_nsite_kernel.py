@@ -15,7 +15,8 @@ exact_kernel. Check F runs _step itself against those exact rows.
      sequence of length L over a 3-letter canonical alphabet, for several
      (L, n_sites, T), from _grad_pass_sites, _substitute_sites, _reverse_logprob,
      _exact_energy and log_pointing_prob. Detailed balance and stationarity of
-     exp(-U/T) must hold.
+     exp(-U/T) must hold. dt=20 and T_sftm=1 make the proposal depend on the
+     gradient; the check asserts that the proposal spread is non-trivial.
   B. Sampling. _draw_targets must realize the pointing probabilities that
      log_pointing_prob reports (Monte Carlo over the momentum draws).
   C. Starts. _mutate_canonical writes canonical residues only.
@@ -139,6 +140,7 @@ def exact_kernel(sampler, pars, L, letters):
     P = np.zeros((len(states), len(states)))
     U = np.zeros(len(states))
     subsets = list(itertools.combinations(range(L), n))
+    spread = 0.
 
     for a, seq_a in enumerate(states):
         eA = ExtendedProtein(sequence=seq_a, requires_grad=True, device="cpu")
@@ -150,6 +152,7 @@ def exact_kernel(sampler, pars, L, letters):
             cur = [int(eA.logits[s].argmax().item()) for s in sites]
             comps = [sampler._competition_indices(c) for c in cur]
             total = 0.
+            logs = []
             for local in itertools.product(*[range(len(c)) for c in comps]):
                 log_qf = 0.
                 tgt = []
@@ -157,6 +160,7 @@ def exact_kernel(sampler, pars, L, letters):
                     log_qf += log_pointing_prob(muA[k][comps[k]], sigma, torch.tensor(local[k]), pars["n_quad"]).item()
                     tgt.append(int(comps[k][local[k]].item()))
                 total += math.exp(log_qf)
+                logs.append(log_qf)
 
                 eB = sampler._substitute_sites(eA, sites, tgt)
                 muB = -step_coef*sampler._grad_pass_sites(eB, sites, pars)
@@ -167,17 +171,19 @@ def exact_kernel(sampler, pars, L, letters):
                 assert not math.isnan(log_ratio), (seq_a, sites, tgt)
                 accept = math.exp(min(0., log_ratio))
                 P[a, index["".join(eB.sequence)]] += math.exp(log_qf)*accept/math.comb(L, n)
+            spread = max(spread, max(logs) - min(logs))
             assert abs(total - 1.) < 1e-5, f"forward proposal not normalized: {total} at {seq_a}, sites {sites}"
         P[a, a] = 1. - P[a].sum()
-    return states, U, P
+    return states, U, P, spread
 
 
-def check_detailed_balance(L, n, T, letters=("A", "G", "K"), seed=3):
+def check_detailed_balance(L, n, T, dt=20.0, T_sftm=1.0, letters=("A", "G", "K"), seed=3):
     set_toy_energy(L, seed=seed)
     sampler = make_sampler(seed=0, letters=list(letters))
     set_reference(sampler, letters[0]*L)
-    pars = make_pars(n, T=T)
-    states, U, P = exact_kernel(sampler, pars, L, list(letters))
+    pars = make_pars(n, T=T, dt=dt, T_sftm=T_sftm)
+    states, U, P, spread = exact_kernel(sampler, pars, L, list(letters))
+    assert spread > 0.01, f"proposal nearly uniform (spread {spread:.4f}): the gradient terms are not exercised"
 
     pi = np.exp(-(U - U.min())/T)
     pi /= pi.sum()
@@ -308,12 +314,12 @@ def check_sample_and_restart():
 #    acceptance must match the exact kernel rows. exact_kernel re-implements #
 #    the accept rule, so this is the check of _step's own ratio and draws.  #
 # ------------------------------------------------------------------------ #
-def check_step_matches_kernel(L=4, n=2, T=1.0, letters=("A", "G", "K"), seed=3, draws=4000):
+def check_step_matches_kernel(L=4, n=2, T=1.0, dt=20.0, T_sftm=1.0, letters=("A", "G", "K"), seed=3, draws=4000):
     set_toy_energy(L, seed=seed)
     sampler = make_sampler(seed=0, letters=list(letters))
     set_reference(sampler, letters[0]*L)
-    pars = make_pars(n, T=T)
-    states, _, P = exact_kernel(sampler, pars, L, list(letters))
+    pars = make_pars(n, T=T, dt=dt, T_sftm=T_sftm)
+    states, _, P, _ = exact_kernel(sampler, pars, L, list(letters))
     index = {s: k for k, s in enumerate(states)}
 
     for a in (0, len(states)//2, len(states) - 1):
