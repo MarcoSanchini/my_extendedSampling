@@ -5128,3 +5128,37 @@ Hamming autocorrelation exceeds 0.1, then block averages) is not implemented.
 analyze_ensemble.py uses a fixed 50% burn-in and a trending flag. data.dat has
 Hd_to_ref for every move, so the paper's check could be added.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-15 -- paper-length sweep (3e5 steps) on 10-300, extendable to 1e6; --extend added
+--------------------------------------------------------------------------------
+Decision: first production run at MOVES = 3e5, the paper's stated minimum for
+protein G (Zambon et al. 2024, Sections 2.1 and 3.1). The scaled 3e6 would take
+about 12.7 days per run at 0.365 s/move (CPU time, T=300), too long for a first
+pass. 3e5 is about 1.3 days per run on the same basis. The runs are extended to
+1e6 later, if the 3e5 results need it.
+
+Extension mechanism (main_rate.py --extend, sweep EXTEND=1). The continuation
+uses the one sim directory whose pars.txt match in every key except moves,
+restores its last checkpoint (eprot, generator, log.pt), appends rows to
+data.dat, and records the extension in extensions.txt. It refuses when the
+sampler would clear the directory (missing restart files, or fewer than four
+eprot files), when the match is ambiguous, or when the new moves do not exceed
+the last logged move. Why it was needed: find_path matches every key, so a
+larger moves value would have started a new sim directory from scratch.
+Restart has been used before (2026-09-22, dt=16000 seeds), but not with this
+code version or with a changed moves value. rate_sampler.py now loads log.pt
+with weights_only=False, since it is a dict.
+
+Settings: log_step 1000 and print_step 1000. 1000 divides both 3e5 and 1e6, so
+both ends are checkpoints, and print_step keeps the logs small.
+
+Test before the production run (not yet run; needs the GPU): 1000 steps, then
+extension to 2000, for T=300 with the production settings. Checks: a single sim
+directory; data.dat has moves 0 to 2000, each once, with U continuing from the
+move-1000 value rather than resetting to zero; eprot has sequence_2000.pt;
+T300_extend.log has no traceback and ends with "Simulation completed!".
+
+Cost, CPU-time basis (0.365 s/move, a lower bound): 3e5 for seven runs at two
+at a time is about 5 days. Extending to 1e6 adds about 12 days.
+--------------------------------------------------------------------------------
