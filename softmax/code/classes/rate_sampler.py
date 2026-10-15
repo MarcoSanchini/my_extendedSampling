@@ -403,7 +403,7 @@ class ExtendedProteinRateSampler():
 			settings["restart"] = check_rdir and check_edir
 
 		if settings["restart"]:
-			self.log = torch.load(f'{settings["results_dir"]}/log.pt')
+			self.log = torch.load(f'{settings["results_dir"]}/log.pt', weights_only=False)
 
 			data = self.log["data"].copy()
 			data = self._correct_types(data, "data")

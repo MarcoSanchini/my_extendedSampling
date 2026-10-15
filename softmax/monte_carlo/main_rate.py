@@ -21,6 +21,52 @@ from utils.general import load_inputs, create_path, find_path
 from references import get_reference, header
 
 
+RESTART_FILES = ["data.dat", "pars.txt", "generator.npy", "log.pt"]
+
+
+def last_logged_move(data_dat_path):
+    with open(data_dat_path) as f:
+        rows = [line for line in f if line.strip() and not line.startswith("#")]
+    return int(rows[-1].split("\t")[0])
+
+
+def find_extendable_path(raw_path, pfile):
+    """Sim directory to continue with --extend: the one whose pars.txt matches
+    pfile in every key except `moves`. Refuses anything the sampler could not
+    restart, because its own fallback clears the directory and starts over."""
+    wanted = load_inputs(pfile)
+    new_moves = wanted.pop("moves")
+    matches = []
+    for d in sorted(os.listdir(raw_path)):
+        path = f"{raw_path}/{d}"
+        if not (d.startswith("sim") and os.path.isdir(path)):
+            continue
+        saved = load_inputs(f"{path}/pars.txt")
+        saved.pop("moves", None)
+        if saved == wanted:
+            matches.append(path)
+    if len(matches) != 1:
+        raise FileNotFoundError(
+            f"--extend: expected one sim directory in {raw_path} with matching "
+            f"parameters, found {len(matches)}.")
+    path = matches[0]
+
+    missing = [f for f in RESTART_FILES if not os.path.isfile(f"{path}/{f}")]
+    eprot_dir = f"{path}/eprot"
+    n_eprot = len([f for f in os.listdir(eprot_dir) if os.path.isfile(f"{eprot_dir}/{f}")]) if os.path.isdir(eprot_dir) else 0
+    if missing or n_eprot < 4:
+        raise FileNotFoundError(
+            f"--extend: {path} cannot be restarted (missing {missing}, "
+            f"{n_eprot} eprot files). Refusing, since the sampler would clear it.")
+
+    last = last_logged_move(f"{path}/data.dat")
+    if new_moves <= last:
+        raise ValueError(
+            f"--extend: moves={new_moves} is not beyond move {last}, the last "
+            f"logged move in {path}.")
+    return path
+
+
 def prepare_directory(args):
 
     # Load sampler parameters
@@ -49,13 +95,22 @@ def prepare_directory(args):
     # Prepare results directory
     create_path(settings["results_dir"])
 
-    settings["results_dir"] = find_path(
-        raw_path=settings["results_dir"],
-        dname="sim",
-        pfile=args.pars_file,
-        pname="pars.txt",
-        lpfunc=load_inputs
-    )
+    if args.extend:
+        # Continue the finished run in place: same directory, state restored
+        # from its last checkpoint, rows appended to its data.dat.
+        settings["results_dir"] = find_extendable_path(settings["results_dir"], args.pars_file)
+        settings["restart"] = True
+        print(f"Extending existing run in {settings['results_dir']}")
+        with open(f"{settings['results_dir']}/extensions.txt", "a") as f:
+            print(f"extended to moves={pars['sampler']['moves']} with {args.pars_file}", file=f)
+    else:
+        settings["results_dir"] = find_path(
+            raw_path=settings["results_dir"],
+            dname="sim",
+            pfile=args.pars_file,
+            pname="pars.txt",
+            lpfunc=load_inputs
+        )
 
     settings["eprot_dir"] = f"{settings['results_dir']}/eprot"
     create_path(settings["eprot_dir"])
@@ -122,6 +177,13 @@ def create_parser():
         help="Reference sequence, by name from code/tests/references.py "
              "(protein_g, zero_polymer, zero_polymer_mature, ...). Default "
              "protein_g, the reference every existing sweep was run with."
+    )
+
+    parser.add_argument(
+        "--extend",
+        action="store_true",
+        help="Continue the finished run in the matching sim directory to a larger "
+             "moves value, restoring its last checkpoint."
     )
 
     return parser
