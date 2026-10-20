@@ -57,8 +57,9 @@ Run (a GPU is strongly recommended; the model is cast to float32, about 6 GB):
   python geodesic_esm3.py --selftest                  # checks against custom_esm, then exits
   python geodesic_esm3.py --site 43 --muts 3 --seed 0
   python geodesic_esm3.py --site 43 --muts 3 --seed 0 --energy ce
-custom_esm is taken from ../../customs and utils.energies from ../code, as in main_rate.py,
-so it runs from any folder.
+custom_esm is taken from <checkout>/customs and utils.energies from <checkout>/softmax/code,
+where <checkout> is found by find_repo_root (or set with EXTSAMPLING_ROOT), so the script
+runs from any folder and also as a copy outside the checkout.
 """
 import argparse
 import contextlib
@@ -76,13 +77,45 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-CODE_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../code")
-)
+def find_repo_root():
+    """The extendedSampling checkout: the folder holding customs/custom_esm and softmax/code.
 
-CUSTOMS_DIR = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "../../customs")
-)
+    The paths are not hard-wired relative to this file, so a copy of the script placed
+    elsewhere (e.g. next to the checkout) still finds them. Looked up, in order:
+      $EXTSAMPLING_ROOT; this file's folder and its parents; the current folder and its
+      parents; and, at each of those levels, the subfolders one level down (so
+      ~/my_project/geodesic_esm3.py finds ~/my_project/extendedSampling).
+    """
+    def ok(d):
+        return (d / "customs" / "custom_esm" / "__init__.py").is_file() and \
+               (d / "softmax" / "code" / "utils" / "energies.py").is_file()
+
+    if os.environ.get("EXTSAMPLING_ROOT"):
+        d = Path(os.environ["EXTSAMPLING_ROOT"]).expanduser().resolve()
+        if ok(d):
+            return d
+        raise SystemExit(f"EXTSAMPLING_ROOT={d} has no customs/custom_esm or softmax/code")
+    seen = []
+    for start in (Path(__file__).resolve().parent, Path.cwd().resolve()):
+        for d in (start, *start.parents):
+            if d in seen:
+                continue
+            seen.append(d)
+            if ok(d):
+                return d
+            with contextlib.suppress(OSError):
+                for sub in sorted(d.iterdir()):
+                    if sub.is_dir() and not sub.name.startswith(".") and ok(sub):
+                        return sub
+    raise SystemExit(
+        "geodesic_esm3.py: cannot find the extendedSampling checkout (customs/custom_esm and "
+        "softmax/code) above this script or the current folder; set EXTSAMPLING_ROOT to it."
+    )
+
+
+REPO_ROOT = find_repo_root()
+CODE_DIR = str(REPO_ROOT / "softmax" / "code")
+CUSTOMS_DIR = str(REPO_ROOT / "customs")
 
 sys.path.insert(0, CODE_DIR)
 sys.path.insert(0, CUSTOMS_DIR)
