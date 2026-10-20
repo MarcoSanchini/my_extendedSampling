@@ -1,0 +1,28 @@
+protein G, site 43 (E in sigma1, W in the reference); sigma1 differs from the reference at [36, 43, 47]; seed 0
+
+== whole transformer (last layer, mean over heads) ==
+pairs ordered correctly by g'(0): 46/171 = 0.269 (0.5 is chance)
+Spearman(g'(0), Delta U) = -0.707
+best mutant by Delta U: E43W; by g'(0): E43Q
+paths monotone: 1/19
+pairs whose difference is monotone: 5, ordered correctly: 5 (Lemma 2(a): all of them)
+discordant pairs with BOTH paths monotone (counterexamples to the 1-D argument): 0
+reverting mutation E43W: rank 1 by Delta U, rank 14 by g'(0)
+
+== layer 0, head 0, affine (closed form, eq. 7) ==
+pairs ordered correctly by g'(0): 143/171 = 0.836 (0.5 is chance)
+Spearman(g'(0), Delta U) = +0.784
+best mutant by Delta U: E43W; by g'(0): E43C
+paths monotone: 13/19
+pairs whose difference is monotone: 59, ordered correctly: 59 (Lemma 2(a): all of them)
+discordant pairs with BOTH paths monotone (counterexamples to the 1-D argument): 1, e.g. [('E43R', 'E43D')]
+reverting mutation E43W: rank 1 by Delta U, rank 5 by g'(0)
+
+== layer 0, head 0, true LayerNorms ==
+pairs ordered correctly by g'(0): 122/171 = 0.713 (0.5 is chance)
+Spearman(g'(0), Delta U) = +0.546
+best mutant by Delta U: E43W; by g'(0): E43C
+paths monotone: 10/19
+pairs whose difference is monotone: 31, ordered correctly: 31 (Lemma 2(a): all of them)
+discordant pairs with BOTH paths monotone (counterexamples to the 1-D argument): 6, e.g. [('E43H', 'E43R'), ('E43V', 'E43Y'), ('E43V', 'E43G'), ('E43V', 'E43T'), ('E43Y', 'E43G')]
+reverting mutation E43W: rank 1 by Delta U, rank 5 by g'(0)
