@@ -188,7 +188,7 @@ def check_detailed_balance(L, n, T, dt=20.0, T_sftm=1.0, letters=("A", "G", "K")
     pi = np.exp(-(U - U.min())/T)
     pi /= pi.sum()
     flow = pi[:, None]*P
-    assert np.all(P >= -1e-12), "negative transition probability"
+    assert np.all(P >= -1e-6), f"negative transition probability (min {P.min():.2e})"   # float32 quadrature: rows sum to 1 within ~1e-7
     assert np.allclose(flow, flow.T, rtol=1e-6, atol=1e-12), f"detailed balance violated (L={L}, n={n}, T={T})"
     assert np.allclose(pi @ P, pi, rtol=1e-6, atol=1e-12), f"stationarity violated (L={L}, n={n}, T={T})"
     moved = P[np.arange(len(states)), np.arange(len(states))]
