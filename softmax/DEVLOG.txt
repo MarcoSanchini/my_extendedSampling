@@ -5315,3 +5315,60 @@ estimate from the toy energy; the assertion will show if it is wrong.
 Still NOT RUN. Run softmax/code/tests/test_nsite_kernel.py on the machine that runs
 the sweeps before the pilot.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-21 -- mutations-per-step study: design and scripts (not run here)
+--------------------------------------------------------------------------------
+Question: which n_sites gives the fastest sampling at a low, a transition and a
+high temperature? The thesis aim is speed, so the answer is scored in wall-clock
+time.
+
+Changes from the first plan (equilibrate until the RMS Hamming velocity is
+about 0, then maximize mutations x acceptance):
+
+1. Equilibrium. A velocity near 0 is necessary but not sufficient: a frozen
+   chain (T <= 10, nothing accepted) also has zero velocity. Four chains per T,
+   two from the reference and two from random canonical sequences. t_eq is the
+   first time from which R-hat (window t/2..t, U and Hd_to_ref) stays below 1.1
+   and the Hd_to_ref slope is within 2 standard errors of 0. The RMS velocity of
+   Hd(x_0, x_t) is reported alongside.
+2. Equilibrate once per T at n_sites=1, then start every n_sites from the final
+   state of the same equilibrated chains. The target does not depend on
+   n_sites, so this is fair and avoids equilibrating six times.
+3. Score. N*a (site changes accepted per move) is kept as the cheap proxy, but
+   back-and-forth flips inflate it. The main score is s/decorr = tau_q x
+   seconds per move, where tau_q is the lag at which D(tau) = <Hd(x_t,
+   x_t+tau)> reaches (1 - 1/e) of D_inf, the Hd between independent equilibrium
+   sequences (snapshots of chains with different starts). Also reported:
+   integrated autocorrelation times of U and Hd_to_ref. data.dat records every
+   move's sites, residues and acceptance, so the sequence at every move is
+   rebuilt exactly from start.txt; no extra checkpoints are needed.
+4. Time. data.dat's time column is process_time(), CPU time. run_nsites.py
+   times each _step with perf_counter() between torch.cuda.synchronize() calls
+   (wall.dat) and writes peak GPU memory to run_info.txt.
+5. Temperatures: 32, 100, 316 (provisional; acceptance 5%, 33%, 56% in the
+   2026-10-14 test). The transition T should come from the peak of Var(U)/T^2
+   once an equilibrated sweep exists; analyze_nsites.py equil reports it per T.
+   Heuristic: if a(N) ~ exp(-lambda N), N*a peaks where a = 1/e ~ 0.37.
+
+Not in scope, but the likely next lever if the low T stays slow: dt per N (the
+proposal may want a smaller dt as N grows) and replica exchange across T.
+
+Files (monte_carlo/):
+  run_nsites.py     one chain. main_rate.py's sampler with a chosen start
+                    (reference, random, or a run directory's last checkpoint),
+                    wall.dat, run_info.txt, start.txt, --resume.
+  study_nsites.sh   PHASE=equil (T x 4 chains) or PHASE=scan (T x N in
+                    1 2 4 8 16 32 x chains 0 1), through gpu_scheduler.sh.
+  analyze_nsites.py equil | scan; numpy only, matplotlib optional.
+
+Checked here: analyze_nsites.py on synthetic runs from a toy energy written in
+run_nsites.py's format (reconstruction matches cur_aa and Hd_to_ref on every
+move; t_eq found on a 30000-move toy; the scan ranks N). run_nsites.py and
+study_nsites.sh were checked by py_compile, bash -n and a DRY_RUN only. This
+session has no torch, so run_nsites.py has NOT been run.
+
+Cost estimate at 0.37 s/move (the CPU-time figure, an assumption for the GPU):
+equil 12 chains x 20000 moves, about 12 h at 2 jobs; scan 36 chains x 5000
+moves, about 9 h.
+--------------------------------------------------------------------------------
