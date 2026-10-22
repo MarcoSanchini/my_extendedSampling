@@ -107,6 +107,7 @@ def main(args):
 	pars = {
 		"T": args.T, "dt": args.dt, "M": 1.0, "T_sftm": 0.1,
 		"lambda_am": 1.0, "lambda_S": 0.0, "eps": 1.0e-9, "n_quad": 40,
+		"grad_mode": args.grad_mode,
 	}
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -141,7 +142,7 @@ def main(args):
 
 	hd0 = sum(1 for a, b in zip(start_seq, REF_SEQ) if a != b)
 	print(f"PID: {os.getpid()}")
-	print(f"start_mode={args.start_mode}  seed={args.seed}  dt={args.dt}  T={args.T}  moves={args.moves}")
+	print(f"start_mode={args.start_mode}  seed={args.seed}  dt={args.dt}  T={args.T}  moves={args.moves}  grad_mode={args.grad_mode}")
 	print(f"start_seq (Hd={hd0} from ref): {start_seq}")
 
 	eprot = ExtendedProtein(sequence=start_seq, requires_grad=True, device=device)
@@ -177,6 +178,8 @@ def create_parser():
 	parser.add_argument("--dt", type=float, default=2000.0)
 	parser.add_argument("--T", type=float, default=2.0)
 	parser.add_argument("--results-dir", type=str, required=True)
+	parser.add_argument("--grad-mode", choices=["site_soft", "one_pass"], default="site_soft",
+		help="one_pass: docs/one_pass_move.tex; its dt is one_pass_dt_scale() (4.5e-4) times the site_soft one")
 	return parser
 
 

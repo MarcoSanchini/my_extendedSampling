@@ -67,6 +67,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../customs")))
 
 import math
+import time
 import itertools
 import statistics
 import torch
@@ -120,11 +121,20 @@ assert all(0 <= s < len(REF_SEQ) for s in FREE_SITES), (
 #
 # Override per run without editing this file:
 #   T=400 DT=70 MOVES=4000 python tests/validate_boltzmann_toy.py
+#
+# GRAD_MODE=one_pass (T4 of docs/one_pass_move.tex) runs the restricted chain
+# through the sampler's own one-pass _step (sites=[site]), with its gradient
+# cache, instead of restricted_step below. Its dt is c = one_pass_dt_scale()
+# times the site_soft one: the T=107, dt=460 run is DT=0.2086 there.
+#   GRAD_MODE=one_pass T=107 DT=0.2086 MOVES=20000 python tests/validate_boltzmann_toy.py
+GRAD_MODE = os.environ.get("GRAD_MODE", "site_soft")
+assert GRAD_MODE in ("site_soft", "one_pass"), f"GRAD_MODE must be site_soft or one_pass, got {GRAD_MODE}"
 pars = {
 	"T": float(os.environ.get("T", 2.0)),
 	"dt": float(os.environ.get("DT", 1300.0)),
 	"M": 1.0, "T_sftm": 0.1,
 	"lambda_am": 1.0, "lambda_S": 0.0, "eps": 1.0e-9, "n_quad": 40,
+	"grad_mode": GRAD_MODE,
 }
 
 MOVES = int(os.environ.get("MOVES", 20000))
@@ -187,6 +197,15 @@ def restricted_step(sampler, eprot, U_A, pars, free_sites):
 	return (eprot_B, U_B, accepted) if accepted else (eprot, U_A, accepted)
 
 
+def restricted_step_one_pass(sampler, eprot, U_A, pars, free_sites):
+	"""The same restriction for grad_mode="one_pass": the site is drawn the
+	same way, then the sampler's own _step runs with sites=[site], so the
+	cached gradient is exactly the one a production chain would use."""
+	site = free_sites[int(torch.randint(0, len(free_sites), (1,), generator=sampler.generator.get(), device=sampler.generator.device).item())]
+	eprot, info = sampler._step(eprot, U_A, pars, sites=[site])
+	return (eprot, info["U_B"], True) if info["accepted"] else (eprot, U_A, False)
+
+
 def main():
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -217,7 +236,7 @@ def main():
 	print(f"Reference: {REF_SEQ}")
 	print(f"Free sites: {s1} (ref={REF_SEQ[s1]}), {s2} (ref={REF_SEQ[s2]})  "
 		  f"-- {len(canonical)}^2={len(canonical)**2} states, background fixed at reference elsewhere")
-	print(f"T={pars['T']}, dt={pars['dt']}, MOVES={MOVES}, BURN_IN={BURN_IN}\n")
+	print(f"T={pars['T']}, dt={pars['dt']}, MOVES={MOVES}, BURN_IN={BURN_IN}, grad_mode={GRAD_MODE}\n")
 
 	# ================================================================
 	# exact enumeration
@@ -328,14 +347,18 @@ def main():
 	U_A, _, eprot = sampler._exact_energy(eprot, pars)
 
 	visit_counts = {}
+	visits = []
 	n_accepted = 0
+	step = restricted_step_one_pass if GRAD_MODE == "one_pass" else restricted_step
+	t_run = time.perf_counter()
 	for move in range(1, MOVES+1):
-		eprot, U_A, accepted = restricted_step(sampler, eprot, U_A, pars, FREE_SITES)
+		eprot, U_A, accepted = step(sampler, eprot, U_A, pars, FREE_SITES)
 		n_accepted += int(accepted)
 
 		if move > BURN_IN:
 			state = (eprot.sequence[s1], eprot.sequence[s2])
 			visit_counts[state] = visit_counts.get(state, 0) + 1
+			visits.append(state)
 
 		if move % max(1, MOVES//20) == 0:
 			print(f"  move {move:6d}/{MOVES}  acc_rate so far={n_accepted/move:.3f}  "
@@ -344,7 +367,8 @@ def main():
 	n_counted = sum(visit_counts.values())
 	p_empirical = {k: v/n_counted for k, v in visit_counts.items()}
 
-	print(f"\nOverall acceptance rate: {n_accepted/MOVES:.4f}")
+	print(f"\nWall-clock: {time.perf_counter() - t_run:.0f} s for {MOVES} moves ({(time.perf_counter() - t_run)/MOVES:.3f} s/move)")
+	print(f"Overall acceptance rate: {n_accepted/MOVES:.4f}")
 	print(f"Moves counted toward the histogram (post burn-in): {n_counted}")
 	print(f"Distinct states visited: {len(visit_counts)} / {len(canonical)**2}")
 
@@ -377,6 +401,19 @@ def main():
 	print(f"Total variation distance:   {tv:.4f}  (0 = perfect match, 1 = no overlap at all)")
 	print(f"Mean U under p_exact:       {mean_U_exact:+.4f}")
 	print(f"Mean U under p_empirical:   {mean_U_empirical:+.4f}")
+	# The same two numbers on the first half of the post-burn-in samples. For a
+	# correct sampler, noise-dominated KL falls ~1/n and TV ~1/sqrt(n), so the
+	# full-run values should be ~1/2 and ~0.71 of the half-run ones.
+	half = visits[:len(visits)//2]
+	if half:
+		p_half = {}
+		for st in half:
+			p_half[st] = p_half.get(st, 0) + 1./len(half)
+		kl_h = sum(p*math.log(p/p_exact[k]) for k, p in p_half.items() if p > 0)
+		tv_h = 0.5 * sum(abs(p_exact[k] - p_half.get(k, 0.)) for k in p_exact)
+		print(f"\nFirst half ({len(half)} samples): KL={kl_h:.4f}  TV={tv_h:.4f};  "
+			  f"full/half ratios: KL {kl/kl_h:.2f} (1/n: 0.50), TV {tv/tv_h:.2f} (1/sqrt(n): 0.71)")
+
 	print(f"\n(With only {MOVES} moves and {n_counted} post-burn-in samples over 400 states, expect real")
 	print(f" Monte Carlo noise even for a perfectly correct sampler -- this is a first-pass, not a")
 	print(f" high-precision bias measurement. A large, systematic gap (e.g. empirical concentrated on")

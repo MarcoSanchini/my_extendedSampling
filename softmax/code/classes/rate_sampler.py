@@ -41,6 +41,18 @@ _NONCANONICAL_RESIDUES = ('X', 'B', 'U', 'Z', 'O')
 
 
 
+# dt conversion between the two gradient modes (docs/one_pass_move.tex,
+# Section 2.2 and 5). The site_soft gradient, over a site's competitors, is
+# c*(one-pass gradient) up to a per-site constant, with c = p_off/T_sftm and
+# p_off the weight softmax(logits/T_sftm) puts on each non-current residue of
+# a mean-centred one-hot row (gap 1). The same informedness needs
+# dt_one_pass = c*dt_site_soft; c = 4.535e-4 at T_sftm=0.1, K=25.
+def one_pass_dt_scale(T_sftm: float = 0.1, K: int = len(C.SEQUENCE_USED_VOCAB)) -> float:
+	p_off = math.exp(-1./T_sftm)/(1. + (K - 1)*math.exp(-1./T_sftm))
+	return p_off/T_sftm
+
+
+
 # -------------------------------------------------------------------------- #
 # Locally-Balanced Rate ExtendedProtein Sampler (single-site by default)     #
 #                                                                             #
@@ -84,6 +96,15 @@ _NONCANONICAL_RESIDUES = ('X', 'B', 'U', 'Z', 'O')
 # Per move: 2 backward passes (grad at A, grad at B, each over the relaxed   #
 # chosen site(s)) + 1 forward pass (exact U at B) through ESM3. The cost does #
 # not grow with n_sites: one relaxed pass covers all of them.                #
+#                                                                             #
+# grad_mode (pars key, 2026-10-22). "site_soft" is everything above, the      #
+# default, so every old run replays. "one_pass" is the move of                #
+# docs/one_pass_move.tex: the gradient is taken with respect to the one-hot   #
+# probability matrix at the exact sequence, for all sites, so ONE forward     #
+# (which is also the exact U) and ONE backward per move. The gradient at the  #
+# candidate is cached and becomes the next move's g(A), accepted or not.      #
+# Its scale is 1/c of the site_soft gradient, c = p_off/T_sftm ~ 4.5e-4 at    #
+# T_sftm=0.1, so dt must be multiplied by c for the same informedness.        #
 #                                                                             #
 # The total energy U is lambda_am*U_am + lambda_structure_ce*U_structure_ce  #
 # + lambda_S*entropy. U_am (utils/energies.py:compute_U_am) is a squared     #
@@ -163,6 +184,7 @@ class ExtendedProteinRateSampler():
 				self._print_status(data)
 
 		del self.ref_eprot, self.log, self.generator, self.t0
+		self._grad_cache = None
 
 
 
@@ -173,10 +195,16 @@ class ExtendedProteinRateSampler():
 	# Returns (eprot, info): eprot is the accepted candidate or the      #
 	# unchanged input. With n_sites=1 it makes the same random draws, in #
 	# the same order, as the single-site move it replaced.               #
+	# `sites` fixes the sites instead of drawing them (restricted tests, #
+	# e.g. validate_boltzmann_toy.py); None draws them as above.         #
 	# ------------------------------------------------------------------ #
-	def _step(self, eprot: ExtendedProtein, U_A: float, pars: dict):
+	def _step(self, eprot: ExtendedProtein, U_A: float, pars: dict, sites: list | None = None):
+		if pars.get('grad_mode', 'site_soft') == 'one_pass':
+			return self._step_one_pass(eprot, pars, sites)
+
 		L = len(eprot.sequence)
-		sites = self._draw_sites(L, pars.get('n_sites', 1))
+		if sites is None:
+			sites = self._draw_sites(L, pars.get('n_sites', 1))
 
 		grad_A = self._grad_pass_sites(eprot, sites, pars)
 		cur_idx = [int(eprot.logits[site].argmax(dim=-1).item()) for site in sites]
@@ -199,6 +227,61 @@ class ExtendedProteinRateSampler():
 
 		u = torch.rand(1, device=self.generator.device, generator=self.generator.get()).item()
 		accepted = math.log(max(u, 1e-300)) <= min(0., log_ratio)
+
+		vocab = C.SEQUENCE_USED_VOCAB
+		info = {
+			"site": ",".join(str(site) for site in sites),
+			"cur_aa": ",".join(vocab[idx] for idx in cur_idx),
+			"proposed_aa": ",".join(vocab[idx] for idx in tgt_idx),
+			"proposed_sequence": eprot_B.sequence,
+			"U_B": U_B, "U_am_B": U_am_B, "U_structure_ce_B": eprot_B.U_structure_ce.item(),
+			"dU": dU, "log_a_AB": log_a_AB, "log_a_BA": log_a_BA, "log_ratio": log_ratio,
+			"accepted": int(accepted),
+		}
+
+		return (eprot_B, info) if accepted else (eprot, info)
+
+
+	# ------------------------------------------------------------------ #
+	# The one-pass move (docs/one_pass_move.tex, Section 3). Same draws, #
+	# in the same order, as the site_soft move: sites, momenta, u. The   #
+	# chain's cache holds (sequence, U, g) of the current state; g(A) is #
+	# that cached gradient, never a recomputation, which is what keeps   #
+	# the kernel exact when the backward is not bit-reproducible         #
+	# (Section 4.2). The cache is filled here only when it does not hold #
+	# eprot (chain start without _setup, a caller that moves eprot       #
+	# itself); U_A is then the cache's U, from the same forward code as  #
+	# U_B, so dU never mixes two code paths. One forward + one backward  #
+	# per move, plus one more at a cache fill.                           #
+	# ------------------------------------------------------------------ #
+	def _step_one_pass(self, eprot: ExtendedProtein, pars: dict, sites: list | None = None):
+		L = len(eprot.sequence)
+		if sites is None:
+			sites = self._draw_sites(L, pars.get('n_sites', 1))
+
+		U_A, _, _, grad_full_A = self._cached_energy_grad(eprot, pars)
+		grad_A = grad_full_A[sites]
+		cur_idx = [int(eprot.logits[site].argmax(dim=-1).item()) for site in sites]
+
+		sigma = pars['dt'] * math.sqrt(pars['T']/pars['M'])
+		step_coef = pars['dt']**2. / (2.*pars['M'])
+		mu_A = -step_coef*grad_A
+
+		tgt_idx, log_a_AB = self._draw_targets(mu_A, cur_idx, sigma, pars)
+
+		eprot_B = self._substitute_sites(eprot, sites, tgt_idx)
+		U_B, U_am_B, grad_full_B, eprot_B = self._energy_and_grad(eprot_B, pars)
+		mu_B = -step_coef*grad_full_B[sites]
+		log_a_BA = self._reverse_logprob(mu_B, cur_idx, tgt_idx, sigma, pars)
+
+		dU = U_B - U_A
+		log_ratio = -dU/pars['T'] + (log_a_BA - log_a_AB)
+
+		u = torch.rand(1, device=self.generator.device, generator=self.generator.get()).item()
+		accepted = math.log(max(u, 1e-300)) <= min(0., log_ratio)
+
+		if accepted:
+			self._set_cache(eprot_B, U_B, U_am_B, grad_full_B, pars)
 
 		vocab = C.SEQUENCE_USED_VOCAB
 		info = {
@@ -297,6 +380,60 @@ class ExtendedProteinRateSampler():
 	# Single-site form, as used by the gradient-method comparison tests.
 	def _grad_pass_site(self, eprot: ExtendedProtein, site: int, pars: dict) -> torch.Tensor:
 		return self._grad_pass_sites(eprot, [site], pars)[0]
+
+	# ------------------------------------------------------------------ #
+	# One-pass evaluation: forward on the exact one-hot matrix with      #
+	# requires_grad on it, so the forward IS the exact energy (same       #
+	# input, same predict_attention/autocast path as _exact_energy) and  #
+	# the backward gives dU/dp for every site and residue, (L, K). The   #
+	# entropy term is not defined usefully at a one-hot corner (its      #
+	# gradient is ~log(eps)), so lambda_S must be 0. Returns             #
+	# (U, U_am, grad, eprot), with eprot.am and eprot.U_structure_ce set #
+	# exactly as _exact_energy sets them.                                #
+	# ------------------------------------------------------------------ #
+	def _energy_and_grad(self, eprot: ExtendedProtein, pars: dict):
+		assert pars['lambda_S'] == 0., f"{self.name}: grad_mode='one_pass' needs lambda_S=0, found {pars['lambda_S']}."
+		probs = eprot.get_probs().detach().clone().requires_grad_(True)
+		with torch.enable_grad():
+			am = self.model.predict_attention(sequence_probs=probs)
+			U_am = compute_U_am(am, self.ref_eprot.am)
+			U = pars['lambda_am']*U_am
+
+			lambda_structure_ce = pars.get('lambda_structure_ce', 0.)
+			if lambda_structure_ce > 0.:
+				structure_logits = self.model.predict_structure_logits(sequence_probs=probs)
+				U_structure_ce = compute_U_structure_ce(
+					structure_logits[1:-1].unsqueeze(0),
+					self.ref_structure_tokens.unsqueeze(0),
+				)
+				U = U + lambda_structure_ce*U_structure_ce
+				eprot.U_structure_ce = U_structure_ce.detach().clone().to("cpu")
+			else:
+				eprot.U_structure_ce = torch.tensor(0.)
+
+			U.backward()
+		eprot.am = am.detach().clone().to("cpu")
+		return U.item(), U_am.item(), probs.grad.detach().clone(), eprot
+
+	# The cache key is the sequence plus the energy weights, so a cache
+	# left by another chain or another energy is never used.
+	def _cache_key(self, sequence: str, pars: dict):
+		return (sequence, pars['lambda_am'], pars.get('lambda_structure_ce', 0.))
+
+	def _set_cache(self, eprot: ExtendedProtein, U: float, U_am: float, grad: torch.Tensor, pars: dict):
+		self._grad_cache = {
+			"key": self._cache_key(eprot.sequence, pars),
+			"U": U, "U_am": U_am, "U_structure_ce": eprot.U_structure_ce.item(),
+			"grad": grad,
+		}
+
+	def _cached_energy_grad(self, eprot: ExtendedProtein, pars: dict):
+		cache = self._grad_cache
+		if cache is None or cache["key"] != self._cache_key(eprot.sequence, pars):
+			U, U_am, grad, eprot = self._energy_and_grad(eprot, pars)
+			self._set_cache(eprot, U, U_am, grad, pars)
+			cache = self._grad_cache
+		return cache["U"], cache["U_am"], cache["U_structure_ce"], cache["grad"]
 
 	# ------------------------------------------------------------------ #
 	# Exact pass: U evaluated on the true discrete sequence (no softmax  #
@@ -405,6 +542,12 @@ class ExtendedProteinRateSampler():
 			f'{self.name}._setup(): invalid value for one of the following keys ("moves", "T", "dt", "M", "T_sftm", "eps", "n_quad"). Allowed values: v>0.'
 		)
 		pars = self._correct_types(pars, "pars")
+		assert pars["grad_mode"] in ("site_soft", "one_pass"), (
+			f'{self.name}._setup(): invalid value for "grad_mode" ({pars["grad_mode"]}). Allowed values: "site_soft", "one_pass".'
+		)
+		assert pars["grad_mode"] != "one_pass" or pars["lambda_S"] == 0., (
+			f'{self.name}._setup(): grad_mode="one_pass" needs lambda_S=0 (found {pars["lambda_S"]}): the entropy gradient at a one-hot sequence is ~log(eps) and would swamp the energy gradient.'
+		)
 		assert 1 <= pars["n_sites"] <= len(ref_seq), (
 			f'{self.name}._setup(): invalid value for "n_sites" ({pars["n_sites"]}). Allowed values: 1 <= n_sites <= {len(ref_seq)}.'
 		)
@@ -458,6 +601,7 @@ class ExtendedProteinRateSampler():
 				self.ref_structure_tokens = ref_structure_logits.argmax(dim=-1)[1:-1]  # drop BOS/EOS
 
 		# 3. CLEAN / RESTART
+		self._grad_cache = None
 		if settings["restart"]:
 			check_rdir = all([f in os.listdir(settings['results_dir']) for f in ['data.dat', 'pars.txt', 'generator.npy', 'log.pt']])
 			check_edir = len([f for f in os.listdir(settings['eprot_dir']) if os.path.isfile(f"{settings['eprot_dir']}/{f}")]) >= 4
@@ -475,6 +619,17 @@ class ExtendedProteinRateSampler():
 					requires_grad=True
 			)
 			eprot.load(dir=settings['eprot_dir'], suffix=f"_{data['move']}")
+
+			# The one-pass cache of the restored state, saved with the
+			# checkpoint so a restart replays the straight run. Without it
+			# (or if it belongs to another state) the first move refills it,
+			# which is also exact (docs/one_pass_move.tex, Section 4).
+			cache_path = f'{settings["results_dir"]}/grad_cache.pt'
+			if pars["grad_mode"] == "one_pass" and os.path.isfile(cache_path):
+				cache = torch.load(cache_path, weights_only=False)
+				if cache["key"] == self._cache_key(eprot.sequence, pars):
+					cache["grad"] = cache["grad"].to(self.generator.device)
+					self._grad_cache = cache
 
 		else:
 			for d in [settings['results_dir'], settings['eprot_dir']]:
@@ -506,7 +661,12 @@ class ExtendedProteinRateSampler():
 				'acc_rate': 1.,
 			}
 
-			U, U_am, eprot = self._exact_energy(eprot, pars)
+			if pars["grad_mode"] == "one_pass":
+				# Fills the cache: the one extra forward+backward of a chain start.
+				U, U_am, grad, eprot = self._energy_and_grad(eprot, pars)
+				self._set_cache(eprot, U, U_am, grad, pars)
+			else:
+				U, U_am, eprot = self._exact_energy(eprot, pars)
 			data = merge_dict(
 				{
 					'U': U, 'U_am': U_am, 'U_structure_ce': eprot.U_structure_ce.item(),
@@ -574,6 +734,9 @@ class ExtendedProteinRateSampler():
 		self._flush_buffer(settings)
 		eprot.save(dir=settings["eprot_dir"], suffix=f'_{data["move"]}')
 		self.generator.save(f'{settings["results_dir"]}/generator.npy')
+		if self._grad_cache is not None:
+			cache = dict(self._grad_cache, grad=self._grad_cache["grad"].to("cpu"))
+			torch.save(cache, f'{settings["results_dir"]}/grad_cache.pt')
 
 		self.log = {
 			"data": data.copy(),
@@ -622,6 +785,7 @@ class ExtendedProteinRateSampler():
 		lines.append(f'# softmax temperature:        {pars["T_sftm"]:.2f}')
 		lines.append(f'# Gauss-Hermite nodes:        {pars["n_quad"]:.0f}')
 		lines.append(f'# sites per move:             {pars["n_sites"]}')
+		lines.append(f'# gradient mode:              {pars["grad_mode"]}')
 		lines.append(f'# attention multiplier:       {pars["lambda_am"]:.1e}')
 		lines.append(f'# structure_ce multiplier:    {pars["lambda_structure_ce"]:.1e}')
 		lines.append(f'# entropy multiplier:         {pars["lambda_S"]:.1e}')
@@ -663,6 +827,7 @@ class ExtendedProteinRateSampler():
 
 	def _init_attributes(self):
 		self.buffer = StringIO()
+		self._grad_cache = None
 
 		self._canonical_idx = torch.tensor(
 			[i for i, c in enumerate(C.SEQUENCE_USED_VOCAB) if c not in _NONCANONICAL_RESIDUES],
@@ -681,6 +846,7 @@ class ExtendedProteinRateSampler():
 				"n_quad": (40, int),
 				"init_muts": (0, int),
 				"n_sites": (1, int),
+				"grad_mode": ("site_soft", str),
 				"eps": (1.0e-9, float),
 				"seed": (0, int),
 		}
