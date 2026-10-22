@@ -8,6 +8,9 @@ softmax/code/classes/ep_sampler_am_backup.py
 
 *.log
 !softmax/monte_carlo/zero_polymer_test_1000_1mut/logs_temperature_zero_polymer/*.log
+!softmax/monte_carlo/zero_polymer_test_10_300/logs_temperature_zero_polymer/*.log
+
+
 softmax/code/protein_g*/joint_coupling_test.txt
 softmax/code/protein_g*/joint_coupling_test_smalldt_no_max_sites.txt
 softmax/code/protein_g*/steepest_descent_test.txt

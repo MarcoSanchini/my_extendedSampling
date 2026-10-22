@@ -1,0 +1,638 @@
+% ---------------------------------------------------------------------------
+% zero_polymer: everything done so far on the 566-residue reference.
+%
+% Code, safety checks, calibration, multi-site analysis, temperature sweeps,
+% and the cost of a move (time and GPU memory). Companion to informedness.tex
+% and gradient_method.tex, and to softmax/DEVLOG.txt (the chronological
+% record, entries 2026-10-02 to 2026-10-15). Every number below is taken from
+% a file committed in the repository; the file is named next to it.
+% Numbers that are NOT in the repository are marked with \missing{...} and
+% collected in Section 8 together with how to measure them.
+%
+% Build:  cd softmax/docs && pdflatex zero_polymer_recap.tex && pdflatex zero_polymer_recap.tex
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\sloppy
+
+\newcommand{\dt}{\Delta t}
+\newcommand{\gradU}{\nabla U}
+\newcommand{\Mass}{M}
+\newcommand{\Tsftm}{T_{\mathrm{sftm}}}
+\newcommand{\Uam}{U_{\mathrm{am}}}
+\newcommand{\Hd}{H_d}
+\newcommand{\file}[1]{\texttt{#1}}
+% Placeholder for a number that is not recorded in the repository.
+\newcommand{\missing}[1]{\fcolorbox{red}{red!8}{\textcolor{red!70!black}{\small\textbf{MISSING:} #1}}}
+
+\title{zero\_polymer: a recap\\
+       \large Code, validation, calibration, multi-site moves,\\
+       temperature sweeps, and the cost of a move}
+\author{\texttt{my\_extendedSampling} / \texttt{softmax}}
+\date{2026--10--21}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+\texttt{zero\_polymer} is a 566-residue hemagglutinin HA0 precursor, about ten
+times longer than protein~G (56 residues), on which the gradient-informed rate
+sampler was developed. This note collects all the work done on it between
+2026-10-02 and 2026-10-15. The sampler is correct at this length: every check
+in the safety suite passes, including an exact Boltzmann comparison on a
+400-state subproblem whose error decays as $1/n$. The energy scale is about
+$19\times$ protein~G's, so the temperature and the step size had to be
+re-derived (usable $T\approx 30$--$300$; $\dt$ rescaled as $\sqrt{T}$). One move
+costs about $0.36$\,s on an RTX 4500 Ada (two forward+backward passes and one forward
+pass through ESM3), and the cost does not depend on how many sites the move
+changes, so a multi-site move is free in compute and is limited only by
+acceptance. A first 1000-move temperature sweep locates the transition between
+$T\approx 30$ and $300$ but is far from equilibrium. The production sweep
+($3\times10^5$ moves) has not been launched: it waits on the study of how many
+sites to change per move at each temperature.
+\end{abstract}
+
+\tableofcontents
+
+% ===========================================================================
+\section{Scope, sources, and what is missing}
+% ===========================================================================
+Sources, all in the repository:
+\begin{itemize}
+  \item \file{softmax/DEVLOG.txt}, entries from 2026-10-02 to 2026-10-15
+        (the narrative and the reasoning);
+  \item \file{softmax/code/zero\_polymer/*.txt}, output of the test suite run on
+        the GPU;
+  \item \file{softmax/monte\_carlo/zero\_polymer\_test\_1000\_1mut/} (the 1000-move
+        sweep, logs committed) and
+        \file{softmax/monte\_carlo/zero\_polymer\_test\_10\_300/} (the 1000-move
+        test on the 10--300 grid, analysis output in \file{results.txt});
+  \item the code itself: \file{classes/rate\_sampler.py},
+        \file{monte\_carlo/main\_rate.py},
+        \file{monte\_carlo/sweep\_temperature\_zero\_polymer.sh},
+        \file{monte\_carlo/gpu\_scheduler.sh}, \file{code/tests/}.
+\end{itemize}
+All ESM3 runs were done on Marco's own GPU machine; nothing here was re-run for
+this note. One table (Table~\ref{tab:hastings}) is new: it was computed for this
+note from the committed sweep logs, and says so. Numbers that the repository
+does not contain (the GPU model, wall-clock per move in a real sweep, GPU
+utilisation, the production sweep and the pilot) are marked
+\missing{like this} and listed in Section~\ref{sec:missing} with the command
+that measures each one.
+
+% ===========================================================================
+\section{The system}
+% ===========================================================================
+\paragraph{Reference.} \texttt{ZERO\_POLYMER} in \file{code/tests/references.py}:
+566 residues, only the 20 canonical amino acids. It is the HA0 precursor
+\emph{with} its signal peptide, so the usual (mature) HA numbering is 16 behind
+the array index; \texttt{mature\_to\_index()} converts. The same file defines
+\texttt{zero\_polymer\_mature} and a cleaved form (HA1\,|\,HA2) used only for the
+structure tests of Section~\ref{sec:structure}. The reference is selected with
+the \texttt{REF} environment variable in the tests and with \texttt{--ref} in
+\file{main\_rate.py}.
+
+\paragraph{Energy.} Only the attention-map energy is used
+($\lambda_{\mathrm{am}}=1$, $\lambda_{\mathrm{structure\_ce}}=\lambda_S=0$):
+\begin{equation}
+  \Uam(\sigma) = \sum_{i\le j}\bigl[\log a_{ij}(\sigma) - \log a_{ij}(\sigma_{\mathrm{ref}})\bigr]^2 ,
+\end{equation}
+where $a(\sigma)$ is the ESM3 attention map of sequence $\sigma$
+(\file{utils/energies.py:compute\_U\_am}). $\Uam\ge 0$ and
+$\Uam(\sigma_{\mathrm{ref}})=0$, so the reference is the global minimum. The sum
+runs over $\sim\!1.6\times10^5$ pairs at $L=566$ against $\sim\!1.5\times10^3$ for
+protein~G, which is why raw energies are never compared across the two
+references.
+
+% ===========================================================================
+\section{The code}
+% ===========================================================================
+\subsection{The move (\file{classes/rate\_sampler.py})}
+Each site carries one-hot logits $x_i\in\mathbb{R}^{K}$ ($K=25$ vocabulary
+entries, of which 20 are canonical). One move of
+\texttt{ExtendedProteinRateSampler.\_step}:
+\begin{enumerate}
+  \item Draw $n$ distinct sites uniformly (\texttt{n\_sites}, default 1). The
+        choice is symmetric and cancels from the acceptance ratio.
+  \item Gradient at the current sequence $A$: only the chosen sites are relaxed,
+        $\mathrm{softmax}(x_i/\Tsftm)$ with $\Tsftm=0.1$; every other site stays
+        exactly one-hot. One forward and one backward pass through ESM3
+        (\texttt{\_grad\_pass\_sites}).
+  \item One leapfrog half-step with fresh momentum $p\sim\mathcal N(0,\Mass T)$,
+        \begin{equation}
+          \delta x = \frac{\dt}{\Mass}\,p - \frac{\dt^2}{2\Mass}\,\gradU
+          \;\sim\; \mathcal N\!\bigl(\mu,\sigma^2\bigr),\qquad
+          \mu=-\frac{\dt^2}{2\Mass}\gradU,\quad \sigma=\dt\sqrt{T/\Mass}.
+        \end{equation}
+        The target at each site is the argmax of $\delta x$ over the 19
+        competitors (canonical residues other than the current one).
+  \item Forward proposal probability, per site, in closed form
+        (\file{utils/proposals.py:log\_pointing\_prob}, 40 Gauss--Hermite nodes):
+        \begin{equation}
+          a_{i\to j}=\int\!\phi(u)\prod_{k\ne i,j}\Phi\!\bigl(\alpha_{kj}+u\bigr)\,du,
+          \qquad \alpha_{kj}=\frac{\mu_j-\mu_k}{\sigma}=\frac{\dt\,(\partial_k U-\partial_j U)}{2\sqrt{\Mass T}} .
+        \end{equation}
+        The joint proposal is the product over sites.
+  \item Substitute, take the gradient again at the candidate $B$ (second
+        forward+backward), and compute the reverse probability $a_{B\to A}$.
+  \item Exact energy of $B$: one forward pass on the discrete sequence, no
+        gradient (\texttt{\_exact\_energy}).
+  \item Accept with probability $\min(1,e^{\ell})$,
+        $\ell = -\Delta U/T + \log a_{B\to A} - \log a_{A\to B}$.
+\end{enumerate}
+This is an exact Metropolis--Hastings kernel for $e^{-U/T}$
+(informedness.tex). Cost per move: \textbf{2 forward+backward passes and 1
+forward pass}, independent of $n$ (Section~\ref{sec:cost}).
+
+Changes made during the zero\_polymer work:
+\begin{itemize}
+  \item \textbf{n\_sites} (2026-10-15): several sites per move, one relaxed
+        gradient pass for all of them. With \texttt{n\_sites}$>1$ the
+        \texttt{site}, \texttt{cur\_aa} and \texttt{proposed\_aa} columns of
+        \file{data.dat} are comma-separated, and $\Delta U$ and the log
+        probabilities are sums over sites. Checked by
+        \file{code/tests/test\_nsite\_kernel.py} (exact detailed balance and
+        stationarity on 3-letter toy systems for $n=1,2,3$, sampled targets
+        against pointing probabilities, restart reproducibility). The test
+        passes on the GPU machine after a float32 tolerance fix
+        (commit \texttt{3a85af7}).
+  \item \textbf{Canonical starts} (2026-10-15): \texttt{init\_muts} used to draw
+        from all 25 vocabulary entries; a site holding X/B/U/Z/O can never be
+        left (its reverse probability is 0), so 20\% of start mutations froze a
+        site. \texttt{\_mutate\_canonical} now draws from the 20 canonical
+        residues, and \texttt{\_setup} refuses a non-canonical reference. Runs
+        with \texttt{init\_muts}$=0$ (every sweep so far) are unaffected.
+  \item \textbf{Entropy column removed} (2026-10-13): it was the entropy of
+        $\mathrm{softmax}(x/\Tsftm)$ over one-hot sites, i.e.\ the constant
+        $L\times 0.011973=6.777$ nats. Old logs still carry it.
+\end{itemize}
+
+\subsection{Driver and sweep}
+\begin{description}
+  \item[\file{monte\_carlo/main\_rate.py}] reads \file{pars.txt},
+        \file{settings.txt} and \file{CONSTANTS.txt}, takes \texttt{--ref}
+        (previously hard-wired to protein~G), and \texttt{--extend}, which
+        continues a finished run to a larger \texttt{moves} from its last
+        checkpoint, appending to \file{data.dat} and recording the extension in
+        \file{extensions.txt}. The extension was tested on the GPU (T=300,
+        1000$\to$2000 moves) and worked; its logs are not committed.
+  \item[\file{monte\_carlo/sweep\_temperature\_zero\_polymer.sh}] writes one
+        \file{pars\_T<T>.txt} per temperature and launches \file{main\_rate.py}
+        through the GPU scheduler. Environment overrides: \texttt{TS\_OVERRIDE},
+        \texttt{MOVES}, \texttt{LOG\_STEP}, \texttt{PRINT\_STEP},
+        \texttt{INIT\_MUTS}, \texttt{N\_SITES}, \texttt{DT\_AT\_T2} (63),
+        \texttt{DT\_EXP} (0.5), \texttt{EXTEND}, \texttt{DRY\_RUN},
+        \texttt{RUN\_DIR}, \texttt{MAX\_RUNNING} (2), \texttt{MIN\_FREE\_MB}
+        (12000). The step size follows
+        \begin{equation}\label{eq:dt}
+          \dt(T) = 63\,\bigl(T/2\bigr)^{1/2},
+        \end{equation}
+        which holds $\dt/\sqrt{T}$, and therefore the informedness of the
+        proposal, fixed across the sweep (Section~\ref{sec:dt}).
+  \item[\file{monte\_carlo/gpu\_scheduler.sh}] gates each launch on free GPU
+        memory (\texttt{nvidia-smi}) and on a process cap, and now reports each
+        job's exit status (a crash used to print as ``finished'').
+  \item[\file{monte\_carlo/analyze\_ensemble.py}] per-temperature analysis of
+        the checkpoints: $U$ and $\Hd$ trajectories, site entropy, pairwise
+        overlap $q$, and a burn-in check. It needs \texttt{--ref-seq}, since it
+        defaults to protein~G.
+\end{description}
+
+\subsection{The safety-check suite (\file{code/tests/}, outputs in \file{code/zero\_polymer/})}
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.34\textwidth}p{0.58\textwidth}@{}}
+\toprule
+script & what it measures \\
+\midrule
+\file{scan\_U\_am\_landscape.py} & numerical health of $\log a$, noise floor, $U(\mathrm{ref})=0$, all single mutants from the reference \\
+\file{test\_steepest\_descent.py} & does the gradient's argmax pick a good substitution (top-1, $\Delta U$ at the pick) \\
+\file{compare\_grad\_methods.py} & site-only vs whole-sequence gradient \\
+\file{test\_informedness\_vs\_dt.py} & $p_{\mathrm{match}}(\dt)$, the probability the noisy draw follows the gradient \\
+\file{validate\_boltzmann\_toy.py} & full sampler on 2 free sites (400 states) against exact enumeration; prints a $T$ calibration table \\
+\file{test\_joint\_coupling\_N.py} & coupling of $N$ simultaneous substitutions \\
+\file{test\_multisite\_tradeoff.py} & cost per operation, landscape per starting point, coupling vs $N$ and drift, throughput $a_N N$ vs $a_1$ \\
+\file{test\_attention\_locality.py} & how local the change in $a$ is after one substitution; gradient cost vs number of relaxed rows; backward reproducibility \\
+\file{test\_nsite\_kernel.py} & exactness of the \texttt{n\_sites} kernel (toy energy, no ESM3) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+% ===========================================================================
+\section{Validation and calibration results}
+% ===========================================================================
+\subsection{The energy is numerically sound}
+From \file{scan\_U\_am\_results.txt}: $320\,356$ attention entries, none zero, none
+non-finite, minimum $5.4\times10^{-5}$, $\log a\in[-9.82,-2.20]$. Running the
+forward pass twice gives a noise floor of exactly 0: the forward is
+bit-reproducible, so every $\Delta U$ is signal. $\Uam(\mathrm{ref})=0$ and no
+single mutant goes below it. The control run on protein~G reproduces every
+recorded protein~G number to the last decimal, so the refactored harness
+(\file{references.py}) changed nothing.
+
+\subsection{Energy scale}
+Mean $\Delta U$ of a single substitution from the reference is $603.35$ on
+zero\_polymer against $31.44$ on protein~G, a factor $19.2$ for a length factor
+$10.1$, i.e.\ roughly $\Delta U\propto L^{1.3}$. This one number is why every
+$T$ inherited from protein~G is wrong here: at the old working point $T=2$ a
+typical move has $\Delta U/T\sim 10^2$ and is never accepted.
+
+\subsection{Gradient quality}
+From \file{steepest\_descent\_results.txt} and
+\file{steepest\_descent\_S30\_M51.txt}:
+\begin{center}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & drift & top-1 & $\Delta U$ at pick & $\Delta U$ other & advantage \\
+\midrule
+protein G, MUTS=5     & 8.9\% & 2/10  & $+17.20$  & $+20.99$  & 3.79 \\
+zero\_polymer, MUTS=5 & 0.9\% & 2/10  & $+474.38$ & $+542.46$ & 68.08 \\
+zero\_polymer, MUTS=51 & 8.8\% & 10/30 & $-360.03$ & $+244.25$ & 604.28 \\
+\bottomrule
+\end{tabular}
+\end{center}
+At comparable drift the gradient is \emph{more} informative on the longer
+sequence (73\% of picks downhill). The bad average at MUTS=5 came entirely from
+two proline picks next to the reference ($+3872$, $+925$); in the bulk the
+gradient picked proline three times, all downhill. Measuring at 0.9\% drift is a
+floor measurement and misleads; the lesson is to test at a drift comparable to
+the one the chain actually runs at. The site-only and whole-sequence gradients
+agree (cosine $\ge0.9999$ at all 11 sites tested).
+
+\subsection{Step size}\label{sec:dt}
+The working point $p_{\mathrm{match}}\approx0.15$ sits at $\dt\approx63$ at $T=2$
+on zero\_polymer, against $\dt\approx1270$ on protein~G
+(\file{informedness\_vs\_dt\_results.txt}); the factor $\sim20$ matches the ratio of
+gradient magnitudes. Because the proposal depends on $\dt$ only through
+$\alpha\propto\dt/\sqrt{\Mass T}$, the step must be rescaled with $\sqrt{T}$ when
+$T$ changes, which is Eq.~\eqref{eq:dt}: $\dt=460$ at $T=107$, $\dt=772$ at
+$T=300$. These $p_{\mathrm{match}}$ values were measured at 0.9\% drift; they
+have not been re-measured in the bulk.
+
+\subsection{Temperature window (2-site subproblem)}
+From \file{boltzmann\_Tcal.txt}: two sites (30, 52) free, the rest at the
+reference, 400 states enumerated exactly. $U$ ranges over $[0, 6235]$, median
+$740$.
+\begin{center}
+\begin{tabular}{@{}rrrl@{}}
+\toprule
+$T$ & effective states & max $p$ & verdict \\
+\midrule
+2.0    & 1.00   & 1.0000 & frozen (the protein~G $T$) \\
+10.7   & 1.05   & 0.9743 & frozen \\
+32.2   & 2.97   & 0.5475 & usable \\
+107.4  & 41.66  & 0.0804 & usable \\
+322.2  & 183.45 & 0.0149 & usable \\
+1074   & 337.19 & 0.0050 & flat \\
+\bottomrule
+\end{tabular}
+\end{center}
+This window describes a 2-site problem next to the reference; it is a starting
+bracket for the full chain, not its answer.
+
+\subsection{Boltzmann validation}
+From \file{validate\_boltzmann\_results\_dt460.txt},
+\file{\dots\_dt63.txt} and \file{\dots\_dt460\_M40000.txt}, $T=107$:
+\begin{center}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+ & $\dt=460$, $n=16\,000$ & $\dt=63$ (near uniform) & $\dt=460$, $n=32\,000$ \\
+\midrule
+acceptance          & 0.306  & 0.289  & 0.309 \\
+KL(emp$\,\|\,$exact) & 0.0316 & 0.0338 & 0.0169 \\
+total variation     & 0.0787 & 0.0848 & 0.0569 \\
+states visited      & 224/400 & 223/400 & 252/400 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Doubling $n$ divides KL by $1.87$ (expected 2 for $1/n$) and TV by $1.38$
+(expected $\sqrt2=1.41$), with a stable autocorrelation time of $\sim25$ moves.
+The error decays as an unbiased sampler's must, in two independent functionals.
+This closes validation for the restricted problem; the full 566-site chain
+cannot be checked against anything exact.
+
+\subsection{Gradient locality and reproducibility}
+From \file{attention\_locality.txt}. One substitution changes the attention map
+almost everywhere: about 98\% of $|\Delta a|$ and of $\Delta\Uam$ comes from
+pairs that do not involve the mutated site (per entry the change is 6--7.5$\times$
+stronger near the site, but there are 282$\times$ more distant entries). At site
+80 the local and distal contributions have opposite signs. Separately, the
+backward pass is not bit-reproducible under bfloat16 autocast: two gradients on
+the same input differ by 0.18\% and change the preferred substitution at 3/566
+sites. This does not affect correctness (the kernel uses the probabilities it
+actually drew), but it means a gradient diagnostic will not re-run identically.
+
+% ===========================================================================
+\section{Multiple mutations per move}
+% ===========================================================================
+\paragraph{Coupling} (\file{test\_joint\_coupling\_N\_results.txt}). Coupling is
+$c = \Delta U_{\mathrm{joint}} - \sum\Delta U_{\mathrm{isolated}}$. Relative to the
+move, coupling is 2--5$\times$ weaker on zero\_polymer than on protein~G
+($|c|/|\Delta U_{\mathrm{joint}}| = 0.08$--$0.47$ against $0.43$--$0.85$) and mostly
+favourable in sign. Two qualifications came later: part of this is a distance
+effect, since sites 30 residues apart couple 1.4--2.6$\times$ more than random
+sites $\sim190$ apart (\file{multisite\_tradeoff.txt}, section 3), and an $N$-site
+move still costs about $N$ single-site moves in $\Delta U$.
+
+\paragraph{Cost parity} is exact (Section~\ref{sec:cost}): the $N$ mutations come
+for free in compute, so the design question is only whether
+$a_N\,N > a_1$, where $a_N$ is the acceptance of an $N$-site move.
+
+\paragraph{Throughput} (\file{multisite\_tradeoff.txt}, section 4). It depends on
+where the chain sits. Acceptance of the median move at $T=107$:
+\begin{center}
+\begin{tabular}{@{}rccc@{}}
+\toprule
+$N$ & drift 5 & drift 51 & drift 150 \\
+\midrule
+1  & 0.133 & 1 & 1 \\
+5  & $7.9\times10^{-8}$ & 1 & 1 \\
+12 & $2.6\times10^{-15}$ & 1 & 1 \\
+20 & $4.0\times10^{-22}$ & 1 & 1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Near the reference $a_N$ collapses geometrically and multi-site loses. Far from
+it the median move is downhill at every $N$ and multi-site wins, but those
+starting points are random sequences well above equilibrium: that is
+relaxation, not sampling. (The real sampler accepts $0.31$ at $T=107$ in the
+Boltzmann test, against $0.6$--$0.8$ for single-site moves from these points.)
+The equilibrium question is open and is what the 10-site pilot is for:
+\texttt{INIT\_MUTS=51}, $T\in\{107,300\}$, 5000 moves, \texttt{N\_SITES=10}
+against \texttt{N\_SITES=1}; compare $10\,a_{10}$ with $a_1$ after move 2500.
+Pilot result: \missing{pilot\_n10 / pilot\_single acceptance and $\Hd$ after
+move 2500}.
+
+% ===========================================================================
+\section{Temperature sweeps}
+% ===========================================================================
+\subsection{\texorpdfstring{1000-move sweep, $T=0.1$ to $10^4$}{1000-move sweep, T=0.1 to 1e4}}
+\file{zero\_polymer\_test\_1000\_1mut/}, single-site, start at the reference,
+$\dt$ from Eq.~\eqref{eq:dt}. The first attempt lost 9 of 11 runs to CUDA
+out-of-memory on move 1 (Section~\ref{sec:gpu}); the re-run (commit
+\texttt{35757fa}) completed all 11. Window: moves 500--1000.
+\begin{center}
+\begin{tabular}{@{}rrcrrr@{}}
+\toprule
+$T$ & $\dt$ & accept & $\Hd$, move 500$\to$1000 & mean $\Hd$ & mean $U$ \\
+\midrule
+0.1    & 14  & 0.000 & 0 $\to$ 0     & 0.0   & 0 \\
+1      & 45  & 0.000 & 0 $\to$ 0     & 0.0   & 0 \\
+10     & 141 & 0.010 & 0 $\to$ 3     & 1.2   & 35 \\
+31.6   & 250 & 0.052 & 14 $\to$ 32   & 24.0  & 859 \\
+56.2   & 334 & 0.168 & 54 $\to$ 114  & 87.0  & 4023 \\
+100    & 445 & 0.325 & 99 $\to$ 198  & 153.0 & 7979 \\
+177    & 593 & 0.489 & 161 $\to$ 290 & 231.4 & 14361 \\
+316    & 792 & 0.557 & 196 $\to$ 313 & 263.5 & 20392 \\
+562    & 1056 & 0.639 & 228 $\to$ 357 & 302.5 & 29016 \\
+1000   & 1409 & 0.665 & 237 $\to$ 370 & 311.9 & 33445 \\
+$10^4$ & 4455 & 0.491 & 241 $\to$ 347 & 295.7 & 42648 \\
+\bottomrule
+\end{tabular}
+\end{center}
+Frozen for $T\le1$, nearly frozen at $T=10$; acceptance climbs from 5\% to 56\%
+between $T\approx30$ and $300$. Nothing is equilibrated: $\Hd$ is still rising by
+60--135 between moves 500 and 1000 at every $T\ge56$. This is a pipeline test,
+not a measurement of the equilibrium ensemble.
+
+\paragraph{Why acceptance drops at $T=10^4$.} The DEVLOG left this open. Splitting
+$\ell$ into its energy part $-\Delta U/T$ and its proposal (Hastings) part
+$h=\log a_{B\to A}-\log a_{A\to B}$ in the committed logs gives
+Table~\ref{tab:hastings} (computed for this note, moves 500--1000).
+\begin{table}[t]
+\centering
+\begin{tabular}{@{}rcccc@{}}
+\toprule
+$T$ & accept & fraction downhill & accept $|$ downhill & mean $h$ \\
+\midrule
+56.2   & 0.168 & 0.052 & 0.96 & $-0.26$ \\
+100    & 0.325 & 0.138 & 0.96 & $-2.07$ \\
+177    & 0.489 & 0.236 & 0.89 & $-0.08$ \\
+316    & 0.557 & 0.301 & 0.85 & $-1.33$ \\
+562    & 0.639 & 0.383 & 0.72 & $-0.96$ \\
+1000   & 0.665 & 0.493 & 0.67 & $-3.37$ \\
+$10^4$ & 0.491 & 0.615 & 0.38 & $-1.24$ \\
+\bottomrule
+\end{tabular}
+\caption{Acceptance split by the sign of $\Delta U$, from the status rows of
+\file{zero\_polymer\_test\_1000\_1mut/logs\_temperature\_zero\_polymer/T*.log}.
+Computed for this note; not in the DEVLOG.}
+\label{tab:hastings}
+\end{table}
+At high $T$ the energy term vanishes and acceptance is set by $h$ alone. A
+growing share of \emph{downhill} proposals is rejected (38\% accepted at
+$T=10^4$): with $\dt\propto\sqrt T$ the forward move follows the gradient
+sharply, and the reverse move back to the old residue is unlikely. This
+supports the DEVLOG's first suspect (the proposal at $\dt\approx4450$) but
+does not prove it; a run at $T=10^4$ with a smaller $\dt$ would. It does not
+matter for the working range $T\le300$.
+
+\subsection{\texorpdfstring{1000-move test on the production grid, $T=10$--$300$}{1000-move test on the production grid, T=10-300}}
+Quarter-decade grid, $\dt$ from Eq.~\eqref{eq:dt}, start at the reference.
+Acceptance and $\Hd$ are from the per-move logs
+(\file{logs\_temperature\_zero\_polymer/T*.log}, pushed 2026-10-22 on branch
+\texttt{claude/project-thread-zyqp1u}), moves 500--1000; site entropy and $q$
+are from \file{results.txt} (\file{analyze\_ensemble.py} on the 6 checkpoints
+after move 500).
+\begin{center}
+\begin{tabular}{@{}rcrrrrc@{}}
+\toprule
+$T$ & accept & $\Hd$, 500$\to$1000 & $U$ at 1000 & downhill & site entropy & mean $q$ \\
+\midrule
+10    & 0.010 & 0 $\to$ 3     & 75     & 0.002 & 0.0040 & 0.997 \\
+17.8  & 0.024 & 4 $\to$ 14    & 395    & 0.004 & 0.0120 & 0.990 \\
+31.6  & 0.052 & 14 $\to$ 32   & 1226   & 0.010 & 0.0240 & 0.981 \\
+56.2  & 0.168 & 54 $\to$ 114  & 5044   & 0.052 & 0.0796 & 0.936 \\
+100   & 0.325 & 99 $\to$ 198  & 8970   & 0.138 & 0.1512 & 0.880 \\
+177.8 & 0.489 & 161 $\to$ 291 & 16797  & 0.224 & 0.2257 & 0.821 \\
+300   & 0.613 & 200 $\to$ 317 & 22059  & 0.345 & 0.2675 & 0.792 \\
+\bottomrule
+\end{tabular}
+\end{center}
+(``downhill'' is the fraction of proposals with $\Delta U<0$.) At $T=10$, 31.6,
+56.2 and 100 the numbers are identical to the first sweep: same seed, same $\dt$,
+same trajectory, so the runs are reproducible move for move. Same picture as
+before: $U$ and $\Hd$ still rising at every $T$. The ``looks settled''
+verdict that \file{analyze\_ensemble.py} prints for $T\ge56$ refers to the site
+entropy over the last 500 moves and should not be read as equilibration.
+
+\subsection{Production sweep}
+Plan (DEVLOG 2026-10-14/15): the same grid, $3\times10^5$ moves per run (the
+paper's minimum for protein~G, Zambon et al.\ 2024, Sects.~2.1 and 3.1),
+\texttt{LOG\_STEP=PRINT\_STEP=1000}, extendable to $10^6$ with
+\texttt{EXTEND=1}. Keeping the paper's $\sim5.4\times10^3$ proposals per site at
+566 sites would need $3\times10^6$ moves, about 12.7 days per run, so it was
+deferred. Status (2026-10-22): \textbf{not launched}. It waits on the study of
+the number of sites per move (\texttt{n\_sites}) at several temperatures, which
+picks the move to use before the full simulation is run (branch
+\texttt{claude/project-thread-zyqp1u}).
+
+The paper's equilibration criterion (drop the transient while the Hamming
+autocorrelation to the reference exceeds 0.1, then non-overlapping block
+averages) is \emph{not} implemented; \file{analyze\_ensemble.py} uses a fixed
+50\% burn-in. \file{data.dat} has $\Hd$ for every move, so it can be added.
+
+% ===========================================================================
+\section{Cost of a move: time and GPU memory}\label{sec:cost}
+% ===========================================================================
+\subsection{Time per move}
+Measured with CUDA synchronisation at $L=566$
+(\file{multisite\_tradeoff.txt} section 0, \file{attention\_locality.txt}
+section 2):
+\begin{center}
+\begin{tabular}{@{}lr@{}}
+\toprule
+operation & time \\
+\midrule
+forward pass, no gradient ($t_{\mathrm{exact}}$)   & 60.3 ms \\
+forward + backward, 1 site relaxed                 & 150.4 ms \\
+forward + backward, all 566 sites relaxed          & 150.0 ms \\
+\quad of which backward                            & $\approx$ 89.5 ms \\
+\midrule
+model of one move, $2\times150.4 + 60.3$           & \textbf{361 ms} \\
+model of one $N$-site move                         & 360 ms (ratio 0.998) \\
+\bottomrule
+\end{tabular}
+\end{center}
+Forward+backward time with $k$ relaxed rows, $k=1,2,5,20,100,566$:
+150.8--151.1\,ms, flat (ratio $k{=}1$/$k{=}L$ = 0.9985). The reason is that
+self-attention is global, so the backward has to cross all 48 layers at every
+position whatever $k$ is; only the last projection, $O(LK)$, depends on $k$.
+
+In a real run (the extension test, $T=300$, one job alone on the card,
+measured 2026-10-22):
+\begin{itemize}
+  \item CPU time, \file{data.dat}'s \texttt{time} column
+        (\texttt{time.process\_time()}) at move 1000: \textbf{0.364\,s/move};
+  \item wall-clock, from the modification times of the checkpoints at move 0
+        and move 1000 (364\,s apart): \textbf{0.364\,s/move}.
+\end{itemize}
+Both agree with each other and with the 361\,ms model, so for this code the CPU
+time column is a good proxy for wall-clock (the process waits on the GPU
+synchronously). (The third checkpoint, at move 2000, is 7974\,s after the
+second; that gap includes the idle time between the original run and the
+\texttt{--extend} launch, so it says nothing about speed.) With \textbf{two jobs} sharing the GPU (n\_sites study, $T=316$,
+\texttt{n\_sites=1}, measured 2026-10-22) each job runs at \textbf{0.789\,s/move}
+wall-clock (checkpoints 394\,s per 500 moves; 6308\,s for moves 0--8000; CPU
+time 6311\,s). That is $2.17\times$ the single-job time, so the combined
+throughput (2.53 moves/s) is about 8\% \emph{below} one job alone (2.75
+moves/s): one job already saturates the card, and running two at once buys
+nothing. Each process also shows 100\% CPU, so whether the limit is the GPU or
+the per-move Python work on the CPU is not settled; GPU utilisation from
+\texttt{nvidia-smi} would tell. The cost is the same at every $T$ (every move does the same three
+passes); only acceptance changes.
+
+Derived figures at 0.364\,s/move, one job: $\approx 9.9\times10^3$ moves per hour per job;
+$3\times10^5$ moves $\approx1.3$ days per run, $10^6$ $\approx4.2$ days; the
+7-point grid at two jobs at a time $\approx5$ days for $3\times10^5$, plus
+$\approx12$ more to extend to $10^6$. Accepted substitutions per hour per job are
+acceptance $\times\,9.9\times10^3$, e.g.\ $\approx3.2\times10^3$ at $T=100$ and
+$\approx5.5\times10^3$ at $T=316$ (acceptance from the 1000-move sweep, not at
+equilibrium).
+
+For comparison, the original \file{ep\_sampler.py} runs 100 leapfrog steps (100
+forward+backward passes) per Metropolis move. Its time per move on
+zero\_polymer, needed for the speed-up figure, is not recorded:\\
+\missing{measured time per move of \file{ep\_sampler.py} on zero\_polymer}.
+
+\subsection{GPU memory}\label{sec:gpu}
+\begin{center}
+\begin{tabular}{@{}lr@{}}
+\toprule
+quantity & value \\
+\midrule
+GPU                                                      & NVIDIA RTX 4500 Ada Generation \\
+card memory (total / free when idle, \texttt{nvidia-smi}) & 24\,570 / 23\,853 MiB \\
+peak allocated by PyTorch, one forward+backward          & 6\,369.6 MB, flat in $k$ (+0.2 MB at $k=L$) \\
+one sweep job, from \texttt{nvidia-smi} (2026-10-13)    & 4.6--8.7 GB \\
+jobs run at once                                         & 2 (\texttt{MAX\_RUNNING}) \\
+launch gate                                              & 12\,000 MB free (\texttt{MIN\_FREE\_MB}) \\
+GPU utilisation during a sweep                           & \missing{\% busy, 1 and 2 jobs} \\
+\bottomrule
+\end{tabular}
+\end{center}
+The out-of-memory failure: the scheduler launched four jobs back to back, and
+each check read the full 23\,853 MB free because the earlier jobs had not
+allocated yet. Four jobs then filled the card and nine runs died on move 1. The
+fix raised the gate to 12\,000 MB and capped concurrency at 2; three jobs fit at
+typical use ($\sim$5 GB) but not at the 8.7 GB peak, so 2 was kept. A 10-site
+move relaxes 10 rows instead of 1, which adds $\sim$0.2 MB at most by the flat-$k$
+measurement, so the pilot should fit the same budget; \missing{measured peak of
+an \texttt{N\_SITES=10} job}.
+
+% ===========================================================================
+\section{Structure tests on the cleaved form}\label{sec:structure}
+% ===========================================================================
+Not part of the sampler, recorded for completeness (DEVLOG 2026-10-08). Cleaving
+at Arg329 (mature numbering) into HA1\,|\,HA2 with the chainbreak token works
+through the stock ESM3 SDK. At 256 decoding steps neither the cleaved nor the
+mature form folds (pTM 0.23 and 0.26, extended chain, bridge CB--CB 96 and
+130\,\AA), so the chainbreak is not the cause; the likely reason is that HA is an
+obligate trimer. The positive control (protein~G through the same path) has not
+been run, and until it is, these numbers do not say anything about ESM3. The
+sampler computes no structure, so \texttt{num\_steps} in \file{CONSTANTS.txt} is
+inert for it.
+
+% ===========================================================================
+\section{Missing numbers and how to get them}\label{sec:missing}
+% ===========================================================================
+Run on the GPU machine; paths are relative to a sweep's \texttt{RUN\_DIR}.
+\begin{enumerate}
+  \item \textbf{GPU memory and utilisation during a sweep.} Start before the
+        sweep, stop after, and report the peak per job and the mean
+        utilisation with 1 and 2 jobs:
+\begin{verbatim}
+nvidia-smi --query-gpu=timestamp,utilization.gpu,memory.used \
+           --format=csv -l 60 > gpu_usage.csv &
+nvidia-smi --query-compute-apps=pid,used_memory \
+           --format=csv -l 60 > gpu_apps.csv &
+\end{verbatim}
+  \item \textbf{Pilot.} Accept and mean $\Hd$ after move 2500, in each
+        \file{pilot\_n10} and \file{pilot\_single} run, plus the peak memory of
+        one \texttt{N\_SITES=10} job from item 2:
+\begin{verbatim}
+awk -F'\t' '$1 ~ /^[0-9]+$/ && $1 >= 2500 {n++; a += $14; h += $6}
+            END {print "accept", a/n, "mean Hd", h/n}' data.dat
+\end{verbatim}
+  \item \textbf{Production sweep} ($3\times10^5$ moves, not launched yet):
+        once finished, the same table as Section~6.1 over the last half of
+        each run.
+  \item \textbf{Baseline speed-up.} Time per move of \file{ep\_sampler.py}
+        (\file{main.py}) on zero\_polymer at the same $T$, and its acceptance,
+        so that accepted substitutions per hour can be compared between the two
+        samplers.
+\end{enumerate}
+
+% ===========================================================================
+\section{Summary}
+% ===========================================================================
+\begin{center}
+\small
+\begin{tabular}{@{}p{0.42\textwidth}p{0.5\textwidth}@{}}
+\toprule
+question & answer \\
+\midrule
+Is the sampler correct at $L=566$? & Yes, on every check; exact 2-site test passes with $1/n$ decay. \\
+Energy scale vs protein G & $\Delta U$ per substitution $19\times$ larger ($\propto L^{1.3}$). \\
+Usable temperature & $T\approx30$--$300$ (transition region in the 1000-move sweep). \\
+Step size & $\dt=63\sqrt{T/2}$ ($p_{\mathrm{match}}\approx0.15$, measured at the floor). \\
+Is the gradient useful here? & Yes in rank: 33\% top-1 and downhill on average at 8.8\% drift. \\
+Time per move & $\approx0.36$ s (2 fwd+bwd + 1 fwd), same at every $T$. \\
+Cost of an $N$-site move & Same as single-site (ratio 0.998). \\
+GPU memory per job & 6.4 GB allocated by PyTorch; 4.6--8.7 GB per process; 2 jobs per 24 GB card. \\
+Does multi-site pay at equilibrium? & Open; pilot pending. Wins for relaxation, loses next to the reference. \\
+Equilibrated sweep? & Not yet: 1000 moves is far from equilibrium at every $T\ge56$. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\end{document}

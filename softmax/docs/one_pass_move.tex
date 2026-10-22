@@ -1,0 +1,341 @@
+% ---------------------------------------------------------------------------
+% The one-pass move: one forward and one backward pass through ESM3 per Monte
+% Carlo move, instead of three forwards and two backwards.
+%
+% Proposal, not yet implemented or tested. Companion to zero_polymer_recap.tex
+% (where the cost measurements come from), informedness.tex (pointing
+% probability, dt/sqrt(T) scaling) and gradient_method.tex (gradient variants,
+% cost flat in the number of relaxed sites).
+%
+% Build:  cd softmax/docs && pdflatex one_pass_move.tex && pdflatex one_pass_move.tex
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\sloppy
+
+\newcommand{\dt}{\Delta t}
+\newcommand{\Mass}{M}
+\newcommand{\Tsftm}{T_{\mathrm{sftm}}}
+\newcommand{\Uam}{U_{\mathrm{am}}}
+\newcommand{\file}[1]{\texttt{#1}}
+
+\title{The one-pass move\\
+       \large One forward and one backward pass per Monte Carlo move,\\
+       with the gradient taken at the exact sequence and reused}
+\author{\texttt{my\_extendedSampling} / \texttt{softmax}}
+\date{2026--10--22}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+A move of the current rate sampler costs two forward+backward passes through
+ESM3 and one extra forward pass, $\approx361$\,ms on an RTX 4500 Ada, and the
+GPU is fully busy while it runs. This note proposes a move that costs one
+forward and one backward pass, $\approx150$\,ms, an expected speed-up of
+$\approx2.4\times$ at equal acceptance. Two changes make it possible. The
+gradient is taken with respect to the one-hot probability matrix at the exact
+sequence, so the forward pass that computes the exact energy also yields the
+gradient. And the gradient is computed for all sites at once, which costs the
+same as for one site, so the gradient at the candidate becomes the gradient
+of the next move whether the candidate is accepted or not. The kernel stays an
+exact Metropolis--Hastings kernel for $e^{-U/T}$, including when the backward
+pass is not bit-reproducible. The gradient changes scale but not its ranking of
+candidates, so $\dt$ must be rescaled by a computable factor,
+$c=p_{\mathrm{off}}/\Tsftm\approx4.5\times10^{-4}$. Nothing here has been run
+yet; Section~\ref{sec:tests} is the test plan.
+\end{abstract}
+
+\tableofcontents
+
+% ===========================================================================
+\section{Why: the move is GPU-bound and does redundant work}
+% ===========================================================================
+Measured on zero\_polymer ($L=566$, zero\_polymer\_recap.tex Section~7):
+\begin{center}
+\begin{tabular}{@{}lr@{}}
+\toprule
+operation & time \\
+\midrule
+forward, no gradient                    & 60.3 ms \\
+forward + backward (any number of relaxed sites) & 150.4 ms \\
+current move: $2\times$(fwd+bwd) + 1 fwd & 361 ms (model), 364 ms (measured) \\
+two jobs on the card, per job            & 789 ms \\
+GPU utilisation, two jobs                & 100\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+The card is saturated by one job, so running chains in parallel gains nothing
+(two jobs give $\approx8\%$ less total throughput than one). The only way to go
+faster is less GPU work per move.
+
+The current move (\file{classes/rate\_sampler.py:\_step}) does three model
+evaluations:
+\begin{enumerate}
+  \item gradient at $A$: forward+backward with the chosen sites softened,
+        $\mathrm{softmax}(x/\Tsftm)$, every other site one-hot;
+  \item gradient at $B$: the same, at the candidate, for the reverse proposal
+        probability $a_{B\to A}$;
+  \item exact energy at $B$: a forward pass without gradient on the one-hot
+        sequence.
+\end{enumerate}
+Two facts make this redundant. Pass 3 is needed only because passes 1 and 2
+run on softened inputs, so their energy is not the exact energy. And pass 1 at
+the next move recomputes a gradient that pass 2 has just computed, at the same
+sequence if $B$ was accepted or at $A$ itself if it was rejected; it cannot be
+reused today only because it is restricted to the sites drawn in this move.
+
+% ===========================================================================
+\section{The gradient at the exact sequence}
+% ===========================================================================
+\subsection{Definition}
+ESM3 takes the sequence as a probability matrix $p\in\mathbb{R}^{L\times K}$
+($K=25$) and embeds it linearly,
+\begin{equation}
+  e = p\,W_{\mathrm{embed}}
+\end{equation}
+(\file{customs/custom\_esm/models/esm3.py:manual\_embed}, a
+\texttt{tensordot}). Everything downstream is smooth, so $U(p)$ is a smooth
+function on all of $\mathbb{R}^{L\times K}$, not only on the simplex and not
+only away from its corners. Its gradient at the one-hot point $p=\sigma$ of the
+current sequence,
+\begin{equation}
+  g_{ik} = \frac{\partial U}{\partial p_{ik}}\bigg|_{p=\sigma},
+\end{equation}
+is well defined and is computed by one forward pass on the exact one-hot
+sequence with \texttt{requires\_grad} on $p$, followed by one backward pass. The
+forward pass of that evaluation \emph{is} the exact energy $U(\sigma)$: same
+input, same code path (\texttt{predict\_attention} under the same bfloat16
+autocast) as \texttt{\_exact\_energy}. The continuous relaxation is still what
+makes this possible: it is what lets ESM3 accept a real-valued $p$. What changes
+is only where the derivative is evaluated: at the corner itself instead of at a
+softened point next to it.
+
+$g_{ik}$ is the first-order change in $U$ when a small weight is moved at site
+$i$ toward residue $k$. Only differences $g_{ik}-g_{ij}$ within a site enter the
+proposal (Section~\ref{sec:proposal}), so directions that leave the simplex do
+not matter.
+
+\subsection{Relation to the current gradient}
+Today the gradient is taken with respect to the logits $x$ with
+$p=\mathrm{softmax}(x/\Tsftm)$. By the chain rule, at one site,
+\begin{equation}
+  \frac{\partial U}{\partial x_k}
+  = \frac{p_k}{\Tsftm}\Bigl(g_k - \textstyle\sum_m p_m g_m\Bigr).
+\end{equation}
+The logits are a mean-centred one-hot vector (\file{ExtendedProtein.expand}):
+$1-1/K$ on the current residue and $-1/K$ on the other 24, a gap of exactly 1.
+At $\Tsftm=0.1$ this gives
+\begin{equation}
+  p_{\mathrm{cur}} = \frac{1}{1+24e^{-10}} = 0.998911,\qquad
+  p_{\mathrm{off}} = p_{\mathrm{cur}}\,e^{-10} = 4.535\times10^{-5}
+\end{equation}
+for every non-current residue. For any two competitors $k,j$ of the current
+residue,
+\begin{equation}\label{eq:scale}
+  \frac{\partial U}{\partial x_k}-\frac{\partial U}{\partial x_j}
+  = c\,(g_k-g_j),\qquad c=\frac{p_{\mathrm{off}}}{\Tsftm}=4.535\times10^{-4}.
+\end{equation}
+So the two gradients rank the competitors identically and differ by one
+global factor $c$. (The current gradient is evaluated at the softened point,
+where the chosen site carries 0.1\% weight off its residue, so equality is up to
+that $O(10^{-3})$ perturbation of the input; the test of
+Section~\ref{sec:tests} measures it.)
+
+\subsection{All sites in one pass}
+The backward pass gives $g_{ik}$ for every $i$ at once. Its cost does not depend
+on how many sites carry a gradient: forward+backward takes 150.8--151.1\,ms for
+1 to 566 relaxed rows, and memory differs by 0.2\,MB in 6.4\,GB
+(\file{code/zero\_polymer/attention\_locality.txt}). Self-attention is global, so
+the backward crosses all 48 layers at every position regardless. The all-site
+gradient is therefore free, and it is what allows reuse: a gradient for every
+site is valid whatever sites the next move draws.
+
+% ===========================================================================
+\section{The move}\label{sec:proposal}
+% ===========================================================================
+The chain carries a cache $(\sigma, U(\sigma), g(\sigma))$: the current sequence,
+its exact energy and its all-site gradient. One move:
+\begin{enumerate}
+  \item Draw $n$ distinct sites uniformly (\texttt{n\_sites}; symmetric,
+        cancels).
+  \item At each chosen site $i$, with the cached $g=g(A)$:
+        \begin{equation}
+          \mu_{ik}=-\frac{\dt^2}{2\Mass}\,g_{ik},\qquad
+          \sigma_{\mathrm{p}}=\dt\sqrt{T/\Mass},\qquad
+          \delta x_{ik}=\mu_{ik}+\sigma_{\mathrm{p}}\,\xi_{ik},\ \ \xi_{ik}\sim\mathcal N(0,1),
+        \end{equation}
+        target $j_i=\arg\max_{k\in\mathcal C(i)}\delta x_{ik}$ over the 19
+        canonical competitors, and $\log a_{A\to B}=\sum_i\log a_{i\to j_i}$ from
+        \texttt{log\_pointing\_prob}, unchanged.
+  \item Build $B$. \textbf{One forward pass} on $B$'s one-hot matrix with
+        gradient enabled gives $U(B)$; \textbf{one backward pass} gives $g(B)$
+        for all sites.
+  \item $\log a_{B\to A}$ from $g(B)$ at the same sites, targets the old
+        residues (unchanged code).
+  \item Accept with probability $\min(1,e^{\ell})$,
+        $\ell=-\bigl(U(B)-U(A)\bigr)/T+\log a_{B\to A}-\log a_{A\to B}$.
+  \item If accepted, the cache becomes $(B,U(B),g(B))$. If rejected, it stays
+        $(A,U(A),g(A))$, and $g(B)$ is discarded.
+\end{enumerate}
+Model work per move: one forward and one backward, $\approx150$\,ms, whatever
+the outcome and whatever $n$. At chain start, and after a restart, the cache is
+filled by one extra forward+backward at the initial sequence.
+
+The rest of the machinery is unchanged: the pointing probability, the
+competitor set, the $\sqrt{T}$ scaling of $\dt$, the \file{data.dat} columns,
+checkpointing. Gradient storage is $L\times K$ floats, 57\,kB.
+
+% ===========================================================================
+\section{Exactness}
+% ===========================================================================
+\subsection{With a deterministic gradient}
+$g(\sigma)$ is a function of the state alone, so $a_{A\to B}$ and $a_{B\to A}$
+are well-defined proposal probabilities and $\ell$ is the standard
+Metropolis--Hastings ratio. Detailed balance with respect to $\pi\propto e^{-U/T}$
+follows exactly as for the current sampler. Caching changes when $g$ is
+computed, not what it is.
+
+\subsection{With a non-reproducible backward}
+The backward pass is not bit-reproducible: two gradients at the same input
+differ by 0.18\% and change the preferred substitution at 3 of 566 sites
+(gradient\_method.tex Section~6.3). So the gradient is really a random variable
+$g\sim q(\cdot\mid\sigma)$, and a cached $g(A)$ and a later recomputation at $A$
+can differ. The kernel stays exact on the extended state $(\sigma,g)$ with
+target $\pi(\sigma)\,q(g\mid\sigma)$. The forward transition
+$(A,g_A)\to(B,g_B)$ has probability $a(A\to B;g_A)\,q(g_B\mid B)$ and the reverse
+$a(B\to A;g_B)\,q(g_A\mid A)$, so
+\begin{equation}
+  \frac{\pi(B)\,q(g_B\mid B)\;a(B\to A;g_B)\,q(g_A\mid A)}
+       {\pi(A)\,q(g_A\mid A)\;a(A\to B;g_A)\,q(g_B\mid B)}
+  = \frac{\pi(B)\,a(B\to A;g_B)}{\pi(A)\,a(A\to B;g_A)} ,
+\end{equation}
+which is exactly the $\ell$ above: the $q$ factors cancel and never need to be
+known. The $\sigma$-marginal of the extended target is $\pi$. The energy needs
+no such argument: the forward pass is bit-reproducible (noise floor exactly 0,
+\file{scan\_U\_am\_results.txt}), so the cached $U$ is the energy.
+
+The current sampler, which recomputes $g(A)$ every move, is the same argument
+plus an extra refresh of $g$ at fixed $\sigma$; the one-pass move simply skips
+the refresh.
+
+\subsection{Things that must stay true in the implementation}
+\begin{itemize}
+  \item The $g(A)$ used in step 2 must be the cached one, the gradient the
+        chain actually holds, never a recomputation.
+  \item $\lambda_S$ must be 0. The entropy term $-\sum p\log(p+\epsilon)$ has a
+        gradient of order $\log\epsilon$ at a one-hot corner, which would
+        swamp $g$. It is 0 in every run; the code should refuse
+        $\lambda_S\ne0$ in one-pass mode.
+  \item $\lambda_{\mathrm{structure\_ce}}>0$ works the same way: its logits come
+        from the same forward on $p$, so $U$ and $g$ still come from one pass.
+  \item On restart, recompute the cache from the restored sequence (valid by
+        the extended-state argument), or save $g$ in the checkpoint for
+        bit-identical replay.
+\end{itemize}
+
+% ===========================================================================
+\section{Calibration of the step size}
+% ===========================================================================
+The informedness depends on $\dt$ only through
+$\alpha_{kj}=\dt\,(\text{gradient gap})/(2\sqrt{\Mass T})$ (informedness.tex).
+By Eq.~\eqref{eq:scale} the gap in the new gradient is $1/c$ times the old one,
+so the same informedness needs
+\begin{equation}
+  \dt_{\mathrm{new}} = c\,\dt_{\mathrm{old}},\qquad c = 4.535\times10^{-4}.
+\end{equation}
+Predictions for zero\_polymer, from the current rule
+$\dt_{\mathrm{old}}=63\sqrt{T/2}$:
+\begin{center}
+\begin{tabular}{@{}rrr@{}}
+\toprule
+$T$ & $\dt_{\mathrm{old}}$ & $\dt_{\mathrm{new}}$ predicted \\
+\midrule
+2    & 63    & 0.0286 \\
+32   & 252   & 0.114 \\
+107  & 460   & 0.209 \\
+300  & 772   & 0.350 \\
+\bottomrule
+\end{tabular}
+\end{center}
+In the sweep script this is \texttt{DT\_AT\_T2}$\,=0.0286$ with \texttt{DT\_EXP}
+unchanged. These are predictions. The $p_{\mathrm{match}}$ curve must be
+re-measured with the new gradient, and in the bulk (MUTS$\approx51$) as well as
+at the floor, since the floor measurement is known to mislead
+(zero\_polymer\_recap.tex Section~4.3).
+
+% ===========================================================================
+\section{Expected gain, and what it does not change}
+% ===========================================================================
+At equal acceptance the speed-up is the cost ratio, $361/150\approx2.4\times$ per
+move. Projected: $\approx0.15$\,s per move, $\approx2.4\times10^4$ moves per hour
+per job, and the 3\,$T\times$4 chains$\times$20k-move study in $\approx10$ hours
+instead of $\approx24$. Acceptance should not change, because the proposal
+distribution is the same up to the $O(10^{-3})$ shift in the evaluation point
+and the $\dt$ rescaling. That is the main thing the tests have to confirm.
+
+What it does not change: the energy, the target distribution, the pointing
+probability, how informed the proposal is, and the multi-site question (cost is
+still flat in $n$).
+
+% ===========================================================================
+\section{Test plan}\label{sec:tests}
+% ===========================================================================
+Ordered cheapest first. Each test has a pass criterion fixed before it runs.
+\begin{description}
+  \item[T0 Gradient correctness.] At the reference and at a MUTS=51 sequence,
+        compare $g_{ik}-g_{ij}$ with a central finite difference of $U$ along
+        $p_{ik}-p_{ij}$ (fp32, no autocast), at 20 sites $\times$ 3 pairs.
+        Pass: relative error $<1\%$.
+  \item[T1 Same energy.] $U$ from the gradient-enabled forward equals
+        \texttt{\_exact\_energy} bit for bit, at 50 random sequences.
+  \item[T2 Same ranking, predicted scale.] At 30 sites, reference and MUTS=51:
+        the new $g$ against today's \texttt{\_grad\_pass\_sites} over the 19
+        competitors. Pass: cosine of the centred vectors $\ge0.999$, same
+        argmax except at near-ties, fitted scale within 1\% of
+        $c=4.535\times10^{-4}$.
+  \item[T3 Exact kernel, toy energy.] Extend \file{test\_nsite\_kernel.py}:
+        enumerate the one-pass kernel on the 3-letter systems for
+        $n=1,2,3$ and check detailed balance and stationarity to machine
+        precision; repeat with Gaussian noise added to every gradient
+        evaluation (the non-reproducible case) and check stationarity of the
+        $\sigma$-marginal by long runs. Also check that a run that restarts and
+        recomputes the cache gives the same distribution.
+  \item[T4 Exact Boltzmann, ESM3.] \file{validate\_boltzmann\_toy.py} in
+        one-pass mode at $T=107$ with $\dt$ set for $p_{\mathrm{match}}\approx0.15$,
+        16\,000 and 32\,000 samples. Pass: KL and TV in line with the current
+        sampler's (0.0316 / 0.0787 at $n=16\,000$) and decaying as $1/n$ and
+        $1/\sqrt n$.
+  \item[T5 Informedness and $\dt$.] \file{test\_informedness\_vs\_dt.py} with the
+        new gradient, at the floor and at MUTS=51; locate
+        $p_{\mathrm{match}}=0.15$ and compare with the predicted $\dt=0.0286$ at
+        $T=2$.
+  \item[T6 Cost.] Time per move (wall-clock and CPU) and peak memory, one job
+        alone and two jobs, GPU utilisation. Pass: $\le170$\,ms per move alone.
+  \item[T7 Same dynamics.] Old and new sampler, same starts, at the study's
+        three temperatures, 5000 moves each, several seeds: acceptance, $H_d$
+        growth and $U$ per move must agree within seed-to-seed spread. Then
+        equilibrium statistics (mean $U$, mean $H_d$, site entropy, $q$) after
+        equilibration, by the n\_sites study's criterion.
+  \item[T8 Speed where it counts.] Decorrelation per wall-second (the n\_sites
+        study's score) for old and new. This is the thesis figure: the
+        expected value is $\approx2.4\times$.
+  \item[T9 Compatibility.] \texttt{n\_sites}$>1$, \texttt{--extend}, restart,
+        \texttt{run\_equilibration.py}, and $\lambda_S\ne0$ refused.
+\end{description}
+
+\paragraph{Implementation sketch.} A pars key (e.g.\ \texttt{grad\_mode} =
+\texttt{site\_soft} | \texttt{one\_pass}, default today's behaviour so every
+old run replays), a method that returns $(U,g)$ from one pass on the one-hot
+matrix, and the cache held in \texttt{sample()} across calls to
+\texttt{\_step}.
+
+\end{document}
