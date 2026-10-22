@@ -51,7 +51,7 @@ sys.path.append(os.path.join(CODE_DIR, "tests"))
 
 import torch
 
-from classes.rate_sampler import ExtendedProteinRateSampler, _NONCANONICAL_RESIDUES
+from classes.rate_sampler import ExtendedProteinRateSampler, _NONCANONICAL_RESIDUES, one_pass_dt_scale
 from utils.general import load_inputs
 from references import get_reference, header
 import custom_esm.utils.constants.esm3 as C
@@ -67,12 +67,12 @@ class TimedSampler(ExtendedProteinRateSampler):
 	def _mutate_canonical(self, ref_seq: str, mutations: int) -> str:
 		return self.start_seq if self.start_seq is not None else super()._mutate_canonical(ref_seq, mutations)
 
-	def _step(self, eprot, U_A, pars):
+	def _step(self, eprot, U_A, pars, sites=None):
 		cuda = self.generator.device.type == "cuda"
 		if cuda:
 			torch.cuda.synchronize()
 		t0 = time.perf_counter()
-		out = super()._step(eprot, U_A, pars)
+		out = super()._step(eprot, U_A, pars, sites)
 		if cuda:
 			torch.cuda.synchronize()
 		self.wall_rows.append(time.perf_counter() - t0)
@@ -143,6 +143,9 @@ def main(args):
 		"data.dat and wall.dat are only flushed at checkpoints.")
 
 	dt = args.dt if args.dt is not None else dt_for_T(args.T, args.dt_at_t2, args.dt_exp, args.dt_factor)
+	if args.dt is None and args.grad_mode == "one_pass":
+		# Same informedness as the site_soft rule: dt times c (docs/one_pass_move.tex, Section 5).
+		dt *= one_pass_dt_scale(0.1)
 
 	if args.resume:
 		start_seq, start_note = None, "resume"
@@ -155,13 +158,16 @@ def main(args):
 		start_note = f"{os.path.abspath(args.start)} move {move}"
 
 	pars = {
-		"moves": args.moves, "T": args.T, "dt": round(dt, 4), "M": 1.0, "T_sftm": 0.1,
+		"moves": args.moves, "T": args.T, "dt": round(dt, 4) if args.grad_mode == "site_soft" else float(f"{dt:.6g}"), "M": 1.0, "T_sftm": 0.1,
 		"lambda_am": 1.0, "lambda_structure_ce": 0.0, "lambda_S": 0.0, "n_quad": 40,
 		# init_muts=1 only routes start_seq through _mutate_canonical; no
 		# random mutation is drawn. 0 starts at the reference itself.
 		"init_muts": 0 if start_seq is None or start_seq == ref_seq else 1,
 		"n_sites": args.n_sites, "eps": 1.0e-9, "seed": args.seed,
 	}
+	if args.grad_mode != "site_soft":
+		# Only written when not the default, so pars.txt of earlier runs still match on --resume.
+		pars["grad_mode"] = args.grad_mode
 	if args.resume:
 		# The sampler silently starts over (and clears the directory) when a
 		# restart file is missing, so check them here, as main_rate.py --extend does.
@@ -170,7 +176,8 @@ def main(args):
 		assert not missing and n_eprot >= 4, f"--resume: {out} cannot be restarted (missing {missing}, {n_eprot} eprot files)."
 		saved = load_inputs(f"{out}/pars.txt", start="## sampler", end="##")
 		pars["init_muts"] = int(saved["init_muts"])
-		changed = {k: (saved[k], v) for k, v in pars.items() if k != "moves" and float(saved[k]) != float(v)}
+		same = lambda a, b: str(a) == str(b) if isinstance(b, str) else float(a) == float(b)
+		changed = {k: (saved.get(k), v) for k, v in pars.items() if k != "moves" and (k not in saved or not same(saved[k], v))}
 		assert not changed, f"--resume: parameters differ from {out}/pars.txt: {changed}"
 	write_pars(f"{out}/pars.txt", pars)
 
@@ -190,7 +197,7 @@ def main(args):
 
 	with open(f"{out}/run_info.txt", "a") as f:
 		f.write(f"# {time.strftime('%Y-%m-%d %H:%M:%S')}  moves={args.moves}  resume={bool(args.resume)}\n")
-		f.write(f"T {args.T}\nn_sites {args.n_sites}\ndt {pars['dt']}\nseed {args.seed}\nstart {start_note}\n")
+		f.write(f"T {args.T}\nn_sites {args.n_sites}\ndt {pars['dt']}\ngrad_mode {args.grad_mode}\nseed {args.seed}\nstart {start_note}\n")
 		f.write(f"wall_total_s {wall_total:.1f}\n")
 		if torch.cuda.is_available():
 			f.write(f"gpu {torch.cuda.get_device_name(0)}\n")
@@ -215,6 +222,8 @@ def create_parser():
 	p.add_argument("--dt-at-t2", type=float, default=63.0)
 	p.add_argument("--dt-exp", type=float, default=0.5)
 	p.add_argument("--dt-factor", type=float, default=1.0)
+	p.add_argument("--grad-mode", choices=["site_soft", "one_pass"], default="site_soft",
+		help="one_pass: docs/one_pass_move.tex. The dt rule above is then multiplied by one_pass_dt_scale() (4.5e-4); a fixed --dt is used as given")
 	p.add_argument("--log-step", type=int, default=500)
 	p.add_argument("--print-step", type=int, default=500)
 	p.add_argument("--ref", type=str, default="zero_polymer")

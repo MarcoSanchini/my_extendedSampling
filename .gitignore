@@ -85,3 +85,10 @@ softmax/docs/*.aux
 softmax/docs/*.log
 softmax/docs/*.out
 softmax/docs/*.toc
+
+# one-pass study (study_onepass.sh): checkpoints stay local; data.dat, wall.dat,
+# start.txt and run_info.txt are small (5000 moves) and stay tracked so the
+# analysis can be rerun anywhere.
+softmax/monte_carlo/onepass_study/**/eprot/
+softmax/monte_carlo/onepass_study/**/*.pt
+softmax/monte_carlo/onepass_study/**/*.npy
