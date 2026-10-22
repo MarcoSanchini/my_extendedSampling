@@ -5384,3 +5384,62 @@ defaults to MAX_RUNNING=1, which also keeps the scan's s/move free of contention
 Batching several chains through one ESM3 pass is the untested way to use the card
 better.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-22 -- one-pass move: implementation and tests (docs/one_pass_move.tex)
+--------------------------------------------------------------------------------
+New pars key grad_mode: "site_soft" (default, the move as before, so every old
+run replays) or "one_pass". In one-pass mode the gradient is dU/dp at the exact
+one-hot sequence for all sites (_energy_and_grad: one forward with requires_grad
+on p, which is also the exact U, and one backward). The chain keeps a cache
+(sequence, U, g) of its current state: g(A) of a move is the cached gradient,
+g(B) of the candidate replaces it only on acceptance. 1 forward + 1 backward per
+move, plus one at a chain start. The cache is saved with each checkpoint
+(results_dir/grad_cache.pt) so a restart replays the straight run; without it,
+or when it belongs to another state, the first move refills it (also exact, by
+the extended-state argument of the note, Section 4.2). _step takes an optional
+sites=[...] for restricted tests. dt conversion: one_pass_dt_scale(T_sftm) =
+p_off/T_sftm = 4.535e-4 at T_sftm=0.1. lambda_S != 0 is refused in one-pass mode.
+
+The exact reference is a degenerate point for the one-pass gradient: U_am is a
+sum of squares that all vanish there, so g = 0 and the first proposal from the
+reference is uniform. After one accepted move g is non-zero again. This is why
+the gradient tests use MUTS=5 (near the floor) and MUTS=51 (bulk) instead of the
+reference itself.
+
+Checked here (cloud CPU, toy energy, code/tests/test_one_pass_kernel.py, ~12 min):
+  A  dU/dp matches finite differences (worst 2.5e-6); its U equals _exact_energy
+     bit for bit; site_soft gradient over the competitors = c*(centred g) with
+     cosine 1.000000 and fitted scale 4.5351e-4 = c (T1, T2 on the toy).
+  B  exact enumeration of the one-pass kernel, L=4,5, n_sites=1,2,3, T=0.5..2:
+     detailed balance to 3e-18, stationarity of exp(-U/T).
+  C  _step one-pass frequencies and acceptance match the enumerated rows.
+  D  long chains (27 states, 3 x 60000 moves): deterministic gradient max|z|
+     2.9, gradient with Gaussian noise of the size of the typical gap max|z| 2.4
+     (exact on the extended state, as the note argues), negative control that
+     keeps g(B) after a rejection max|z| 9.7, TV 0.050 vs 0.008: detected.
+  E  1 forward + 1 backward per move (site_soft: 3 + 2), counted on the model.
+  F  restart at move 60 of 100 reproduces the straight run, with the saved cache
+     and with it deleted.
+  G  default grad_mode replays origin/main's rate_sampler.py row for row; bad
+     grad_mode and lambda_S>0 refused; works without _setup.
+test_nsite_kernel.py still passes. On the toy, a site_soft and a one-pass chain
+with dt scaled by c and the same seed made the same 400 moves (the toy has no
+evaluation-point effect large enough to flip a decision).
+
+GPU scripts (not run; no ESM3 in the cloud):
+  code/tests/test_one_pass_gradient.py   T0 (fp32 vs finite differences), T1, T2
+  code/tests/test_informedness_vs_dt.py  GRAD_MODE=one_pass: T5
+  code/tests/validate_boltzmann_toy.py   GRAD_MODE=one_pass: T4, through _step
+                                         with sites=[site]; also prints KL/TV on
+                                         the first half for the 1/n check
+  monte_carlo/run_nsites.py              --grad-mode (dt rule times c)
+  monte_carlo/run_equilibration.py       --grad-mode
+  monte_carlo/study_onepass.sh           PHASE=bench (T6) | transient (T7a) |
+                                         equil (T7b, T8, from the n_sites study's
+                                         equilibrated chains); waits for the GPU
+                                         to be free of other jobs (EXCLUSIVE=1)
+  monte_carlo/analyze_onepass.py         bench | transient | equil
+The study script and analysis were run end to end on the toy energy with
+protein_g's length (no ESM3) to check the plumbing.
+--------------------------------------------------------------------------------

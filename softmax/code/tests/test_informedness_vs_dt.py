@@ -113,11 +113,25 @@ N_QUAD = 40
 # (one gradient per site covers every dt), so widening this list is free.
 DTS_TO_SWEEP = [10, 20, 50, 100, 200, 300, 600, 1000, 1300, 2000, 4000, 8000, 16000, 32000]
 
+# GRAD_MODE=one_pass (T5 of docs/one_pass_move.tex): the gradient is the
+# one-pass dU/dp at the exact sequence, one forward+backward for all sites,
+# and the dt grid is the one above times c = one_pass_dt_scale(), so row k of
+# both tables should give the same p_match if the rescaling is right. The
+# design predicts p_match~0.15 at dt = 63c = 0.0286 here (T=2). Same SEED,
+# SITES and MUTS give the same seq_A and sites as a site_soft run.
+#   GRAD_MODE=one_pass SITES=30 MUTS=51 python tests/test_informedness_vs_dt.py
+GRAD_MODE = os.environ.get("GRAD_MODE", "site_soft")
+assert GRAD_MODE in ("site_soft", "one_pass"), f"GRAD_MODE must be site_soft or one_pass, got {GRAD_MODE}"
+if GRAD_MODE == "one_pass":
+	from classes.rate_sampler import one_pass_dt_scale
+	DTS_TO_SWEEP = [dt*one_pass_dt_scale(0.1) for dt in DTS_TO_SWEEP]
+
 
 def main():
 	pars = {
 		"T": T, "dt": 1.0, "M": M, "T_sftm": 0.1,  # pars['dt'] unused below (see module docstring)
 		"lambda_am": 1.0, "lambda_S": 0.0, "eps": 1.0e-9, "n_quad": N_QUAD,
+		"grad_mode": GRAD_MODE,
 	}
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -139,7 +153,7 @@ def main():
 	print(f"# reference: {REF_NAME} (L={len(REF_SEQ)} residues)")
 	print(f"Reference: {REF_SEQ}")
 	print(f"Current A: {seq_A}")
-	print(f"T={T}, M={M}  (fixed; dt is the swept axis)\n")
+	print(f"T={T}, M={M}  (fixed; dt is the swept axis), grad_mode={GRAD_MODE}\n")
 
 	vocab = C.SEQUENCE_USED_VOCAB
 	L = len(seq_A)
@@ -152,9 +166,13 @@ def main():
 	# per-dt p_match, pooled across sites for the summary table
 	p_match_by_dt = {dt: [] for dt in DTS_TO_SWEEP}
 
+	if GRAD_MODE == "one_pass":
+		# one forward+backward for every site
+		_, _, grad_full_A, _ = sampler._energy_and_grad(eprot_A, pars)
+
 	for s in test_sites:
 		# --- one real forward+backward pass per site; everything below is free ---
-		grad_A = sampler._grad_pass_site(eprot_A, s, pars)
+		grad_A = grad_full_A[s] if GRAD_MODE == "one_pass" else sampler._grad_pass_site(eprot_A, s, pars)
 		cur = int(eprot_A.logits[s].argmax(dim=-1).item())
 		competitors = sampler._competition_indices(cur)  # global vocab indices: canonical minus cur
 
@@ -199,7 +217,7 @@ def main():
 		print(f"  site {s:3d} (cur={vocab[cur]}): gradient-predicted={vocab[j_star]} "
 			  f"(true dU={dU_star:+.4f})  true best={vocab[true_best]} (true dU={true_dU[true_best]-U_A_exact:+.4f})  "
 			  f"top1={'HIT' if hit else 'miss'}")
-		print("      p_match(dt): " + "  ".join(f"dt={dt}:{p_match_row[dt]:.3f}" for dt in DTS_TO_SWEEP))
+		print("      p_match(dt): " + "  ".join(f"dt={dt:g}:{p_match_row[dt]:.3f}" for dt in DTS_TO_SWEEP))
 
 	mean_dU_star = sum(dU_star_list)/len(dU_star_list)
 	mean_dU_other = sum(dU_other_list)/len(dU_other_list)
@@ -217,8 +235,15 @@ def main():
 	for dt in DTS_TO_SWEEP:
 		vals = p_match_by_dt[dt]
 		mean_p = sum(vals)/len(vals)
-		print(f"  dt={dt:6d}: mean p_match={mean_p:.4f}  "
+		print(f"  dt={dt:8.4g}: mean p_match={mean_p:.4f}  "
 			  f"(min={min(vals):.4f}  max={max(vals):.4f} across the {N_SITES_TESTED} tested sites)")
+	# dt where the pooled mean p_match crosses 0.15, interpolated in log dt.
+	means = [sum(p_match_by_dt[dt])/len(p_match_by_dt[dt]) for dt in DTS_TO_SWEEP]
+	for (d0, m0), (d1, m1) in zip(zip(DTS_TO_SWEEP, means), zip(DTS_TO_SWEEP[1:], means[1:])):
+		if m0 < 0.15 <= m1:
+			f = (0.15 - m0)/(m1 - m0)
+			print(f"  mean p_match = 0.15 at dt ~ {math.exp(math.log(d0) + f*(math.log(d1) - math.log(d0))):.4g} (T={T})")
+			break
 	print("(As dt -> infinity this should -> 1.0 at every site; the crossover dt where it")
 	print(" leaves the momentum-dominated ~uniform regime is exactly the number the old")
 	print(" accept-rate-gap sweep was trying to locate indirectly and noisily.)")
