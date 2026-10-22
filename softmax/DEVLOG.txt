@@ -5372,3 +5372,15 @@ Cost estimate at 0.37 s/move (the CPU-time figure, an assumption for the GPU):
 equil 12 chains x 20000 moves, about 12 h at 2 jobs; scan 36 chains x 5000
 moves, about 9 h.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-22 -- two jobs on the GPU are slower than one after the other
+--------------------------------------------------------------------------------
+Measured during the n_sites equil phase (RTX 4500 Ada, 24.5 GB): two run_nsites.py
+chains at once take 0.79 s/move each (wall.dat), GPU utilization 100%, 8866 MiB per
+process. One job alone took 0.364 s/move. Two together therefore deliver a move
+every 0.395 s, about 8% slower than running them in sequence. study_nsites.sh now
+defaults to MAX_RUNNING=1, which also keeps the scan's s/move free of contention.
+Batching several chains through one ESM3 pass is the untested way to use the card
+better.
+--------------------------------------------------------------------------------

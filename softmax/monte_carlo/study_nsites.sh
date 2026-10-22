@@ -42,9 +42,11 @@ MOVES_SCAN="${MOVES_SCAN:-5000}"
 LOG_STEP="${LOG_STEP:-500}"
 DT_FACTOR="${DT_FACTOR:-1.0}"
 
-# Same memory gate as the zero_polymer sweep (one job used 4.6-8.7 GB).
+# One job saturates the GPU: alone 0.364 s/move, two together 0.79 s/move each
+# (2026-10-22), so concurrency is ~8% slower and makes s/move depend on
+# neighbours. One at a time by default.
 MIN_FREE_MB="${MIN_FREE_MB:-12000}"
-MAX_RUNNING="${MAX_RUNNING:-2}"
+MAX_RUNNING="${MAX_RUNNING:-1}"
 source "${SCRIPT_DIR}/gpu_scheduler.sh"
 
 RESUME_FLAG=""
