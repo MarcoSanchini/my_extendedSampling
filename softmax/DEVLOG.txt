@@ -5443,3 +5443,53 @@ GPU scripts (not run; no ESM3 in the cloud):
 The study script and analysis were run end to end on the toy energy with
 protein_g's length (no ESM3) to check the plumbing.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-23 -- n_sites study, equil phase: T=316 equilibrated, T=32 and T=100 not
+--------------------------------------------------------------------------------
+Run: study_nsites.sh PHASE=equil, 3 T x 4 chains x 20000 moves at n_sites=1,
+two jobs at a time (0.79 s/move). All 12 logs end with "Simulation completed!",
+none has a traceback. Peak allocated 6350 MB, reserved 8616 MB per job. The
+reconstruction from data.dat + start.txt matched cur_aa and Hd_to_ref on every
+move of every chain. The analysis/equil_summary.tsv pushed with the data held
+only the header; re-run here with
+    python analyze_nsites.py equil nsites_study --every 1000
+(per-T tables and plots in nsites_study/analysis/). Chains 0, 2 start at the
+reference, chains 1, 3 at random sequences (Hd 534, 539).
+
+  T     t_eq      final Rhat_U  Rhat_Hd   last 5000 moves, per chain 0/1/2/3
+                                          U (x1000)              Hd_to_ref          acc
+  32    no        11.65         4.90      10.7 22.0 10.6 20.4    406 534 396 523    .18 .11 .18 .15
+  100   no         3.93         1.67      22.6 27.0 22.4 27.5    518 532 521 536    .48 .49 .48 .44
+  316   19000      1.09         1.06      34.4 35.9 34.3 37.5    530 533 536 539    .72 .63 .72 .65
+
+- T=316. Agrees from about move 7000; the strict rule (R-hat below 1.1 at every
+  later t) gives 19000 because R-hat_Hd sat at 1.1-1.2 around moves 11000-13000.
+  <Hd_to_ref> = 535, against 538 for a uniform random sequence: at T=316 the
+  equilibrium is essentially random sequences. <U> = 35900, Var(U)/T^2 = 42.
+- T=100. Hd has converged to near-random in all four chains, but U has not: the
+  reference-started chains sit at about 22500 and the random-started ones at
+  about 27000, each flat since about move 7500. A gap of ~4500 (45 kT) that does
+  not shrink over 12000 moves looks like two metastable regimes, not slow drift.
+  It is not the reference residues: the reference-started chains keep only 6-10
+  sites at the reference residue, and the four final sequences are 520-536 apart
+  pairwise. Amino-acid composition shows no obvious difference either. The cause
+  is open.
+- T=32. Far from converged. Reference-started chains are at Hd ~400 and still
+  climbing (about 9 per 1000 moves); random-started chains are at Hd ~530 with U
+  falling slowly (24200 -> 22000 over 10000 moves). The reference-started chains
+  keep 111 and 119 sites at the reference residue, 60 of them shared (23 expected
+  by chance), so part of the reference is held at this T.
+- Temperature choice. T=100 and T=316 both sit at near-random Hd, so the
+  transition is lower than assumed, at or below about 32. The middle T of the
+  study should move down once there is an equilibrium curve.
+
+Next. Extending T=32 and T=100 at n_sites=1 is a poor use of the GPU while the
+one-pass tests are queued: T=100's U gap has not moved in 12000 moves and T=32
+probably needs well over 50000. Time for the reference- and random-started chains
+to agree (R-hat < 1.1) is itself a speed measure, so the hard temperatures are
+better used as the test case for the faster moves (one-pass, n_sites > 1) once
+those exist. If an n_sites=1 extension is wanted anyway, T=100 alone:
+    TS_OVERRIDE=100 RESUME=1 MOVES_EQ=40000 nohup bash study_nsites.sh > study_equil_T100_more.log 2>&1 &
+(about 8 h at 0.364 s/move, one job at a time).
+--------------------------------------------------------------------------------
