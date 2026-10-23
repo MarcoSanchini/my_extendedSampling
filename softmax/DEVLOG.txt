@@ -5493,3 +5493,35 @@ those exist. If an n_sites=1 extension is wanted anyway, T=100 alone:
     TS_OVERRIDE=100 RESUME=1 MOVES_EQ=40000 nohup bash study_nsites.sh > study_equil_T100_more.log 2>&1 &
 (about 8 h at 0.364 s/move, one job at a time).
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-23 -- one-pass move: first GPU results (astaroth, RTX 4500 Ada)
+--------------------------------------------------------------------------------
+T1  PASS. U from the gradient-enabled forward equals _exact_energy bit for bit at
+    50/50 random sequences. At the reference U = 0 and g = 0 exactly.
+T0  not run. The fp32 path crashed: ESM3 is loaded in bfloat16 (esm3.py:334),
+    so an fp32 input without autocast meets bf16 weights. Fixed:
+    test_one_pass_gradient.py casts the model to fp32 for T0 only. T2 now runs
+    before T0, since in that run T2 never started.
+T5  PASS. Same seed gives the same seq_A, and the first 10 of the 30 sites are
+    the 10 sites of the site_soft run (zero_polymer/informedness_vs_dt_results.txt).
+    At dt_one_pass = c*dt_site_soft, p_match agrees site by site to about 1%
+    (mean over the 10 sites at dt = 100c: 0.214 vs 0.213). The gradient's pick
+    is the same at 9 of 10 sites; at site 43 the one-pass pick (A) is the true
+    best and the site_soft pick (W) is not. Over 30 sites, p_match = 0.15 at
+    dt = 0.0168 (MUTS=5) and 0.0151 (MUTS=51), against the 0.0286 predicted from
+    the 10-site calibration. The 20 extra sites have larger gradient gaps; this is
+    a sampling difference between site sets, not a scale error.
+T6  PASS. 0.153 s/move alone (criterion <= 0.170), site_soft 0.365: 2.38x per
+    move. Peak allocated 6350 MB in both modes. Two one_pass jobs together take
+    0.329 s/move each (a move every 0.164 s, 7% slower than alone).
+T7a transient from the reference, 2 seeds x 5000 moves per mode, dt = 63*sqrt(T/2)
+    (x c for one_pass). Acceptance agrees everywhere (|z| <= 1.4): at move 5000,
+    T=32 0.103 vs 0.108, T=100 0.350 vs 0.319, T=316 0.646 vs 0.665. Hd_to_ref and
+    U differ by at most a few percent, with no consistent sign across T; the
+    isolated |z| of 2-4 come from a spread estimated from 2 seeds (one sd is
+    near 0 by chance). Wall-clock is 2.38x shorter for the same move count.
+    Table: monte_carlo/onepass_study/analysis/transient.tsv.
+T4  incomplete. The pushed log ends at move 6000 of 40000 (acceptance 0.30);
+    the final log is needed.
+--------------------------------------------------------------------------------

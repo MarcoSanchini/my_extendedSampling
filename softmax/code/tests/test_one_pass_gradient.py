@@ -4,6 +4,7 @@ ESM3. Needs the GPU machine. Run from softmax/code:
 
     nohup python -u tests/test_one_pass_gradient.py > one_pass_gradient.log 2>&1 &
 
+  (T1 and T2 run first, T0 last, so a T0 problem cannot hide T2.)
   T0 Gradient correctness. The one-pass gradient g = dU/dp at the one-hot
      sequence, in float32 without autocast, against a central finite difference
      of U (also float32, no autocast) along p_ik - p_ij, at FD_SITES sites x 3
@@ -124,52 +125,6 @@ def main():
 	verdicts["T1"] = equal == N_T1
 	print(f"T1: {equal}/{N_T1} bit-identical, worst |diff| = {worst:.3e}  -> {'PASS' if verdicts['T1'] else 'FAIL'}\n")
 
-	# ------------------------------------------------------------------- T0 --- #
-	if not SKIP_T0:
-		print(f"=== T0: float32 gradient vs central finite differences, {FD_SITES} sites x 3 pairs, h in {FD_H} ===")
-		ref_am32 = attention_fp32(sampler, sampler.ref_eprot.get_probs()).detach()
-		U32 = lambda P: compute_U_am(attention_fp32(sampler, P), ref_am32)
-		all_ok = True
-		for m, seq in seqs.items():
-			e = eprot_of(seq, device)
-			P0 = e.get_probs().detach().clone().requires_grad_(True)
-			t0 = time.perf_counter()
-			U = U32(P0)
-			U.backward()
-			g32 = P0.grad.detach()
-			_, _, g16, _ = sampler._energy_and_grad(eprot_of(seq, device), PARS)
-			print(f"MUTS={m}: U_fp32={U.item():.4f}  (fwd+bwd {time.perf_counter() - t0:.2f}s)")
-			torch.manual_seed(SEED + m)
-			sites = torch.randperm(L)[:FD_SITES].tolist()
-			errs, cos16 = [], []
-			with torch.no_grad():
-				for s in sites:
-					cur = vocab.index(seq[s])
-					comps = sampler._competition_indices(cur).tolist()
-					cos16.append(centred_cos(g16[s][comps], g32[s][comps]))
-					picks = torch.randperm(len(comps))[:4].tolist()
-					for kk, jj in [(comps[picks[0]], comps[picks[1]]), (comps[picks[2]], cur), (comps[picks[3]], comps[picks[0]])]:
-						d = torch.zeros_like(P0)
-						d[s, kk], d[s, jj] = 1., -1.
-						an = (g32[s, kk] - g32[s, jj]).item()
-						row = []
-						for h in FD_H:
-							fd = ((U32(P0 + h*d) - U32(P0 - h*d))/(2*h)).item()
-							row.append(abs(fd - an)/max(abs(fd), 1e-12))
-						errs.append(row)
-						print(f"  site {s:3d} ({vocab[cur]}) {vocab[kk]}-{vocab[jj]}: g diff {an:+.4e}  "
-							  + "  ".join(f"h={h:g}: rel err {r:.2e}" for h, r in zip(FD_H, row)))
-			errs = np.array(errs)
-			best = errs.min(axis=1)
-			ok = bool(np.all(best < 0.01))
-			all_ok &= ok
-			print(f"MUTS={m}: relative error at the best h: median {np.median(best):.2e}, max {best.max():.2e}; "
-				  f"per h, median: " + ", ".join(f"{h:g}: {np.median(errs[:, i]):.2e}" for i, h in enumerate(FD_H)))
-			print(f"MUTS={m}: bf16 production gradient vs fp32, centred cosine over competitors: "
-				  f"min {min(cos16):.5f}, median {np.median(cos16):.5f}\n")
-		verdicts["T0"] = all_ok
-		print(f"T0: {'PASS' if all_ok else 'FAIL'} (criterion: every pair < 1% at its best h)\n")
-
 	# ------------------------------------------------------------------- T2 --- #
 	print(f"=== T2: one-pass g vs site_soft gradient over the competitors, {T2_SITES} sites ===")
 	t2_ok = True
@@ -207,6 +162,60 @@ def main():
 			  f"(site_soft vs itself: min {min(cos_noise):.6f}); argmax mismatches {mism} (+{ties} near-ties); "
 			  f"fitted scale median {s_med:.5e} = {s_med/c:.4f} c (range {min(scales)/c:.4f}..{max(scales)/c:.4f}) -> {'PASS' if ok else 'FAIL'}\n")
 	verdicts["T2"] = t2_ok
+
+	# ------------------------------------------------------------------- T0 --- #
+	if not SKIP_T0:
+		print(f"=== T0: float32 gradient vs central finite differences, {FD_SITES} sites x 3 pairs, h in {FD_H} ===")
+		# The weights are stored in bfloat16 and autocast normally casts the
+		# inputs; an fp32 path needs fp32 weights, restored after T0.
+		weight_dtype = next(sampler.model.parameters()).dtype
+		sampler.model.float()
+		ref_am32 = attention_fp32(sampler, sampler.ref_eprot.get_probs()).detach()
+		U32 = lambda P: compute_U_am(attention_fp32(sampler, P), ref_am32)
+		all_ok = True
+		for m, seq in seqs.items():
+			e = eprot_of(seq, device)
+			P0 = e.get_probs().detach().clone().requires_grad_(True)
+			t0 = time.perf_counter()
+			U = U32(P0)
+			U.backward()
+			g32 = P0.grad.detach()
+			sampler.model.to(weight_dtype)
+			_, _, g16, _ = sampler._energy_and_grad(eprot_of(seq, device), PARS)
+			sampler.model.float()
+			print(f"MUTS={m}: U_fp32={U.item():.4f}  (fwd+bwd {time.perf_counter() - t0:.2f}s)")
+			torch.manual_seed(SEED + m)
+			sites = torch.randperm(L)[:FD_SITES].tolist()
+			errs, cos16 = [], []
+			with torch.no_grad():
+				for s in sites:
+					cur = vocab.index(seq[s])
+					comps = sampler._competition_indices(cur).tolist()
+					cos16.append(centred_cos(g16[s][comps], g32[s][comps]))
+					picks = torch.randperm(len(comps))[:4].tolist()
+					for kk, jj in [(comps[picks[0]], comps[picks[1]]), (comps[picks[2]], cur), (comps[picks[3]], comps[picks[0]])]:
+						d = torch.zeros_like(P0)
+						d[s, kk], d[s, jj] = 1., -1.
+						an = (g32[s, kk] - g32[s, jj]).item()
+						row = []
+						for h in FD_H:
+							fd = ((U32(P0 + h*d) - U32(P0 - h*d))/(2*h)).item()
+							row.append(abs(fd - an)/max(abs(fd), 1e-12))
+						errs.append(row)
+						print(f"  site {s:3d} ({vocab[cur]}) {vocab[kk]}-{vocab[jj]}: g diff {an:+.4e}  "
+							  + "  ".join(f"h={h:g}: rel err {r:.2e}" for h, r in zip(FD_H, row)))
+			errs = np.array(errs)
+			best = errs.min(axis=1)
+			ok = bool(np.all(best < 0.01))
+			all_ok &= ok
+			print(f"MUTS={m}: relative error at the best h: median {np.median(best):.2e}, max {best.max():.2e}; "
+				  f"per h, median: " + ", ".join(f"{h:g}: {np.median(errs[:, i]):.2e}" for i, h in enumerate(FD_H)))
+			print(f"MUTS={m}: bf16 production gradient vs fp32, centred cosine over competitors: "
+				  f"min {min(cos16):.5f}, median {np.median(cos16):.5f}\n")
+		sampler.model.to(weight_dtype)
+		verdicts["T0"] = all_ok
+		print(f"T0: {'PASS' if all_ok else 'FAIL'} (criterion: every pair < 1% at its best h)\n")
+
 
 	print("=== summary ===")
 	for k, v in verdicts.items():
