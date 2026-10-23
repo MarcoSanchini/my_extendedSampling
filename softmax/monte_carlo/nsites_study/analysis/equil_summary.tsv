@@ -1,2 +1,5 @@
 # equilibration summary (analyze_nsites.py equil)
 T	chains	moves	t_eq	<U>	<Hd_to_ref>	Var(U)/T^2	acc	s/move	peak_MB
+32	4	20000	-	-	-	-	-	0.788	6350
+100	4	20000	-	-	-	-	-	0.783	6350
+316	4	20000	19000	35886.1	538.9	42.1745	0.706	0.788	6350
