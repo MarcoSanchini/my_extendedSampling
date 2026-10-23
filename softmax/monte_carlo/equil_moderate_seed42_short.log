@@ -1,0 +1,27 @@
+nohup: ignoring input
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 33408.65it/s]
+PID: 183797
+start_mode=moderate  seed=42  dt=2000.0  T=2.0  moves=2000
+start_seq (Hd=4 from ref): MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYGSDNGVDGEWVYDDATKTFTVLE
+  move    100/2000  U=23.072  Hd=9  acc_rate=0.120
+  move    200/2000  U=29.755  Hd=11  acc_rate=0.085
+  move    300/2000  U=36.278  Hd=14  acc_rate=0.090
+  move    400/2000  U=42.255  Hd=19  acc_rate=0.102
+  move    500/2000  U=42.549  Hd=22  acc_rate=0.104
+  move    600/2000  U=44.174  Hd=24  acc_rate=0.112
+  move    700/2000  U=43.190  Hd=26  acc_rate=0.119
+  move    800/2000  U=51.236  Hd=28  acc_rate=0.134
+  move    900/2000  U=73.476  Hd=33  acc_rate=0.140
+  move   1000/2000  U=73.818  Hd=34  acc_rate=0.150
+  move   1100/2000  U=65.983  Hd=40  acc_rate=0.155
+  move   1200/2000  U=70.417  Hd=42  acc_rate=0.159
+  move   1300/2000  U=60.558  Hd=41  acc_rate=0.156
+  move   1400/2000  U=63.367  Hd=41  acc_rate=0.154
+  move   1500/2000  U=77.982  Hd=42  acc_rate=0.152
+  move   1600/2000  U=65.139  Hd=41  acc_rate=0.154
+  move   1700/2000  U=71.150  Hd=41  acc_rate=0.155
+  move   1800/2000  U=68.156  Hd=44  acc_rate=0.162
+  move   1900/2000  U=76.805  Hd=43  acc_rate=0.165
+  move   2000/2000  U=74.278  Hd=44  acc_rate=0.163
+
+Done. Log at tests_rate_equilibration/moderate_seed42_short/data.dat

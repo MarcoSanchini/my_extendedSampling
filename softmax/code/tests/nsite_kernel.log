@@ -1,0 +1,104 @@
+nohup: ignoring input
+A. detailed balance and stationarity (exact enumeration)
+  L=4 n=1 T=1.0: 81 states, max |flow - flow^T| = 1.73e-18, mean acceptance of a move = 0.785
+  L=4 n=2 T=1.0: 81 states, max |flow - flow^T| = 4.34e-19, mean acceptance of a move = 0.752
+  L=4 n=2 T=0.5: 81 states, max |flow - flow^T| = 6.51e-19, mean acceptance of a move = 0.701
+  L=5 n=2 T=1.0: 243 states, max |flow - flow^T| = 3.25e-19, mean acceptance of a move = 0.737
+  L=5 n=3 T=2.0: 243 states, max |flow - flow^T| = 1.08e-19, mean acceptance of a move = 0.789
+B. sampled targets follow the pointing probabilities
+  30000 draws: per-site and joint target frequencies match the pointing probabilities
+C. canonical starts
+  300 starts of 20 mutations: only canonical residues, all 20 drawn
+D. reference guard
+  reference with X refused
+E. output, restart
+
+
+##################################################
+# ExtendedProteinRateSampler parameters summary: #
+#                                                #
+# moves:                      6.0e+01            #
+# sampling temperature:       1.0e+00            #
+# step size (dt):             1.0e+00            #
+# logits mass:                1.00               #
+# softmax temperature:        0.10               #
+# Gauss-Hermite nodes:        40                 #
+# sites per move:             3                  #
+# attention multiplier:       1.0e+00            #
+# structure_ce multiplier:    0.0e+00            #
+# entropy multiplier:         0.0e+00            #
+#                                                #
+# results directory: /tmp/tmpu7rcjvdh/run        #
+# eprot directory:   /tmp/tmpu7rcjvdh/run/eprot  #
+# restart:           False                       #
+#                                                #
+##################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     0      |  -4.21998  |  -4.21998  |  0.00000   |     4      |     0      |     |  0.00000   |  0.00000   |     0      |   1.000    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+
+
+##################################################
+# ExtendedProteinRateSampler parameters summary: #
+#                                                #
+# moves:                      1.0e+02            #
+# sampling temperature:       1.0e+00            #
+# step size (dt):             1.0e+00            #
+# logits mass:                1.00               #
+# softmax temperature:        0.10               #
+# Gauss-Hermite nodes:        40                 #
+# sites per move:             3                  #
+# attention multiplier:       1.0e+00            #
+# structure_ce multiplier:    0.0e+00            #
+# entropy multiplier:         0.0e+00            #
+#                                                #
+# results directory: /tmp/tmpu7rcjvdh/run        #
+# eprot directory:   /tmp/tmpu7rcjvdh/run/eprot  #
+# restart:           True                        #
+#                                                #
+##################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     60     | -12.21753  | -12.21753  |  0.00000   |     6      |   4,3,1    |     |  6.82628   |  -6.82370  |     0      |   0.067    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+
+
+######################################################
+# ExtendedProteinRateSampler parameters summary:     #
+#                                                    #
+# moves:                      1.0e+02                #
+# sampling temperature:       1.0e+00                #
+# step size (dt):             1.0e+00                #
+# logits mass:                1.00                   #
+# softmax temperature:        0.10                   #
+# Gauss-Hermite nodes:        40                     #
+# sites per move:             3                      #
+# attention multiplier:       1.0e+00                #
+# structure_ce multiplier:    0.0e+00                #
+# entropy multiplier:         0.0e+00                #
+#                                                    #
+# results directory: /tmp/tmpu7rcjvdh/straight       #
+# eprot directory:   /tmp/tmpu7rcjvdh/straight/eprot #
+# restart:           False                           #
+#                                                    #
+######################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     0      |  -4.21998  |  -4.21998  |  0.00000   |     4      |     0      |     |  0.00000   |  0.00000   |     0      |   1.000    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+  60 moves with n_sites=3, then restart to 100: rows match the straight run exactly
+F. _step against the exact kernel rows
+  3 fixed starts, 4000 _step calls each: frequencies and acceptance match the kernel rows
+G. pars without n_sites
+  pars without n_sites: _step makes single-site moves
+ALL N-SITE CHECKS PASSED

@@ -1,0 +1,254 @@
+nohup: ignoring input
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 199297.38it/s]
+# reference: protein_g (L=56 residues)
+
+=== (0) log(am) numerical health (length-sensitive) ===
+am: shape=(56, 56)  min=1.549973e-03  max=1.151231e-01  mean=1.683986e-02  (uniform would be ~1.724138e-02)
+am entries exactly 0: 0/3136   non-finite: 0/3136
+log(am) range: [-6.4695, -2.1618]  (all finite, so compute_U_am's raw log is safe on this reference)
+U_am NOISE FLOOR (same sequence, two separate forward passes) = 0.000000e+00
+  max |am - am_recomputed| = 0.000000e+00
+  (0 => the forward pass is bit-reproducible and U_am has no run-to-run noise.
+   Non-zero => every dU smaller in magnitude than this is numerical noise, not signal.)
+
+=== (1) floor consistency check ===
+compute_U_am(ref_am, ref_am) = 0.00000000e+00  (should be exactly/near-exactly 0)
+Current A (Hd=5 from ref): MTYKLFLNGKTLKGETTYEAVDAATAEKVFKQYENDOGVDGEWTYDDATKTFTVTW
+U_A_exact = 165.4261
+Floor bound: no dU measured from this seq_A can be below -U_A_exact = -165.4261 (since U_cand >= 0 always).
+(test_informedness_vs_dt.py's most negative reported dU at this seq_A
+ was -92.9918 at site 55; that requires U_A_exact >= 92.9918 to be possible.
+ CONSISTENT: U_A_exact=165.4261 >= 92.9918)
+
+=== (2) reference-anchored scan (Hd=1 from ref, no prior drift) ===
+  site   4 (ref=L): best=I (dU=+9.0733)  worst=D (dU=+224.2637)  mean=+58.3072  n_negative=0/19
+  site  30 (ref=K): best=E (dU=+3.0434)  worst=P (dU=+58.5722)  mean=+13.6934  n_negative=0/19
+  site  49 (ref=K): best=R (dU=+2.6599)  worst=I (dU=+91.1323)  mean=+22.7346  n_negative=0/19
+  site  24 (ref=T): best=V (dU=+5.6236)  worst=H (dU=+108.9731)  mean=+32.1870  n_negative=0/19
+  site  55 (ref=E): best=Q (dU=+2.7403)  worst=W (dU=+30.8326)  mean=+10.8616  n_negative=0/19
+  site   5 (ref=I): best=V (dU=+2.4078)  worst=P (dU=+123.7394)  mean=+38.2881  n_negative=0/19
+  site  33 (ref=A): best=V (dU=+6.7753)  worst=P (dU=+255.3196)  mean=+56.1795  n_negative=0/19
+  site  52 (ref=T): best=V (dU=+3.2132)  worst=P (dU=+42.1766)  mean=+11.5953  n_negative=0/19
+  site   6 (ref=L): best=I (dU=+5.4008)  worst=W (dU=+171.5367)  mean=+39.2782  n_negative=0/19
+  site  14 (ref=E): best=N (dU=+7.2849)  worst=F (dU=+58.4015)  mean=+31.2800  n_negative=0/19
+
+Across all 190 single mutants of the reference tested: 0 negative (should be 0, up to float precision -- the floor argument
+guarantees every one of these is >= 0 since U(ref)=0 is the global minimum).
+Mean dU-from-ref across all tested single mutants: +31.4405
+(This is the typical 'cost' of one mutation evaluated with NO other drift --
+ compare by eye to test_informedness_vs_dt.py's true_dU values at the SAME sites,
+ which were evaluated from seq_A (Hd=4). A site whose cost-from-ref is clearly
+ positive but whose cost-from-seq_A went negative is direct, site-matched evidence
+ of epistasis/context-dependence -- not a landscape-optimality violation, since
+ seq_A's own baseline U_A_exact already accounts for its own Hd=4 distance from ref.)
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 99864.38it/s]
+# reference: protein_g (L=56 residues)
+Reference: MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+Current A: MTYKLFLNGKTLKGETTYEAVDAATAEKVFKQYENDOGVDGEWTYDDATKTFTVTW
+  site   4 (cur=L): gradient-predicted=T (true dU=+356.4977)  true best=F (true dU=-19.9868)  top1=miss
+  site  30 (cur=K): gradient-predicted=R (true dU=-3.5485)  true best=R (true dU=-3.5485)  top1=HIT
+  site  49 (cur=K): gradient-predicted=I (true dU=+22.8421)  true best=A (true dU=-4.0389)  top1=miss
+  site  24 (cur=T): gradient-predicted=E (true dU=+11.3973)  true best=F (true dU=-27.1905)  top1=miss
+  site  55 (cur=W): gradient-predicted=P (true dU=-79.3216)  true best=K (true dU=-92.9918)  top1=miss
+  site   5 (cur=F): gradient-predicted=K (true dU=+4.1762)  true best=M (true dU=-62.7916)  top1=miss
+  site  33 (cur=E): gradient-predicted=F (true dU=-40.6453)  true best=A (true dU=-76.1019)  top1=miss
+  site  52 (cur=T): gradient-predicted=E (true dU=-26.7100)  true best=E (true dU=-26.7100)  top1=HIT
+  site   6 (cur=L): gradient-predicted=H (true dU=-9.4346)  true best=V (true dU=-24.4091)  top1=miss
+  site  14 (cur=E): gradient-predicted=A (true dU=-63.2788)  true best=F (true dU=-72.3288)  top1=miss
+
+[OK] mu_A . grad_A <= 0 at every tested site (p=0 displacement is a descent direction)
+
+Top-1 accuracy (gradient pick == true best, among candidates excluding 'stay'): 2/10
+Mean true dU at gradient-predicted class:     +17.1975
+Mean true dU at all other candidate classes:  +20.9858
+(gradient-predicted class should be markedly lower than the random/other average;
+ it need not hit the true optimum every time -- that's the linearization-quality tradeoff.)
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 182361.04it/s]
+# reference: zero_polymer (L=566 residues)
+
+=== (0) log(am) numerical health (length-sensitive) ===
+am: shape=(566, 566)  min=5.421609e-05  max=1.103998e-01  mean=1.747851e-03  (uniform would be ~1.760563e-03)
+am entries exactly 0: 0/320356   non-finite: 0/320356
+log(am) range: [-9.8225, -2.2036]  (all finite, so compute_U_am's raw log is safe on this reference)
+U_am NOISE FLOOR (same sequence, two separate forward passes) = 0.000000e+00
+  max |am - am_recomputed| = 0.000000e+00
+  (0 => the forward pass is bit-reproducible and U_am has no run-to-run noise.
+   Non-zero => every dU smaller in magnitude than this is numerical noise, not signal.)
+
+=== (1) floor consistency check ===
+compute_U_am(ref_am, ref_am) = 0.00000000e+00  (should be exactly/near-exactly 0)
+Current A (Hd=5 from ref): MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELWVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVELKSFYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+U_A_exact = 2557.0425
+Floor bound: no dU measured from this seq_A can be below -U_A_exact = -2557.0425 (since U_cand >= 0 always).
+(No recorded most-negative dU for reference 'zero_polymer' yet -- run
+ test_informedness_vs_dt.py on it, then record its value in this script's
+ MOST_NEGATIVE_DU to enable the sharper cross-script consistency check.)
+
+=== (2) reference-anchored scan (Hd=1 from ref, no prior drift) ===
+  site 178 (ref=A): best=M (dU=+110.2730)  worst=C (dU=+1732.1415)  mean=+419.5964  n_negative=0/19
+  site  30 (ref=L): best=M (dU=+59.8256)  worst=D (dU=+1061.6278)  mean=+537.3375  n_negative=0/19
+  site  43 (ref=T): best=N (dU=+159.8434)  worst=F (dU=+3430.1426)  mean=+1250.2973  n_negative=0/19
+  site 494 (ref=G): best=H (dU=+213.8920)  worst=I (dU=+1067.8933)  mean=+457.5857  n_negative=0/19
+  site 463 (ref=F): best=L (dU=+70.8860)  worst=P (dU=+3960.4480)  mean=+737.5116  n_negative=0/19
+  site 107 (ref=K): best=R (dU=+94.4008)  worst=G (dU=+1144.7660)  mean=+410.2825  n_negative=0/19
+  site 313 (ref=N): best=S (dU=+77.1637)  worst=C (dU=+2153.6658)  mean=+698.0679  n_negative=0/19
+  site 123 (ref=L): best=M (dU=+79.6328)  worst=C (dU=+1796.0507)  mean=+424.4826  n_negative=0/19
+  site 189 (ref=F): best=Y (dU=+139.1526)  worst=C (dU=+3049.3149)  mean=+707.9771  n_negative=0/19
+  site 468 (ref=K): best=N (dU=+52.9796)  worst=C (dU=+2192.2629)  mean=+390.3271  n_negative=0/19
+
+Across all 190 single mutants of the reference tested: 0 negative (should be 0, up to float precision -- the floor argument
+guarantees every one of these is >= 0 since U(ref)=0 is the global minimum).
+Mean dU-from-ref across all tested single mutants: +603.3466
+(This is the typical 'cost' of one mutation evaluated with NO other drift --
+ compare by eye to test_informedness_vs_dt.py's true_dU values at the SAME sites,
+ which were evaluated from seq_A (Hd=4). A site whose cost-from-ref is clearly
+ positive but whose cost-from-seq_A went negative is direct, site-matched evidence
+ of epistasis/context-dependence -- not a landscape-optimality violation, since
+ seq_A's own baseline U_A_exact already accounts for its own Hd=4 distance from ref.)
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 38754.59it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Current A: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELWVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVELKSFYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+  site 178 (cur=A): gradient-predicted=V (true dU=-167.4673)  true best=I (true dU=-171.2229)  top1=miss
+  site  30 (cur=L): gradient-predicted=I (true dU=-63.7280)  true best=Y (true dU=-209.6162)  top1=miss
+  site  43 (cur=T): gradient-predicted=W (true dU=+680.1042)  true best=A (true dU=-127.2637)  top1=miss
+  site 494 (cur=G): gradient-predicted=E (true dU=+171.8462)  true best=H (true dU=-101.7134)  top1=miss
+  site 463 (cur=F): gradient-predicted=P (true dU=+3871.6343)  true best=Y (true dU=-104.1660)  top1=miss
+  site 107 (cur=K): gradient-predicted=G (true dU=-301.0586)  true best=G (true dU=-301.0586)  top1=HIT
+  site 313 (cur=N): gradient-predicted=D (true dU=+15.8345)  true best=D (true dU=+15.8345)  top1=HIT
+  site 123 (cur=L): gradient-predicted=C (true dU=+28.6895)  true best=V (true dU=-169.0020)  top1=miss
+  site 189 (cur=F): gradient-predicted=N (true dU=-417.3479)  true best=P (true dU=-835.2300)  top1=miss
+  site 468 (cur=K): gradient-predicted=P (true dU=+925.2986)  true best=R (true dU=-135.2144)  top1=miss
+
+[OK] mu_A . grad_A <= 0 at every tested site (p=0 displacement is a descent direction)
+
+Top-1 accuracy (gradient pick == true best, among candidates excluding 'stay'): 2/10
+Mean true dU at gradient-predicted class:     +474.3805
+Mean true dU at all other candidate classes:  +542.4638
+(gradient-predicted class should be markedly lower than the random/other average;
+ it need not hit the true optimum every time -- that's the linearization-quality tradeoff.)
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 68200.07it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Current A: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELWVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVELKSFYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+
+site   4 (cur=I): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=1.9866  |grad_whole|=1.9825
+    both methods pick K  (true dU=+879.6533)
+site 178 (cur=A): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=1.2143  |grad_whole|=1.1959
+    both methods pick V  (true dU=-167.4673)
+site  30 (cur=L): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.6705  |grad_whole|=0.6686
+    both methods pick I  (true dU=-63.7280)
+site  43 (cur=T): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.4401  |grad_whole|=0.4609
+    site-only picks W (true dU=+680.1042)   whole-sequence picks A (true dU=-127.2637)
+    [FLAGGED: low agreement between methods]
+site 494 (cur=G): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.1393  |grad_whole|=0.1350
+    both methods pick E  (true dU=+171.8462)
+site 463 (cur=F): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.2971  |grad_whole|=0.2915
+    both methods pick P  (true dU=+3871.6343)
+site 107 (cur=K): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.6451  |grad_whole|=0.7107
+    both methods pick G  (true dU=-301.0586)
+site 313 (cur=N): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.2878  |grad_whole|=0.2909
+    both methods pick D  (true dU=+15.8345)
+site 123 (cur=L): cosine(grad_site, grad_whole)=+0.9999  |grad_site|=0.3450  |grad_whole|=0.3417
+    both methods pick C  (true dU=+28.6895)
+site 189 (cur=F): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.8679  |grad_whole|=0.8901
+    both methods pick N  (true dU=-417.3479)
+site 468 (cur=K): cosine(grad_site, grad_whole)=+1.0000  |grad_site|=0.2769  |grad_whole|=0.3000
+    both methods pick P  (true dU=+925.2986)
+
+Flagged sites (cosine<0.5 or disagreeing picks with |dU diff|>50): [43]
+-> worth a closer look at those specific sites before trusting the site-only gradient there.
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 159094.29it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Current A: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELWVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVELKSFYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+T=2.0, M=1.0  (fixed; dt is the swept axis)
+
+  site 178 (cur=A): gradient-predicted=V (true dU=-167.4673)  true best=I (true dU=-171.2229)  top1=miss
+      p_match(dt): dt=10:0.073  dt=20:0.098  dt=50:0.189  dt=100:0.367  dt=200:0.645  dt=300:0.780  dt=600:0.946  dt=1000:0.996  dt=1300:1.000  dt=2000:1.000  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site  30 (cur=L): gradient-predicted=I (true dU=-63.7280)  true best=Y (true dU=-209.6162)  top1=miss
+      p_match(dt): dt=10:0.061  dt=20:0.070  dt=50:0.101  dt=100:0.158  dt=200:0.263  dt=300:0.342  dt=600:0.492  dt=1000:0.591  dt=1300:0.635  dt=2000:0.710  dt=4000:0.866  dt=8000:0.987  dt=16000:1.000  dt=32000:1.000
+  site  43 (cur=T): gradient-predicted=W (true dU=+680.1042)  true best=A (true dU=-127.2637)  top1=miss
+      p_match(dt): dt=10:0.063  dt=20:0.074  dt=50:0.107  dt=100:0.152  dt=200:0.209  dt=300:0.248  dt=600:0.346  dt=1000:0.433  dt=1300:0.470  dt=2000:0.503  dt=4000:0.520  dt=8000:0.541  dt=16000:0.581  dt=32000:0.659
+  site 494 (cur=G): gradient-predicted=E (true dU=+171.8462)  true best=H (true dU=-101.7134)  top1=miss
+      p_match(dt): dt=10:0.055  dt=20:0.058  dt=50:0.068  dt=100:0.084  dt=200:0.121  dt=300:0.160  dt=600:0.275  dt=1000:0.403  dt=1300:0.481  dt=2000:0.616  dt=4000:0.835  dt=8000:0.980  dt=16000:1.000  dt=32000:1.000
+  site 463 (cur=F): gradient-predicted=P (true dU=+3871.6343)  true best=Y (true dU=-104.1660)  top1=miss
+      p_match(dt): dt=10:0.057  dt=20:0.063  dt=50:0.079  dt=100:0.111  dt=200:0.188  dt=300:0.277  dt=600:0.567  dt=1000:0.852  dt=1300:0.950  dt=2000:0.998  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site 107 (cur=K): gradient-predicted=G (true dU=-301.0586)  true best=G (true dU=-301.0586)  top1=HIT
+      p_match(dt): dt=10:0.067  dt=20:0.084  dt=50:0.140  dt=100:0.239  dt=200:0.410  dt=300:0.547  dt=600:0.808  dt=1000:0.945  dt=1300:0.982  dt=2000:0.999  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site 313 (cur=N): gradient-predicted=D (true dU=+15.8345)  true best=D (true dU=+15.8345)  top1=HIT
+      p_match(dt): dt=10:0.058  dt=20:0.063  dt=50:0.081  dt=100:0.115  dt=200:0.191  dt=300:0.266  dt=600:0.442  dt=1000:0.581  dt=1300:0.655  dt=2000:0.773  dt=4000:0.937  dt=8000:0.999  dt=16000:1.000  dt=32000:1.000
+  site 123 (cur=L): gradient-predicted=C (true dU=+28.6895)  true best=V (true dU=-169.0020)  top1=miss
+      p_match(dt): dt=10:0.064  dt=20:0.078  dt=50:0.126  dt=100:0.226  dt=200:0.435  dt=300:0.596  dt=600:0.859  dt=1000:0.977  dt=1300:0.996  dt=2000:1.000  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site 189 (cur=F): gradient-predicted=N (true dU=-417.3479)  true best=P (true dU=-835.2300)  top1=miss
+      p_match(dt): dt=10:0.090  dt=20:0.137  dt=50:0.313  dt=100:0.562  dt=200:0.818  dt=300:0.933  dt=600:0.999  dt=1000:1.000  dt=1300:1.000  dt=2000:1.000  dt=4000:1.000  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+  site 468 (cur=K): gradient-predicted=P (true dU=+925.2986)  true best=R (true dU=-135.2144)  top1=miss
+      p_match(dt): dt=10:0.058  dt=20:0.063  dt=50:0.081  dt=100:0.116  dt=200:0.199  dt=300:0.287  dt=600:0.495  dt=1000:0.667  dt=1300:0.762  dt=2000:0.908  dt=4000:0.999  dt=8000:1.000  dt=16000:1.000  dt=32000:1.000
+
+=== (A) dt-independent: is the gradient's fixed pick any good? ===
+Top-1 accuracy (gradient pick == true best, among candidates excluding 'stay'): 2/10
+Mean true dU at gradient-predicted class:     +474.3805
+Mean true dU at all other candidate classes:  +542.4638
+(This number does NOT change with dt -- dt only affects how reliably a single
+ realized move follows this fixed pick, see (B) below.)
+
+=== (B) dt-dependent, closed form: mean P(realized proposal == gradient's pick), pooled over sites ===
+  dt=    10: mean p_match=0.0647  (min=0.0555  max=0.0895 across the 10 tested sites)
+  dt=    20: mean p_match=0.0788  (min=0.0584  max=0.1371 across the 10 tested sites)
+  dt=    50: mean p_match=0.1285  (min=0.0676  max=0.3126 across the 10 tested sites)
+  dt=   100: mean p_match=0.2132  (min=0.0842  max=0.5616 across the 10 tested sites)
+  dt=   200: mean p_match=0.3479  (min=0.1210  max=0.8180 across the 10 tested sites)
+  dt=   300: mean p_match=0.4436  (min=0.1604  max=0.9326 across the 10 tested sites)
+  dt=   600: mean p_match=0.6229  (min=0.2754  max=0.9989 across the 10 tested sites)
+  dt=  1000: mean p_match=0.7447  (min=0.4034  max=1.0000 across the 10 tested sites)
+  dt=  1300: mean p_match=0.7930  (min=0.4696  max=1.0000 across the 10 tested sites)
+  dt=  2000: mean p_match=0.8507  (min=0.5033  max=1.0000 across the 10 tested sites)
+  dt=  4000: mean p_match=0.9156  (min=0.5204  max=1.0000 across the 10 tested sites)
+  dt=  8000: mean p_match=0.9506  (min=0.5408  max=1.0000 across the 10 tested sites)
+  dt= 16000: mean p_match=0.9581  (min=0.5812  max=1.0000 across the 10 tested sites)
+  dt= 32000: mean p_match=0.9659  (min=0.6591  max=1.0000 across the 10 tested sites)
+(As dt -> infinity this should -> 1.0 at every site; the crossover dt where it
+ leaves the momentum-dominated ~uniform regime is exactly the number the old
+ accept-rate-gap sweep was trying to locate indirectly and noisily.)
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 189475.75it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Free sites: 30 (ref=L), 52 (ref=T)  -- 20^2=400 states, background fixed at reference elsewhere
+T=2.0, dt=1300.0, MOVES=2000, BURN_IN=400
+
+=== exact enumeration ===
+U at (ref,ref) = 0.000000  (should be exactly/near-exactly 0)
+sum(p_exact) = 1.000000  (should be 1.0)
+
+Top 10 states by exact Boltzmann probability:
+  (L,T): p_exact=1.0000  U=+0.0000
+  (L,S): p_exact=0.0000  U=+42.0872
+  (M,T): p_exact=0.0000  U=+59.8256
+  (L,Q): p_exact=0.0000  U=+68.9740
+  (M,S): p_exact=0.0000  U=+73.8306
+  (L,N): p_exact=0.0000  U=+106.2867
+  (M,Q): p_exact=0.0000  U=+134.7961
+  (Y,Q): p_exact=0.0000  U=+140.7529
+  (Y,S): p_exact=0.0000  U=+140.9799
+  (L,G): p_exact=0.0000  U=+146.0622
+
+=== T calibration (from the enumerated spectrum, no extra model calls) ===
+U over the 400 states: min=+0.00  median=+740.27  max=+6235.03  std=1074.06
+spread above the minimum: median-min=740.27  max-min=6235.03
+  (T must be comparable to these gaps; T << gap freezes the chain, T >> gap flattens it)
+
+           T   eff. states  max p_exact   verdict
+      2.0000          1.00       1.0000   FROZEN -- one state, validates nothing  <== configured T
+     10.7406          1.05       0.9743   FROZEN -- one state, validates nothing
+     32.2217          2.97       0.5475   usable
+    107.4057         41.66       0.0804   usable
+    322.2171        183.45       0.0149   usable
+   1074.0568        337.19       0.0050   FLAT -- ~uniform, validates nothing
+   3222.1705        382.03       0.0033   FLAT -- ~uniform, validates nothing
+  10740.5684        397.06       0.0027   FLAT -- ~uniform, validates nothing
+
+*** configured T=2.0 leaves the target distribution FROZEN (essentially all mass on one state): eff. states=1.00 of 400.
+    The MCMC comparison below cannot validate the sampler in this regime --
+    it would agree with the exact distribution for the wrong reason.
+    Pick a T from the 'usable' rows above, e.g.  T=<value> python validate_boltzmann_toy.py
+    Skipping the 2000-move run (set FORCE=1 to run it anyway).

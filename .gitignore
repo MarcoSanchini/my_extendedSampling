@@ -1,14 +1,13 @@
 **/__pycache__/
 *.pyc
 
+eprot/
 softmax/monte_carlo/protein_g*/logs*/
 softmax/monte_carlo/protein_g*/tests/
 
 softmax/code/classes/ep_sampler_am_backup.py
 
-*.log
-!softmax/monte_carlo/zero_polymer_test_1000_1mut/logs_temperature_zero_polymer/*.log
-!softmax/monte_carlo/zero_polymer_test_10_300/logs_temperature_zero_polymer/*.log
+softmax/monte_carlo/protein_g_results/*.log
 
 
 softmax/code/protein_g*/joint_coupling_test.txt

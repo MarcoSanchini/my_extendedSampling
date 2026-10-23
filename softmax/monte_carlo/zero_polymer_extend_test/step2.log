@@ -1,0 +1,33 @@
+nohup: ignoring input
+T=300, dt=771.5893, moves=2000, init_muts=0, seed=42, ref=zero_polymer
+
+============================================================
+Preparing T=300
+============================================================
+GPU free memory: 23836 MB   Running: 0 / 2 (soft cap)
+Launching T=300
+  dt:       771.5893
+  moves:    2000
+  ref:      zero_polymer
+  log_step: 1000
+  results:  tests_rate_sweep_temperature_zero_polymer/T300
+  log:      logs_temperature_zero_polymer/T300_extend.log
+  PID: 126857
+  Running now: 1 / 2 (soft cap)
+
+All simulations have been launched.
+Waiting for remaining simulations...
+PID 126857 finished (exit 0).
+
+============================================================
+zero_polymer temperature sweep completed.
+Results in softmax/monte_carlo/zero_polymer_extend_test/tests_rate_sweep_temperature_zero_polymer/T<T>/sim0/{data.dat,eprot/}
+
+Per-T ensemble analysis. --ref-seq is REQUIRED: analyze_ensemble.py
+defaults to protein G's sequence.
+  ZP=$(python -c "import sys; sys.path.insert(0, '/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/../code/tests'); from references import ZERO_POLYMER as Z; print(Z)")
+  for T in 300; do
+    echo "--- T=$T ---"
+    python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py softmax/monte_carlo/zero_polymer_extend_test/tests_rate_sweep_temperature_zero_polymer/T$T/sim0 --ref-seq "$ZP"
+  done
+============================================================
