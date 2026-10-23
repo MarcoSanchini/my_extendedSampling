@@ -1,0 +1,17 @@
+# parameters (written by run_nsites.py)
+
+## sampler
+moves               5000
+T                   316.0
+dt                  0.35913
+M                   1.0
+T_sftm              0.1
+lambda_am           1.0
+lambda_structure_ce 0.0
+lambda_S            0.0
+n_quad              40
+init_muts           0
+n_sites             1
+eps                 1e-09
+seed                301
+grad_mode           one_pass
