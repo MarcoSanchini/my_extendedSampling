@@ -1,52 +1,93 @@
-Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 208295.01it/s]
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 24379.05it/s]
 # reference: zero_polymer (L=566 residues)
 Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
 Current A: MKTIIALSYILCLVFAQKLPGNMCSTATICLGHHAVPCITIVKTITNDQIEVTNOTELVQSSSTGEICDSPHQILDGKNCTLIDALLGEPQCDGFQNKKWDLSVERSKAYSNCYPYDVPDYASLRSLVADVGTLEFNNESFNWTGVTQNGTSSACIRRZKNXNFSRLNWMTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDDDQIFLYAQASGRITVSTKRSZQTVSPNIGSRPRVRNIZSRISIYWTIVKAGDIELINSTGNPIAPRGYFKIRFGKSSIMHSDAPIGKCMSECITPNGSIPNDKPFQNVNRSTYGACPRYVKQNTLKLATGMRPVPEKQTRGIFGIKAGFIENGWEGMVDGGYVFRHQXSEGRGQAADLKSTQAASDQINGKLNRLIGKTUEKFHQILKETSEVEGRIQDLEKDVEDTKPDLWSYNAELWVAZENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCRKXYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVRLKSFYKDWILLISFAIKCFLLCVALLGVIMWACQKGXIRCNICB
 T=2.0, M=1.0  (fixed; dt is the swept axis), grad_mode=one_pass
 
-Traceback (most recent call last):
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_informedness_vs_dt.py", line 253, in <module>
-    main()
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_informedness_vs_dt.py", line 171, in main
-    _, _, grad_full_A, _ = sampler._energy_and_grad(eprot_A, pars)
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 398, in _energy_and_grad
-    am = self.model.predict_attention(sequence_probs=probs)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 802, in predict_attention
-    attention = self._last_attention(
-                ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 786, in _last_attention
-    attention = self.transformer.last_attention(
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 125, in last_attention
-    x = block(x, sequence_id, affine, affine_mask, chain_id)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 159, in forward
-    r3 = self.ffn(x) / self.scaling_factor
-         ^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
-    input = module(input)
-            ^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 32, in forward
-    return F.silu(x1) * x2
-           ~~~~~~~~~~~^~~~
-torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 23.52 GiB of which 42.69 MiB is free. Process 230832 has 8.66 GiB memory in use. Process 230837 has 8.66 GiB memory in use. Including non-PyTorch memory, this process has 5.81 GiB memory in use. Of the allocated memory 5.55 GiB is allocated by PyTorch, and 18.06 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  site 178 (cur=A): gradient-predicted=W (true dU=-2751.7480)  true best=W (true dU=-2751.7480)  top1=HIT
+      p_match(dt): dt=0.00453505:0.081  dt=0.0090701:0.116  dt=0.0226753:0.253  dt=0.0453505:0.516  dt=0.090701:0.879  dt=0.136052:0.983  dt=0.272103:1.000  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site  30 (cur=L): gradient-predicted=M (true dU=-20.5586)  true best=W (true dU=-508.7891)  top1=miss
+      p_match(dt): dt=0.00453505:0.059  dt=0.0090701:0.067  dt=0.0226753:0.091  dt=0.0453505:0.137  dt=0.090701:0.235  dt=0.136052:0.322  dt=0.272103:0.519  dt=0.453505:0.704  dt=0.589557:0.803  dt=0.90701:0.939  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site  43 (cur=T): gradient-predicted=Q (true dU=-579.5195)  true best=F (true dU=-1386.2188)  top1=miss
+      p_match(dt): dt=0.00453505:0.062  dt=0.0090701:0.071  dt=0.0226753:0.103  dt=0.0453505:0.161  dt=0.090701:0.274  dt=0.136052:0.367  dt=0.272103:0.552  dt=0.453505:0.681  dt=0.589557:0.745  dt=0.90701:0.852  dt=1.81402:0.982  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 494 (cur=G): gradient-predicted=W (true dU=-623.8164)  true best=W (true dU=-623.8164)  top1=HIT
+      p_match(dt): dt=0.00453505:0.056  dt=0.0090701:0.060  dt=0.0226753:0.072  dt=0.0453505:0.094  dt=0.090701:0.137  dt=0.136052:0.177  dt=0.272103:0.282  dt=0.453505:0.395  dt=0.589557:0.460  dt=0.90701:0.566  dt=1.81402:0.733  dt=3.62804:0.902  dt=7.25608:0.995  dt=14.5122:1.000
+  site 463 (cur=F): gradient-predicted=Y (true dU=-162.1816)  true best=S (true dU=-745.0410)  top1=miss
+      p_match(dt): dt=0.00453505:0.056  dt=0.0090701:0.059  dt=0.0226753:0.070  dt=0.0453505:0.086  dt=0.090701:0.115  dt=0.136052:0.138  dt=0.272103:0.193  dt=0.453505:0.249  dt=0.589557:0.287  dt=0.90701:0.367  dt=1.81402:0.553  dt=3.62804:0.804  dt=7.25608:0.976  dt=14.5122:1.000
+  site 107 (cur=K): gradient-predicted=W (true dU=-39.6504)  true best=G (true dU=-271.2129)  top1=miss
+      p_match(dt): dt=0.00453505:0.058  dt=0.0090701:0.064  dt=0.0226753:0.083  dt=0.0453505:0.120  dt=0.090701:0.205  dt=0.136052:0.288  dt=0.272103:0.444  dt=0.453505:0.497  dt=0.589557:0.502  dt=0.90701:0.504  dt=1.81402:0.509  dt=3.62804:0.518  dt=7.25608:0.536  dt=14.5122:0.571
+  site 313 (cur=N): gradient-predicted=P (true dU=-325.3262)  true best=C (true dU=-1861.5293)  top1=miss
+      p_match(dt): dt=0.00453505:0.057  dt=0.0090701:0.062  dt=0.0226753:0.078  dt=0.0453505:0.107  dt=0.090701:0.165  dt=0.136052:0.216  dt=0.272103:0.324  dt=0.453505:0.414  dt=0.589557:0.465  dt=0.90701:0.558  dt=1.81402:0.709  dt=3.62804:0.868  dt=7.25608:0.987  dt=14.5122:1.000
+  site 123 (cur=L): gradient-predicted=P (true dU=-198.6699)  true best=I (true dU=-439.6367)  top1=miss
+      p_match(dt): dt=0.00453505:0.057  dt=0.0090701:0.061  dt=0.0226753:0.075  dt=0.0453505:0.100  dt=0.090701:0.152  dt=0.136052:0.199  dt=0.272103:0.305  dt=0.453505:0.391  dt=0.589557:0.442  dt=0.90701:0.546  dt=1.81402:0.773  dt=3.62804:0.972  dt=7.25608:1.000  dt=14.5122:1.000
+  site 189 (cur=F): gradient-predicted=I (true dU=-1417.8516)  true best=I (true dU=-1417.8516)  top1=HIT
+      p_match(dt): dt=0.00453505:0.119  dt=0.0090701:0.223  dt=0.0226753:0.632  dt=0.0453505:0.962  dt=0.090701:1.000  dt=0.136052:1.000  dt=0.272103:1.000  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 468 (cur=K): gradient-predicted=Y (true dU=-88.6816)  true best=P (true dU=-432.2637)  top1=miss
+      p_match(dt): dt=0.00453505:0.060  dt=0.0090701:0.067  dt=0.0226753:0.092  dt=0.0453505:0.137  dt=0.090701:0.233  dt=0.136052:0.328  dt=0.272103:0.591  dt=0.453505:0.830  dt=0.589557:0.927  dt=0.90701:0.994  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 499 (cur=G): gradient-predicted=W (true dU=-158.1680)  true best=P (true dU=-158.2051)  top1=miss
+      p_match(dt): dt=0.00453505:0.057  dt=0.0090701:0.061  dt=0.0226753:0.074  dt=0.0453505:0.100  dt=0.090701:0.162  dt=0.136052:0.232  dt=0.272103:0.443  dt=0.453505:0.642  dt=0.589557:0.729  dt=0.90701:0.844  dt=1.81402:0.979  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 547 (cur=L): gradient-predicted=M (true dU=+25.2129)  true best=C (true dU=-779.1660)  top1=miss
+      p_match(dt): dt=0.00453505:0.062  dt=0.0090701:0.071  dt=0.0226753:0.105  dt=0.0453505:0.170  dt=0.090701:0.297  dt=0.136052:0.401  dt=0.272103:0.608  dt=0.453505:0.745  dt=0.589557:0.808  dt=0.90701:0.910  dt=1.81402:0.996  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 482 (cur=R): gradient-predicted=W (true dU=-1657.3574)  true best=W (true dU=-1657.3574)  top1=HIT
+      p_match(dt): dt=0.00453505:0.068  dt=0.0090701:0.086  dt=0.0226753:0.155  dt=0.0453505:0.303  dt=0.090701:0.612  dt=0.136052:0.835  dt=0.272103:0.998  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 256 (cur=D): gradient-predicted=M (true dU=-1556.7246)  true best=Y (true dU=-3363.3516)  top1=miss
+      p_match(dt): dt=0.00453505:0.075  dt=0.0090701:0.099  dt=0.0226753:0.178  dt=0.0453505:0.325  dt=0.090701:0.613  dt=0.136052:0.810  dt=0.272103:0.986  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 540 (cur=F): gradient-predicted=D (true dU=+492.3770)  true best=C (true dU=-524.8379)  top1=miss
+      p_match(dt): dt=0.00453505:0.058  dt=0.0090701:0.064  dt=0.0226753:0.082  dt=0.0453505:0.115  dt=0.090701:0.184  dt=0.136052:0.251  dt=0.272103:0.403  dt=0.453505:0.510  dt=0.589557:0.548  dt=0.90701:0.593  dt=1.81402:0.682  dt=3.62804:0.828  dt=7.25608:0.971  dt=14.5122:1.000
+  site 372 (cur=X): gradient-predicted=P (true dU=+128.7520)  true best=H (true dU=-1031.5527)  top1=miss
+      p_match(dt): dt=0.00453505:0.072  dt=0.0090701:0.095  dt=0.0226753:0.155  dt=0.0453505:0.231  dt=0.090701:0.336  dt=0.136052:0.398  dt=0.272103:0.468  dt=0.453505:0.497  dt=0.589557:0.504  dt=0.90701:0.508  dt=1.81402:0.516  dt=3.62804:0.532  dt=7.25608:0.564  dt=14.5122:0.627
+  site 472 (cur=E): gradient-predicted=I (true dU=-214.2246)  true best=W (true dU=-1018.9941)  top1=miss
+      p_match(dt): dt=0.00453505:0.057  dt=0.0090701:0.062  dt=0.0226753:0.076  dt=0.0453505:0.103  dt=0.090701:0.160  dt=0.136052:0.214  dt=0.272103:0.338  dt=0.453505:0.436  dt=0.589557:0.492  dt=0.90701:0.601  dt=1.81402:0.810  dt=3.62804:0.969  dt=7.25608:1.000  dt=14.5122:1.000
+  site   3 (cur=I): gradient-predicted=L (true dU=-44.6699)  true best=L (true dU=-44.6699)  top1=HIT
+      p_match(dt): dt=0.00453505:0.060  dt=0.0090701:0.069  dt=0.0226753:0.097  dt=0.0453505:0.152  dt=0.090701:0.278  dt=0.136052:0.402  dt=0.272103:0.706  dt=0.453505:0.916  dt=0.589557:0.973  dt=0.90701:0.999  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site  32 (cur=H): gradient-predicted=Y (true dU=-345.7559)  true best=Y (true dU=-345.7559)  top1=HIT
+      p_match(dt): dt=0.00453505:0.064  dt=0.0090701:0.078  dt=0.0226753:0.126  dt=0.0453505:0.233  dt=0.090701:0.490  dt=0.136052:0.727  dt=0.272103:0.989  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 279 (cur=K): gradient-predicted=Q (true dU=-599.8066)  true best=C (true dU=-4108.4941)  top1=miss
+      p_match(dt): dt=0.00453505:0.072  dt=0.0090701:0.095  dt=0.0226753:0.180  dt=0.0453505:0.354  dt=0.090701:0.661  dt=0.136052:0.832  dt=0.272103:0.984  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 292 (cur=C): gradient-predicted=I (true dU=+969.4688)  true best=K (true dU=+433.7949)  top1=miss
+      p_match(dt): dt=0.00453505:0.065  dt=0.0090701:0.079  dt=0.0226753:0.131  dt=0.0453505:0.244  dt=0.090701:0.491  dt=0.136052:0.688  dt=0.272103:0.957  dt=0.453505:0.999  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 520 (cur=V): gradient-predicted=I (true dU=+16.5684)  true best=C (true dU=-419.1777)  top1=miss
+      p_match(dt): dt=0.00453505:0.077  dt=0.0090701:0.107  dt=0.0226753:0.213  dt=0.0453505:0.389  dt=0.090701:0.659  dt=0.136052:0.830  dt=0.272103:0.990  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 173 (cur=N): gradient-predicted=D (true dU=-300.2988)  true best=D (true dU=-300.2988)  top1=HIT
+      p_match(dt): dt=0.00453505:0.124  dt=0.0090701:0.234  dt=0.0226753:0.623  dt=0.0453505:0.914  dt=0.090701:0.998  dt=0.136052:1.000  dt=0.272103:1.000  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 352 (cur=G): gradient-predicted=P (true dU=-271.9180)  true best=P (true dU=-271.9180)  top1=HIT
+      p_match(dt): dt=0.00453505:0.086  dt=0.0090701:0.127  dt=0.0226753:0.282  dt=0.0453505:0.530  dt=0.090701:0.815  dt=0.136052:0.924  dt=0.272103:0.998  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site  64 (cur=G): gradient-predicted=N (true dU=+629.6895)  true best=W (true dU=-216.4707)  top1=miss
+      p_match(dt): dt=0.00453505:0.067  dt=0.0090701:0.083  dt=0.0226753:0.148  dt=0.0453505:0.292  dt=0.090701:0.605  dt=0.136052:0.821  dt=0.272103:0.994  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 271 (cur=G): gradient-predicted=D (true dU=-2002.5137)  true best=D (true dU=-2002.5137)  top1=HIT
+      p_match(dt): dt=0.00453505:0.080  dt=0.0090701:0.112  dt=0.0226753:0.212  dt=0.0453505:0.346  dt=0.090701:0.481  dt=0.136052:0.515  dt=0.272103:0.537  dt=0.453505:0.562  dt=0.589557:0.580  dt=0.90701:0.622  dt=1.81402:0.733  dt=3.62804:0.893  dt=7.25608:0.994  dt=14.5122:1.000
+  site 195 (cur=W): gradient-predicted=Y (true dU=+254.5176)  true best=Y (true dU=+254.5176)  top1=HIT
+      p_match(dt): dt=0.00453505:0.133  dt=0.0090701:0.256  dt=0.0226753:0.644  dt=0.0453505:0.902  dt=0.090701:0.996  dt=0.136052:1.000  dt=0.272103:1.000  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 345 (cur=G): gradient-predicted=N (true dU=-120.9551)  true best=K (true dU=-351.1113)  top1=miss
+      p_match(dt): dt=0.00453505:0.132  dt=0.0090701:0.228  dt=0.0226753:0.414  dt=0.0453505:0.530  dt=0.090701:0.672  dt=0.136052:0.766  dt=0.272103:0.928  dt=0.453505:0.993  dt=0.589557:0.999  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 467 (cur=K): gradient-predicted=R (true dU=+225.0020)  true best=P (true dU=-887.3613)  top1=miss
+      p_match(dt): dt=0.00453505:0.070  dt=0.0090701:0.091  dt=0.0226753:0.177  dt=0.0453505:0.386  dt=0.090701:0.782  dt=0.136052:0.938  dt=0.272103:0.999  dt=0.453505:1.000  dt=0.589557:1.000  dt=0.90701:1.000  dt=1.81402:1.000  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+  site 269 (cur=P): gradient-predicted=R (true dU=+861.7441)  true best=C (true dU=-5312.4902)  top1=miss
+      p_match(dt): dt=0.00453505:0.058  dt=0.0090701:0.063  dt=0.0226753:0.080  dt=0.0453505:0.112  dt=0.090701:0.182  dt=0.136052:0.253  dt=0.272103:0.439  dt=0.453505:0.616  dt=0.589557:0.708  dt=0.90701:0.838  dt=1.81402:0.978  dt=3.62804:1.000  dt=7.25608:1.000  dt=14.5122:1.000
+
+=== (A) dt-independent: is the gradient's fixed pick any good? ===
+Top-1 accuracy (gradient pick == true best, among candidates excluding 'stay'): 10/30
+Mean true dU at gradient-predicted class:     -329.2355
+Mean true dU at all other candidate classes:  +242.5419
+(This number does NOT change with dt -- dt only affects how reliably a single
+ realized move follows this fixed pick, see (B) below.)
+
+=== (B) dt-dependent, closed form: mean P(realized proposal == gradient's pick), pooled over sites ===
+  dt=0.004535: mean p_match=0.0734  (min=0.0560  max=0.1326 across the 30 tested sites)
+  dt= 0.00907: mean p_match=0.1003  (min=0.0594  max=0.2557 across the 30 tested sites)
+  dt= 0.02268: mean p_match=0.1900  (min=0.0696  max=0.6440 across the 30 tested sites)
+  dt= 0.04535: mean p_match=0.3050  (min=0.0859  max=0.9622 across the 30 tested sites)
+  dt=  0.0907: mean p_match=0.4623  (min=0.1146  max=1.0000 across the 30 tested sites)
+  dt=  0.1361: mean p_match=0.5619  (min=0.1381  max=1.0000 across the 30 tested sites)
+  dt=  0.2721: mean p_match=0.6992  (min=0.1925  max=1.0000 across the 30 tested sites)
+  dt=  0.4535: mean p_match=0.7693  (min=0.2492  max=1.0000 across the 30 tested sites)
+  dt=  0.5896: mean p_match=0.7991  (min=0.2870  max=1.0000 across the 30 tested sites)
+  dt=   0.907: mean p_match=0.8414  (min=0.3668  max=1.0000 across the 30 tested sites)
+  dt=   1.814: mean p_match=0.8984  (min=0.5089  max=1.0000 across the 30 tested sites)
+  dt=   3.628: mean p_match=0.9429  (min=0.5179  max=1.0000 across the 30 tested sites)
+  dt=   7.256: mean p_match=0.9674  (min=0.5357  max=1.0000 across the 30 tested sites)
+  dt=   14.51: mean p_match=0.9733  (min=0.5711  max=1.0000 across the 30 tested sites)
+  mean p_match = 0.15 at dt ~ 0.01507 (T=2.0)
+(As dt -> infinity this should -> 1.0 at every site; the crossover dt where it
+ leaves the momentum-dominated ~uniform regime is exactly the number the old
+ accept-rate-gap sweep was trying to locate indirectly and noisily.)
