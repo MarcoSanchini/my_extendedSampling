@@ -1,0 +1,19 @@
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 100 --moves 300 --seed 0 --start reference --grad-mode site_soft --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/onepass_study/bench/site_soft_alone 
+GPU free memory: 23726 MB   Running: 0 / 1 (soft cap)
+  PID 245916  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/onepass_study/logs/bench_site_soft_alone.log
+PID 245916 finished (exit 0).
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 100 --moves 300 --seed 0 --start reference --grad-mode one_pass --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/onepass_study/bench/one_pass_alone 
+GPU free memory: 23726 MB   Running: 0 / 1 (soft cap)
+  PID 246044  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/onepass_study/logs/bench_one_pass_alone.log
+PID 246044 finished (exit 0).
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 100 --moves 300 --seed 0 --start reference --grad-mode one_pass --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/onepass_study/bench/one_pass_pair0 
+GPU free memory: 23726 MB   Running: 0 / 2 (soft cap)
+  PID 246086  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/onepass_study/logs/bench_one_pass_pair0.log
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 100 --moves 300 --seed 1 --start reference --grad-mode one_pass --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/onepass_study/bench/one_pass_pair1 
+GPU free memory: 23726 MB   Running: 1 / 2 (soft cap)
+  PID 246094  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/onepass_study/logs/bench_one_pass_pair1.log
+PID 246086 finished (exit 0).
+PID 246094 finished (exit 0).
+All launched. Waiting...
+Phase bench finished. Analyse with:
+  python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_onepass.py bench /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/onepass_study

@@ -1,0 +1,12 @@
+# 2026-10-23 16:50:41  moves=5000  resume=False
+T 32.0
+n_sites 1
+dt 252.0
+grad_mode site_soft
+seed 301
+start reference
+wall_total_s 1825.5
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 6350
+peak_reserved_MB 8616
+
