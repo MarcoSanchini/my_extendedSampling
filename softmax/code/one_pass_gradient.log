@@ -1,50 +1,37 @@
-Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 139387.75it/s]
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 212125.72it/s]
 # reference: zero_polymer (L=566)
 device cuda:0, c = one_pass_dt_scale(0.1) = 4.535052e-04
 
+reference: U = 0.000e+00, max |g| = 0.000e+00  (expected 0: U_am is a sum of squares that vanish here)
+
+=== T1: U from the gradient-enabled forward vs _exact_energy, 50 sequences ===
+  muts= 36: one-pass U=13806.20703125  exact U=13806.20703125  diff=+0.000e+00
+  muts= 69: one-pass U=28045.1484375  exact U=28045.1484375  diff=+0.000e+00
+  muts=103: one-pass U=19927.669921875  exact U=19927.669921875  diff=+0.000e+00
+  muts=101: one-pass U=28074.876953125  exact U=28074.876953125  diff=+0.000e+00
+  muts= 19: one-pass U=11250.501953125  exact U=11250.501953125  diff=+0.000e+00
+T1: 50/50 bit-identical, worst |diff| = 0.000e+00  -> PASS
+
+=== T0: float32 gradient vs central finite differences, 20 sites x 3 pairs, h in [0.01, 0.003, 0.001] ===
 Traceback (most recent call last):
   File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_one_pass_gradient.py", line 217, in <module>
     main()
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_one_pass_gradient.py", line 109, in main
-    U0, _, g0, _ = sampler._energy_and_grad(eprot_of(REF_SEQ, device), PARS)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 398, in _energy_and_grad
-    am = self.model.predict_attention(sequence_probs=probs)
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 802, in predict_attention
-    attention = self._last_attention(
-                ^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 786, in _last_attention
-    attention = self.transformer.last_attention(
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 125, in last_attention
-    x = block(x, sequence_id, affine, affine_mask, chain_id)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 159, in forward
-    r3 = self.ffn(x) / self.scaling_factor
-         ^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
-    input = module(input)
-            ^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 32, in forward
-    return F.silu(x1) * x2
-           ~~~~~~~~~~~^~~~
-torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 23.52 GiB of which 42.69 MiB is free. Process 230832 has 8.66 GiB memory in use. Process 230837 has 8.66 GiB memory in use. Including non-PyTorch memory, this process has 5.81 GiB memory in use. Of the allocated memory 5.55 GiB is allocated by PyTorch, and 18.05 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_one_pass_gradient.py", line 130, in main
+    ref_am32 = attention_fp32(sampler, sampler.ref_eprot.get_probs()).detach()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_one_pass_gradient.py", line 80, in attention_fp32
+    return clean_and_symm(sampler.model._last_attention(sequence_probs=probs.unsqueeze(0))).squeeze(0)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 782, in _last_attention
+    x = self.encoder.custom_forward(
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 202, in custom_forward
+    sequence_embed = self.manual_embed(
+                     ^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 188, in manual_embed
+    x = torch.tensordot(x, self.sequence_embed.weight, dims=([2], [0]))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/functional.py", line 1358, in tensordot
+    return _VF.tensordot(a, b, dims_a, dims_b)  # type: ignore[attr-defined]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: both inputs should have same dtype
