@@ -1,0 +1,41 @@
+PID: 126857
+
+Loading inputs...
+Extending existing run in tests_rate_sweep_temperature_zero_polymer/T300/sim0
+# reference: zero_polymer (L=566 residues)
+Reference sequence: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Sequence length: 566
+Initializing rate sampler...
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 191839.27it/s]
+Starting the simulation!
+
+
+################################################################################
+# ExtendedProteinRateSampler parameters summary:                               #
+#                                                                              #
+# moves:                      2.0e+03                                          #
+# sampling temperature:       3.0e+02                                          #
+# step size (dt):             7.7e+02                                          #
+# logits mass:                1.00                                             #
+# softmax temperature:        0.10                                             #
+# Gauss-Hermite nodes:        40                                               #
+# attention multiplier:       1.0e+00                                          #
+# structure_ce multiplier:    0.0e+00                                          #
+# entropy multiplier:         0.0e+00                                          #
+#                                                                              #
+# results directory: tests_rate_sweep_temperature_zero_polymer/T300/sim0       #
+# eprot directory:   tests_rate_sweep_temperature_zero_polymer/T300/sim0/eprot #
+# restart:           True                                                      #
+#                                                                              #
+################################################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    1000    |25391.04883 |25391.04883 |  0.00000   |    326     |     64     |     |  49.26367  |  -0.10965  |     1      |   0.571    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    2000    |27305.79297 |27305.79297 |  0.00000   |    452     |    302     |     | -28.87109  |  -0.35561  |     1      |   0.624    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+
+Simulation completed!

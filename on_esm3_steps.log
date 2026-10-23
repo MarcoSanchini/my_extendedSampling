@@ -1,0 +1,61 @@
+--------------------------------------------------------------------------------
+2026-10-13 -- ESM3 structure steps: CONSTANTS.txt num_steps=10 is inert; the structure analysis decodes in 1 step
+--------------------------------------------------------------------------------
+Question: how many decoding steps does ESM3 use to predict structure here?
+The answer depends on the code path. Checked against the code, not the docs.
+
+Sampler (main_rate.py -> classes/rate_sampler.py, the path the zero_polymer
+sweep runs): no structure decoding. Each move calls ESM3 for attention maps
+only: two forward+backward passes for the gradients at the current and
+proposed sequences (_step, rate_sampler.py:178 and :203; backward at :268),
+and one forward pass for the proposal's energy (:220). The structure-logits
+pass (:261, :293, :399) runs only when lambda_structure_ce > 0 (gates at
+:260, :292, :397). Its default is 0.0 (rate_inputs/pars.txt), so it does not
+run.
+
+CONSTANTS.txt:4 says "num_steps 10  # number of steps for full structure
+prediction (coordinates and plddt)". main_rate.py reads it (--cs-file) and
+passes it to ExtendedProteinRateSampler, which builds self.config from it
+(rate_sampler.py:107). main.py and main_ale.py read it too. Nothing in
+rate_sampler.py reads self.config again, so the 10 changes no sampler output.
+
+The structure and pLDDT analysis does not read CONSTANTS.txt.
+compute_structural_metrics.py takes --num-steps, default 1 (:119), and passes
+it to init_structure_config(num_steps=...) (:130). run_plotting_suite.sh sets
+NUM_STEPS="${NUM_STEPS:-1}" (:55). init_structure_config's own default is also
+1 (softmax/code/utils/predictions.py:14).
+
+Other callers use their own counts. roundtrip_bridge.py defaults to the chain
+length (:117, :124). test_cleaved_complex.py defaults to 64 (:195). Its
+documented runs use 256 for the cleaved and mature complexes, and the chain
+length (56, 58, 46) for the controls (docstring, lines 63-68).
+
+What one step is: one batched ESM3 forward pass that unmasks part of the
+structure tokens (customs/custom_esm/utils/generation.py:414-415). The
+schedule input is (step+1)/num_steps (:290); CONSTANTS.txt sets the schedule
+to cosine.
+
+Already on record:
+- 2026-09-30 diagnostic (diagnose_structure_decode.py): "Rg differentiates
+  (sharply), pLDDT does not (and gets worse with more steps)".
+- 2026-10-08, decoding-steps trap: a one-step decode of the cleaved complex
+  returned ptm 0.1827 and a 1.64 A CB-CB "contact", a steric collapse. The
+  "bridge NOT formed" verdict from that run was worthless. fcb86aa made
+  --steps explicit and added a geometry gate.
+- The T-sweep structural numbers used num_steps=1 (the DEVLOG: "the sweep's
+  own runs all used the default"). The planned num_steps=8 re-run has not
+  been run, and a later entry calls it optional.
+
+The zero_polymer sweep itself is unaffected: it computes no structure.
+
+Decisions needed (none made here):
+1. Pick the analysis step count: 1 (current default), 8 (the 2026-09-30
+   plan), or 10 (CONSTANTS.txt; the DEVLOG notes the SDK's generation_test.py
+   uses 10 for a five-residue sequence).
+2. Either wire CONSTANTS.txt's num_steps into compute_structural_metrics.py,
+   or remove it from CONSTANTS.txt so it stops implying it controls anything.
+3. Re-run compute_structural_metrics.py on the existing protein G and
+   zero_polymer checkpoints at the chosen count before trusting pLDDT or Rg
+   across T.
+
+No code changed in this entry.

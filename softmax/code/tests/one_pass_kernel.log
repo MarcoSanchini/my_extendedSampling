@@ -1,0 +1,258 @@
+nohup: ignoring input
+A. gradient at the exact sequence (T1, T2 on the toy)
+  10 sequences x 6 sites: U bit-identical to _exact_energy, worst finite-difference error 2.5e-06, worst centred cosine 1.000000, fitted scale 4.5351e-04 vs c = 4.5351e-04 (spread 1.0000..1.0000 of c)
+B. detailed balance and stationarity of the one-pass kernel (exact enumeration)
+  L=4 n=1 T=1.0: 81 states, max |flow - flow^T| = 1.73e-18, log-proposal spread 11.98, mean acceptance 0.840
+  L=4 n=2 T=1.0: 81 states, max |flow - flow^T| = 2.60e-18, log-proposal spread 14.12, mean acceptance 0.718
+  L=4 n=2 T=0.5: 81 states, max |flow - flow^T| = 8.67e-19, log-proposal spread 24.74, mean acceptance 0.674
+  L=5 n=2 T=1.0: 243 states, max |flow - flow^T| = 4.34e-19, log-proposal spread 11.99, mean acceptance 0.712
+  L=5 n=3 T=2.0: 243 states, max |flow - flow^T| = 2.17e-19, log-proposal spread 9.10, mean acceptance 0.691
+C. one-pass _step against the exact kernel rows
+  3 fixed starts, 4000 one-pass _step calls each: frequencies and acceptance match the kernel rows
+D. long chains against exp(-U/T)
+  D1 deterministic         3 chains x 60000 moves: max |z| =   2.9, mean TV = 0.0077, acceptance 0.578
+  D2 noisy gradient        3 chains x 60000 moves: max |z| =   2.4, mean TV = 0.0098, acceptance 0.331 (noise sd 2.69)
+  D3 keeps rejected g(B)   3 chains x 60000 moves: max |z| =   9.7, mean TV = 0.0495, acceptance 0.562
+  pi over 27 states, max pi 0.290; the negative control fails as it should
+E. model calls per move
+  one_pass : 1 forward + 1 backward per move over 200 moves
+  site_soft: 3 forward + 2 backward per move over 200 moves
+F. sample(), restart
+
+
+######################################################
+# ExtendedProteinRateSampler parameters summary:     #
+#                                                    #
+# moves:                      1.0e+02                #
+# sampling temperature:       1.0e+00                #
+# step size (dt):             5.0e-01                #
+# logits mass:                1.00                   #
+# softmax temperature:        0.10                   #
+# Gauss-Hermite nodes:        40                     #
+# sites per move:             2                      #
+# gradient mode:              one_pass               #
+# attention multiplier:       1.0e+00                #
+# structure_ce multiplier:    0.0e+00                #
+# entropy multiplier:         0.0e+00                #
+#                                                    #
+# results directory: /tmp/tmpg2v_6288/straight       #
+# eprot directory:   /tmp/tmpg2v_6288/straight/eprot #
+# restart:           False                           #
+#                                                    #
+######################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     0      |  -4.21998  |  -4.21998  |  0.00000   |     4      |     0      |     |  0.00000   |  0.00000   |     0      |   1.000    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+
+
+######################################################
+# ExtendedProteinRateSampler parameters summary:     #
+#                                                    #
+# moves:                      6.0e+01                #
+# sampling temperature:       1.0e+00                #
+# step size (dt):             5.0e-01                #
+# logits mass:                1.00                   #
+# softmax temperature:        0.10                   #
+# Gauss-Hermite nodes:        40                     #
+# sites per move:             2                      #
+# gradient mode:              one_pass               #
+# attention multiplier:       1.0e+00                #
+# structure_ce multiplier:    0.0e+00                #
+# entropy multiplier:         0.0e+00                #
+#                                                    #
+# results directory: /tmp/tmpg2v_6288/run_True       #
+# eprot directory:   /tmp/tmpg2v_6288/run_True/eprot #
+# restart:           False                           #
+#                                                    #
+######################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     0      |  -4.21998  |  -4.21998  |  0.00000   |     4      |     0      |     |  0.00000   |  0.00000   |     0      |   1.000    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+
+
+######################################################
+# ExtendedProteinRateSampler parameters summary:     #
+#                                                    #
+# moves:                      1.0e+02                #
+# sampling temperature:       1.0e+00                #
+# step size (dt):             5.0e-01                #
+# logits mass:                1.00                   #
+# softmax temperature:        0.10                   #
+# Gauss-Hermite nodes:        40                     #
+# sites per move:             2                      #
+# gradient mode:              one_pass               #
+# attention multiplier:       1.0e+00                #
+# structure_ce multiplier:    0.0e+00                #
+# entropy multiplier:         0.0e+00                #
+#                                                    #
+# results directory: /tmp/tmpg2v_6288/run_True       #
+# eprot directory:   /tmp/tmpg2v_6288/run_True/eprot #
+# restart:           True                            #
+#                                                    #
+######################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     60     | -11.48461  | -11.48461  |  0.00000   |     6      |    5,6     |     |  3.51505   |  -2.01058  |     0      |   0.350    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+
+
+#######################################################
+# ExtendedProteinRateSampler parameters summary:      #
+#                                                     #
+# moves:                      6.0e+01                 #
+# sampling temperature:       1.0e+00                 #
+# step size (dt):             5.0e-01                 #
+# logits mass:                1.00                    #
+# softmax temperature:        0.10                    #
+# Gauss-Hermite nodes:        40                      #
+# sites per move:             2                       #
+# gradient mode:              one_pass                #
+# attention multiplier:       1.0e+00                 #
+# structure_ce multiplier:    0.0e+00                 #
+# entropy multiplier:         0.0e+00                 #
+#                                                     #
+# results directory: /tmp/tmpg2v_6288/run_False       #
+# eprot directory:   /tmp/tmpg2v_6288/run_False/eprot #
+# restart:           False                            #
+#                                                     #
+#######################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     0      |  -4.21998  |  -4.21998  |  0.00000   |     4      |     0      |     |  0.00000   |  0.00000   |     0      |   1.000    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+
+
+#######################################################
+# ExtendedProteinRateSampler parameters summary:      #
+#                                                     #
+# moves:                      1.0e+02                 #
+# sampling temperature:       1.0e+00                 #
+# step size (dt):             5.0e-01                 #
+# logits mass:                1.00                    #
+# softmax temperature:        0.10                    #
+# Gauss-Hermite nodes:        40                      #
+# sites per move:             2                       #
+# gradient mode:              one_pass                #
+# attention multiplier:       1.0e+00                 #
+# structure_ce multiplier:    0.0e+00                 #
+# entropy multiplier:         0.0e+00                 #
+#                                                     #
+# results directory: /tmp/tmpg2v_6288/run_False       #
+# eprot directory:   /tmp/tmpg2v_6288/run_False/eprot #
+# restart:           True                             #
+#                                                     #
+#######################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     60     | -11.48461  | -11.48461  |  0.00000   |     6      |    5,6     |     |  3.51505   |  -2.01058  |     0      |   0.350    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+  100 one-pass moves with n_sites=2 (acceptance 0.39); restart at 60 reproduces the straight run with the saved cache and with it deleted
+G. compatibility
+
+
+##################################################
+# ExtendedProteinRateSampler parameters summary: #
+#                                                #
+# moves:                      6.0e+01            #
+# sampling temperature:       1.0e+00            #
+# step size (dt):             1.0e+00            #
+# logits mass:                1.00               #
+# softmax temperature:        0.10               #
+# Gauss-Hermite nodes:        40                 #
+# sites per move:             3                  #
+# gradient mode:              site_soft          #
+# attention multiplier:       1.0e+00            #
+# structure_ce multiplier:    0.0e+00            #
+# entropy multiplier:         0.0e+00            #
+#                                                #
+# results directory: /tmp/tmp8ct19sbo/new        #
+# eprot directory:   /tmp/tmp8ct19sbo/new/eprot  #
+# restart:           False                       #
+#                                                #
+##################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     0      |  -4.21998  |  -4.21998  |  0.00000   |     4      |     0      |     |  0.00000   |  0.00000   |     0      |   1.000    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+
+
+######################################################
+# ExtendedProteinRateSampler parameters summary:     #
+#                                                    #
+# moves:                      6.0e+01                #
+# sampling temperature:       1.0e+00                #
+# step size (dt):             1.0e+00                #
+# logits mass:                1.00                   #
+# softmax temperature:        0.10                   #
+# Gauss-Hermite nodes:        40                     #
+# sites per move:             3                      #
+# gradient mode:              site_soft              #
+# attention multiplier:       1.0e+00                #
+# structure_ce multiplier:    0.0e+00                #
+# entropy multiplier:         0.0e+00                #
+#                                                    #
+# results directory: /tmp/tmp8ct19sbo/explicit       #
+# eprot directory:   /tmp/tmp8ct19sbo/explicit/eprot #
+# restart:           False                           #
+#                                                    #
+######################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     0      |  -4.21998  |  -4.21998  |  0.00000   |     4      |     0      |     |  0.00000   |  0.00000   |     0      |   1.000    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+
+
+##################################################
+# ExtendedProteinRateSampler parameters summary: #
+#                                                #
+# moves:                      6.0e+01            #
+# sampling temperature:       1.0e+00            #
+# step size (dt):             1.0e+00            #
+# logits mass:                1.00               #
+# softmax temperature:        0.10               #
+# Gauss-Hermite nodes:        40                 #
+# sites per move:             3                  #
+# gradient mode:              site_soft          #
+# attention multiplier:       1.0e+00            #
+# structure_ce multiplier:    0.0e+00            #
+# entropy multiplier:         0.0e+00            #
+#                                                #
+# results directory: /tmp/tmp8ct19sbo/main       #
+# eprot directory:   /tmp/tmp8ct19sbo/main/eprot #
+# restart:           False                       #
+#                                                #
+##################################################
+
+// ExtendedProteinRateSampler status register:
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|    move    |     U      |    U_am    |    U_ce    | Hd_to_ref  |    site    |     |     dU     | log_ratio  |  accepted  |  acc_rate  |
+-------------------------------------------------------------------------------     -----------------------------------------------------
+|     0      |  -4.21998  |  -4.21998  |  0.00000   |     4      |     0      |     |  0.00000   |  0.00000   |     0      |   1.000    
+-------------------------------------------------------------------------------     -----------------------------------------------------
+  default grad_mode: 60 moves, n_sites=3, identical to origin/main's rate_sampler.py row for row
+  lambda_S=0.1 with one_pass and grad_mode='onepass' refused
+  without _setup: no grad_mode runs site_soft; one_pass fills and keeps the cache; sites= fixes the sites
+ALL ONE-PASS CHECKS PASSED

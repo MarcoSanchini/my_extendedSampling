@@ -1,0 +1,96 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 195912.29it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Free sites: 30 (ref=L), 52 (ref=T)  -- 20^2=400 states, background fixed at reference elsewhere
+T=107.0, dt=0.2086, MOVES=40000, BURN_IN=8000, grad_mode=one_pass
+
+=== exact enumeration ===
+U at (ref,ref) = 0.000000  (should be exactly/near-exactly 0)
+sum(p_exact) = 1.000000  (should be 1.0)
+
+Top 10 states by exact Boltzmann probability:
+  (L,T): p_exact=0.0809  U=+0.0000
+  (L,S): p_exact=0.0546  U=+42.0872
+  (M,T): p_exact=0.0463  U=+59.8256
+  (L,Q): p_exact=0.0425  U=+68.9740
+  (M,S): p_exact=0.0406  U=+73.8306
+  (L,N): p_exact=0.0300  U=+106.2867
+  (M,Q): p_exact=0.0230  U=+134.7961
+  (Y,Q): p_exact=0.0217  U=+140.7529
+  (Y,S): p_exact=0.0217  U=+140.9799
+  (L,G): p_exact=0.0207  U=+146.0622
+
+=== T calibration (from the enumerated spectrum, no extra model calls) ===
+U over the 400 states: min=+0.00  median=+740.27  max=+6235.03  std=1074.06
+spread above the minimum: median-min=740.27  max-min=6235.03
+  (T must be comparable to these gaps; T << gap freezes the chain, T >> gap flattens it)
+
+           T   eff. states  max p_exact   verdict
+     10.7406          1.05       0.9743   FROZEN -- one state, validates nothing
+     32.2217          2.97       0.5475   usable
+    107.0000         41.37       0.0809   usable  <== configured T
+    107.4057         41.66       0.0804   usable
+    322.2171        183.45       0.0149   usable
+   1074.0568        337.19       0.0050   FLAT -- ~uniform, validates nothing
+   3222.1705        382.03       0.0033   FLAT -- ~uniform, validates nothing
+  10740.5684        397.06       0.0027   FLAT -- ~uniform, validates nothing
+
+=== running 40000 restricted moves (site in [30, 52] only) ===
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/validate_boltzmann_toy.py", line 425, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/validate_boltzmann_toy.py", line 355, in main
+    eprot, U_A, accepted = step(sampler, eprot, U_A, pars, FREE_SITES)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/validate_boltzmann_toy.py", line 205, in restricted_step_one_pass
+    eprot, info = sampler._step(eprot, U_A, pars, sites=[site])
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 203, in _step
+    return self._step_one_pass(eprot, pars, sites)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 262, in _step_one_pass
+    U_A, _, _, grad_full_A = self._cached_energy_grad(eprot, pars)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 433, in _cached_energy_grad
+    U, U_am, grad, eprot = self._energy_and_grad(eprot, pars)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 398, in _energy_and_grad
+    am = self.model.predict_attention(sequence_probs=probs)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 802, in predict_attention
+    attention = self._last_attention(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 786, in _last_attention
+    attention = self.transformer.last_attention(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 125, in last_attention
+    x = block(x, sequence_id, affine, affine_mask, chain_id)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 159, in forward
+    r3 = self.ffn(x) / self.scaling_factor
+         ^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+            ^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 32, in forward
+    return F.silu(x1) * x2
+           ~~~~~~~~~~~^~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 23.52 GiB of which 42.69 MiB is free. Process 230832 has 8.66 GiB memory in use. Process 230837 has 8.66 GiB memory in use. Including non-PyTorch memory, this process has 5.81 GiB memory in use. Of the allocated memory 5.55 GiB is allocated by PyTorch, and 18.00 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)

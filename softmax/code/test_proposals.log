@@ -1,0 +1,31 @@
+=== normalization + Monte Carlo cross-check ===
+  K=  3 sigma=1 scale=0.1: sum(a)=1.000000, max|a_GH-a_MC|=0.00040, OK
+  K=  3 sigma=1 scale=1: sum(a)=1.000000, max|a_GH-a_MC|=0.00044, OK
+  K=  3 sigma=1 scale=5: sum(a)=1.000000, max|a_GH-a_MC|=0.00011, OK
+  K=  5 sigma=1 scale=0.1: sum(a)=1.000000, max|a_GH-a_MC|=0.00032, OK
+  K=  5 sigma=1 scale=1: sum(a)=1.000000, max|a_GH-a_MC|=0.00065, OK
+  K=  5 sigma=1 scale=5: sum(a)=1.000000, max|a_GH-a_MC|=0.00051, OK
+  K= 10 sigma=1 scale=0.1: sum(a)=1.000000, max|a_GH-a_MC|=0.00045, OK
+  K= 10 sigma=1 scale=1: sum(a)=1.000000, max|a_GH-a_MC|=0.00054, OK
+  K= 10 sigma=1 scale=5: sum(a)=1.000000, max|a_GH-a_MC|=0.00070, OK
+  K= 20 sigma=1 scale=0.1: sum(a)=1.000005, max|a_GH-a_MC|=0.00046, OK
+  K= 20 sigma=1 scale=1: sum(a)=1.000000, max|a_GH-a_MC|=0.00033, OK
+  K= 20 sigma=1 scale=5: sum(a)=1.000000, max|a_GH-a_MC|=0.00009, OK
+  K= 25 sigma=1 scale=0.1: sum(a)=0.999989, max|a_GH-a_MC|=0.00018, OK
+  K= 25 sigma=1 scale=1: sum(a)=1.000000, max|a_GH-a_MC|=0.00068, OK
+  K= 25 sigma=1 scale=5: sum(a)=1.000000, max|a_GH-a_MC|=0.00003, OK
+
+=== dt regime (uniform at small dt, informed at large dt) ===
+  dt=0.0001: a=[0.200027197599411, 0.2000024914741516, 0.199996680021286, 0.19999739527702332, 0.19997629523277283] (uniform, as expected)
+  dt=5.0: a=[0.9984555244445801, 0.0013160736998543143, 9.403496369486675e-05, 0.0001344170595984906, 1.1340226674372289e-10] (concentrated on class 0, as expected)
+
+=== p=0 / steepest-descent consistency (proposal math only) ===
+  200/200 trials: argmax(a_ij) == argmax(-grad) (steepest-descent direction), as expected
+
+=== exclusion masking (standalone check of the masking primitive; _step() now
+    excludes via slicing instead -- see check_exclusion_masking docstring) ===
+  K=5, exclude_idx=0: sum over j!=i = 1.000000, max|GH-MC| = 0.00048, a[excluded]=0.00e+00, OK
+  K=10, exclude_idx=0: sum over j!=i = 1.000000, max|GH-MC| = 0.00022, a[excluded]=0.00e+00, OK
+  K=25, exclude_idx=0: sum over j!=i = 1.000000, max|GH-MC| = 0.00020, a[excluded]=0.00e+00, OK
+
+All checks passed.

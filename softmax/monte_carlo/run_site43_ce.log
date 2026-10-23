@@ -1,0 +1,41 @@
+nohup: ignoring input
+loading ESM3 (esm3-open) ...
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 184181.01it/s]
+reference : MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+start     : MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANLNGVDGEETYDEATKTFTVTE
+differs at: [36, 43, 47]; site 43: E -> 19 targets
+energy    : ce
+  [full] U(sigma1) = 1.1290, 19 paths in 9.6 s
+  [head] U(sigma1) = 0.2138, 19 paths in 0.3 s
+  [head_exact] U(sigma1) = 0.2138, 19 paths in 3.8 s
+
+protein G, site 43 (E in sigma1, W in the reference); sigma1 differs from the reference at [36, 43, 47]; seed 0; energy ce
+
+== whole transformer (last layer, mean over heads) ==
+pairs ordered correctly by g'(0): 43/171 = 0.251 (0.5 is chance)
+Spearman(g'(0), Delta U) = -0.705
+best mutant by Delta U: E43W; by g'(0): E43Q
+paths monotone: 2/19
+pairs whose difference is monotone: 5, ordered correctly: 5 (Lemma 2(a): all of them)
+discordant pairs with BOTH paths monotone (counterexamples to the 1-D argument): 0
+reverting mutation E43W: rank 1 by Delta U, rank 15 by g'(0)
+
+== layer 0, head 0, affine (closed form, eq. 7) ==
+pairs ordered correctly by g'(0): 163/171 = 0.953 (0.5 is chance)
+Spearman(g'(0), Delta U) = +0.979
+best mutant by Delta U: E43W; by g'(0): E43C
+paths monotone: 17/19
+pairs whose difference is monotone: 150, ordered correctly: 150 (Lemma 2(a): all of them)
+discordant pairs with BOTH paths monotone (counterexamples to the 1-D argument): 7, e.g. [('E43W', 'E43C'), ('E43R', 'E43I'), ('E43H', 'E43L'), ('E43H', 'E43F'), ('E43V', 'E43F')]
+reverting mutation E43W: rank 1 by Delta U, rank 2 by g'(0)
+
+== layer 0, head 0, true LayerNorms ==
+pairs ordered correctly by g'(0): 153/171 = 0.895 (0.5 is chance)
+Spearman(g'(0), Delta U) = +0.919
+best mutant by Delta U: E43W; by g'(0): E43C
+paths monotone: 16/19
+pairs whose difference is monotone: 133, ordered correctly: 133 (Lemma 2(a): all of them)
+discordant pairs with BOTH paths monotone (counterexamples to the 1-D argument): 17, e.g. [('E43W', 'E43C'), ('E43M', 'E43D'), ('E43I', 'E43R'), ('E43I', 'E43P'), ('E43G', 'E43R')]
+reverting mutation E43W: rank 1 by Delta U, rank 2 by g'(0)
+
+written to /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/geodesic_esm3_out_ce

@@ -1,0 +1,198 @@
+T=1e-1, dt=14.0872, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=1e0, dt=44.5477, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=1e1, dt=140.8723, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=31.6, dt=250.4200, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=56.2, dt=333.9594, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=1e2, dt=445.4773, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=177, dt=592.6690, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=316, dt=791.8977, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=562, dt=1056.0724, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=1e3, dt=1408.7228, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=1e4, dt=4454.7727, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+
+============================================================
+Preparing T=1e-1
+============================================================
+GPU free memory: 23853 MB   Running: 0 / 4 (soft cap)
+Launching T=1e-1
+  dt:       14.0872
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e-1
+  log:      logs_temperature_zero_polymer/T1e-1.log
+  PID: 106859
+  Running now: 1 / 4 (soft cap)
+
+============================================================
+Preparing T=1e0
+============================================================
+GPU free memory: 23853 MB   Running: 1 / 4 (soft cap)
+Launching T=1e0
+  dt:       44.5477
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e0
+  log:      logs_temperature_zero_polymer/T1e0.log
+  PID: 106867
+  Running now: 2 / 4 (soft cap)
+
+============================================================
+Preparing T=1e1
+============================================================
+GPU free memory: 23853 MB   Running: 2 / 4 (soft cap)
+Launching T=1e1
+  dt:       140.8723
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e1
+  log:      logs_temperature_zero_polymer/T1e1.log
+  PID: 106875
+  Running now: 3 / 4 (soft cap)
+
+============================================================
+Preparing T=31.6
+============================================================
+GPU free memory: 23853 MB   Running: 3 / 4 (soft cap)
+Launching T=31.6
+  dt:       250.4200
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T31.6
+  log:      logs_temperature_zero_polymer/T31.6.log
+  PID: 106883
+  Running now: 4 / 4 (soft cap)
+
+============================================================
+Preparing T=56.2
+============================================================
+GPU free memory: 23853 MB   Running: 4 / 4 (soft cap)
+Waiting 30s (GPU memory below 8000 MB or soft cap reached -- may be a colleague's job)...
+PID 106859 finished.
+PID 106875 finished.
+PID 106883 finished.
+GPU free memory: 14979 MB   Running: 1 / 4 (soft cap)
+Launching T=56.2
+  dt:       333.9594
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T56.2
+  log:      logs_temperature_zero_polymer/T56.2.log
+  PID: 107150
+  Running now: 2 / 4 (soft cap)
+
+============================================================
+Preparing T=1e2
+============================================================
+GPU free memory: 14979 MB   Running: 2 / 4 (soft cap)
+Launching T=1e2
+  dt:       445.4773
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e2
+  log:      logs_temperature_zero_polymer/T1e2.log
+  PID: 107158
+  Running now: 3 / 4 (soft cap)
+
+============================================================
+Preparing T=177
+============================================================
+GPU free memory: 14979 MB   Running: 3 / 4 (soft cap)
+Launching T=177
+  dt:       592.6690
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T177
+  log:      logs_temperature_zero_polymer/T177.log
+  PID: 107166
+  Running now: 4 / 4 (soft cap)
+
+============================================================
+Preparing T=316
+============================================================
+GPU free memory: 14979 MB   Running: 4 / 4 (soft cap)
+Waiting 30s (GPU memory below 8000 MB or soft cap reached -- may be a colleague's job)...
+PID 107150 finished.
+PID 107158 finished.
+PID 107166 finished.
+GPU free memory: 14979 MB   Running: 1 / 4 (soft cap)
+Launching T=316
+  dt:       791.8977
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T316
+  log:      logs_temperature_zero_polymer/T316.log
+  PID: 107303
+  Running now: 2 / 4 (soft cap)
+
+============================================================
+Preparing T=562
+============================================================
+GPU free memory: 14979 MB   Running: 2 / 4 (soft cap)
+Launching T=562
+  dt:       1056.0724
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T562
+  log:      logs_temperature_zero_polymer/T562.log
+  PID: 107311
+  Running now: 3 / 4 (soft cap)
+
+============================================================
+Preparing T=1e3
+============================================================
+GPU free memory: 14979 MB   Running: 3 / 4 (soft cap)
+Launching T=1e3
+  dt:       1408.7228
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e3
+  log:      logs_temperature_zero_polymer/T1e3.log
+  PID: 107319
+  Running now: 4 / 4 (soft cap)
+
+============================================================
+Preparing T=1e4
+============================================================
+GPU free memory: 14979 MB   Running: 4 / 4 (soft cap)
+Waiting 30s (GPU memory below 8000 MB or soft cap reached -- may be a colleague's job)...
+PID 107303 finished.
+PID 107311 finished.
+PID 107319 finished.
+GPU free memory: 14979 MB   Running: 1 / 4 (soft cap)
+Launching T=1e4
+  dt:       4454.7727
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e4
+  log:      logs_temperature_zero_polymer/T1e4.log
+  PID: 107512
+  Running now: 2 / 4 (soft cap)
+
+All simulations have been launched.
+Waiting for remaining simulations...
+PID 106867 finished.
+PID 107512 finished.
+
+============================================================
+zero_polymer temperature sweep completed.
+Results in softmax/monte_carlo/zero_polymer_test_1000_1mut/tests_rate_sweep_temperature_zero_polymer/T<T>/sim0/{data.dat,eprot/}
+
+Per-T ensemble analysis. --ref-seq is REQUIRED: analyze_ensemble.py
+defaults to protein G's sequence.
+  ZP=$(python -c "import sys; sys.path.insert(0, '/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/../code/tests'); from references import ZERO_POLYMER as Z; print(Z)")
+  for T in 1e-1 1e0 1e1 31.6 56.2 1e2 177 316 562 1e3 1e4; do
+    echo "--- T=$T ---"
+    python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py softmax/monte_carlo/zero_polymer_test_1000_1mut/tests_rate_sweep_temperature_zero_polymer/T$T/sim0 --ref-seq "$ZP"
+  done
+============================================================

@@ -1,0 +1,377 @@
+nohup: ignoring input
+T=1e-1, dt=14.0872, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=1e1, dt=140.8723, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=31.6, dt=250.4200, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=56.2, dt=333.9594, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=1e2, dt=445.4773, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=177, dt=592.6690, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=316, dt=791.8977, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=562, dt=1056.0724, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+T=1e3, dt=1408.7228, moves=1000, init_muts=0, seed=42, ref=zero_polymer
+
+============================================================
+Preparing T=1e-1
+============================================================
+GPU free memory: 23853 MB   Running: 0 / 2 (soft cap)
+Launching T=1e-1
+  dt:       14.0872
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e-1
+  log:      logs_temperature_zero_polymer/T1e-1.log
+  PID: 109555
+  Running now: 1 / 2 (soft cap)
+
+============================================================
+Preparing T=1e1
+============================================================
+GPU free memory: 23853 MB   Running: 1 / 2 (soft cap)
+Launching T=1e1
+  dt:       140.8723
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e1
+  log:      logs_temperature_zero_polymer/T1e1.log
+  PID: 109563
+  Running now: 2 / 2 (soft cap)
+
+============================================================
+Preparing T=31.6
+============================================================
+GPU free memory: 23853 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+PID 109555 finished (exit 0).
+PID 109563 finished (exit 0).
+GPU free memory: 23853 MB   Running: 0 / 2 (soft cap)
+Launching T=31.6
+  dt:       250.4200
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T31.6
+  log:      logs_temperature_zero_polymer/T31.6.log
+  PID: 109995
+  Running now: 1 / 2 (soft cap)
+
+============================================================
+Preparing T=56.2
+============================================================
+GPU free memory: 23853 MB   Running: 1 / 2 (soft cap)
+Launching T=56.2
+  dt:       333.9594
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T56.2
+  log:      logs_temperature_zero_polymer/T56.2.log
+  PID: 110003
+  Running now: 2 / 2 (soft cap)
+
+============================================================
+Preparing T=1e2
+============================================================
+GPU free memory: 23853 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+PID 109995 finished (exit 0).
+PID 110003 finished (exit 0).
+GPU free memory: 23853 MB   Running: 0 / 2 (soft cap)
+Launching T=1e2
+  dt:       445.4773
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e2
+  log:      logs_temperature_zero_polymer/T1e2.log
+  PID: 110199
+  Running now: 1 / 2 (soft cap)
+
+============================================================
+Preparing T=177
+============================================================
+GPU free memory: 23853 MB   Running: 1 / 2 (soft cap)
+Launching T=177
+  dt:       592.6690
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T177
+  log:      logs_temperature_zero_polymer/T177.log
+  PID: 110207
+  Running now: 2 / 2 (soft cap)
+
+============================================================
+Preparing T=316
+============================================================
+GPU free memory: 23853 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+PID 110199 finished (exit 0).
+PID 110207 finished (exit 0).
+GPU free memory: 23853 MB   Running: 0 / 2 (soft cap)
+Launching T=316
+  dt:       791.8977
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T316
+  log:      logs_temperature_zero_polymer/T316.log
+  PID: 110407
+  Running now: 1 / 2 (soft cap)
+
+============================================================
+Preparing T=562
+============================================================
+GPU free memory: 23853 MB   Running: 1 / 2 (soft cap)
+Launching T=562
+  dt:       1056.0724
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T562
+  log:      logs_temperature_zero_polymer/T562.log
+  PID: 110415
+  Running now: 2 / 2 (soft cap)
+
+============================================================
+Preparing T=1e3
+============================================================
+GPU free memory: 23853 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+GPU free memory: 6108 MB   Running: 2 / 2 (soft cap)
+Waiting 30s (GPU memory below 12000 MB or soft cap reached -- may be a colleague's job)...
+PID 110407 finished (exit 0).
+PID 110415 finished (exit 0).
+GPU free memory: 23853 MB   Running: 0 / 2 (soft cap)
+Launching T=1e3
+  dt:       1408.7228
+  moves:    1000
+  ref:      zero_polymer
+  log_step: 100
+  results:  tests_rate_sweep_temperature_zero_polymer/T1e3
+  log:      logs_temperature_zero_polymer/T1e3.log
+  PID: 110617
+  Running now: 1 / 2 (soft cap)
+
+All simulations have been launched.
+Waiting for remaining simulations...
+PID 110617 finished (exit 0).
+
+============================================================
+zero_polymer temperature sweep completed.
+Results in softmax/monte_carlo/zero_polymer_test_1000_1mut/tests_rate_sweep_temperature_zero_polymer/T<T>/sim0/{data.dat,eprot/}
+
+Per-T ensemble analysis. --ref-seq is REQUIRED: analyze_ensemble.py
+defaults to protein G's sequence.
+  ZP=$(python -c "import sys; sys.path.insert(0, '/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/../code/tests'); from references import ZERO_POLYMER as Z; print(Z)")
+  for T in 1e-1 1e1 31.6 56.2 1e2 177 316 562 1e3; do
+    echo "--- T=$T ---"
+    python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_ensemble.py softmax/monte_carlo/zero_polymer_test_1000_1mut/tests_rate_sweep_temperature_zero_polymer/T$T/sim0 --ref-seq "$ZP"
+  done
+============================================================

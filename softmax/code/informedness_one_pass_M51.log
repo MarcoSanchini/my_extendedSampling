@@ -1,0 +1,52 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 208295.01it/s]
+# reference: zero_polymer (L=566 residues)
+Reference: MKTIIALSYILCLVFAQKLPGNDNSTATLCLGHHAVPNGTIVKTITNDQIEVTNATELVQSSSTGEICDSPHQILDGKNCTLIDALLGDPQCDGFQNKKWDLFVERSKAYSNCYPYDVPDYASLRSLVASSGTLEFNNESFNWTGVTQNGTSSACIRRSKNSFFSRLNWLTHLNFKYPALNVTMPNNEQFDKLYIWGVHHPGTDKDQIFLYAQASGRITVSTKRSQQTVSPNIGSRPRVRNIPSRISIYWTIVKPGDILLINSTGNLIAPRGYFKIRSGKSSIMRSDAPIGKCNSECITPNGSIPNDKPFQNVNRITYGACPRYVKQNTLKLATGMRNVPEKQTRGIFGAIAGFIENGWEGMVDGWYGFRHQNSEGRGQAADLKSTQAAIDQINGKLNRLIGKTNEKFHQIEKEFSEVEGRIQDLEKYVEDTKIDLWSYNAELLVALENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCFKIYHKCDNACIGSIRNGTYDHDVYRDEALNNRFQIKGVELKSGYKDWILWISFAISCFLLCVALLGFIMWACQKGNIRCNICI
+Current A: MKTIIALSYILCLVFAQKLPGNMCSTATICLGHHAVPCITIVKTITNDQIEVTNOTELVQSSSTGEICDSPHQILDGKNCTLIDALLGEPQCDGFQNKKWDLSVERSKAYSNCYPYDVPDYASLRSLVADVGTLEFNNESFNWTGVTQNGTSSACIRRZKNXNFSRLNWMTHLNFKYPALNVTMPNNEQFDYLYIWGVHHPGTDDDQIFLYAQASGRITVSTKRSZQTVSPNIGSRPRVRNIZSRISIYWTIVKAGDIELINSTGNPIAPRGYFKIRFGKSSIMHSDAPIGKCMSECITPNGSIPNDKPFQNVNRSTYGACPRYVKQNTLKLATGMRPVPEKQTRGIFGIKAGFIENGWEGMVDGGYVFRHQXSEGRGQAADLKSTQAASDQINGKLNRLIGKTUEKFHQILKETSEVEGRIQDLEKDVEDTKPDLWSYNAELWVAZENQHTIDLTDSEMNKLFEKTKKQLRENAEDMGNGCRKXYHKCDNACIGSORNGTEDHDVYRDEALNNRFQIKGVRLKSFYKDWILLISFAIKCFLLCVALLGVIMWACQKGXIRCNICB
+T=2.0, M=1.0  (fixed; dt is the swept axis), grad_mode=one_pass
+
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_informedness_vs_dt.py", line 253, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_informedness_vs_dt.py", line 171, in main
+    _, _, grad_full_A, _ = sampler._energy_and_grad(eprot_A, pars)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 398, in _energy_and_grad
+    am = self.model.predict_attention(sequence_probs=probs)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 802, in predict_attention
+    attention = self._last_attention(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 786, in _last_attention
+    attention = self.transformer.last_attention(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 125, in last_attention
+    x = block(x, sequence_id, affine, affine_mask, chain_id)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 159, in forward
+    r3 = self.ffn(x) / self.scaling_factor
+         ^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+            ^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 32, in forward
+    return F.silu(x1) * x2
+           ~~~~~~~~~~~^~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 23.52 GiB of which 42.69 MiB is free. Process 230832 has 8.66 GiB memory in use. Process 230837 has 8.66 GiB memory in use. Including non-PyTorch memory, this process has 5.81 GiB memory in use. Of the allocated memory 5.55 GiB is allocated by PyTorch, and 18.06 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)

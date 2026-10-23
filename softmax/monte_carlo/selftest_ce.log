@@ -1,0 +1,26 @@
+nohup: ignoring input
+loading ESM3 (esm3-open) ...
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 192640.27it/s]
+reference : MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANDNGVDGEWTYDDATKTFTVTE
+start     : MTYKLILNGKTLKGETTTEAVDAATAEKVFKQYANLNGVDGEETYDEATKTFTVTE
+differs at: [36, 43, 47]; site 43: E -> 19 targets
+energy    : ce
+self-test
+  per-head attention, mean over heads vs custom_esm attention(): 5.2e-08
+  full_map vs model.predict_attention:                          1.0e-03  (predict_attention runs in bf16 on cuda, full_map in fp32 unless --autocast)
+  layer-0 input moves only at the site (other rows, max change): 0.0e+00
+  log2 energy vs utils.energies.compute_U_am(clean_and_symm(A)), rel.: 0.0e+00
+  energy for the slope checks below: ce
+  frozen-LayerNorm head equals exact head at sigma1:            0.0e+00
+  closed form eq. (7) vs direct softmax, affine head:            1.4e-07
+  head (frozen LN): U(sigma1) = 0.2138; five-point differences at eps = 0.08, 0.04, 0.02, 0.01, 0.005, 0.0025
+    E43L: backward -0.06339 | -0.06340 -0.06340 -0.06337 -0.06339 -0.06349 -0.06327
+    E43A: backward +0.01299 | +0.01298 +0.01300 +0.01299 +0.01297 +0.01291 +0.01302
+    E43G: backward -0.01675 | -0.01676 -0.01676 -0.01676 -0.01677 -0.01673 -0.01680
+  head (frozen LN): slope, backward vs best finite difference, rel. err: 2.1e-06
+  full map: U(sigma1) = 1.1290; five-point differences at eps = 0.08, 0.04, 0.02, 0.01, 0.005, 0.0025
+    E43L: backward +0.08806 | +0.08827 +0.08808 +0.08808 +0.08847 +0.08775 +0.08819
+    E43A: backward +0.02418 | +0.02422 +0.02424 +0.02429 +0.02392 +0.02429 +0.02241
+    E43G: backward +0.03513 | +0.03521 +0.03507 +0.03515 +0.03511 +0.03500 +0.03455
+  full map: slope, backward vs best finite difference, rel. err: 3.6e-05
+self-test passed
