@@ -59,7 +59,10 @@ class GeometricReasoningOriginalImpl(nn.Module):
         )
         chain_id_mask = chain_id.unsqueeze(1) != chain_id.unsqueeze(2)
         attn_bias = attn_bias.masked_fill(
-            chain_id_mask.unsqueeze(1), torch.finfo(s.dtype).min
+            chain_id_mask.unsqueeze(1),
+            # max(): the same value as before for bf16/fp32 s, and one that
+            # fits in the fp32 attn_bias when s is fp64 (finite differences)
+            max(torch.finfo(s.dtype).min, torch.finfo(attn_bias.dtype).min),
         )
 
         ns = self.s_norm(s)

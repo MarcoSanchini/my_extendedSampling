@@ -86,8 +86,8 @@ class RotationMatrix(Rotation):
             rots = rots.unflatten(-1, (3, 3))
         assert rots.shape[-1] == 3
         assert rots.shape[-2] == 3
-        # Force full precision
-        self._rots = rots.to(torch.float32)
+        # Force full precision (fp64 is kept: finite-difference tests)
+        self._rots = rots if rots.dtype == torch.float64 else rots.to(torch.float32)
 
     @classmethod
     def identity(cls, shape, **tensor_kwargs):

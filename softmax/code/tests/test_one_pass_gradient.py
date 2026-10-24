@@ -80,9 +80,23 @@ def no_autocast(device):
 
 def attention_full(sampler, probs):
 	"""predict_attention without its bfloat16 autocast, in the dtype of the
-	weights and of probs (the caller casts both)."""
-	with no_autocast(probs.device):
-		return clean_and_symm(sampler.model._last_attention(sequence_probs=probs.unsqueeze(0))).squeeze(0)
+	weights and of probs (the caller casts both). ESM3._default builds the
+	plddt inputs and the affine in float32 whatever the weights are, so they
+	are cast to probs.dtype here (no-op at fp32)."""
+	model = sampler.model
+	default = type(model)._default
+
+	def default_in_dtype(L, device):
+		tokens, affine, affine_mask = default(model, L, device)
+		tokens = tuple(t.to(probs.dtype) if t.is_floating_point() else t for t in tokens)
+		return tokens, affine.to(dtype=probs.dtype), affine_mask
+
+	model._default = default_in_dtype
+	try:
+		with no_autocast(probs.device):
+			return clean_and_symm(model._last_attention(sequence_probs=probs.unsqueeze(0))).squeeze(0)
+	finally:
+		del model._default
 
 
 def centred_cos(a, b):
