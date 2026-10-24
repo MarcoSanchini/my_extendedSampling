@@ -1,4 +1,5 @@
-Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 204600.20it/s]
+nohup: ignoring input
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 101067.57it/s]
 # reference: zero_polymer (L=566)
 device cuda:0, c = one_pass_dt_scale(0.1) = 4.535052e-04
 
@@ -13,40 +14,149 @@ reference: U = 0.000e+00, max |g| = 0.000e+00  (expected 0: U_am is a sum of squ
 T1: 50/50 bit-identical, worst |diff| = 0.000e+00  -> PASS
 
 === T2: one-pass g vs site_soft gradient over the competitors, 30 sites ===
-  site 507: argmax differs (site_soft H, one-pass W), site_soft top-2 gap 1.931e-04, its noise 8.358e-05 -> REAL MISMATCH
-  site  60: argmax differs (site_soft R, one-pass F), site_soft top-2 gap 1.312e-05, its noise 1.639e-04 -> near-tie
-MUTS=5: centred cosine min 0.997530 median 0.999794 (site_soft vs itself: min 0.999943); argmax mismatches 1 (+1 near-ties); fitted scale median 4.55500e-04 = 1.0044 c (range 0.9108..1.0405) -> FAIL
+  site 337: argmax differs (site_soft E, one-pass Q), site_soft top-2 gap 1.039e-04, its noise 1.200e-04 -> near-tie
+  site 507: argmax differs (site_soft H, one-pass W), site_soft top-2 gap 1.474e-04, its noise 8.553e-05 -> near-tie
+MUTS=5: centred cosine min 0.997719 median 0.999849 (site_soft vs itself: min 0.999848); argmax mismatches 0 (+2 near-ties); fitted scale median 4.55719e-04 = 1.0049 c (range 0.9131..1.0350) -> FAIL
 
-  site 140: argmax differs (site_soft W, one-pass Y), site_soft top-2 gap 3.405e-04, its noise 1.466e-04 -> REAL MISMATCH
-  site  56: argmax differs (site_soft K, one-pass F), site_soft top-2 gap 2.292e-04, its noise 1.260e-04 -> near-tie
-MUTS=51: centred cosine min 0.969168 median 0.999607 (site_soft vs itself: min 0.999811); argmax mismatches 1 (+1 near-ties); fitted scale median 4.53644e-04 = 1.0003 c (range 0.9733..1.2167) -> FAIL
+  site 140: argmax differs (site_soft W, one-pass Y), site_soft top-2 gap 2.270e-04, its noise 5.833e-04 -> near-tie
+  site  56: argmax differs (site_soft K, one-pass F), site_soft top-2 gap 2.464e-04, its noise 2.759e-04 -> near-tie
+MUTS=51: centred cosine min 0.967408 median 0.999363 (site_soft vs itself: min 0.999888); argmax mismatches 0 (+2 near-ties); fitted scale median 4.54002e-04 = 1.0011 c (range 0.9684..1.2076) -> FAIL
 
 === T0: fp32 gradient vs central finite differences in float64, 20 sites x 3 pairs, h in [0.01, 0.001, 0.0001] ===
 MUTS=5: U_fp32=2046.8774  (fwd+bwd 0.33s)
 MUTS=5: T2 at fp32 (30 sites): centred cosine min 0.999997 median 0.999999; scale median 1.0012 c (range 0.9991..1.0036) -> PASS
-Traceback (most recent call last):
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_one_pass_gradient.py", line 274, in <module>
-    main()
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_one_pass_gradient.py", line 228, in main
-    ref_am_fd = attention_full(sampler, sampler.ref_eprot.get_probs().to(fd_dtype))
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/test_one_pass_gradient.py", line 85, in attention_full
-    return clean_and_symm(sampler.model._last_attention(sequence_probs=probs.unsqueeze(0))).squeeze(0)
-                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 782, in _last_attention
-    x = self.encoder.custom_forward(
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 209, in custom_forward
-    plddt_embed = self.plddt_projection(rbf_16_fn(average_plddt))
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/linear.py", line 134, in forward
-    return F.linear(input, self.weight, self.bias)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-RuntimeError: mat1 and mat2 must have the same dtype, but got Float and Double
-Float and Double
+  site 375 (G) D-C: g diff +9.9024e+00  h=0.01: rel err 3.84e-04  h=0.001: rel err 6.60e-06  h=0.0001: rel err 1.05e-05
+  site 375 (G) Y-G: g diff -1.7250e+01  h=0.01: rel err 6.12e-04  h=0.001: rel err 2.32e-06  h=0.0001: rel err 3.78e-06
+  site 375 (G) W-D: g diff +2.7545e+00  h=0.01: rel err 2.54e-03  h=0.001: rel err 1.74e-06  h=0.0001: rel err 2.71e-05
+  site 220 (S) M-N: g diff -1.9613e+02  h=0.01: rel err 8.66e-05  h=0.001: rel err 3.91e-06  h=0.0001: rel err 3.08e-06
+  site 220 (S) D-S: g diff +3.4420e+02  h=0.01: rel err 4.85e-04  h=0.001: rel err 8.67e-06  h=0.0001: rel err 3.90e-06
+  site 220 (S) F-M: g diff -1.8136e+01  h=0.01: rel err 2.29e-04  h=0.001: rel err 4.31e-06  h=0.0001: rel err 6.65e-06
+  site  81 (L) A-T: g diff +3.3591e+00  h=0.01: rel err 1.04e-03  h=0.001: rel err 5.66e-05  h=0.0001: rel err 6.75e-05
+  site  81 (L) R-L: g diff -3.7149e+01  h=0.01: rel err 6.92e-04  h=0.001: rel err 4.32e-05  h=0.0001: rel err 3.67e-05
+  site  81 (L) P-A: g diff +3.8312e+01  h=0.01: rel err 6.79e-05  h=0.001: rel err 2.06e-05  h=0.0001: rel err 2.15e-05
+  site 156 (R) Q-K: g diff +6.8315e+01  h=0.01: rel err 9.01e-05  h=0.001: rel err 9.30e-06  h=0.0001: rel err 8.50e-06
+  site 156 (R) A-R: g diff +2.5396e+02  h=0.01: rel err 1.04e-04  h=0.001: rel err 2.62e-06  h=0.0001: rel err 1.61e-06
+  site 156 (R) E-Q: g diff +9.7173e+01  h=0.01: rel err 2.73e-05  h=0.001: rel err 4.70e-07  h=0.0001: rel err 2.02e-07
+  site 476 (D) G-K: g diff +4.3074e+00  h=0.01: rel err 1.98e-03  h=0.001: rel err 4.94e-05  h=0.0001: rel err 6.97e-05
+  site 476 (D) A-D: g diff -4.7032e+01  h=0.01: rel err 5.81e-04  h=0.001: rel err 1.27e-05  h=0.0001: rel err 1.86e-05
+  site 476 (D) C-G: g diff +3.5364e+01  h=0.01: rel err 6.98e-05  h=0.001: rel err 5.25e-06  h=0.0001: rel err 4.61e-06
+  site  57 (L) A-W: g diff +1.1400e+02  h=0.01: rel err 1.56e-04  h=0.001: rel err 1.11e-05  h=0.0001: rel err 9.66e-06
+  site  57 (L) R-L: g diff +4.8520e+01  h=0.01: rel err 5.58e-04  h=0.001: rel err 3.39e-05  h=0.0001: rel err 2.87e-05
+  site  57 (L) E-A: g diff -3.2558e+01  h=0.01: rel err 5.25e-04  h=0.001: rel err 1.22e-05  h=0.0001: rel err 7.08e-06
+  site 518 (K) L-V: g diff -1.4602e+00  h=0.01: rel err 2.91e-04  h=0.001: rel err 7.88e-05  h=0.0001: rel err 8.26e-05
+  site 518 (K) N-K: g diff -2.5533e+01  h=0.01: rel err 1.88e-04  h=0.001: rel err 3.32e-06  h=0.0001: rel err 5.23e-06
+  site 518 (K) H-L: g diff -3.8023e+01  h=0.01: rel err 1.25e-05  h=0.001: rel err 8.63e-06  h=0.0001: rel err 8.60e-06
+  site 174 (F) W-D: g diff -4.7759e+01  h=0.01: rel err 7.25e-04  h=0.001: rel err 4.79e-05  h=0.0001: rel err 5.57e-05
+  site 174 (F) G-F: g diff +5.2983e+01  h=0.01: rel err 2.14e-04  h=0.001: rel err 5.84e-05  h=0.0001: rel err 5.68e-05
+  site 174 (F) E-W: g diff +7.8446e+01  h=0.01: rel err 3.62e-04  h=0.001: rel err 3.97e-05  h=0.0001: rel err 4.37e-05
+  site  50 (E) A-H: g diff +1.8981e+01  h=0.01: rel err 1.53e-04  h=0.001: rel err 6.68e-05  h=0.0001: rel err 6.90e-05
+  site  50 (E) G-E: g diff -1.2908e+01  h=0.01: rel err 3.15e-04  h=0.001: rel err 1.94e-05  h=0.0001: rel err 1.64e-05
+  site  50 (E) S-A: g diff +1.9670e+01  h=0.01: rel err 1.32e-04  h=0.001: rel err 2.78e-05  h=0.0001: rel err 2.95e-05
+  site 213 (A) P-M: g diff -9.6997e+02  h=0.01: rel err 1.70e-04  h=0.001: rel err 1.83e-06  h=0.0001: rel err 1.49e-07
+  site 213 (A) C-A: g diff +1.0668e+02  h=0.01: rel err 7.57e-04  h=0.001: rel err 8.24e-06  h=0.0001: rel err 7.56e-07
+  site 213 (A) Y-P: g diff +3.6317e+02  h=0.01: rel err 1.58e-04  h=0.001: rel err 5.25e-07  h=0.0001: rel err 1.05e-06
+  site 189 (F) W-I: g diff -3.9425e+01  h=0.01: rel err 8.89e-04  h=0.001: rel err 4.50e-06  h=0.0001: rel err 4.36e-06
+  site 189 (F) H-F: g diff -2.0237e+02  h=0.01: rel err 1.74e-04  h=0.001: rel err 4.14e-06  h=0.0001: rel err 2.45e-06
+  site 189 (F) D-W: g diff -3.5099e+02  h=0.01: rel err 1.29e-04  h=0.001: rel err 3.09e-06  h=0.0001: rel err 1.83e-06
+  site 326 (Q) G-N: g diff -2.3803e+01  h=0.01: rel err 2.20e-04  h=0.001: rel err 4.08e-06  h=0.0001: rel err 1.92e-06
+  site 326 (Q) K-Q: g diff -1.2195e+01  h=0.01: rel err 1.48e-03  h=0.001: rel err 1.98e-05  h=0.0001: rel err 5.26e-06
+  site 326 (Q) I-G: g diff +5.7754e+01  h=0.01: rel err 1.40e-04  h=0.001: rel err 1.02e-06  h=0.0001: rel err 3.77e-07
+  site 267 (I) N-Y: g diff -7.5431e+00  h=0.01: rel err 6.42e-04  h=0.001: rel err 3.87e-05  h=0.0001: rel err 3.27e-05
+  site 267 (I) D-I: g diff +3.7223e+02  h=0.01: rel err 4.92e-04  h=0.001: rel err 5.61e-06  h=0.0001: rel err 7.43e-07
+  site 267 (I) K-N: g diff +7.5460e+01  h=0.01: rel err 1.51e-04  h=0.001: rel err 4.30e-06  h=0.0001: rel err 5.85e-06
+  site 309 (F) E-D: g diff +2.3720e+00  h=0.01: rel err 3.70e-04  h=0.001: rel err 1.41e-06  h=0.0001: rel err 5.15e-06
+  site 309 (F) W-F: g diff -1.6917e+01  h=0.01: rel err 8.47e-05  h=0.001: rel err 4.56e-05  h=0.0001: rel err 4.69e-05
+  site 309 (F) S-E: g diff +2.7278e+01  h=0.01: rel err 2.10e-05  h=0.001: rel err 1.57e-07  h=0.0001: rel err 3.69e-07
+  site 284 (R) Q-L: g diff +1.2008e+02  h=0.01: rel err 3.01e-04  h=0.001: rel err 3.99e-06  h=0.0001: rel err 7.04e-06
+  site 284 (R) W-R: g diff -1.2730e+02  h=0.01: rel err 3.34e-04  h=0.001: rel err 5.37e-06  h=0.0001: rel err 2.09e-06
+  site 284 (R) A-Q: g diff -5.6104e+01  h=0.01: rel err 7.18e-05  h=0.001: rel err 2.12e-06  h=0.0001: rel err 1.42e-06
+  site 329 (L) H-I: g diff -6.1874e+01  h=0.01: rel err 1.22e-04  h=0.001: rel err 2.89e-07  h=0.0001: rel err 1.51e-06
+  site 329 (L) N-L: g diff +6.4001e-01  h=0.01: rel err 1.33e-02  h=0.001: rel err 3.41e-04  h=0.0001: rel err 4.75e-04
+  site 329 (L) D-H: g diff -1.5210e+01  h=0.01: rel err 1.19e-04  h=0.001: rel err 5.60e-06  h=0.0001: rel err 6.83e-06
+  site 239 (R) V-Y: g diff +9.1787e+01  h=0.01: rel err 2.09e-04  h=0.001: rel err 1.83e-06  h=0.0001: rel err 2.42e-07
+  site 239 (R) G-R: g diff -1.4260e+02  h=0.01: rel err 2.16e-04  h=0.001: rel err 2.86e-06  h=0.0001: rel err 5.05e-06
+  site 239 (R) M-V: g diff -1.1947e+02  h=0.01: rel err 1.96e-04  h=0.001: rel err 2.40e-06  h=0.0001: rel err 4.66e-07
+  site 212 (Q) A-Y: g diff +1.3539e+02  h=0.01: rel err 9.01e-04  h=0.001: rel err 7.04e-06  h=0.0001: rel err 1.90e-06
+  site 212 (Q) M-Q: g diff -5.5373e+02  h=0.01: rel err 4.42e-08  h=0.001: rel err 6.49e-07  h=0.0001: rel err 6.56e-07
+  site 212 (Q) S-A: g diff -2.6655e+02  h=0.01: rel err 1.96e-04  h=0.001: rel err 3.73e-06  h=0.0001: rel err 1.80e-06
+  site  37 (N) W-Q: g diff -3.4137e+01  h=0.01: rel err 3.27e-04  h=0.001: rel err 3.55e-05  h=0.0001: rel err 3.91e-05
+  site  37 (N) I-N: g diff +1.2200e+01  h=0.01: rel err 4.55e-03  h=0.001: rel err 7.61e-05  h=0.0001: rel err 1.23e-04
+  site  37 (N) L-W: g diff +1.9325e+01  h=0.01: rel err 4.13e-05  h=0.001: rel err 1.65e-05  h=0.0001: rel err 1.62e-05
+  site 270 (R) Y-G: g diff +8.3571e+01  h=0.01: rel err 8.24e-04  h=0.001: rel err 1.26e-06  h=0.0001: rel err 6.97e-06
+  site 270 (R) S-R: g diff -4.7960e+01  h=0.01: rel err 4.62e-04  h=0.001: rel err 1.32e-06  h=0.0001: rel err 5.95e-06
+  site 270 (R) W-Y: g diff -1.2166e+02  h=0.01: rel err 1.21e-04  h=0.001: rel err 7.00e-06  h=0.0001: rel err 8.29e-06
+MUTS=5: relative error at the best h: median 4.31e-06, max 3.41e-04 (absolute: median 0.000238, max 0.00311; median |g diff| 47.9); per h, median: 0.01: 2.18e-04, 0.001: 5.60e-06, 0.0001: 6.30e-06
+MUTS=5: bf16 production gradient vs fp32, centred cosine over competitors: min 0.95085, median 0.99954
+
+MUTS=51: U_fp32=14240.4570  (fwd+bwd 0.32s)
+MUTS=51: T2 at fp32 (30 sites): centred cosine min 0.999997 median 0.999999; scale median 1.0011 c (range 1.0002..1.0023) -> PASS
+  site 110 (S) V-N: g diff -3.6478e+01  h=0.01: rel err 3.77e-05  h=0.001: rel err 2.83e-06  h=0.0001: rel err 3.24e-06
+  site 110 (S) W-S: g diff -3.9980e+01  h=0.01: rel err 1.34e-04  h=0.001: rel err 5.24e-07  h=0.0001: rel err 8.13e-07
+  site 110 (S) F-V: g diff -1.1580e+01  h=0.01: rel err 2.16e-04  h=0.001: rel err 5.80e-06  h=0.0001: rel err 3.68e-06
+  site 541 (L) T-D: g diff +4.4969e+00  h=0.01: rel err 1.21e-04  h=0.001: rel err 3.62e-06  h=0.0001: rel err 2.42e-06
+  site 541 (L) C-L: g diff +4.0567e+00  h=0.01: rel err 4.36e-04  h=0.001: rel err 2.93e-05  h=0.0001: rel err 2.52e-05
+  site 541 (L) G-T: g diff -3.9224e+01  h=0.01: rel err 1.39e-04  h=0.001: rel err 8.12e-07  h=0.0001: rel err 2.21e-06
+  site 427 (Y) Q-W: g diff -1.1586e+02  h=0.01: rel err 6.06e-05  h=0.001: rel err 4.16e-06  h=0.0001: rel err 3.60e-06
+  site 427 (Y) T-Y: g diff -9.1202e+01  h=0.01: rel err 1.20e-05  h=0.001: rel err 5.72e-06  h=0.0001: rel err 5.66e-06
+  site 427 (Y) D-Q: g diff +4.4586e+01  h=0.01: rel err 4.59e-05  h=0.001: rel err 2.93e-06  h=0.0001: rel err 2.50e-06
+  site 280 (S) I-L: g diff -4.1599e+01  h=0.01: rel err 8.98e-05  h=0.001: rel err 7.48e-06  h=0.0001: rel err 6.65e-06
+  site 280 (S) R-S: g diff +2.4289e+01  h=0.01: rel err 1.02e-03  h=0.001: rel err 9.70e-06  h=0.0001: rel err 3.71e-07
+  site 280 (S) H-I: g diff -2.0513e+00  h=0.01: rel err 3.71e-03  h=0.001: rel err 4.18e-05  h=0.0001: rel err 7.95e-05
+  site 217 (N) A-P: g diff -1.1214e+01  h=0.01: rel err 3.95e-05  h=0.001: rel err 5.88e-06  h=0.0001: rel err 6.34e-06
+  site 217 (N) T-N: g diff -1.0298e+01  h=0.01: rel err 3.31e-04  h=0.001: rel err 3.13e-05  h=0.0001: rel err 3.50e-05
+  site 217 (N) D-A: g diff +2.5104e+01  h=0.01: rel err 1.59e-04  h=0.001: rel err 9.90e-06  h=0.0001: rel err 1.16e-05
+  site 191 (K) M-E: g diff -5.7830e+01  h=0.01: rel err 4.47e-05  h=0.001: rel err 4.73e-06  h=0.0001: rel err 5.23e-06
+  site 191 (K) I-K: g diff -1.1434e+02  h=0.01: rel err 1.88e-05  h=0.001: rel err 4.96e-06  h=0.0001: rel err 4.82e-06
+  site 191 (K) P-M: g diff +1.0419e+02  h=0.01: rel err 6.50e-05  h=0.001: rel err 1.12e-06  h=0.0001: rel err 1.78e-06
+  site 390 (D) N-S: g diff +3.6540e+00  h=0.01: rel err 2.17e-04  h=0.001: rel err 1.13e-05  h=0.0001: rel err 9.22e-06
+  site 390 (D) E-D: g diff -8.2529e+00  h=0.01: rel err 7.29e-05  h=0.001: rel err 7.87e-06  h=0.0001: rel err 8.68e-06
+  site 390 (D) R-N: g diff -2.2696e+01  h=0.01: rel err 3.01e-05  h=0.001: rel err 2.57e-07  h=0.0001: rel err 4.55e-08
+  site 211 (A) N-M: g diff +4.6554e+00  h=0.01: rel err 1.96e-03  h=0.001: rel err 7.60e-05  h=0.0001: rel err 9.63e-05
+  site 211 (A) W-A: g diff -1.4540e+01  h=0.01: rel err 5.16e-04  h=0.001: rel err 4.26e-05  h=0.0001: rel err 3.78e-05
+  site 211 (A) P-N: g diff -6.5505e+00  h=0.01: rel err 2.06e-03  h=0.001: rel err 4.10e-06  h=0.0001: rel err 1.65e-05
+  site 278 (G) W-P: g diff +7.2601e+01  h=0.01: rel err 3.75e-05  h=0.001: rel err 4.44e-06  h=0.0001: rel err 4.86e-06
+  site 278 (G) K-G: g diff -2.0883e+01  h=0.01: rel err 9.23e-05  h=0.001: rel err 1.84e-05  h=0.0001: rel err 1.77e-05
+  site 278 (G) E-W: g diff -6.6791e+01  h=0.01: rel err 5.80e-05  h=0.001: rel err 5.39e-06  h=0.0001: rel err 6.03e-06
+  site 432 (K) I-V: g diff -5.6705e+00  h=0.01: rel err 4.51e-05  h=0.001: rel err 2.35e-05  h=0.0001: rel err 2.41e-05
+  site 432 (K) G-K: g diff -5.8643e+00  h=0.01: rel err 9.70e-04  h=0.001: rel err 1.24e-05  h=0.0001: rel err 2.22e-05
+  site 432 (K) F-I: g diff -1.0733e+00  h=0.01: rel err 2.60e-03  h=0.001: rel err 5.71e-05  h=0.0001: rel err 3.18e-05
+  site 543 (C) H-K: g diff -2.7969e+01  h=0.01: rel err 2.61e-04  h=0.001: rel err 1.88e-06  h=0.0001: rel err 4.51e-06
+  site 543 (C) S-C: g diff +3.9939e+01  h=0.01: rel err 2.21e-04  h=0.001: rel err 4.64e-07  h=0.0001: rel err 1.75e-06
+  site 543 (C) N-H: g diff +9.9393e+00  h=0.01: rel err 8.59e-04  h=0.001: rel err 6.36e-06  h=0.0001: rel err 2.16e-06
+  site  81 (L) F-G: g diff +8.5340e+01  h=0.01: rel err 1.57e-04  h=0.001: rel err 2.30e-06  h=0.0001: rel err 7.50e-07
+  site  81 (L) R-L: g diff -2.1496e+02  h=0.01: rel err 2.19e-04  h=0.001: rel err 3.76e-06  h=0.0001: rel err 1.61e-06
+  site  81 (L) C-F: g diff -1.4645e+02  h=0.01: rel err 3.80e-05  h=0.001: rel err 2.73e-06  h=0.0001: rel err 2.38e-06
+  site 236 (P) R-H: g diff -4.7398e+00  h=0.01: rel err 1.12e-04  h=0.001: rel err 1.04e-05  h=0.0001: rel err 1.16e-05
+  site 236 (P) N-P: g diff -1.9708e+01  h=0.01: rel err 8.00e-05  h=0.001: rel err 1.23e-06  h=0.0001: rel err 2.03e-06
+  site 236 (P) E-R: g diff +2.0478e+00  h=0.01: rel err 8.54e-05  h=0.001: rel err 2.54e-05  h=0.0001: rel err 2.48e-05
+  site 139 (S) W-C: g diff +2.8501e+01  h=0.01: rel err 1.21e-05  h=0.001: rel err 3.55e-06  h=0.0001: rel err 3.71e-06
+  site 139 (S) D-S: g diff +1.0002e+01  h=0.01: rel err 2.00e-04  h=0.001: rel err 1.75e-05  h=0.0001: rel err 1.56e-05
+  site 139 (S) R-W: g diff +3.5902e+00  h=0.01: rel err 1.47e-03  h=0.001: rel err 4.46e-05  h=0.0001: rel err 3.03e-05
+  site 507 (R) Q-W: g diff -6.6755e+01  h=0.01: rel err 4.95e-05  h=0.001: rel err 6.81e-07  h=0.0001: rel err 1.92e-07
+  site 507 (R) Y-R: g diff -3.1554e+01  h=0.01: rel err 3.91e-04  h=0.001: rel err 2.53e-06  h=0.0001: rel err 6.46e-06
+  site 507 (R) H-Q: g diff +3.1771e+01  h=0.01: rel err 1.29e-05  h=0.001: rel err 6.57e-07  h=0.0001: rel err 5.34e-07
+  site 259 (L) V-W: g diff -2.4487e+01  h=0.01: rel err 1.52e-04  h=0.001: rel err 1.72e-05  h=0.0001: rel err 1.59e-05
+  site 259 (L) Q-L: g diff +1.9603e+01  h=0.01: rel err 3.29e-04  h=0.001: rel err 2.37e-05  h=0.0001: rel err 2.07e-05
+  site 259 (L) E-V: g diff +5.9846e+00  h=0.01: rel err 1.50e-04  h=0.001: rel err 3.11e-05  h=0.0001: rel err 2.99e-05
+  site 116 (D) S-K: g diff -1.7493e+01  h=0.01: rel err 1.07e-04  h=0.001: rel err 9.90e-06  h=0.0001: rel err 1.11e-05
+  site 116 (D) E-D: g diff +2.5321e+01  h=0.01: rel err 8.91e-05  h=0.001: rel err 1.56e-05  h=0.0001: rel err 1.48e-05
+  site 116 (D) M-S: g diff +2.1454e+01  h=0.01: rel err 6.29e-05  h=0.001: rel err 4.22e-06  h=0.0001: rel err 4.90e-06
+  site 362 (V) C-Q: g diff -2.7308e+00  h=0.01: rel err 7.61e-05  h=0.001: rel err 2.37e-05  h=0.0001: rel err 2.47e-05
+  site 362 (V) N-V: g diff -2.8586e+01  h=0.01: rel err 1.24e-05  h=0.001: rel err 5.71e-06  h=0.0001: rel err 5.64e-06
+  site 362 (V) H-C: g diff -2.5829e+00  h=0.01: rel err 1.14e-04  h=0.001: rel err 4.24e-05  h=0.0001: rel err 4.40e-05
+  site 510 (A) V-R: g diff +5.7089e+01  h=0.01: rel err 3.05e-05  h=0.001: rel err 4.24e-07  h=0.0001: rel err 7.34e-07
+  site 510 (A) E-A: g diff -8.4836e+01  h=0.01: rel err 2.21e-04  h=0.001: rel err 2.93e-06  h=0.0001: rel err 7.44e-07
+  site 510 (A) W-V: g diff -1.1295e+01  h=0.01: rel err 1.10e-04  h=0.001: rel err 2.00e-07  h=0.0001: rel err 9.00e-07
+  site 318 (G) V-D: g diff +3.0104e+01  h=0.01: rel err 1.23e-04  h=0.001: rel err 8.08e-06  h=0.0001: rel err 9.39e-06
+  site 318 (G) C-G: g diff +2.8127e+01  h=0.01: rel err 2.78e-04  h=0.001: rel err 1.84e-06  h=0.0001: rel err 9.20e-07
+  site 318 (G) N-V: g diff -2.0532e+01  h=0.01: rel err 1.39e-04  h=0.001: rel err 1.42e-05  h=0.0001: rel err 1.57e-05
+MUTS=51: relative error at the best h: median 5.11e-06, max 7.60e-05 (absolute: median 0.000102, max 0.000552; median |g diff| 23.5); per h, median: 0.01: 1.17e-04, 0.001: 5.76e-06, 0.0001: 5.84e-06
+MUTS=51: bf16 production gradient vs fp32, centred cosine over competitors: min 0.99265, median 0.99959
+
+T0: PASS (criterion: every pair < 1% at its best h)
+
+=== summary ===
+T1: PASS
+T2: FAIL
+T0: PASS
+T2 at fp32: PASS
