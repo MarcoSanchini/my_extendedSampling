@@ -248,7 +248,8 @@ def analyze_equil(args, ref):
 	out_dir = f"{args.run_dir}/analysis"
 	summary = ["# equilibration summary (analyze_nsites.py equil)",
 		"T\tchains\tmoves\tt_eq\t<U>\t<Hd_to_ref>\tVar(U)/T^2\tacc\ts/move\tpeak_MB"]
-	for Tdir in sorted(glob.glob(f"{args.run_dir}/equil/T*"), key=T_of):
+	tag = args.equil_dir.replace("/", "_")
+	for Tdir in sorted(glob.glob(f"{args.run_dir}/{args.equil_dir}/T*"), key=T_of):
 		T = T_of(Tdir)
 		runs = [load_run(r, args.stride, ref) for r in sorted(glob.glob(f"{Tdir}/chain*")) if os.path.isfile(f"{r}/data.dat")]
 		if len(runs) < 2:
@@ -285,7 +286,7 @@ def analyze_equil(args, ref):
 				t_eq = row["t"]
 				break
 		lines.append(f"# t_eq = {t_eq if t_eq else 'not reached (extend with RESUME=1 and a larger MOVES_EQ)'}")
-		write(out_dir, f"equil_T{T:g}.tsv", lines)
+		write(out_dir, f"{tag}_T{T:g}.tsv", lines)
 
 		if t_eq:
 			U = np.concatenate([r["U"][(r["move"] > t_eq) & (r["move"] <= end)] for r in runs])
@@ -315,10 +316,10 @@ def analyze_equil(args, ref):
 			ax[0].set_ylabel("Hd_to_ref"); ax[1].set_ylabel("U"); ax[0].legend(fontsize=7); ax[2].legend(fontsize=7)
 			fig.suptitle(f"zero_polymer equilibration, T={T:g}")
 			fig.tight_layout()
-			fig.savefig(f"{out_dir}/equil_T{T:g}.png", dpi=130)
+			fig.savefig(f"{out_dir}/{tag}_T{T:g}.png", dpi=130)
 			plt.close(fig)
 	print()
-	write(out_dir, "equil_summary.tsv", summary)
+	write(out_dir, f"{tag}_summary.tsv", summary)
 
 
 # -------------------------------------------------------------------- scan --- #
@@ -420,6 +421,7 @@ def main():
 	p.add_argument("--stride", type=int, default=10, help="moves between reconstructed snapshots")
 	p.add_argument("--every", type=int, default=500, help="equil: spacing of the time grid, in moves")
 	p.add_argument("--rhat", type=float, default=1.1, help="equil: R-hat threshold")
+	p.add_argument("--equil-dir", type=str, default="equil", help="equil: chain directory under run_dir (e.g. equil_op)")
 	p.add_argument("--burn", type=int, default=0, help="scan: moves dropped at the start of each chain")
 	p.add_argument("--ref", type=str, default="zero_polymer", help="reference name, for the Hd_to_ref check")
 	args = p.parse_args()

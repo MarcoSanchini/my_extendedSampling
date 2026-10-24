@@ -5593,4 +5593,26 @@ temperatures geometric from 12 to 316 (ratio 1.243; 12, 14.9, 18.6, 23.1, 28.7
 are below 30), 2000 sweeps per ladder, about 1.4 h each at 16 x 0.153 s per
 sweep. Its swap rates and Cv(T) set the production ladder, with rungs added
 where acceptance < 0.1.
+2026-10-24 -- n_sites study: continue T=32 and T=100 with the one-pass move, add T=18
+--------------------------------------------------------------------------------
+Plan (Marco): continue the T=32 and T=100 chains until they equilibrate, add a
+temperature below 30, then run the n_sites scan from the equilibrated states.
+The one-pass move is used for both: same per-move statistics as site_soft, 2.38x
+less time per move.
+
+study_nsites.sh now takes GRAD_MODE, EQ_DIR and CONTINUE_FROM. With
+CONTINUE_FROM=equil each new chain starts from the last checkpoint of the same
+chain in equil/ (two reference-started, two random-started, so the R-hat check
+still compares the two groups); a T without earlier chains (T=18) starts from
+the reference and random sequences. --resume cannot do this, since it refuses a
+changed grad_mode. analyze_nsites.py equil takes --equil-dir.
+
+    GRAD_MODE=one_pass EQ_DIR=equil_op CONTINUE_FROM=equil TS_OVERRIDE="18 32 100" MOVES_EQ=40000 \
+        nohup bash study_nsites.sh > study_equil_op.log 2>&1 &
+    python analyze_nsites.py equil nsites_study --equil-dir equil_op --every 1000
+
+Cost: 12 chains x 40000 moves x 0.153 s = about 20 h, one at a time. If a T has
+not equilibrated, extend it with RESUME=1 and a larger MOVES_EQ (same EQ_DIR and
+GRAD_MODE). Then PHASE=scan with GRAD_MODE=one_pass EQ_DIR=equil_op. Replica
+exchange (PR #11) stays as a fallback if T=32 or T=18 still do not converge.
 --------------------------------------------------------------------------------
