@@ -5550,3 +5550,47 @@ T4  PASS. Restricted toy (sites 30, 52), T=107, dt = 460c = 0.2086, 40000 moves:
     at move 6000; the rerun alone finished.
 Open: T7 equil / T8 (only T=316 is equilibrated in the n_sites study).
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-24 -- replica exchange with the one-pass move, to equilibrate and find the transition
+--------------------------------------------------------------------------------
+Context. The one-pass move passed its GPU tests at 0.153 s/move, 2.38x faster
+than site_soft per move, with the same per-move statistics (T7 transient).
+Equilibrium at T=32 and T=100 was not reached in 20000 site_soft moves
+(2026-10-23): at T=100, U sits on two flat levels for 12000 moves. The one-pass
+move alone does not change that, since it is faster per second but the same
+per move. The transition is at or below T~32, so a T below 30 is needed too.
+
+Replica exchange (monte_carlo/run_pt.py). One walker per temperature of a
+ladder. A sweep moves every walker once with the sampler's own _step (one-pass
+by default) at its slot's T and dt (run_nsites.py's dt rule). Then neighbour
+pairs (k, k+1), even k and odd k on alternate rounds, swap states with
+probability min(1, exp[(1/T_k - 1/T_k+1)(U_k - U_k+1)]). U comes from the
+one-pass cache, so a swap costs no network pass. The cache is keyed by sequence
+and energy weights, not T, so each walker keeps its own cache across swaps.
+Outputs: ladder.dat (U, Hd, walker per slot per sweep), swaps.dat, a
+data.dat per walker (run_nsites format plus T), state.pt for --resume.
+
+Analysis (analyze_pt.py, two ladders: all walkers at the reference, all
+random). Per T: R-hat between the ladders on U and Hd, t_eq, <U>, <Hd>,
+Cv = Var(U)/T^2 and its peak, move acceptance, swap acceptance per rung (a
+rung below 0.1 is flagged), walker round trips, and the sequence at each T at
+the last sweep (final_T<T>_<run>.txt; run_nsites.py --start now takes such a
+.txt file, for the n_sites scan from equilibrium).
+
+Checked here, on a toy independent-site energy with an exact answer (run_pt's
+Ladder and swap code with a toy single-site Metropolis step; L=566, 10
+temperatures 18-40, 20000 sweeps, two ladders): <U> and <Hd> agree with the
+exact values within 0.5% at every T (e.g. T=21.5: <U> 11047 vs 11045, <Hd>
+483.7 vs 484.1), and walkers made 14 and 89 round trips. A sparser toy
+ladder (8 temperatures, 3-40, Cv up to ~1000) gave swap acceptance 0.004-0.05
+and was flagged as not equilibrated, as it should be. run_pt.py's GPU path
+(model, cache, resume) has NOT been run: no torch in this session.
+
+Ladder. Swap acceptance falls roughly as erfc(eps*sqrt(Cv)/2) for a T ratio
+1+eps. Cv is 42 at T=316 (2026-10-23) and unknown below. Pilot: 16
+temperatures geometric from 12 to 316 (ratio 1.243; 12, 14.9, 18.6, 23.1, 28.7
+are below 30), 2000 sweeps per ladder, about 1.4 h each at 16 x 0.153 s per
+sweep. Its swap rates and Cv(T) set the production ladder, with rungs added
+where acceptance < 0.1.
+--------------------------------------------------------------------------------

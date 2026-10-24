@@ -153,6 +153,11 @@ def main(args):
 		start_seq, start_note = ref_seq, "reference"
 	elif args.start == "random":
 		start_seq, start_note = random_canonical(len(ref_seq), args.seed), f"random (numpy seed {args.seed})"
+	elif args.start.endswith(".txt"):
+		# A sequence file, e.g. analyze_pt.py's final_T<T>_<run>.txt: the last non-comment line.
+		with open(args.start) as f:
+			start_seq = [l.strip() for l in f if l.strip() and not l.startswith("#")][-1]
+		start_note = os.path.abspath(args.start)
 	else:
 		start_seq, move = last_checkpoint_sequence(args.start, args.start_move)
 		start_note = f"{os.path.abspath(args.start)} move {move}"
@@ -214,7 +219,7 @@ def create_parser():
 	p.add_argument("--moves", type=int, required=True)
 	p.add_argument("--seed", type=int, required=True)
 	p.add_argument("--start", type=str, default="reference",
-		help="reference, random, or a run directory whose last checkpoint is the start")
+		help="reference, random, a sequence .txt file, or a run directory whose last checkpoint is the start")
 	p.add_argument("--start-move", type=int, default=None, help="checkpoint move to start from, with a run directory")
 	p.add_argument("--out", type=str, required=True)
 	p.add_argument("--resume", action="store_true", help="continue the run in --out to a larger --moves")
