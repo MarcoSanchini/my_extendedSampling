@@ -37,3 +37,61 @@ spread above the minimum: median-min=740.27  max-min=6235.03
   10740.5684        397.06       0.0027   FLAT -- ~uniform, validates nothing
 
 === running 40000 restricted moves (site in [30, 52] only) ===
+  move   2000/40000  acc_rate so far=0.309  distinct states visited post-burn-in=0
+  move   4000/40000  acc_rate so far=0.299  distinct states visited post-burn-in=0
+  move   6000/40000  acc_rate so far=0.298  distinct states visited post-burn-in=0
+  move   8000/40000  acc_rate so far=0.299  distinct states visited post-burn-in=0
+  move  10000/40000  acc_rate so far=0.302  distinct states visited post-burn-in=113
+  move  12000/40000  acc_rate so far=0.304  distinct states visited post-burn-in=138
+  move  14000/40000  acc_rate so far=0.301  distinct states visited post-burn-in=155
+  move  16000/40000  acc_rate so far=0.303  distinct states visited post-burn-in=177
+  move  18000/40000  acc_rate so far=0.304  distinct states visited post-burn-in=197
+  move  20000/40000  acc_rate so far=0.301  distinct states visited post-burn-in=202
+  move  22000/40000  acc_rate so far=0.303  distinct states visited post-burn-in=206
+  move  24000/40000  acc_rate so far=0.305  distinct states visited post-burn-in=211
+  move  26000/40000  acc_rate so far=0.305  distinct states visited post-burn-in=220
+  move  28000/40000  acc_rate so far=0.305  distinct states visited post-burn-in=227
+  move  30000/40000  acc_rate so far=0.305  distinct states visited post-burn-in=229
+  move  32000/40000  acc_rate so far=0.306  distinct states visited post-burn-in=232
+  move  34000/40000  acc_rate so far=0.306  distinct states visited post-burn-in=233
+  move  36000/40000  acc_rate so far=0.307  distinct states visited post-burn-in=237
+  move  38000/40000  acc_rate so far=0.306  distinct states visited post-burn-in=241
+  move  40000/40000  acc_rate so far=0.305  distinct states visited post-burn-in=243
+
+Wall-clock: 6135 s for 40000 moves (0.153 s/move)
+Overall acceptance rate: 0.3053
+Moves counted toward the histogram (post burn-in): 32000
+Distinct states visited: 243 / 400
+
+=== exact vs. empirical ===
+Top 10 exact states, with empirical count/frequency alongside:
+  (L,T): p_exact=0.0809  p_empirical=0.0781  (n=2498)
+  (L,S): p_exact=0.0546  p_empirical=0.0587  (n=1879)
+  (M,T): p_exact=0.0463  p_empirical=0.0482  (n=1542)
+  (L,Q): p_exact=0.0425  p_empirical=0.0417  (n=1335)
+  (M,S): p_exact=0.0406  p_empirical=0.0371  (n=1187)
+  (L,N): p_exact=0.0300  p_empirical=0.0283  (n=904)
+  (M,Q): p_exact=0.0230  p_empirical=0.0207  (n=662)
+  (Y,Q): p_exact=0.0217  p_empirical=0.0243  (n=779)
+  (Y,S): p_exact=0.0217  p_empirical=0.0190  (n=608)
+  (L,G): p_exact=0.0207  p_empirical=0.0220  (n=703)
+
+Top 5 empirical states (for comparison, in case they differ from the exact top 5):
+  (L,T): p_empirical=0.0781 (n=2498)  p_exact=0.0809
+  (L,S): p_empirical=0.0587 (n=1879)  p_exact=0.0546
+  (M,T): p_empirical=0.0482 (n=1542)  p_exact=0.0463
+  (L,Q): p_empirical=0.0417 (n=1335)  p_exact=0.0425
+  (M,S): p_empirical=0.0371 (n=1187)  p_exact=0.0406
+
+KL(empirical || exact):     0.0154  (0 = perfect match; compare to log(400)=5.99 as a rough scale)
+Total variation distance:   0.0527  (0 = perfect match, 1 = no overlap at all)
+Mean U under p_exact:       +185.1973
+Mean U under p_empirical:   +186.6983
+
+First half (16000 samples): KL=0.0278  TV=0.0767;  full/half ratios: KL 0.55 (1/n: 0.50), TV 0.69 (1/sqrt(n): 0.71)
+
+(With only 40000 moves and 32000 post-burn-in samples over 400 states, expect real
+ Monte Carlo noise even for a perfectly correct sampler -- this is a first-pass, not a
+ high-precision bias measurement. A large, systematic gap (e.g. empirical concentrated on
+ states the exact distribution says are unlikely, or missing the true top few states
+ entirely) would be the decisive signal; run longer for a finer read.)
