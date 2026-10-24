@@ -5525,3 +5525,28 @@ T7a transient from the reference, 2 seeds x 5000 moves per mode, dt = 63*sqrt(T/
 T4  incomplete. The pushed log ends at move 6000 of 40000 (acceptance 0.30);
     the final log is needed.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-24 -- one-pass move: T0, T2 at fp32 and T4 pass
+--------------------------------------------------------------------------------
+T0  PASS. fp32 gradient against central FD in float64 (weights cast; the fp64
+    forward needed three dtype guards, PR #9), 20 sites x 3 pairs per sequence.
+    Relative error at the best h: median 4.3e-6 / max 3.4e-4 (MUTS=5), median
+    5.1e-6 / max 7.6e-5 (MUTS=51). Error falls from h=1e-2 to 1e-3 as h^2 and
+    stays flat at 1e-4. The 2026-10-23 failure was fp32 round-off in the FD.
+T2  at fp32 PASS. Both gradients at fp32: centred cosine min 0.999997, scale
+    1.0012 c (MUTS=5) and 1.0011 c (MUTS=51), range within 0.4% of c.
+    At bf16 (production) T2 still fails only on min cosine (0.9977 and 0.967),
+    with 0 real argmax mismatches (4 near-ties) and median scale 1.005 c and
+    1.001 c. The bf16 vs fp32 one-pass gradient itself has min cosine 0.951
+    (MUTS=5) and 0.993 (MUTS=51), so the residual is bf16 rounding, not the
+    method. The kernel is exact for any gradient (Section 4), so this only
+    changes how informed the proposal is, not correctness.
+T4  PASS. Restricted toy (sites 30, 52), T=107, dt = 460c = 0.2086, 40000 moves:
+    acceptance 0.305 (site_soft 0.306). KL/TV 0.0278/0.0767 at 16000 samples and
+    0.0154/0.0527 at 32000 (site_soft 0.0316/0.0787 and 0.0169/0.0569). Ratios
+    full/half: KL 0.55 (1/n gives 0.50), TV 0.69 (1/sqrt(n) gives 0.71), so the
+    residual is Monte Carlo noise. 0.153 s/move. The first run died from a signal
+    at move 6000; the rerun alone finished.
+Open: T7 equil / T8 (only T=316 is equilibrated in the n_sites study).
+--------------------------------------------------------------------------------

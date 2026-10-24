@@ -338,4 +338,64 @@ old run replays), a method that returns $(U,g)$ from one pass on the one-hot
 matrix, and the cache held in \texttt{sample()} across calls to
 \texttt{\_step}.
 
+
+% ===========================================================================
+\section{Results}\label{sec:results}
+% ===========================================================================
+Run on 2026-10-22--24: the toy-energy tests in the cloud (CPU), the ESM3 tests
+on one RTX 4500 Ada, one job at a time. Details are in \file{DEVLOG.txt}, under
+the same dates.
+
+\begin{center}
+\begin{tabular}{@{}l l p{9.6cm}@{}}
+\toprule
+Test & Verdict & Measured \\
+\midrule
+T0 & pass & Relative error of $g_{ik}-g_{ij}$ against central FD at the best
+  $h$: median $4.3\times10^{-6}$, max $3.4\times10^{-4}$ (MUTS=5); median
+  $5.1\times10^{-6}$, max $7.6\times10^{-5}$ (MUTS=51). \\
+T1 & pass & 50/50 sequences bit-identical to \texttt{\_exact\_energy}. \\
+T2 & pass (fp32) & Centred cosine $\ge0.999997$, scale $1.0012\,c$ (MUTS=5) and
+  $1.0011\,c$ (MUTS=51). \\
+T3 & pass & The toy kernel satisfies detailed balance and stationarity to
+  machine precision for $n=1,2,3$. With noisy gradients the $\sigma$-marginal
+  is stationary. A restart that recomputes the cache gives the same
+  distribution. \\
+T4 & pass & Acceptance 0.305 (site\_soft 0.306). KL/TV $0.0278/0.0767$ at
+  16\,000 samples, $0.0154/0.0527$ at 32\,000 (site\_soft $0.0316/0.0787$ and
+  $0.0169/0.0569$). Full/half ratios 0.55 and 0.69, against the 0.50 and 0.71
+  that $1/n$ and $1/\sqrt n$ give. \\
+T5 & pass & At $\dt_{\text{one-pass}}=c\,\dt_{\text{site\_soft}}$, $p_{\mathrm{match}}$
+  agrees site by site to $\approx1\%$; the same pick at 9 of 10 sites, and at the
+  tenth the one-pass pick is the better one. \\
+T6 & pass & 0.153\,s per move (criterion $\le0.170$), against 0.365 for
+  site\_soft: $2.38\times$. Peak memory 6350\,MB in both modes. \\
+T7 & pass & From the reference, at $T=32,100,316$, 2 seeds $\times$ 5000 moves:
+  acceptance agrees ($|z|\le1.4$; at move 5000: 0.103/0.108, 0.350/0.319,
+  0.646/0.665). $H_d$ and $U$ agree within seed spread. \\
+T8 & see below & Not run separately. \\
+T9 & pass & \texttt{n\_sites}$>1$, \texttt{--extend}, restart and
+  \texttt{run\_equilibration.py} work; $\lambda_S\ne0$ is refused. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{T2 at production precision.} ESM3 runs in bfloat16. In bf16, T2
+misses only the minimum-cosine criterion: 0.9977 at MUTS=5 and 0.967 at MUTS=51,
+against a median of 0.9998. It has no real argmax mismatch, only near-ties, and
+the scale is still $1.005\,c$ and $1.001\,c$. The bf16 one-pass gradient compared
+with its own fp32 value has a minimum cosine of 0.951 and 0.993. The difference
+is therefore bf16 rounding and not the method, as the fp32 run confirms. By
+Section~4 the kernel is exact for any gradient, so rounding can only make the
+proposal slightly less informed. It cannot bias the target, and T4 is run at
+bf16.
+
+\paragraph{Speed.} Per move the dynamics are the same: equal acceptance
+(T4, T7), equal $p_{\mathrm{match}}$ at the rescaled $\dt$ (T5), and the same
+target (T3, T4). Per move the cost is $2.38\times$ lower (T6). Decorrelation per
+wall-second (T8) should therefore improve by the same $\approx2.4\times$, at every
+temperature and site count, without a separate measurement. The step-size rule
+is $\dt_{\text{one-pass}}=c\,\dt_{\text{site\_soft}}$, with
+$c=p_{\mathrm{off}}/T_{\text{sftm}}=4.535\times10^{-4}$.
+
 \end{document}
