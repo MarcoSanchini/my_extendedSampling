@@ -79,6 +79,21 @@ launch() {   # launch <log name> <run_nsites.py args...>
     echo "  PID $!  log ${RUN_DIR}/logs/${name}.log"
 }
 
+# CONTINUE_FROM must find a checkpoint for every T it has runs for. A chain
+# whose checkpoint is missing would otherwise start over from the reference or
+# a random sequence without saying so (it happened on 2026-10-24).
+if [ "$PHASE" = "equil" ] && [ -n "$CONTINUE_FROM" ]; then
+    for T in "${TS[@]}"; do
+        [ -d "${RUN_DIR}/${CONTINUE_FROM}/T${T}" ] || { echo "T=${T}: no ${CONTINUE_FROM}/T${T}, starts fresh"; continue; }
+        for ((c = 0; c < NCHAINS; c++)); do
+            if ! ls "${RUN_DIR}/${CONTINUE_FROM}/T${T}/chain${c}"/eprot/sequence_*.pt > /dev/null 2>&1; then
+                echo "ERROR: CONTINUE_FROM=${CONTINUE_FROM}: no eprot/sequence_*.pt in ${RUN_DIR}/${CONTINUE_FROM}/T${T}/chain${c}. Nothing launched."
+                exit 1
+            fi
+        done
+    done
+fi
+
 if [ "$PHASE" = "equil" ]; then
     for T in "${TS[@]}"; do
         for ((c = 0; c < NCHAINS; c++)); do
