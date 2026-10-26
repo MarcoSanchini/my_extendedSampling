@@ -91,3 +91,6 @@ softmax/docs/*.toc
 softmax/monte_carlo/onepass_study/**/eprot/
 softmax/monte_carlo/onepass_study/**/*.pt
 softmax/monte_carlo/onepass_study/**/*.npy
+grad_cache.pt
+log.pt
+generator.npy
