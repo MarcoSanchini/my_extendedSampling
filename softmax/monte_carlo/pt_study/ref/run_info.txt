@@ -1,0 +1,8 @@
+# 2026-10-26 23:46:40  sweeps=2000  resume=False
+temps 16
+grad_mode one_pass
+n_sites 1
+wall_total_s 4909.3
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 6352
+

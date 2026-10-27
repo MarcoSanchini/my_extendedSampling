@@ -1,0 +1,15 @@
+# replica exchange (run_pt.py)
+M                   1.0
+T_sftm              0.1
+eps                 1e-09
+grad_mode           one_pass
+lambda_S            0.0
+lambda_am           1.0
+lambda_structure_ce 0.0
+n_quad              40
+n_sites             1
+seed                400
+start               random
+swap_every          1
+T_ladder            12.0 14.92 18.56 23.08 28.71 35.7 44.4 55.22 68.67 85.41 106.2 132.1 164.3 204.3 254.1 316.0
+dt_ladder           0.0699839 0.0780355 0.0870356 0.0970567 0.108249 0.12071 0.134617 0.150126 0.167414 0.186708 0.208195 0.232198 0.258956 0.288763 0.32204 0.35913

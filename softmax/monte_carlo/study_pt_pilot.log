@@ -1,0 +1,6 @@
+nohup: ignoring input
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_pt.py --t-min 12 --t-max 316 --n-temps 16 --sweeps 2000 --log-every 100 --start reference --seed 300 --grad-mode one_pass --n-sites 1 --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pt_study/ref
+ladder ref finished (exit 0)
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_pt.py --t-min 12 --t-max 316 --n-temps 16 --sweeps 2000 --log-every 100 --start random --seed 400 --grad-mode one_pass --n-sites 1 --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pt_study/rand
+ladder rand finished (exit 0)
+Analyse with: python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_pt.py /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pt_study/ref /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pt_study/rand
