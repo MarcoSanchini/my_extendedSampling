@@ -5656,3 +5656,41 @@ Next (to decide): resume the equil_op chains (RESUME=1, same EQ_DIR and
 GRAD_MODE; restart files are on the GPU machine) to 100000 moves, 30 h for all
 12 chains or ~20 h for T=32 and T=100 alone.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-27 -- replica-exchange pilot (run_pt.py): swaps work, but no speed-up per move at this length
+--------------------------------------------------------------------------------
+Earlier entry: the equil_op chains (40000 moves) are still not equilibrated, and
+their restart files were confirmed intact (equil_op/T32/chain0/eprot: 405 files).
+The equil/ (site_soft) eprot dirs are gone on the GPU machine (eprot/ is
+gitignored); data.dat + start.txt still rebuild every sequence.
+
+Pilot: study_pt.sh defaults: 16 temperatures, geometric from 12 to 316, one-pass,
+n_sites=1, 2000 sweeps (one move per walker plus one even/odd swap round per
+sweep). Two ladders: every walker at the reference (ref) or at a random
+sequence (rand). 2.45 s/sweep (16 x 0.153), 4909 s per ladder.
+
+Swaps: acceptance 0.18-0.47 at every neighbouring pair, so the ladder spacing
+is fine. Walkers do travel: in rand, 6 of 16 walkers visited both slot 0 and
+slot 15. No complete round trip in 2000 sweeps.
+
+But each rung is no closer to equilibrium than a plain chain after the same
+number of moves. U after 2000 moves at that temperature:
+
+                 ref start            random start
+  T              plain    PT          plain          PT (slot)
+  18 (18.56)     631/931  652         30482/26517    28089 (2)
+  100 (106.2)    13675    13559       30702/30272    31560 (10)
+
+(plain = equil_op chains 0/2 and 1/3; PT = mean over sweeps 1800-2000.) Even the
+top rung (T=316) is far off: ref 30.1k vs rand 37.6k, while plain T=316 chains
+needed ~18500 moves. Swaps only help once the hot rungs are equilibrated and can
+feed fresh sequences down. Before that, every rung is still moving away from
+its start. Getting there takes ~20000 sweeps, i.e. 14 h per ladder at
+16 moves per sweep. analyze_pt.py's Cv(T) here is meaningless: it is the drift
+of a non-stationary run (it reports a "peak" at the lowest T).
+
+Decision: for three temperatures, PT costs 16x per move and has shown no gain,
+so resume the plain equil_op chains instead. PT stays available for a
+transition scan once a ladder can be afforded (or with fewer rungs).
+--------------------------------------------------------------------------------
