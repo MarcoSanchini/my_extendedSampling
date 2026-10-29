@@ -1,0 +1,12 @@
+# 2026-10-29 01:35:36  moves=5000  resume=False
+T 100.0
+n_sites 8
+dt 0.202026
+grad_mode one_pass
+seed 201
+start /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/nsites_study/equil_op/T100/chain1 move 140000
+wall_total_s 780.9
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 6350
+peak_reserved_MB 8616
+
