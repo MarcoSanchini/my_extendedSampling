@@ -5694,3 +5694,66 @@ Decision: for three temperatures, PT costs 16x per move and has shown no gain,
 so resume the plain equil_op chains instead. PT stays available for a
 transition scan once a ladder can be afforded (or with fewer rungs).
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-29 -- equil_op to 140000; n_sites scan at T=32, 100; first runs at T=8, 12, 15
+--------------------------------------------------------------------------------
+equil_op, 140000 one-pass moves (analyze_nsites.py equil --equil-dir equil_op):
+
+  T     Rhat_U  Rhat_Hd   U per chain, moves 125000-140000 (0,2 ref; 1,3 random)
+  32    5.25    2.58      13657 18042 13313 14796     Hd 493 513 492 504
+  100   1.48    1.13      23706 24417 22996 25935     Hd 527 527 522 534
+
+T=100: Hd converged and the ref/random split is gone; Rhat_U has been flat
+near 1.45 for 40000 moves because chain 3 stays ~2000 higher in U. Usable as
+equilibrated for the scan. T=32: still not equilibrated, closing by ~1000 in U
+per 50000 moves.
+
+Why Hd -> ~500 at T >= 32: a uniformly random sequence has Hd = 566*19/20 = 538.
+Treating h = Hd as the only variable, F(h) = U(h) - T S(h) with
+S(h) = ln[C(L,h) 19^h], so a chain is stable at h where
+T*(h) = (dU/dh) / ln[19 (L-h)/h]. dU/dh measured along the reference-started
+equil_op chains is ~17-33 per mutation at T=18/32 (40-50 at T=100), giving
+T* ~ 4-6 at h ~ 100 and ~7-15 at h ~ 300. So T=32 and 100 are the unfolded phase;
+the transition is expected around T ~ 8-15 and the "low T" point is T ~ 5.
+
+n_sites scan (PHASE=scan, one-pass, 5000 moves, from the equil_op chains 0 and 1
+at 140000; analyze_nsites.py scan):
+
+  T    N   a      N*a    tau_q    s/move  s/decorr  speedup
+  32   1   0.159  0.159  >2500    0.153   >384      -
+  32   2   0.051  0.102  >2500    0.154   >385      -
+  32   4   0.004  0.016  >2500    0.154   >386      -
+  32   8+  0.000  0      -        0.156-0.164
+  100  1   0.497  0.497  1127     0.153   173       1.00
+  100  2   0.283  0.567   970     0.154   149       1.16
+  100  4   0.135  0.541  1117     0.154   173       1.00
+  100  8   0.038  0.302  1706     0.156   266       0.65
+  100  16  0.003  0.053  >2500    0.158   >396      -
+
+At fixed dt the acceptance of an N-site move falls roughly like a_1^N (T=32:
+0.159^2 = 0.025 vs 0.051 measured; T=100 does better than a_1^N, 0.135 vs 0.061
+at N=4). Best N: 1 at T=32 (by N*a; tau_q is beyond the 5000-move run for
+every N) and 2 at T=100, only 16% faster than N=1. The cost of a move barely
+depends on N (0.153 s at N=1, 0.164 s at N=32, one-pass), so a multi-site
+proposal that kept its per-site acceptance would be close to an N-fold
+speed-up. With the current proposal at fixed dt, it is not.
+
+equil_lowT (T=8, 12, 15; chain 0 from the reference, chain 1 random; 20000
+moves):
+
+  T   acc (last 5000)   chain 0 (ref) Hd at 5k/10k/15k/20k   chain 1 (random) U, Hd at 20k
+  8   0.005 / 0.007     11 / 24 / 30 / 37 (slowing), U 591  22675, 539
+  12  0.030 / 0.013     41 / 72 / 95 / 139                  23062, 537
+  15  0.043 / 0.041     57 / 109 / 157 / 191                20711, 527
+
+The reference chains leave the reference at every T, but at T=8 they slow to
+~7 Hd per 5000 moves at Hd ~40, while at T=12 and 15 they are still climbing at
+30-45 per 5000. The random-started chains do not approach the reference at
+all (Hd 527-539), only lowering U far away. Their U (~21-23k) is ~22000 above
+the reference basin, so at these T they are stuck, not in equilibrium. Below
+the transition, R-hat between reference and random starts cannot be met in any
+affordable run, and equilibrium has to be judged from the reference-side
+chains. Consistent with the estimate: the reference basin roughly holds at
+T=8, and the transition lies between ~8 and ~18.
+--------------------------------------------------------------------------------
