@@ -148,15 +148,23 @@ def hypergeom_sf(k, M, n, N):
 	return sum(math.comb(n, i) * math.comb(M - n, N - i) for i in range(k, min(n, N) + 1)) / math.comb(M, N)
 
 
-def conserved_overlap(model, natural, frac):
-	# The frac most conserved sites of each (lowest entropy; ties broken by
-	# site order, stable), their overlap, and its chance probability.
+def conserved_overlap(model, natural, frac, seed=0):
+	# The frac most conserved sites of each (lowest entropy), their overlap,
+	# and its chance probability. Ties (many sites sit at exactly 0) are
+	# broken at random, not by site order, which would favour the N-terminus.
 	L = len(model)
 	n = max(1, round(frac * L))
-	top_m = set(np.argsort(model, kind="stable")[:n])
-	top_n = set(np.argsort(natural, kind="stable")[:n])
+	rng = np.random.default_rng(seed)
+	top_m = set(np.lexsort((rng.random(L), model))[:n])
+	top_n = set(np.lexsort((rng.random(L), natural))[:n])
 	k = len(top_m & top_n)
 	return n, k, n * n / L, hypergeom_sf(k, L, n, n)
+
+
+def set_overlap(a, b, L):
+	# Two site sets: overlap, chance expectation, P(overlap >= observed).
+	k = len(set(a) & set(b))
+	return k, len(a) * len(b) / L, hypergeom_sf(k, L, len(a), len(b))
 
 
 # ------------------------------------------------------------------ plots --- #
@@ -339,9 +347,10 @@ def cmd_plot(args):
 		print(summary.to_string(index=False, float_format=lambda x: f"{x:.4g}"))
 	print(f"\nK-sites (entropy < {args.k_site_threshold} at every one of {cold}): {len(k_sites)}/{L}")
 	if len(k_sites) and h3n2 is not None:
-		in_cons = (h3n2.rank(method="first").values[k_sites] <= args.top_frac * L).sum()
-		print(f"  of which in the {args.top_frac:.0%} most conserved H3N2 sites: {in_cons} "
-			f"(chance: {len(k_sites) * args.top_frac:.1f})")
+		natural = np.where(h3n2.values < args.h3n2_conserved)[0]
+		k, expected, p = set_overlap(k_sites, natural, L)
+		print(f"  H3N2-conserved sites (entropy < {args.h3n2_conserved}): {len(natural)}/{L}; "
+			f"overlap with the K-sites {k} (chance {expected:.1f}, P(>= {k}) = {p:.2g})")
 		print(f"  median H3N2 entropy: K-sites {np.median(h3n2.values[k_sites]):.3f}, "
 			f"other sites {np.median(np.delete(h3n2.values, k_sites)):.3f}")
 	print(f"\nOutputs in {args.out_dir}: summary_by_T.tsv, site_entropy_by_T.csv, metrics_boxplots.png, "
@@ -367,6 +376,8 @@ def main():
 	q.add_argument("--burn-in-frac", type=float, default=0.5)
 	q.add_argument("--k-site-threshold", type=float, default=0.05)
 	q.add_argument("--top-frac", type=float, default=0.1, help="fraction of most conserved sites for the overlap")
+	q.add_argument("--h3n2-conserved", type=float, default=0.1,
+		help="H3N2 entropy below which a site counts as naturally conserved (same units as the file, bits for site_entropy_566.csv)")
 	q.add_argument("--out-dir", default="nsites_study/structure")
 	args = p.parse_args()
 	if args.cmd == "decode-ref":
