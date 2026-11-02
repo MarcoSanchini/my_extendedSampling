@@ -1,0 +1,344 @@
+% ---------------------------------------------------------------------------
+% Supervisor meeting, 2026-11-03: what has been done to speed up the sampler,
+% what it gained, what did not help, and the options from here.
+%
+% Every number is taken from softmax/DEVLOG.txt (entries 2026-10-22 to
+% 2026-11-02) or from the files named next to it. Companion to
+% one_pass_move.tex (the one-pass move in detail) and zero_polymer_recap.tex.
+%
+% Build:  cd softmax/docs && pdflatex speedup_status.tex && pdflatex speedup_status.tex
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash}p{#1}}
+\usepackage[hidelinks]{hyperref}
+\sloppy
+
+\newcommand{\dt}{\Delta t}
+\newcommand{\Hd}{H_d}
+\newcommand{\file}[1]{\texttt{#1}}
+
+\title{Speeding up the sampler: status and options\\
+       \large Notes for the supervisor meeting}
+\author{Marco Sanchini \\ \small\texttt{my\_extendedSampling} / \texttt{softmax}}
+\date{2026--11--03}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Goal: make the gradient-informed sampler on the zero\_polymer reference
+(influenza HA0, $L=566$) fast enough to reach equilibrium at and below the
+folding crossover. One change has paid off. The \emph{one-pass move} computes
+the exact energy and the gradient for all sites with one forward and one
+backward pass through ESM3. It costs 0.153\,s per move instead of 0.365\,s,
+a $2.38\times$ speed-up with the same per-move statistics and an exact
+Metropolis--Hastings kernel. Three other ideas were measured and give little
+or nothing: running two chains on the GPU at once ($-7\%$), mutating several
+sites per move ($\le1.16\times$, only at high $T$), and replica exchange (no
+gain per move at an affordable length). The limit now is acceptance, not cost:
+at $T\le15$ only 0.5--6\% of moves are accepted. The most promising next step
+is an exact single-site move that evaluates all 19 alternatives in one batched
+forward (Metropolized Gibbs), worth up to $\sim12\times$ at low $T$ if batching
+is efficient. It is not built yet, and it removes the gradient from the
+proposal, which is the main decision for this meeting.
+\end{abstract}
+
+\tableofcontents
+
+% ===========================================================================
+\section{Where the time goes}
+
+A move picks a site uniformly, proposes a new residue from a softmax over the
+gradient-predicted energy change (drift $-\dt^2\nabla U/2M$, noise
+$\dt\sqrt{T/M}$; $\dt/\sqrt{T}$ is fixed across $T$, so the informedness is
+the same at every temperature), and accepts with the Metropolis--Hastings
+ratio. The energy $U$ is ESM3 cross-entropy. Every cost is GPU time on the
+RTX 4500 Ada (24\,GB, ``astaroth''), and the GPU is fully busy during a move.
+
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+move & network passes per move & s/move & $10^5$ moves \\
+\midrule
+site\_soft (before)  & 3 forward + 2 backward & 0.365 & 10.1\,h \\
+one-pass (now)       & 1 forward + 1 backward & 0.153 & 4.3\,h \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Why this matters: at $T=100$ two reference-started and two random-started
+chains needed $\sim$140\,000 one-pass moves ($\sim$6\,h each) to agree on
+$\Hd$ ($\hat R_U=1.48$, $\hat R_{\Hd}=1.13$). At $T=32$ they still disagree
+after 140\,000 ($\hat R_U=5.25$). At $T=12$ a single reference-started chain
+needed $\sim$400\,000 moves ($\sim$17\,h) to reach a quasi-plateau. With
+single-site moves at acceptance 0.08, touching each of the 566 sites about
+$\ln 566$ times already takes $\sim$45\,000 moves.
+
+% ===========================================================================
+\section{What has been done}
+
+\subsection{One-pass move: $2.38\times$ per move (done, in production)}
+
+Two changes (details in \file{one\_pass\_move.tex}):
+\begin{enumerate}
+\item The gradient is taken with respect to the one-hot probability matrix at
+  the exact sequence, so the forward pass that gives the exact $U$ also gives
+  the gradient.
+\item The gradient is computed for all sites at once (same cost as for one
+  site). The gradient at the candidate becomes the gradient of the next move
+  if the candidate is accepted, so each move needs one forward + one backward.
+\end{enumerate}
+The gradient changes scale but not its ranking of residues, so $\dt$ is
+rescaled by a computable factor $c=p_{\mathrm{off}}/T_{\mathrm{sftm}}=
+4.535\times10^{-4}$. The kernel is exact for any gradient, including the
+non-bit-reproducible bf16 backward.
+
+\begin{center}
+\small
+\begin{tabular}{R{1.1cm}R{5.6cm}R{7.2cm}}
+\toprule
+test & what & result \\
+\midrule
+T0 & gradient vs finite differences (fp64) & median rel.\ error $4$--$5\times10^{-6}$ \\
+T1 & $U$ from the grad-enabled forward & equal to the exact $U$ bit for bit (50/50) \\
+T2 & one-pass vs site\_soft gradient (fp32) & cosine $\ge0.999997$, scale $1.001\,c$ \\
+T4 & Boltzmann on a 2-site restricted problem & KL/TV $0.0154/0.0527$ (site\_soft $0.0169/0.0569$), both $\propto$ MC noise; acc.\ 0.305 vs 0.306 \\
+T5 & informedness vs $\dt$ & $p_{\mathrm{match}}$ agrees site by site to $\sim$1\% \\
+T6 & cost & 0.153 vs 0.365\,s/move; peak memory 6350\,MB in both \\
+T7a & transient from the reference, $T=32,100,316$ & acceptance agrees ($|z|\le1.4$); $\Hd$, $U$ within a few \% \\
+\bottomrule
+\end{tabular}
+\end{center}
+Toy-energy checks (exact enumeration, $L=4,5$, $N=1$--3): detailed balance to
+$3\times10^{-18}$; a deliberately wrong variant was detected (TV 0.050 vs
+0.008).
+
+\subsection{Two chains on the GPU at once: no gain}
+
+Two chains together run at 0.329\,s/move each (one-pass) or 0.79\,s/move
+(site\_soft): a move every 0.164\,s instead of 0.153\,s, i.e.\ 7--8\% slower
+than running them one after the other. The scripts now run one job at a time.
+
+\subsection{Several mutations per move ($n_{\mathrm{sites}}$ scan): at most $1.16\times$}
+
+From the $T=32$ and $T=100$ chains at 140\,000 moves, 5000 moves per $N$:
+
+\begin{center}
+\begin{tabular}{rrcccc}
+\toprule
+$T$ & $N$ & acceptance $a_N$ & $N a_N$ & s/move & s per decorrelation \\
+\midrule
+32  & 1  & 0.159 & 0.159 & 0.153 & $>384$ \\
+32  & 2  & 0.051 & 0.102 & 0.154 & $>385$ \\
+32  & 4  & 0.004 & 0.016 & 0.154 & -- \\
+32  & $\ge8$ & 0.000 & 0 & 0.156--0.164 & -- \\
+\midrule
+100 & 1  & 0.497 & 0.497 & 0.153 & 173 \\
+100 & 2  & 0.283 & 0.567 & 0.154 & \textbf{149} ($1.16\times$) \\
+100 & 4  & 0.135 & 0.541 & 0.154 & 173 \\
+100 & 8  & 0.038 & 0.302 & 0.156 & 266 \\
+100 & 16 & 0.003 & 0.053 & 0.158 & $>396$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The cost of a move barely depends on $N$ (0.153\,s at $N=1$, 0.164\,s at
+$N=32$), so the problem is acceptance: $a_N\approx a_1^N$. The reason is that
+each site has its own uphill cost (median $\Delta U\approx222$ for one
+mutation near the reference, far above $T$), and an $N$-site move must pay all
+$N$ costs in one accept/reject. Site--site coupling is minor (13\% of the
+summed single-site effect for dispersed pairs, 27\% within 30 residues). With
+$a_N=a_1^N$ the best $N$ is $\approx-1/\ln a_1$, so $N=1$ wins whenever
+$a_1<0.37$, i.e.\ at every $T$ that matters. Adaptive $N$ or ``choose weakly
+coupled sites'' cannot beat the best fixed $N$.
+
+\emph{Answer to the original question:} one mutation per step at and below the
+crossover; two at high $T$, for 16\%.
+
+\subsection{Replica exchange (parallel tempering) pilot: no gain at this length}
+
+16 temperatures from 12 to 316, 2000 sweeps (2.45\,s per sweep). Swap
+acceptance between neighbours was 0.18--0.47, so the ladder works, and walkers
+travelled across it. But each rung was no closer to equilibrium than a plain
+chain after the same number of moves: swaps only help once the hot rungs are
+equilibrated, which here takes $\sim$20\,000 sweeps (14\,h per ladder, at
+$16\times$ the cost per sweep). For three temperatures, plain chains are
+cheaper. Code kept (\file{run\_pt.py}) for a temperature scan later.
+
+\subsection{What the faster sampler has produced}
+
+\begin{itemize}
+\item \textbf{Crossover location.} $\Hd$ (Hamming distance to the reference)
+  falls smoothly with $T$: $\sim$380 at $T=12$, $>330$ at $T=18$, $\sim$495 at
+  $T=32$, $\sim$528 at $T=100$ (random sequence: 538). A one-coordinate free
+  energy $F(h)=U(h)-T\ln[\binom{L}{h}19^h]$ gives
+  $T^*(h)=(dU/dh)/\ln[19(L-h)/h]\approx7$--15 at $h\sim300$, consistent with a
+  gradual crossover around $T\approx8$--15 rather than a sharp transition.
+\item \textbf{Low $T$.} $T=12$ reference chain: 580\,000 moves, $\Hd$ plateau
+  $\sim$380, $U\approx6.9\times10^3$, acceptance 0.05--0.06; being extended
+  to $10^6$ (ends today $\sim$10:00). $T=5$ queued next. Random starts never
+  reach the reference basin below the crossover (stuck at $\Hd\approx530$),
+  so $\hat R$ between reference and random starts cannot be met there.
+\end{itemize}
+
+% ===========================================================================
+\section{What limits speed now}
+
+\begin{enumerate}
+\item \textbf{Acceptance at low $T$.} 0.5--4\% at $T=8$--15 at the start,
+  5--6\% at the $T=12$ plateau. More than 94\% of the GPU time at low $T$ is
+  spent on rejected moves.
+\item \textbf{The gradient is a weak guide at $L=566$.} Its predicted sign of
+  $\Delta U$ is right for 13 of 20 single mutations, and its top residue is
+  the true best at 2 of 10 sites. The proposal is informed, but not by much.
+\item \textbf{One chain does not fill the GPU (estimate).} One forward is
+  $\sim$60\,ms for $\sim$1.6\,TFLOP, about 15--20\% of the card's bf16 peak.
+  Not yet measured; this decides between the options below.
+\end{enumerate}
+
+% ===========================================================================
+\section{Options from here}
+
+Gains are wall-clock accepted changes per second relative to today's one-pass
+move. $t_{19}$ = time of one batched forward over 19 sequences, not yet
+measured (between $\sim$0.25\,s with good batching and $\sim$1.1\,s with none).
+
+\begin{center}
+\small
+\begin{tabular}{R{3.1cm}R{5.2cm}R{3.6cm}R{2.6cm}}
+\toprule
+option & idea & expected gain & status / effort \\
+\midrule
+\textbf{A.} Metropolized Gibbs (batched exact single-site move)
+ & at a uniform site, exact $U$ of all 19 alternatives in one batched forward;
+   propose $j$ with prob.\ $\pi_j/(1-\pi_{\mathrm{cur}})$, accept
+   $\min[1,(1-\pi_{\mathrm{cur}})/(1-\pi_j)]$
+ & $T=8$: $\sim12\times$ (good batching) or $2.6\times$ (none);
+   $T=32$: $3.8\times$ / $0.8\times$; $T=100$: $1.2\times$ / $0.3\times$
+ & $\sim$1 day + toy Boltzmann test; needs $t_{19}$ \\
+\addlinespace
+\textbf{B.} Parallel chains in one batch
+ & $B$ chains share each forward and backward
+ & total throughput $B\,t_1/t_B$, not a faster single chain; helps 4-chain
+   $\hat R$ runs and PT
+ & $\sim$1 day; $B\le3$ on 24\,GB \\
+\addlinespace
+\textbf{C.} CUDA graphs / \texttt{torch.compile}
+ & same move, less overhead
+ & unknown, plausibly 1.3--2$\times$; stacks with A and B
+ & 0.5--2 days \\
+\addlinespace
+\textbf{D.} Gradient-chosen site (Gibbs-with-gradients)
+ & choose site and residue from all $L\times19$ predicted $\Delta U$ (already
+   cached by one-pass)
+ & small while the gradient ranks near chance
+ & 0.5 day \\
+\addlinespace
+\textbf{E.} More sites per move
+ & adaptive $N$, weakly coupled sites
+ & $\le1.16\times$, only at high $T$
+ & not recommended \\
+\addlinespace
+\textbf{F.} Parallel tempering
+ & production ladder with fewer rungs
+ & useful for a $T$ scan, not for 2--3 temperatures
+ & code ready \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\paragraph{The benchmark that decides.} \file{code/tests/bench\_batch.py}
+is written but not yet run ($\sim$10 minutes on astaroth). It measures forward and
+forward+backward time for batches of 1--32 sequences (gives $t_{19}$ and the
+parallel-chain throughput), the fraction of a forward during which the GPU is
+running kernels, and, at the $T=12$ state, the exact $\Delta U$ of all 19
+mutants at 20 sites (gives the gradient's ranking quality and the predicted
+Metropolized-Gibbs gain for $T=8$--100). It is on the branch \file{claude/project-thread-uu4fbg}. Decision rules:
+\begin{itemize}
+\item $t_{19}\lesssim0.3$\,s (about $5\times$ one forward): build A first.
+\item batching barely helps but the GPU is mostly idle: C first.
+\item gradient--exact Spearman $>0.5$: keep the gradient as the site selector
+  inside A (a hybrid of A and D).
+\end{itemize}
+
+\paragraph{Keeping the gradient.} Option A needs no gradient: the reverse move
+uses the same 20 exact energies. The gradient-informed move is the subject of
+the thesis, so there are three ways to frame A:
+\begin{enumerate}
+\item A as a baseline: the exact local move against which the gradient move's
+  informedness is measured (how close does the one-pass proposal get to the
+  ideal single-site proposal?).
+\item A hybrid: the gradient picks \emph{which site} to update (option D),
+  A picks the residue exactly.
+\item A as the production sampler for equilibrium data at low $T$, with the
+  gradient move kept for the method study.
+\end{enumerate}
+
+% ===========================================================================
+\section{Beyond speed: the structural check}
+
+The plan was to check that low-$T$ samples keep the native fold
+(Rg, pLDDT from ESM3 structure decoding) and that low-entropy sites match
+sites conserved in nature. Both checks are inconclusive for HA0, for reasons
+outside the sampler:
+\begin{itemize}
+\item \textbf{The decoder does not fold the reference.} ESM3-open decodes the
+  reference to pLDDT 0.51/0.60/0.62 and Rg 45/54/70\,\AA\ at 8/32/128 steps
+  (0.61 at 200, 0.59 at 256). The ectodomain alone (16--528) is no better
+  (pLDDT 0.51--0.63). The decode is deterministic, so the spread over $T=12$
+  samples (Rg 42--65\,\AA) is real but not a fold readout. HA is a trimer, and
+  ESM3 predicts it as a monomer.
+\item \textbf{The H3N2 alignment is too narrow.} 457 of 566 sites are below
+  0.1 bits; the variable ones are mostly antigenic. Spearman between sampled
+  and H3N2 site entropy: 0.07 at $T=12$, $\approx0$ at $T=32$, 100. Overlap of
+  the 10\% most conserved sites: 8 vs 5.7 expected ($p=0.2$). A multi-subtype
+  HA alignment is being built.
+\end{itemize}
+Options for the structure: a multimer predictor (AlphaFold2-multimer via
+ColabFold, Boltz-1, Chai-1) run on exported sequences as a trimer, or ESM3 with
+the three chains joined by a 25-glycine linker as a quick test. Caveat: reusing
+the reference MSA for sampled sequences at $\sim$33\% identity would bias
+predictions toward the native fold; single-sequence or MSA-free modes avoid
+this but are weaker.
+
+% ===========================================================================
+\section{Questions for the supervisors}
+
+\begin{enumerate}
+\item Is it acceptable to use an exact batched move (Metropolized Gibbs) with
+  no gradient in the proposal, as a baseline, a hybrid, or the production
+  sampler at low $T$? (Pending the benchmark numbers.)
+\item The $\Hd(T)$ curve is a smooth crossover. Which temperatures should the
+  final study use (current: 5, 12, 32, 100)?
+\item Below the crossover, random starts never reach the reference basin. Is
+  ``a long reference-started chain with a flat $\Hd$ and $U$'' an acceptable
+  equilibrium criterion there, in place of $\hat R$ between independent
+  starts?
+\item Is HA0 the right test case, given that it is a trimer that the
+  structure decoder cannot fold? A monomeric reference (e.g.\ protein~G,
+  already used) would make the structural check meaningful.
+\item Which structure predictor, and is the MSA bias acceptable?
+\end{enumerate}
+
+% ===========================================================================
+\section*{Immediate next steps}
+\begin{itemize}
+\item Run \file{bench\_batch.py} (10 min) between the end of $T=12$ and the start of $T=5$.
+\item $T=12$ to $10^6$ moves (ends today $\sim$10:00); rerun structure and site
+  entropy comparison on the last 500\,000 moves with the multi-subtype HA
+  alignment; then resume $T=5$.
+\item Build option A (or C) according to the benchmark and the answer to
+  question~1.
+\end{itemize}
+
+\end{document}

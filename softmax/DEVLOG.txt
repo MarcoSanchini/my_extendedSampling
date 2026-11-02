@@ -5757,3 +5757,91 @@ affordable run, and equilibrium has to be judged from the reference-side
 chains. Consistent with the estimate: the reference basin roughly holds at
 T=8, and the transition lies between ~8 and ~18.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-10-29 -- 2026-11-02 -- low-T chains, astaroth driver failure, structure and K-site comparison for zero_polymer
+--------------------------------------------------------------------------------
+Low-T runs (N=1, one-pass, reference start, chain 0 only: random starts never
+reach the reference basin below the transition, see 2026-10-29 above).
+
+T=12, equil_lowT/T12/chain0, 20000 -> 580000 moves (data.dat pushed gzipped,
+data.dat.gz; the plain file is ~98 MB, at GitHub's 100 MB limit):
+
+  moves         U      Hd    acc
+  0-40k        2.2k   125   0.03
+  80-120k      5.2k   280   0.05
+  200-240k     6.3k   346   0.05
+  320-360k     6.3k   351   0.05
+  440-480k     6.8k   378   0.05
+  520-580k     6.8-6.9k  378-382  0.05-0.06
+
+Fast rise to ~200k, then steps (Hd ~350 -> ~380 near 400k), flat over the last
+~150k: slope 0.6 +- 0.26 Hd per 10k over the last 200k, within 2 SE of 0 over
+the last 120k. Quasi-plateau; one chain, so no R-hat. Hd across T is a smooth
+crossover: ~380 at T=12, >330 and rising at T=18, ~495 at T=32, ~528 at T=100.
+Resumed to 1000000 moves on 2026-11-02 (ends ~2026-11-03 10:00) to confirm the
+plateau before the structural comparison is redone on it.
+
+T=5 to 580000 never started on 2026-10-30: the NVIDIA driver on astaroth was
+updated without a reboot ("Driver/library version mismatch"), so CUDA failed
+and gpu_scheduler.sh waited forever, logging "integer expression expected"
+every 30 s. The machine was rebooted ~2026-11-02 08:20. T=5 was started then
+paused (killed between checkpoints: data.dat is flushed only at checkpoints, so
+RESUME=1 restarts cleanly from the last one); it resumes after T=12.
+If a queued run silently does not start, check nvidia-smi first.
+
+Structural metrics and site conservation: structure_zero_polymer.sh/.py
+(PRs #15-#18), the zero_polymer counterpart of run_plotting_suite.sh. Per chain
+plot_run.py, compute_structural_metrics.py (ESM3 structure decode of every
+STRIDE-th post-burn-in checkpoint), plot_structural_metrics.py; then
+decode-ref (reference + random-sequence baselines) and plot (box plots and
+metrics vs T of Rg_ca, Rg_allatom, pLDDT, U, Hd; per-site entropy, K-sites,
+and the comparison with the H3N2 alignment's per-site entropy,
+FASTA/H3N2/site_entropy_566.csv: Spearman, overlap of the 10% most
+conserved sites with random tie-break, and K-sites vs H3N2 sites < 0.1 bits).
+
+First run, 2026-11-02 (num_steps 8, stride 10): T=12 over moves 406k-580k
+(BURN_IN=0.7, after the last step up), T=32 and T=100 chain 0 over 98k-140k.
+
+  label  decodes  Rg_ca median  pLDDT median  Spearman vs H3N2  top-10% overlap (chance 5.7)
+  T12    35       52.5 A        0.49          0.07              8 (p 0.20)
+  T32    9        48.4          0.49          0.00              5
+  T100   9        43.3          0.43          -0.01             6
+  baselines: reference Rg 45.0, pLDDT 0.51; 5 random sequences Rg 30-46, pLDDT 0.34-0.52
+
+At T=12 the 74 sites with entropy < 0.05 have median H3N2 entropy 0.006 bits
+against 0.012 for the rest, but the H3N2 file is nearly uninformative: 457/566
+sites are below 0.1 bits (median 0.011), i.e. one lineage, where the few
+variable sites are mostly antigenic (immune escape), not structural. A broader
+alignment (HA subtypes) is needed for this comparison; Marco is building it.
+
+Decode checks on the reference:
+- Deterministic: 5 repeats with different torch seeds give identical Rg and
+  pLDDT (std 0). So the spread across sampled sequences (T=12: Rg 42-65 A,
+  pLDDT 0.43-0.60) is a property of the sequences under this decoder, not
+  decode noise.
+- Step count changes the answer, not its confidence:
+
+  num_steps   Rg_ca   pLDDT   ectodomain 16:529: Rg_ca  pLDDT   per region pLDDT: signal / ecto / TM+tail
+  8           45.0    0.512   45.2                      0.506   0.456 / 0.506 / 0.618
+  32          54.1    0.604   53.7                      0.606   0.639 / 0.606 / 0.564
+  128         70.5    0.623   61.7                      0.632   0.640 / 0.632 / 0.494
+  200         -       0.609
+  256         -       0.592
+
+  zero_polymer is the full HA0 precursor (signal peptide 0-15, ectodomain
+  16-528, transmembrane helix + cytoplasmic tail 529-565). Restricting to the
+  ectodomain does not rescue it: pLDDT 0.51-0.63, Rg 45-62 A. HA is a ~135 A
+  rod (Rg ~39 A for a uniform rod), and more steps make the reference MORE
+  extended. With ESM3-open, sequence only, as a monomer (HA is a trimer and the
+  HA2 helices pack against the other protomers), the reference itself is not
+  predicted folded (pLDDT < 0.7 at every step count tried).
+
+Conclusion: for zero_polymer, Rg/pLDDT from this decoder cannot test "the
+sampled sequences keep the native fold"; at most they are relative signals
+between ensembles, read against the reference's own 0.51-0.63. The low-T
+sampling itself (U, Hd plateaus) is unaffected.
+
+Next: T=12 to 1M, structural metrics rerun on it; T=5 resumed to 580k; K-site
+comparison against a multi-subtype HA entropy profile.
+--------------------------------------------------------------------------------
