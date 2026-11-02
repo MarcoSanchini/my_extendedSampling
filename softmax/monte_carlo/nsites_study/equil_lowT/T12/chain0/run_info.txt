@@ -10,3 +10,15 @@ gpu NVIDIA RTX 4500 Ada Generation
 peak_allocated_MB 6350
 peak_reserved_MB 8616
 
+# 2026-10-30 10:00:42  moves=580000  resume=True
+T 12.0
+n_sites 1
+dt 0.0699839
+grad_mode one_pass
+seed 100
+start resume
+wall_total_s 86072.8
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 6350
+peak_reserved_MB 8616
+
