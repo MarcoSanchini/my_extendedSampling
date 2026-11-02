@@ -1,0 +1,5 @@
+nohup: ignoring input
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 5 --n-sites 1 --moves 580000 --seed 100 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/nsites_study/equil_lowT/T5/chain0 --grad-mode one_pass 
+GPU free memory: 23990 MB   Running: 0 / 1 (soft cap)
+  PID 4627  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/nsites_study/logs/equil_lowT_T5_chain0.log
+All launched. Waiting...
