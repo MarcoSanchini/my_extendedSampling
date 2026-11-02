@@ -1,0 +1,157 @@
+nohup: ignoring input
+
+=== T12=nsites_study/equil_lowT/T12/chain0 -- Mon  2 Nov 15:32:38 CET 2026 ===
+Plotting 12 metrics from nsites_study/equil_lowT/T12/chain0/data.dat (580001 rows) -> nsites_study/equil_lowT/T12/chain0/plots/
+  time: raw (already a cumulative/running quantity, see module docstring), final=8.913e+04 -> nsites_study/equil_lowT/T12/chain0/plots/time.png
+  U: raw + cumulative + rolling(window=200) -> nsites_study/equil_lowT/T12/chain0/plots/U.png
+  U_am: raw + cumulative + rolling(window=200) -> nsites_study/equil_lowT/T12/chain0/plots/U_am.png
+  U_structure_ce: raw + cumulative + rolling(window=200) -> nsites_study/equil_lowT/T12/chain0/plots/U_structure_ce.png
+  Hd_to_ref: raw + cumulative + rolling(window=200) -> nsites_study/equil_lowT/T12/chain0/plots/Hd_to_ref.png
+  dU: raw + cumulative + rolling(window=200) -> nsites_study/equil_lowT/T12/chain0/plots/dU.png
+  log_a_AB: raw + cumulative + rolling(window=200) -> nsites_study/equil_lowT/T12/chain0/plots/log_a_AB.png
+  log_a_BA: raw + cumulative + rolling(window=200) -> nsites_study/equil_lowT/T12/chain0/plots/log_a_BA.png
+  log_ratio: raw + cumulative + rolling(window=200) -> nsites_study/equil_lowT/T12/chain0/plots/log_ratio.png
+  accepted: cumulative + rolling -> nsites_study/equil_lowT/T12/chain0/plots/accepted.png
+  acc_moves: raw (already a cumulative/running quantity, see module docstring), final=2.771e+04 -> nsites_study/equil_lowT/T12/chain0/plots/acc_moves.png
+  acc_rate: raw (already a cumulative/running quantity, see module docstring), final=0.04777 -> nsites_study/equil_lowT/T12/chain0/plots/acc_rate.png
+Done.
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 73059.93it/s]
+Decoding 35/1161 checkpoints (stride=10) from nsites_study/equil_lowT/T12/chain0
+  move  406000: Rg_ca=54.513  Rg_allatom=54.437  mean_plddt=0.463
+  move  411000: Rg_ca=50.868  Rg_allatom=50.804  mean_plddt=0.476
+  move  416000: Rg_ca=64.389  Rg_allatom=64.415  mean_plddt=0.471
+  move  421000: Rg_ca=57.410  Rg_allatom=57.361  mean_plddt=0.527
+  move  426000: Rg_ca=55.943  Rg_allatom=55.965  mean_plddt=0.498
+  move  431000: Rg_ca=45.468  Rg_allatom=45.352  mean_plddt=0.464
+  move  436000: Rg_ca=45.106  Rg_allatom=45.002  mean_plddt=0.545
+  move  441000: Rg_ca=53.824  Rg_allatom=53.747  mean_plddt=0.466
+  move  446000: Rg_ca=51.920  Rg_allatom=51.846  mean_plddt=0.514
+  move  451000: Rg_ca=57.208  Rg_allatom=57.076  mean_plddt=0.597
+  move  456000: Rg_ca=65.471  Rg_allatom=65.470  mean_plddt=0.497
+  move  461000: Rg_ca=59.682  Rg_allatom=59.611  mean_plddt=0.508
+  move  466000: Rg_ca=56.627  Rg_allatom=56.585  mean_plddt=0.488
+  move  471000: Rg_ca=56.935  Rg_allatom=56.910  mean_plddt=0.487
+  move  476000: Rg_ca=64.374  Rg_allatom=64.382  mean_plddt=0.494
+  move  481000: Rg_ca=52.545  Rg_allatom=52.505  mean_plddt=0.525
+  move  486000: Rg_ca=51.055  Rg_allatom=51.062  mean_plddt=0.460
+  move  491000: Rg_ca=54.124  Rg_allatom=54.248  mean_plddt=0.475
+  move  496000: Rg_ca=43.416  Rg_allatom=43.432  mean_plddt=0.483
+  move  501000: Rg_ca=53.897  Rg_allatom=53.806  mean_plddt=0.469
+  move  506000: Rg_ca=50.243  Rg_allatom=50.189  mean_plddt=0.450
+  move  511000: Rg_ca=42.161  Rg_allatom=42.107  mean_plddt=0.497
+  move  516000: Rg_ca=54.276  Rg_allatom=54.108  mean_plddt=0.484
+  move  521000: Rg_ca=50.448  Rg_allatom=50.435  mean_plddt=0.482
+  move  526000: Rg_ca=51.556  Rg_allatom=51.501  mean_plddt=0.432
+  move  531000: Rg_ca=53.134  Rg_allatom=53.076  mean_plddt=0.471
+  move  536000: Rg_ca=50.321  Rg_allatom=50.308  mean_plddt=0.471
+  move  541000: Rg_ca=57.467  Rg_allatom=57.539  mean_plddt=0.477
+  move  546000: Rg_ca=52.320  Rg_allatom=52.333  mean_plddt=0.527
+  move  551000: Rg_ca=61.499  Rg_allatom=61.461  mean_plddt=0.530
+  move  556000: Rg_ca=52.459  Rg_allatom=52.351  mean_plddt=0.491
+  move  561000: Rg_ca=50.132  Rg_allatom=49.996  mean_plddt=0.503
+  move  566000: Rg_ca=51.280  Rg_allatom=51.154  mean_plddt=0.526
+  move  571000: Rg_ca=47.819  Rg_allatom=47.721  mean_plddt=0.468
+  move  576000: Rg_ca=51.571  Rg_allatom=51.499  mean_plddt=0.515
+Saved 35 rows -> nsites_study/equil_lowT/T12/chain0/structural_metrics.csv
+  Rg_ca: raw + cumulative + rolling(window=5) -> nsites_study/equil_lowT/T12/chain0/plots/Rg_ca.png
+  Rg_allatom: raw + cumulative + rolling(window=5) -> nsites_study/equil_lowT/T12/chain0/plots/Rg_allatom.png
+  mean_plddt -> nsites_study/equil_lowT/T12/chain0/plots/mean_plddt.png
+Hamming/q distribution: 349/1161 post-burn-in checkpoints
+  Hamming + q distribution -> nsites_study/equil_lowT/T12/chain0/plots/hamming_and_q_distribution.png
+Done.
+
+=== T32=nsites_study/equil_op/T32/chain0 -- Mon  2 Nov 15:33:26 CET 2026 ===
+Plotting 12 metrics from nsites_study/equil_op/T32/chain0/data.dat (140001 rows) -> nsites_study/equil_op/T32/chain0/plots/
+  time: raw (already a cumulative/running quantity, see module docstring), final=2.151e+04 -> nsites_study/equil_op/T32/chain0/plots/time.png
+  U: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T32/chain0/plots/U.png
+  U_am: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T32/chain0/plots/U_am.png
+  U_structure_ce: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T32/chain0/plots/U_structure_ce.png
+  Hd_to_ref: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T32/chain0/plots/Hd_to_ref.png
+  dU: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T32/chain0/plots/dU.png
+  log_a_AB: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T32/chain0/plots/log_a_AB.png
+  log_a_BA: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T32/chain0/plots/log_a_BA.png
+  log_ratio: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T32/chain0/plots/log_ratio.png
+  accepted: cumulative + rolling -> nsites_study/equil_op/T32/chain0/plots/accepted.png
+  acc_moves: raw (already a cumulative/running quantity, see module docstring), final=2.336e+04 -> nsites_study/equil_op/T32/chain0/plots/acc_moves.png
+  acc_rate: raw (already a cumulative/running quantity, see module docstring), final=0.1668 -> nsites_study/equil_op/T32/chain0/plots/acc_rate.png
+Done.
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 200597.15it/s]
+Decoding 9/281 checkpoints (stride=10) from nsites_study/equil_op/T32/chain0
+  move   98000: Rg_ca=64.366  Rg_allatom=64.341  mean_plddt=0.487
+  move  103000: Rg_ca=52.326  Rg_allatom=52.325  mean_plddt=0.412
+  move  108000: Rg_ca=57.513  Rg_allatom=57.500  mean_plddt=0.454
+  move  113000: Rg_ca=46.936  Rg_allatom=46.964  mean_plddt=0.511
+  move  118000: Rg_ca=42.020  Rg_allatom=41.999  mean_plddt=0.446
+  move  123000: Rg_ca=47.451  Rg_allatom=47.407  mean_plddt=0.485
+  move  128000: Rg_ca=47.944  Rg_allatom=47.928  mean_plddt=0.512
+  move  133000: Rg_ca=56.567  Rg_allatom=56.428  mean_plddt=0.525
+  move  138000: Rg_ca=48.351  Rg_allatom=48.345  mean_plddt=0.491
+Saved 9 rows -> nsites_study/equil_op/T32/chain0/structural_metrics.csv
+  Rg_ca: raw + cumulative + rolling(window=5) -> nsites_study/equil_op/T32/chain0/plots/Rg_ca.png
+  Rg_allatom: raw + cumulative + rolling(window=5) -> nsites_study/equil_op/T32/chain0/plots/Rg_allatom.png
+  mean_plddt -> nsites_study/equil_op/T32/chain0/plots/mean_plddt.png
+Hamming/q distribution: 85/281 post-burn-in checkpoints
+  Hamming + q distribution -> nsites_study/equil_op/T32/chain0/plots/hamming_and_q_distribution.png
+Done.
+
+=== T100=nsites_study/equil_op/T100/chain0 -- Mon  2 Nov 15:33:49 CET 2026 ===
+Plotting 12 metrics from nsites_study/equil_op/T100/chain0/data.dat (140001 rows) -> nsites_study/equil_op/T100/chain0/plots/
+  time: raw (already a cumulative/running quantity, see module docstring), final=2.151e+04 -> nsites_study/equil_op/T100/chain0/plots/time.png
+  U: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T100/chain0/plots/U.png
+  U_am: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T100/chain0/plots/U_am.png
+  U_structure_ce: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T100/chain0/plots/U_structure_ce.png
+  Hd_to_ref: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T100/chain0/plots/Hd_to_ref.png
+  dU: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T100/chain0/plots/dU.png
+  log_a_AB: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T100/chain0/plots/log_a_AB.png
+  log_a_BA: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T100/chain0/plots/log_a_BA.png
+  log_ratio: raw + cumulative + rolling(window=200) -> nsites_study/equil_op/T100/chain0/plots/log_ratio.png
+  accepted: cumulative + rolling -> nsites_study/equil_op/T100/chain0/plots/accepted.png
+  acc_moves: raw (already a cumulative/running quantity, see module docstring), final=6.454e+04 -> nsites_study/equil_op/T100/chain0/plots/acc_moves.png
+  acc_rate: raw (already a cumulative/running quantity, see module docstring), final=0.461 -> nsites_study/equil_op/T100/chain0/plots/acc_rate.png
+Done.
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 179872.69it/s]
+Decoding 9/281 checkpoints (stride=10) from nsites_study/equil_op/T100/chain0
+  move   98000: Rg_ca=43.343  Rg_allatom=43.346  mean_plddt=0.487
+  move  103000: Rg_ca=54.290  Rg_allatom=54.215  mean_plddt=0.406
+  move  108000: Rg_ca=36.075  Rg_allatom=36.070  mean_plddt=0.421
+  move  113000: Rg_ca=38.461  Rg_allatom=38.416  mean_plddt=0.415
+  move  118000: Rg_ca=66.670  Rg_allatom=66.705  mean_plddt=0.481
+  move  123000: Rg_ca=39.908  Rg_allatom=39.845  mean_plddt=0.434
+  move  128000: Rg_ca=43.811  Rg_allatom=43.811  mean_plddt=0.454
+  move  133000: Rg_ca=35.759  Rg_allatom=35.695  mean_plddt=0.408
+  move  138000: Rg_ca=63.189  Rg_allatom=63.192  mean_plddt=0.472
+Saved 9 rows -> nsites_study/equil_op/T100/chain0/structural_metrics.csv
+  Rg_ca: raw + cumulative + rolling(window=5) -> nsites_study/equil_op/T100/chain0/plots/Rg_ca.png
+  Rg_allatom: raw + cumulative + rolling(window=5) -> nsites_study/equil_op/T100/chain0/plots/Rg_allatom.png
+  mean_plddt -> nsites_study/equil_op/T100/chain0/plots/mean_plddt.png
+Hamming/q distribution: 85/281 post-burn-in checkpoints
+  Hamming + q distribution -> nsites_study/equil_op/T100/chain0/plots/hamming_and_q_distribution.png
+Done.
+
+=== baselines -- Mon  2 Nov 15:34:12 CET 2026 ===
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 204600.20it/s]
+  reference: Rg_ca=45.041  Rg_allatom=44.975  mean_plddt=0.512
+  random0: Rg_ca=45.715  Rg_allatom=45.745  mean_plddt=0.436
+  random1: Rg_ca=29.916  Rg_allatom=29.914  mean_plddt=0.344
+  random2: Rg_ca=39.087  Rg_allatom=39.050  mean_plddt=0.519
+  random3: Rg_ca=34.181  Rg_allatom=34.240  mean_plddt=0.365
+  random4: Rg_ca=42.656  Rg_allatom=42.646  mean_plddt=0.462
+Saved -> nsites_study/structure/baseline_metrics.csv
+
+=== plots -- Mon  2 Nov 15:34:26 CET 2026 ===
+H3N2 entropy: /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/../../FASTA/H3N2/site_entropy_566.csv, columns site='position' entropy='entropy_bits', 566 sites (range -0.000-1.784)
+label   T  chains  checkpoints  accepted_mutations  mean_site_entropy  sites_entropy_lt_0.05  median_Rg_ca  median_Rg_allatom  median_mean_plddt  median_U  median_Hd_to_ref  spearman_vs_h3n2  top0.1_n  overlap  overlap_expected  overlap_p
+  T12  12       1          349                9387              1.351                     74         52.55               52.5             0.4867      6807               378           0.07012        57        8               5.7      0.202
+  T32  32       1           85                7119              1.595                     34         48.35              48.35             0.4871 1.373e+04               496         -0.002244        57        5               5.7     0.7054
+ T100 100       1           85               20728              2.411                      0         43.34              43.35             0.4344 2.443e+04               530          -0.01213        57        6               5.7     0.5243
+
+K-sites (entropy < 0.05 at every one of ['T12']): 74/566
+  H3N2-conserved sites (entropy < 0.1): 457/566; overlap with the K-sites 59 (chance 59.7, P(>= 59) = 0.66)
+  median H3N2 entropy: K-sites 0.006, other sites 0.012
+
+Outputs in nsites_study/structure: summary_by_T.tsv, site_entropy_by_T.csv, metrics_boxplots.png, metrics_vs_T.png, site_entropy_profile.png, site_entropy_vs_h3n2.png, h3n2_entropy_by_sampled_class.png
+Done -- Mon  2 Nov 15:34:31 CET 2026. Plots: nsites_study/structure/*.png and <chain>/plots/*.png
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 12 --n-sites 1 --moves 1000000 --seed 100 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/nsites_study/equil_lowT/T12/chain0 --grad-mode one_pass --resume
+GPU free memory: 23990 MB   Running: 0 / 1 (soft cap)
+  PID 9367  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/nsites_study/logs/equil_lowT_T12_chain0.log
+All launched. Waiting...
