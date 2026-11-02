@@ -24,6 +24,8 @@ set -u
 # BURN_IN  fraction of each chain's checkpoints dropped (default 0.5).
 # NUM_STEPS structure-generation steps per decode (default 8; 1 understates
 #          Rg and pLDDT differences, DEVLOG 2026-09-30).
+# RESIDUES START:END window also reported as *_win (e.g. 16:529, the ectodomain:
+#          no signal peptide, no transmembrane/cytoplasmic tail). Default: none.
 # SKIP_DECODE=1 reuses existing structural_metrics.csv files and baselines.
 # ============================================================
 
@@ -39,6 +41,8 @@ STRIDE="${STRIDE:-10}"
 BURN_IN="${BURN_IN:-0.5}"
 NUM_STEPS="${NUM_STEPS:-8}"
 OUT="${OUT:-$NS/structure}"
+RES_ARG=()
+[ -n "${RESIDUES:-}" ] && RES_ARG=(--residues "$RESIDUES")
 REF_SEQ=$(python -c "import sys; sys.path.append('../code/tests'); from references import get_reference; print(get_reference('zero_polymer')[1])")
 
 mkdir -p "$OUT"
@@ -53,14 +57,14 @@ for item in "${RUNS[@]}"; do
 	echo; echo "=== $item -- $(date) ==="
 	python plot_run.py "$DIR"
 	if [ "${SKIP_DECODE:-0}" != "1" ] || [ ! -f "$DIR/structural_metrics.csv" ]; then
-		python compute_structural_metrics.py "$DIR" --stride "$STRIDE" --num-steps "$NUM_STEPS" --burn-in-frac "$BURN_IN"
+		python compute_structural_metrics.py "$DIR" --stride "$STRIDE" --num-steps "$NUM_STEPS" --burn-in-frac "$BURN_IN" "${RES_ARG[@]}"
 	fi
 	python plot_structural_metrics.py "$DIR" --ref-seq "$REF_SEQ" --burn-in-frac "$BURN_IN"
 done
 
 if [ "${SKIP_DECODE:-0}" != "1" ] || [ ! -f "$OUT/baseline_metrics.csv" ]; then
 	echo; echo "=== baselines -- $(date) ==="
-	python structure_zero_polymer.py decode-ref --out "$OUT/baseline_metrics.csv" --num-steps "$NUM_STEPS"
+	python structure_zero_polymer.py decode-ref --out "$OUT/baseline_metrics.csv" --num-steps "$NUM_STEPS" "${RES_ARG[@]}"
 fi
 
 H3N2_ARG=()

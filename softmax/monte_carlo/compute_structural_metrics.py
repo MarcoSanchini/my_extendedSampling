@@ -109,6 +109,17 @@ def radius_of_gyration(points: torch.Tensor) -> float:
 	return torch.sqrt(((points - center) ** 2).sum(dim=-1).mean()).item()
 
 
+def window_metrics(positions, mask, plddt, win):
+	"""Rg_ca, Rg_allatom and mean pLDDT over the residues in slice win only."""
+	return [radius_of_gyration(positions[win, CA_IDX, :]), radius_of_gyration(positions[win][mask[win]]),
+			plddt[win].mean().item() if plddt is not None else float('nan')]
+
+
+def columns(win):
+	cols = ["move", "Rg_ca", "Rg_allatom", "mean_plddt"]
+	return cols + ["Rg_ca_win", "Rg_allatom_win", "mean_plddt_win"] if win is not None else cols
+
+
 def main():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("results_dir", help="e.g. tests_rate_sweep_temperature/T1e0/sim0")
@@ -121,7 +132,12 @@ def main():
 							  "default of 1 until diagnose_structure_decode.py showed num_steps=1 "
 							  "understates both pLDDT and Rg differentiation -- see DEVLOG.txt, "
 							  "2026-09-30 entries. Higher values cost proportionally more per decode.")
+	parser.add_argument("--residues", default=None,
+						 help="START:END (0-based, END excluded): also report Rg and pLDDT over this window "
+							  "only, as Rg_ca_win/Rg_allatom_win/mean_plddt_win -- e.g. 16:529, the zero_polymer "
+							  "ectodomain without the signal peptide and the transmembrane/cytoplasmic tail")
 	args = parser.parse_args()
+	win = slice(*map(int, args.residues.split(":"))) if args.residues else None
 
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -147,14 +163,17 @@ def main():
 
 		mean_plddt = plddt.mean().item() if plddt is not None else float('nan')
 
-		rows.append((move, rg_ca, rg_allatom, mean_plddt))
-		print(f"  move {move:>7}: Rg_ca={rg_ca:.3f}  Rg_allatom={rg_allatom:.3f}  mean_plddt={mean_plddt:.3f}")
+		row = [move, rg_ca, rg_allatom, mean_plddt]
+		if win is not None:
+			row += window_metrics(positions, mask, plddt, win)
+		rows.append(row)
+		print(f"  move {move:>7}: " + "  ".join(f"{k}={v:.3f}" for k, v in zip(columns(win)[1:], row[1:])))
 
 	out_path = os.path.join(args.results_dir, "structural_metrics.csv")
 	with open(out_path, "w") as f:
-		f.write("move,Rg_ca,Rg_allatom,mean_plddt\n")
-		for move, rg_ca, rg_allatom, mean_plddt in rows:
-			f.write(f"{move},{rg_ca:.6f},{rg_allatom:.6f},{mean_plddt:.6f}\n")
+		f.write(",".join(columns(win)) + "\n")
+		for row in rows:
+			f.write(f"{row[0]}," + ",".join(f"{v:.6f}" for v in row[1:]) + "\n")
 	print(f"Saved {len(rows)} rows -> {out_path}")
 
 

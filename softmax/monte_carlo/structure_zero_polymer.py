@@ -55,8 +55,11 @@ sys.path.append(os.path.join(MONTE_CARLO_DIR, "../code/tests"))
 from references import get_reference
 
 STRUCT_METRICS = ["Rg_ca", "Rg_allatom", "mean_plddt"]
+WIN_METRICS = ["Rg_ca_win", "Rg_allatom_win", "mean_plddt_win"]   # compute_structural_metrics.py --residues
 CHAIN_METRICS = ["U", "Hd_to_ref"]
 YLABELS = {"Rg_ca": "Rg, C-alpha [A]", "Rg_allatom": "Rg, heavy atoms [A]", "mean_plddt": "mean pLDDT",
+	"Rg_ca_win": "Rg, C-alpha, window [A]", "Rg_allatom_win": "Rg, heavy atoms, window [A]",
+	"mean_plddt_win": "mean pLDDT, window",
 	"U": "U", "Hd_to_ref": "Hd to reference"}
 
 
@@ -183,7 +186,7 @@ def box_panel(ax, data, labels, metric, baseline):
 
 
 def plot_metrics(per_label, baseline, out_dir):
-	metrics = [m for m in STRUCT_METRICS + CHAIN_METRICS if any(m in d.columns for d in per_label.values())]
+	metrics = [m for m in STRUCT_METRICS + WIN_METRICS + CHAIN_METRICS if any(m in d.columns for d in per_label.values())]
 	labels = list(per_label)
 	fig, axes = plt.subplots(1, len(metrics), figsize=(3.2 * len(metrics), 3.8))
 	for ax, metric in zip(np.atleast_1d(axes), metrics):
@@ -260,7 +263,7 @@ def plot_entropy(ent, h3n2, ref_seq, k_sites, cold, out_dir):
 
 def cmd_decode_ref(args):
 	import torch
-	from compute_structural_metrics import decode_structure_with_mask, radius_of_gyration, CA_IDX
+	from compute_structural_metrics import decode_structure_with_mask, radius_of_gyration, window_metrics, CA_IDX
 	from classes.rate_sampler import ExtendedProteinRateSampler
 	from classes.ExtendedProtein import ExtendedProtein
 	from utils.predictions import init_structure_config
@@ -274,7 +277,8 @@ def cmd_decode_ref(args):
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	sampler = ExtendedProteinRateSampler(config_settings={})
 	sampler.model.to(device)
-	rows = []
+	win = slice(*map(int, args.residues.split(":"))) if args.residues else None
+	rows, per_residue = [], {}
 	# --repeats > 1 decodes each sequence several times (torch seed varied),
 	# which measures how much of an Rg/pLDDT spread is the decode itself.
 	for num_steps in args.num_steps:
@@ -285,14 +289,31 @@ def cmd_decode_ref(args):
 				eprot = ExtendedProtein(sequence=seq, requires_grad=False, device=device)
 				eprot.expand()
 				positions, mask, plddt = decode_structure_with_mask(sampler.model, eprot, config)
-				rows.append((label, radius_of_gyration(positions[:, CA_IDX, :]), radius_of_gyration(positions[mask]),
-					plddt.mean().item() if plddt is not None else float("nan"), num_steps, r))
-				print(f"  {label} steps={num_steps} repeat={r}: Rg_ca={rows[-1][1]:.3f}  "
-					f"Rg_allatom={rows[-1][2]:.3f}  mean_plddt={rows[-1][3]:.3f}")
+				row = [label, radius_of_gyration(positions[:, CA_IDX, :]), radius_of_gyration(positions[mask]),
+					plddt.mean().item() if plddt is not None else float("nan")]
+				row += window_metrics(positions, mask, plddt, win) if win is not None else []
+				rows.append(row + [num_steps, r])
+				if label == "reference" and r == 0 and plddt is not None:
+					per_residue[f"plddt_steps{num_steps}"] = plddt.float().numpy()
+				print(f"  {label} steps={num_steps} repeat={r}: " + "  ".join(f"{v:.3f}" for v in row[1:]))
 	os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-	df = pd.DataFrame(rows, columns=["label"] + STRUCT_METRICS + ["num_steps", "repeat"])
+	metrics = STRUCT_METRICS + (WIN_METRICS if win is not None else [])
+	df = pd.DataFrame(rows, columns=["label"] + metrics + ["num_steps", "repeat"])
 	df.to_csv(args.out, index=False)
-	print(df.groupby(["label", "num_steps"])[STRUCT_METRICS].agg(["mean", "std", "min", "max"]).round(3).to_string())
+	print(df.groupby(["label", "num_steps"])[metrics].agg(["mean", "std", "min", "max"]).round(3).to_string())
+	if per_residue:
+		# Per-residue pLDDT of the reference, one column per step count, to see
+		# which stretches the decoder is (not) confident about.
+		pr = pd.DataFrame(per_residue)
+		pr.insert(0, "aa", list(ref_seq))
+		pr.index.name = "site"
+		pr_path = os.path.splitext(args.out)[0] + "_per_residue_plddt.csv"
+		pr.to_csv(pr_path)
+		for col in per_residue:
+			v = pr[col].values
+			print(f"  {col}: signal peptide 0-15 {v[:16].mean():.3f}, ectodomain 16-528 {v[16:529].mean():.3f}, "
+				f"TM + tail 529-565 {v[529:].mean():.3f}")
+		print(f"Per-residue pLDDT of the reference -> {pr_path}")
 	print(f"Saved -> {args.out}")
 
 
@@ -326,7 +347,7 @@ def cmd_plot(args):
 		row = {"label": label, "T": label_T(label), "chains": len(dirs), "checkpoints": len(seqs),
 			"accepted_mutations": n_acc, "mean_site_entropy": ent[label].mean(),
 			"sites_entropy_lt_0.05": int((ent[label] < 0.05).sum())}
-		for metric in STRUCT_METRICS + CHAIN_METRICS:
+		for metric in STRUCT_METRICS + WIN_METRICS + CHAIN_METRICS:
 			if metric in per_label[label]:
 				row[f"median_{metric}"] = per_label[label][metric].median()
 		if h3n2 is not None:
@@ -375,6 +396,7 @@ def main():
 	d.add_argument("--n-random", type=int, default=5)
 	d.add_argument("--num-steps", type=int, nargs="+", default=[8])
 	d.add_argument("--repeats", type=int, default=1, help="decodes per sequence (and per --num-steps value)")
+	d.add_argument("--residues", default=None, help="START:END window, as compute_structural_metrics.py --residues")
 	d.add_argument("--seed", type=int, default=0)
 	q = sub.add_parser("plot")
 	q.add_argument("--runs", nargs="+", required=True, help="LABEL=DIR, a label may repeat to pool chains")
