@@ -274,17 +274,25 @@ def cmd_decode_ref(args):
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 	sampler = ExtendedProteinRateSampler(config_settings={})
 	sampler.model.to(device)
-	config = init_structure_config(num_steps=args.num_steps)
 	rows = []
-	for label, seq in seqs:
-		eprot = ExtendedProtein(sequence=seq, requires_grad=False, device=device)
-		eprot.expand()
-		positions, mask, plddt = decode_structure_with_mask(sampler.model, eprot, config)
-		rows.append((label, radius_of_gyration(positions[:, CA_IDX, :]), radius_of_gyration(positions[mask]),
-			plddt.mean().item() if plddt is not None else float("nan")))
-		print(f"  {label}: Rg_ca={rows[-1][1]:.3f}  Rg_allatom={rows[-1][2]:.3f}  mean_plddt={rows[-1][3]:.3f}")
+	# --repeats > 1 decodes each sequence several times (torch seed varied),
+	# which measures how much of an Rg/pLDDT spread is the decode itself.
+	for num_steps in args.num_steps:
+		config = init_structure_config(num_steps=num_steps)
+		for label, seq in seqs:
+			for r in range(args.repeats):
+				torch.manual_seed(args.seed + r)
+				eprot = ExtendedProtein(sequence=seq, requires_grad=False, device=device)
+				eprot.expand()
+				positions, mask, plddt = decode_structure_with_mask(sampler.model, eprot, config)
+				rows.append((label, radius_of_gyration(positions[:, CA_IDX, :]), radius_of_gyration(positions[mask]),
+					plddt.mean().item() if plddt is not None else float("nan"), num_steps, r))
+				print(f"  {label} steps={num_steps} repeat={r}: Rg_ca={rows[-1][1]:.3f}  "
+					f"Rg_allatom={rows[-1][2]:.3f}  mean_plddt={rows[-1][3]:.3f}")
 	os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
-	pd.DataFrame(rows, columns=["label"] + STRUCT_METRICS).to_csv(args.out, index=False)
+	df = pd.DataFrame(rows, columns=["label"] + STRUCT_METRICS + ["num_steps", "repeat"])
+	df.to_csv(args.out, index=False)
+	print(df.groupby(["label", "num_steps"])[STRUCT_METRICS].agg(["mean", "std", "min", "max"]).round(3).to_string())
 	print(f"Saved -> {args.out}")
 
 
@@ -365,7 +373,8 @@ def main():
 	d.add_argument("--out", required=True)
 	d.add_argument("--ref", default="zero_polymer")
 	d.add_argument("--n-random", type=int, default=5)
-	d.add_argument("--num-steps", type=int, default=8)
+	d.add_argument("--num-steps", type=int, nargs="+", default=[8])
+	d.add_argument("--repeats", type=int, default=1, help="decodes per sequence (and per --num-steps value)")
 	d.add_argument("--seed", type=int, default=0)
 	q = sub.add_parser("plot")
 	q.add_argument("--runs", nargs="+", required=True, help="LABEL=DIR, a label may repeat to pool chains")
