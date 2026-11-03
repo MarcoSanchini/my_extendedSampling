@@ -1,0 +1,542 @@
+% ---------------------------------------------------------------------------
+% A primer on the natural-sequence side of the comparison: what the influenza A
+% hemagglutinin subtype groups are, why influenza B is left out, where the
+% sequences come from, and what redundancy clustering, DCA-style reweighting and
+% MAFFT alignment do. Companion to softmax/monte_carlo/ha_natural_runbook.md
+% (the commands) and softmax/monte_carlo/ha_site_entropy.py (the code).
+%
+% Every factual statement carries a source. Statements with no source are
+% measurements made in this repository, and say so.
+%
+% Build:  cd softmax/docs && pdflatex ha_natural_methods.tex && pdflatex ha_natural_methods.tex
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\sloppy
+
+\newcommand{\file}[1]{\texttt{#1}}
+\newcommand{\Neff}{N_{\mathrm{eff}}}
+
+\title{The natural side of the comparison\\
+       \large Influenza A hemagglutinin subtypes, sequence databases,\\
+       redundancy weighting and alignment}
+\author{}
+\date{3 November 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The sampler produces a per-site entropy over the sequences it accepts. To say
+whether that entropy means anything we compare it with the per-site entropy of
+real hemagglutinin (HA) sequences. Until now the natural side was 19\,380 human
+H3N2 sequences; this note explains what we are replacing that with and why, and
+defines every piece of jargon in the plan: subtype groups, influenza B, the
+NCBI, BV-BRC and GISAID databases, CD-HIT and MMseqs2 clustering, DCA-style
+sequence weights, and MAFFT alignment. Section~\ref{sec:weighting} is the long
+version of the one real judgement call in the pipeline.
+\end{abstract}
+
+\section{Why look past human H3N2}
+
+Our reference sequence, \file{zero\_polymer}, is the 566-residue HA0 precursor
+of A/New York/392/2004 (H3N2), accession \file{YP\_308839.1}
+(\file{softmax/code/tests/references.py}; the length and accession are from
+\file{FASTA/H3N2/sequences\_H3N2\_566\_homo\_segment4.csv} in this repository).
+So human H3N2 was the obvious natural comparison, and
+\file{FASTA/H3N2/site\_entropy\_566.csv} holds it.
+
+The trouble is that human H3N2 is one virus lineage in one host, drifting
+antigenically since 1968. A site can be variable there because the fold
+tolerates variation, or because antibody pressure actively rewards change at
+that site; and a site can be conserved there because the fold needs it, or just
+because 50 years is not long enough for anything to have happened. The entropy
+of one lineage mixes structural constraint with that lineage's history.
+
+Across many HA subtypes, which have been separated for far longer and sit in
+different hosts, a site that is still conserved is conserved because the protein
+needs it. That is the quantity the sampler should be reproducing. This is the
+standard argument for using deep, diverse alignments in sequence-statistics
+work: the covariation and conservation signal that corresponds to physical
+constraint emerges from alignments spanning large evolutionary distances
+\cite{morcos2011,cocco2018}.
+
+\section{The two subtype groups}
+\label{sec:groups}
+
+Influenza A viruses are named by their two surface proteins, HA and
+neuraminidase (NA): H3N2 means HA subtype 3, NA subtype 2. Eighteen HA subtypes
+are known, H1 to H18, the last two from bats \cite{tong2013}. A subtype is an
+antigenic and sequence-divergence category: different subtypes do not
+cross-react serologically.
+
+The 18 subtypes fall into exactly two phylogenetic clades, called
+\emph{group~1} and \emph{group~2}. The split is old and shows up in every
+analysis of HA sequences, going back to the first comparison of all the then
+known subtypes \cite{air1981,nobusawa1991}:
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+group 1 & H1, H2, H5, H6, H8, H9, H11, H12, H13, H16 (and H17, H18, from bats) \\
+group 2 & H3, H4, H7, H10, H14, H15 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Our H3 reference is in group~2, and H4 and H14 are its closest relatives
+\cite{air1981,nobusawa1991}.
+
+\paragraph{What actually differentiates them.}
+All HAs have the same architecture: a membrane-distal globular head built from
+HA1, which carries the receptor-binding site, on a stalk built mostly from HA2,
+which carries the fusion machinery \cite{wilson1981,skehel2000}. The groups are
+not different folds; they differ in detail, and the differences that matter are:
+
+\begin{itemize}
+  \item \textbf{Sequence divergence.} Between groups, HAs are much further
+    apart than within a group. In this repository's own two-subtype test, the
+    median identity to the H3 \file{zero\_polymer} reference was 0.966 for human
+    H3 sequences and 0.435 for H1 sequences (measured by
+    \file{ha\_site\_entropy.py}, which prints it per subtype). Group~1 against
+    group~2 is the deepest division inside influenza A HA
+    \cite{air1981,nobusawa1991}.
+  \item \textbf{Stalk conformation and antibody epitopes.} The clearest
+    functional evidence that the group boundary is real comes from broadly
+    neutralising antibodies that bind the conserved stalk: CR6261 neutralises
+    group~1 HAs but not group~2 \cite{ekiert2009}, CR8020 is the mirror image,
+    binding group~2 and not group~1 \cite{ekiert2011}, and antibodies that cover
+    both groups are rare enough to have been reported as a result in their own
+    right \cite{corti2011}. The two groups present measurably different
+    surfaces in the region that is otherwise the most conserved part of the
+    molecule.
+  \item \textbf{Receptor-binding site details.} Group-specific differences in
+    the loops around the receptor-binding site change which sialic acid linkages
+    are preferred and how the site can adapt, which is central to the question
+    of avian-to-human transmission \cite{russell2004,skehel2000}.
+\end{itemize}
+
+\paragraph{Why two files and not one.}
+Within group~2, the alignment to \file{zero\_polymer}'s 566 positions is
+trustworthy at essentially every position, so a group~2 entropy file is the
+conservative measurement. Adding group~1 roughly triples the evolutionary depth,
+which is what we want, but the HA1 head alignment gets looser and more columns
+become unreliable. Building both and comparing them is cheap, so the plan is to
+build both: disagreement between them is itself informative, and agreement means
+the result does not hinge on the choice.
+
+\section{Influenza B, and why it is excluded}
+
+Influenza A and influenza B are different genera of the same family,
+\emph{Orthomyxoviridae}: \emph{Alphainfluenzavirus} and
+\emph{Betainfluenzavirus} \cite{ictv2024}. The practical differences:
+
+\begin{itemize}
+  \item \textbf{Host range and reservoir.} Influenza A has a huge wild bird
+    reservoir, with many subtypes circulating in many hosts, which is what makes
+    its HA so diverse and is the reason it can produce pandemics by reassortment.
+    Influenza B is essentially a human virus, with seals the only other
+    established host \cite{osterhaus2000}, so it has nothing like influenza A's
+    diversity.
+  \item \textbf{No subtypes, two lineages.} Influenza B is not divided into HA
+    subtypes. It has two antigenically distinct lineages, B/Victoria/2/87-like
+    and B/Yamagata/16/88-like, which diverged in the 1980s \cite{rota1990}.
+    Compared with A's 18 subtypes that is a very shallow set.
+  \item \textbf{No reassortment with A.} The two genera do not exchange
+    segments, so their HAs have evolved independently throughout.
+  \item \textbf{Same fold, far apart in sequence.} Influenza B HA has the same
+    overall structure as influenza A HA, including the HA1/HA2 cleavage and the
+    fusion peptide \cite{wang2008}. But it is the most distant member of the
+    family from our reference, and this is the problem: a position-by-position
+    mapping onto \file{zero\_polymer}'s 566 sites stops being meaningful when
+    the alignment itself is uncertain, and the per-site entropy we want is
+    exactly a per-position quantity. The round figure usually quoted for A
+    against B HA identity is about 25\%, which is in the range where alignment
+    columns, not biology, would drive the result. \emph{Treat that 25\% as
+    approximate: measure it on your own alignment before quoting it in the
+    thesis.}
+\end{itemize}
+
+\noindent
+So influenza B is excluded not because it is irrelevant but because at that
+distance the mapping step, not the conservation signal, would decide the answer.
+
+\section{Where the sequences come from}
+
+Three sources are worth knowing. The code only needs FASTA files, so any of them
+works.
+
+\paragraph{NCBI (the Influenza Virus Resource, now NCBI Virus).}
+The one you already know. It was published as a dedicated influenza resource,
+with its own sequence set, annotation pipeline and alignment tools
+\cite{bao2008}, and has since been folded into the broader NCBI Virus / Virus
+Variation platform \cite{hatcher2017}. It is public, needs no account, and has a
+programmatic interface, the E-utilities \cite{eutils}, which is what
+\file{ha\_site\_entropy.py fetch} uses: one query per subtype against the
+protein database, selecting by organism (the taxonomy has a node per HxNy
+subtype), by protein name, and by sequence length.
+
+\paragraph{BV-BRC (formerly FluDB / IRD).}
+The Influenza Research Database (IRD), whose website was \file{fludb.org}, was a
+US-funded influenza-specific resource: sequences plus curated metadata (host,
+location, date, passage history) and analysis tools, built for surveillance work
+\cite{squires2012}. In 2019--2022 IRD was merged with PATRIC (bacteria) and ViPR
+(other viruses) into a single centre, the Bacterial and Viral Bioinformatics
+Resource Center, BV-BRC, at \file{bv-brc.org} \cite{olson2023}. So
+``FluDB''/``IRD''/``BV-BRC'' are three names for the same lineage of resource.
+For us its advantage over NCBI is the curated metadata: if you want ``avian H3
+only'' or ``exclude egg-passaged isolates'', BV-BRC makes that a filter rather
+than a text search.
+
+\paragraph{GISAID.}
+The Global Initiative on Sharing All Influenza Data, whose influenza database is
+EpiFlu \cite{shu2017,elbe2017}. It holds sequences that are not in NCBI,
+because many national laboratories deposit there under its terms. Those terms
+are the catch: access requires registration and agreement to a data access
+agreement that forbids redistribution and requires acknowledging the submitting
+laboratories. Practically, that means you may use GISAID data in your analysis
+but you cannot commit the FASTA files to this repository, and the acknowledgement
+table has to go in the thesis. For our purpose, which is deep subtype coverage
+rather than the latest circulating strains, NCBI alone is very likely enough, so
+I would only go to GISAID if some subtype turns out to be thinly covered.
+
+\section{Redundancy: clustering and weighting}
+\label{sec:redundancy}
+
+\paragraph{The problem.}
+Sequence databases are not a sample of the protein's sequence space, they are a
+sample of what people sequenced. Human H3N2 and H1N1 have been sequenced tens of
+thousands of times because they infect us; H14 has barely been sequenced at all.
+Shannon entropy computed on raw counts would therefore mostly describe
+surveillance effort. Worse, near-identical sequences make every site look
+conserved: if 10\,000 of your 11\,000 sequences are the same recent human
+H3N2 clade, the entropy you measure is that clade's internal diversity.
+
+There are two standard cures.
+
+\paragraph{Clustering: CD-HIT and MMseqs2.}
+Both are programs that take a set of sequences and group them so that no two
+groups are more similar than a chosen identity threshold, keeping one
+representative per group. CD-HIT does this with a greedy incremental algorithm:
+sort by length, take the longest sequence as the first representative, and
+compare each next sequence against existing representatives, making it a new
+representative only if it is below the threshold against all of them; short-word
+filters make the comparisons fast enough to be practical
+\cite{li2006,fu2012}. MMseqs2 is a newer and much faster suite doing the same
+job (and sensitive search besides), with a linear-time clustering mode for very
+large sets \cite{steinegger2017,steinegger2018}. Clustering at 90--95\% identity
+is the usual recipe for ``remove near-duplicates''. The cost is that it throws
+information away: a cluster of 10\,000 sequences and a cluster of 2 both end up
+as one sequence.
+
+\paragraph{DCA-style weights.}
+The alternative keeps every sequence but downweights the crowded ones. It comes
+from direct coupling analysis, the Potts-model approach to inferring contacts
+and fitness from sequence alignments \cite{morcos2011,cocco2018}. Each sequence
+$a$ gets the weight
+\begin{equation}
+  w_a \;=\; \frac{1}{m_a},
+  \qquad
+  m_a \;=\; \#\{\,b : \mathrm{identity}(a,b) \ge \theta \,\},
+  \label{eq:weights}
+\end{equation}
+where $b$ runs over all sequences including $a$ itself, so $m_a \ge 1$ and
+$w_a \le 1$. A sequence with no close neighbours counts fully; each member of a
+cluster of 100 near-identical sequences counts 1/100, so the cluster as a whole
+counts about~1. The effective number of sequences is the total weight,
+\begin{equation}
+  \Neff \;=\; \sum_a w_a ,
+  \label{eq:neff}
+\end{equation}
+and it is the honest sample size: it says roughly how many independent sequences
+the alignment is worth. The usual threshold is $\theta = 0.8$, i.e.\ 80\%
+identity; Morcos \emph{et al.} use 80\%, define the weight as the inverse count
+of sequences above that identity, and define $\Neff$ as the sum of the weights,
+reporting only a weak dependence on the precise threshold \cite{morcos2011}.
+This is what \file{ha\_site\_entropy.py} implements, with $\theta$ exposed as
+\file{--weight-identity}; frequencies and entropies are then computed with $w_a$
+in place of a count of~1.
+
+Weighting is the better choice here, and it is what the code does: it is a
+smooth correction rather than a hard cut, it keeps every sequence, and it hands
+you $\Neff$ as a number you can report, which clustering does not. It is worth
+knowing that the value of phylogenetic reweighting has been questioned for
+contact prediction specifically \cite{hockenberry2019}; for our purpose, where
+the point is precisely not to let surveillance effort set the entropy, the
+correction is doing something we want regardless.
+
+\section{Alignment: what MAFFT is for}
+\label{sec:mafft}
+
+\paragraph{Why alignment is needed at all.}
+The H3N2 file needed none: all 19\,380 sequences were already 566 residues long,
+so position 7 meant the same thing in all of them. That stops being true across
+subtypes. HA sequences differ in length, with insertions and deletions, so the
+7th letter of an H5 sequence is not the 7th site of our reference. A multiple
+sequence alignment inserts gaps so that each column holds positions that are
+homologous, i.e.\ descended from the same ancestral position. Only then is a
+per-column entropy meaningful.
+
+\paragraph{MAFFT.}
+MAFFT is one of the standard multiple sequence alignment programs, originally
+built around a fast Fourier transform trick for finding homologous segments
+quickly \cite{katoh2002}, and in current use as version 7 with a range of
+accuracy/speed settings \cite{katoh2013}. It is free, fast enough for thousands
+of HA sequences on a laptop (8 seconds for 3\,165 sequences in our test), and
+scriptable. Any comparable program (MUSCLE, Clustal Omega, HMMER's
+\file{hmmalign} against the Pfam PF00509 model) would do the same job.
+
+\paragraph{What we align, and to what.}
+All the kept sequences \emph{together with} the \file{zero\_polymer} reference,
+in one run (\file{--align msa}). Then, and this is the important step, we keep
+only the alignment columns where the reference has a residue rather than a gap.
+That projects the alignment onto the reference's own numbering: insertions
+relative to \file{zero\_polymer} are discarded, deletions appear as gap
+characters, and the output has exactly 566 rows, one per site of our reference,
+which is what the comparison needs. The code checks that the reference comes out
+of the alignment unchanged, and fails loudly otherwise.
+
+The alternative mode (\file{--align add}, MAFFT's \file{--add --keeplength}
+\cite{katoh2012}) aligns each sequence against the reference alone. It is faster
+and fine within one subtype, which is why it reproduces the existing H3N2 file,
+but a full multiple alignment is better across subtypes, because the other
+sequences help place the indels.
+
+\paragraph{Gappy columns.}
+If a column is mostly gaps, the handful of residues in it carry no reliable
+entropy, and treating ``gap'' as a 21st amino acid would be worse: it would
+report alignment uncertainty as biological variability. So the code computes the
+weighted gap fraction per site and writes \file{NaN} for the entropy wherever it
+exceeds \file{--max-gap} (30\% by default), and
+\file{structure\_zero\_polymer.py} excludes those sites from the rank
+correlation, the overlap counts and the box plots.
+
+\section{The one real judgement call: the weighting threshold}
+\label{sec:weighting}
+
+This is the long version of the caveat in \file{ha\_natural\_runbook.md}.
+
+Take equation~\eqref{eq:weights} with $\theta = 0.8$ and apply it to a
+cross-subtype set. Within a subtype, sequences are typically far above 80\%
+identical to each other: human H3 sequences sit at 0.966 median identity to our
+reference, so they are all mutual neighbours. Between subtypes they are far
+below it: H1 against H3 is about 0.44. The neighbour sets therefore coincide
+almost exactly with the subtypes, so $m_a$ is about the size of $a$'s subtype,
+each subtype's weights sum to about~1, and
+\begin{equation}
+  \Neff \;\approx\; \text{(number of subtypes)} .
+\end{equation}
+Our two-subtype test came out at $\Neff = 2.0$, which looks alarming until you
+see that it is exactly what the formula is supposed to do.
+
+The consequence is what matters. With these weights the entropy at a site is
+almost entirely \emph{between}-subtype variation: it asks ``do the different
+subtypes agree at this position?'' and is nearly blind to variation inside a
+subtype, including all of human H3N2's antigenic drift. That is a defensible and
+arguably the right definition of ``what the fold requires'', since the
+within-subtype signal is the part most contaminated by host-specific immune
+pressure and by sequencing effort. But it is a choice, not a fact, so it should
+be shown not to matter:
+
+\begin{itemize}
+  \item \file{--weight-identity 0.8} (the default): one effective sequence per
+    subtype; pure between-subtype conservation.
+  \item \file{--weight-identity 0.95}: within-subtype drift is kept, since
+    sequences only count as neighbours when they are nearly identical, and each
+    subtype contributes in proportion to how much of it was sequenced. A middle
+    course, and closer to what the original H3N2-only file measured.
+  \item \file{--weight-identity 0} (no weighting): raw counts, so the entropy is
+    dominated by whichever subtypes have been sequenced most, in practice H1, H3
+    and H5. This is the sampling-biased extreme and is useful mainly as a
+    control.
+\end{itemize}
+
+\noindent
+Build the file at 0.8 and at 0.95, run the K-site comparison on both, and report
+that the conclusion is the same. If it is not the same, that is a finding about
+which kind of conservation the sampler is reproducing, and more interesting than
+either number alone.
+
+\section{What the answer should look like}
+
+A prediction worth writing down before looking, because it makes the result
+falsifiable. If the sampler is finding real structural constraint, then in the
+natural alignment:
+
+\begin{itemize}
+  \item HA2 should be conserved: the fusion peptide at its N-terminus, the long
+    central helix, the stalk. This region does the membrane fusion and is
+    sterically constrained, and it is where the broadly neutralising antibodies
+    bind precisely because it cannot change much
+    \cite{skehel2000,ekiert2009,ekiert2011}.
+  \item The HA1 head should be variable, especially the five antigenic sites
+    around the receptor-binding site that were mapped from the original
+    structure and from drift variants \cite{wiley1981,wilson1981}.
+\end{itemize}
+
+\noindent
+In the repository's two-subtype test this split is already visible: median
+entropy 1.00 bits over HA1 against 0.084 bits over HA2 (measured by
+\file{ha\_site\_entropy.py}; the HA1/HA2 boundary is found from the fusion
+peptide motif G[IL]FGAIAGF).
+
+So if the T12 K-sites concentrate in HA2 and the stalk, that is evidence the
+sampler is doing something physical, before any correlation coefficient is
+computed. And if they scatter uniformly, or sit in the antigenic sites, no
+Spearman value will rescue the result.
+
+\begin{thebibliography}{99}
+
+\bibitem{air1981} G.~M. Air,
+  \emph{Sequence relationships among the hemagglutinin genes of 12 subtypes of
+  influenza A virus}, Proc. Natl. Acad. Sci. USA \textbf{78}, 7639--7643 (1981).
+
+\bibitem{bao2008} Y.~Bao, P.~Bolotov, D.~Dernovoy, B.~Kiryutin, L.~Zaslavsky,
+  T.~Tatusova, J.~Ostell, D.~Lipman,
+  \emph{The influenza virus resource at the National Center for Biotechnology
+  Information}, J. Virol. \textbf{82}, 596--601 (2008).
+
+\bibitem{cocco2018} S.~Cocco, C.~Feinauer, M.~Figliuzzi, R.~Monasson,
+  M.~Weigt,
+  \emph{Inverse statistical physics of protein sequences: a key issues review},
+  Rep. Prog. Phys. \textbf{81}, 032601 (2018).
+
+\bibitem{corti2011} D.~Corti \emph{et al.},
+  \emph{A neutralizing antibody selected from plasma cells that binds to group 1
+  and group 2 influenza A hemagglutinins}, Science \textbf{333}, 850--856
+  (2011).
+
+\bibitem{ekiert2009} D.~C. Ekiert, G.~Bhabha, M.-A. Elsliger, R.~H.~E. Friesen,
+  M.~Jongeneelen, M.~Throsby, J.~Goudsmit, I.~A. Wilson,
+  \emph{Antibody recognition of a highly conserved influenza virus epitope},
+  Science \textbf{324}, 246--251 (2009).
+
+\bibitem{ekiert2011} D.~C. Ekiert \emph{et al.},
+  \emph{A highly conserved neutralizing epitope on group 2 influenza A
+  viruses}, Science \textbf{333}, 843--850 (2011).
+
+\bibitem{elbe2017} S.~Elbe, G.~Buckland-Merrett,
+  \emph{Data, disease and diplomacy: GISAID's innovative contribution to global
+  health}, Global Challenges \textbf{1}, 33--46 (2017).
+
+\bibitem{eutils} E.~Sayers,
+  \emph{A General Introduction to the E-utilities}, Entrez Programming
+  Utilities Help, NCBI (updated continuously).
+  \url{https://www.ncbi.nlm.nih.gov/books/NBK25497/}
+
+\bibitem{fu2012} L.~Fu, B.~Niu, Z.~Zhu, S.~Wu, W.~Li,
+  \emph{CD-HIT: accelerated for clustering the next-generation sequencing
+  data}, Bioinformatics \textbf{28}, 3150--3152 (2012).
+
+\bibitem{hatcher2017} E.~L. Hatcher \emph{et al.},
+  \emph{Virus Variation Resource -- improved response to emergent viral
+  outbreaks}, Nucleic Acids Res. \textbf{45}, D482--D490 (2017).
+
+\bibitem{hockenberry2019} A.~J. Hockenberry, C.~O. Wilke,
+  \emph{Phylogenetic weighting does little to improve the accuracy of
+  evolutionary coupling analyses}, Entropy \textbf{21}, 1000 (2019).
+
+\bibitem{ictv2024} International Committee on Taxonomy of Viruses,
+  \emph{Orthomyxoviridae}, ICTV Report on Virus Taxonomy.
+  \url{https://ictv.global/report/chapter/orthomyxoviridae}
+
+\bibitem{katoh2002} K.~Katoh, K.~Misawa, K.~Kuma, T.~Miyata,
+  \emph{MAFFT: a novel method for rapid multiple sequence alignment based on
+  fast Fourier transform}, Nucleic Acids Res. \textbf{30}, 3059--3066 (2002).
+
+\bibitem{katoh2012} K.~Katoh, M.~C. Frith,
+  \emph{Adding unaligned sequences into an existing alignment using MAFFT and
+  LAST}, Bioinformatics \textbf{28}, 3144--3146 (2012).
+
+\bibitem{katoh2013} K.~Katoh, D.~M. Standley,
+  \emph{MAFFT multiple sequence alignment software version 7: improvements in
+  performance and usability}, Mol. Biol. Evol. \textbf{30}, 772--780 (2013).
+
+\bibitem{li2006} W.~Li, A.~Godzik,
+  \emph{Cd-hit: a fast program for clustering and comparing large sets of
+  protein or nucleotide sequences}, Bioinformatics \textbf{22}, 1658--1659
+  (2006).
+
+\bibitem{morcos2011} F.~Morcos, A.~Pagnani, B.~Lunt, A.~Bertolino,
+  D.~S. Marks, C.~Sander, R.~Zecchina, J.~N. Onuchic, T.~Hwa, M.~Weigt,
+  \emph{Direct-coupling analysis of residue coevolution captures native contacts
+  across many protein families}, Proc. Natl. Acad. Sci. USA \textbf{108},
+  E1293--E1301 (2011).
+  [Reweighting: 80\% identity threshold, weight $1/m_a$, $\Neff$ as the sum of
+  the weights, with only a weak dependence on the threshold.]
+
+\bibitem{nobusawa1991} E.~Nobusawa, T.~Aoyama, H.~Kato, Y.~Suzuki,
+  Y.~Tateno, K.~Nakajima,
+  \emph{Comparison of complete amino acid sequences and receptor-binding
+  properties among 13 serotypes of hemagglutinins of influenza A viruses},
+  Virology \textbf{182}, 475--485 (1991).
+
+\bibitem{olson2023} R.~D. Olson \emph{et al.},
+  \emph{Introducing the Bacterial and Viral Bioinformatics Resource Center
+  (BV-BRC): a resource combining PATRIC, IRD and ViPR}, Nucleic Acids Res.
+  \textbf{51}, D678--D689 (2023).
+
+\bibitem{osterhaus2000} A.~D.~M.~E. Osterhaus, G.~F. Rimmelzwaan,
+  B.~E.~E. Martina, T.~M. Bestebroer, R.~A.~M. Fouchier,
+  \emph{Influenza B virus in seals}, Science \textbf{288}, 1051--1053 (2000).
+
+\bibitem{rota1990} P.~A. Rota, T.~R. Wallis, M.~W. Harmon, J.~S. Rota,
+  A.~P. Kendal, K.~Nerome,
+  \emph{Cocirculation of two distinct evolutionary lineages of influenza type B
+  virus since 1983}, Virology \textbf{175}, 59--68 (1990).
+
+\bibitem{russell2004} R.~J. Russell \emph{et al.},
+  \emph{H1 and H7 influenza haemagglutinin structures extend a structural
+  classification of haemagglutinin subtypes}, Virology \textbf{325}, 287--296
+  (2004).
+
+\bibitem{shu2017} Y.~Shu, J.~McCauley,
+  \emph{GISAID: Global initiative on sharing all influenza data -- from vision
+  to reality}, Eurosurveillance \textbf{22}, 30494 (2017).
+
+\bibitem{skehel2000} J.~J. Skehel, D.~C. Wiley,
+  \emph{Receptor binding and membrane fusion in virus entry: the influenza
+  hemagglutinin}, Annu. Rev. Biochem. \textbf{69}, 531--569 (2000).
+
+\bibitem{squires2012} R.~B. Squires \emph{et al.},
+  \emph{Influenza Research Database: an integrated bioinformatics resource for
+  influenza research and surveillance}, Influenza Other Respir. Viruses
+  \textbf{6}, 404--416 (2012).
+
+\bibitem{steinegger2017} M.~Steinegger, J.~S\"oding,
+  \emph{MMseqs2 enables sensitive protein sequence searching for the analysis of
+  massive data sets}, Nat. Biotechnol. \textbf{35}, 1026--1028 (2017).
+
+\bibitem{steinegger2018} M.~Steinegger, J.~S\"oding,
+  \emph{Clustering huge protein sequence sets in linear time}, Nat. Commun.
+  \textbf{9}, 2542 (2018).
+
+\bibitem{tong2013} S.~Tong \emph{et al.},
+  \emph{New world bats harbor diverse influenza A viruses}, PLoS Pathog.
+  \textbf{9}, e1003657 (2013).
+
+\bibitem{wang2008} Q.~Wang, F.~Tian, X.~Feng, H.~Cheng, J.~Yan, G.~F. Gao,
+  \emph{Crystal structure of unliganded influenza B virus hemagglutinin},
+  J. Virol. \textbf{82}, 3011--3020 (2008).
+
+\bibitem{wiley1981} D.~C. Wiley, I.~A. Wilson, J.~J. Skehel,
+  \emph{Structural identification of the antibody-binding sites of Hong Kong
+  influenza haemagglutinin and their involvement in antigenic variation},
+  Nature \textbf{289}, 373--378 (1981).
+
+\bibitem{wilson1981} I.~A. Wilson, J.~J. Skehel, D.~C. Wiley,
+  \emph{Structure of the haemagglutinin membrane glycoprotein of influenza virus
+  at 3\,\AA{} resolution}, Nature \textbf{289}, 366--373 (1981).
+
+\end{thebibliography}
+
+\end{document}
