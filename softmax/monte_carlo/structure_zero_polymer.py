@@ -21,7 +21,10 @@ every chain (the expensive, GPU step) and then the two subcommands below.
                   conserved sites of the two, with its hypergeometric p-value.
 
 zero_polymer is an H3N2 hemagglutinin HA0 precursor (code/tests/references.py),
-so the H3N2 entropy is the natural counterpart of the sampled one. Its units
+so the H3N2 entropy is the natural counterpart of the sampled one. --h3n2 also
+takes the wider influenza A files built by ha_site_entropy.py (see
+ha_natural_runbook.md); sites with NaN entropy there, the mostly-gap columns of
+a cross-subtype alignment, are dropped from every comparison. Its units
 (log2 or ln) do not matter here: every comparison is by rank. One caveat for
 the single-chain low-T runs: a site with zero entropy there is a site the
 chain never changed in the kept window, which is evidence of constraint only
@@ -122,8 +125,10 @@ def load_h3n2(path, L):
 	if sites.min() == 1 and sites.max() == L:
 		sites = sites - 1
 	ent = pd.Series(df[ent_col].astype(float).values, index=sites.astype(int).values).sort_index()
-	print(f"H3N2 entropy: {path}, columns site={site_col!r} entropy={ent_col!r}, {len(ent)} sites "
-		f"(range {ent.min():.3f}-{ent.max():.3f})")
+	n_nan = int(ent.isna().sum())
+	print(f"natural entropy: {path}, columns site={site_col!r} entropy={ent_col!r}, {len(ent)} sites "
+		f"(range {ent.min():.3f}-{ent.max():.3f})"
+		+ (f", {n_nan} NaN (mostly-gap columns), left out of every comparison" if n_nan else ""))
 	if len(ent) != L or ent.index.min() != 0 or ent.index.max() != L - 1:
 		raise ValueError(f"{path}: expected one entropy per site 0..{L-1}, got {len(ent)} rows, "
 			f"sites {ent.index.min()}..{ent.index.max()}")
@@ -143,7 +148,13 @@ def site_entropy(sequences, L):
 
 
 def spearman(a, b):
-	return float(np.corrcoef(pd.Series(a).rank(), pd.Series(b).rank())[0, 1])
+	# Sites where either side is NaN are dropped: the natural entropy files of
+	# ha_site_entropy.py put NaN at the columns that are mostly gaps.
+	a, b = np.asarray(a, float), np.asarray(b, float)
+	ok = np.isfinite(a) & np.isfinite(b)
+	if ok.sum() < 3:
+		return float("nan")
+	return float(np.corrcoef(pd.Series(a[ok]).rank(), pd.Series(b[ok]).rank())[0, 1])
 
 
 def hypergeom_sf(k, M, n, N):
@@ -155,6 +166,10 @@ def conserved_overlap(model, natural, frac, seed=0):
 	# The frac most conserved sites of each (lowest entropy), their overlap,
 	# and its chance probability. Ties (many sites sit at exactly 0) are
 	# broken at random, not by site order, which would favour the N-terminus.
+	# Sites where the natural entropy is NaN are left out of both rankings.
+	model, natural = np.asarray(model, float), np.asarray(natural, float)
+	ok = np.isfinite(model) & np.isfinite(natural)
+	model, natural = model[ok], natural[ok]
 	L = len(model)
 	n = max(1, round(frac * L))
 	rng = np.random.default_rng(seed)
@@ -247,8 +262,9 @@ def plot_entropy(ent, h3n2, ref_seq, k_sites, cold, out_dir):
 	groups, names = [], []
 	for label in labels:
 		zero = ent[label].values < 0.05
-		groups += [h3n2.values[zero], h3n2.values[~zero]]
-		names += [f"{label}\nconserved\n(n={zero.sum()})", f"{label}\nother\n(n={(~zero).sum()})"]
+		ok = np.isfinite(h3n2.values)
+		groups += [h3n2.values[zero & ok], h3n2.values[~zero & ok]]
+		names += [f"{label}\nconserved\n(n={(zero & ok).sum()})", f"{label}\nother\n(n={(~zero & ok).sum()})"]
 	fig, ax = plt.subplots(figsize=(1.3 * len(names) + 1, 4))
 	ax.boxplot(groups, showfliers=False)
 	ax.set_xticks(range(1, len(names) + 1), names, fontsize=7)
@@ -376,12 +392,19 @@ def cmd_plot(args):
 		print(summary.to_string(index=False, float_format=lambda x: f"{x:.4g}"))
 	print(f"\nK-sites (entropy < {args.k_site_threshold} at every one of {cold}): {len(k_sites)}/{L}")
 	if len(k_sites) and h3n2 is not None:
-		natural = np.where(h3n2.values < args.h3n2_conserved)[0]
-		k, expected, p = set_overlap(k_sites, natural, L)
-		print(f"  H3N2-conserved sites (entropy < {args.h3n2_conserved}): {len(natural)}/{L}; "
-			f"overlap with the K-sites {k} (chance {expected:.1f}, P(>= {k}) = {p:.2g})")
-		print(f"  median H3N2 entropy: K-sites {np.median(h3n2.values[k_sites]):.3f}, "
-			f"other sites {np.median(np.delete(h3n2.values, k_sites)):.3f}")
+		# NaN sites (mostly-gap columns of a cross-subtype alignment) are out of
+		# the population, so the chance expectation uses the comparable sites only.
+		comparable = np.isfinite(h3n2.values)
+		L_cmp = int(comparable.sum())
+		natural = np.where(comparable & (h3n2.values < args.h3n2_conserved))[0]
+		k_cmp = [i for i in k_sites if comparable[i]]
+		k, expected, p = set_overlap(k_cmp, natural, L_cmp)
+		if L_cmp < L:
+			print(f"  {L - L_cmp}/{L} sites have no natural entropy (NaN) and are left out")
+		print(f"  natural-conserved sites (entropy < {args.h3n2_conserved}): {len(natural)}/{L_cmp}; "
+			f"overlap with the {len(k_cmp)} comparable K-sites {k} (chance {expected:.1f}, P(>= {k}) = {p:.2g})")
+		print(f"  median natural entropy: K-sites {np.nanmedian(h3n2.values[k_sites]):.3f}, "
+			f"other sites {np.nanmedian(np.delete(h3n2.values, k_sites)):.3f}")
 	print(f"\nOutputs in {args.out_dir}: summary_by_T.tsv, site_entropy_by_T.csv, metrics_boxplots.png, "
 		f"metrics_vs_T.png, site_entropy_profile.png" + (", site_entropy_vs_h3n2.png, "
 		"h3n2_entropy_by_sampled_class.png" if h3n2 is not None else ""))
@@ -402,7 +425,9 @@ def main():
 	q.add_argument("--runs", nargs="+", required=True, help="LABEL=DIR, a label may repeat to pool chains")
 	q.add_argument("--ref", default="zero_polymer")
 	q.add_argument("--baseline", default=None, help="CSV from decode-ref")
-	q.add_argument("--h3n2", default=None, help="per-site entropy of the H3N2 alignment (566 rows)")
+	q.add_argument("--h3n2", default=None,
+		help="per-site natural entropy, 566 rows: FASTA/H3N2/site_entropy_566.csv (human H3N2), or a "
+			"cross-subtype file from ha_site_entropy.py, whose NaN sites are left out of the comparisons")
 	q.add_argument("--cold", nargs="*", default=[], help="labels below the transition, for the K-sites")
 	q.add_argument("--burn-in-frac", type=float, default=0.5)
 	q.add_argument("--k-site-threshold", type=float, default=0.05)

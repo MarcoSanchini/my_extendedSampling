@@ -18,8 +18,10 @@ set -u
 #          the reference-started chains at T5, T12 (equil_lowT), T32 (equil_op
 #          0, 2) and all four T100 chains (mixed by 140k moves).
 # COLD     labels used for the K-sites (default "T5 T12").
-# H3N2     per-site entropy of the H3N2 alignment (default
-#          ../../FASTA/H3N2/site_entropy_566.csv, from the repo root FASTA/).
+# H3N2     per-site natural entropy (default ../../FASTA/H3N2/site_entropy_566.csv,
+#          from the repo root FASTA/: human H3N2). Point it at a cross-subtype
+#          file from ha_site_entropy.py for the wider comparison, e.g.
+#          H3N2=ha_natural/ha_group2_entropy_566.csv (see ha_natural_runbook.md).
 # STRIDE   decode every STRIDE-th post-burn-in checkpoint (default 10).
 # BURN_IN  fraction of each chain's checkpoints dropped (default 0.5).
 # NUM_STEPS structure-generation steps per decode (default 8; 1 understates
