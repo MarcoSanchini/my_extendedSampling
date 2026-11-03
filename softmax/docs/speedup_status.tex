@@ -60,7 +60,15 @@ A move picks a site uniformly, proposes a new residue from a softmax over the
 gradient-predicted energy change (drift $-\dt^2\nabla U/2M$, noise
 $\dt\sqrt{T/M}$; $\dt/\sqrt{T}$ is fixed across $T$, so the informedness is
 the same at every temperature), and accepts with the Metropolis--Hastings
-ratio. The energy $U$ is ESM3 cross-entropy. Every cost is GPU time on the
+ratio. The energy is the attention-map distance to the reference,
+\[
+U(s)=\sum_{i\le j}\bigl[\ln A_{ij}(s)-\ln A_{ij}(s_{\mathrm{ref}})\bigr]^2 ,
+\]
+where $A(s)$ is the head-averaged attention map of ESM3's last transformer
+layer for sequence $s$ alone (symmetrised, BOS/EOS removed; bf16). So
+$U(s_{\mathrm{ref}})=0$ and $U\ge0$; the structure cross-entropy and entropy
+terms are off ($\lambda_{\mathrm{am}}=1$, $\lambda_{\mathrm{sce}}=\lambda_S=0$).
+Every cost is GPU time on the
 RTX 4500 Ada (24\,GB, ``astaroth''), and the GPU is fully busy during a move.
 
 \begin{center}
