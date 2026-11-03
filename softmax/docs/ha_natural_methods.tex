@@ -366,6 +366,18 @@ that the conclusion is the same. If it is not the same, that is a finding about
 which kind of conservation the sampler is reproducing, and more interesting than
 either number alone.
 
+\paragraph{Correction, from the first real run.}
+The paragraph above says $\Neff$ comes out near the number of subtypes at
+$\theta = 0.8$, with each subtype contributing about~1. On the real 16-subtype
+data that is only true for the subtypes that have no close sister. Sister
+subtypes are themselves more than 80\% identical, so they merge into one
+cluster, and a small subtype next to a large one is swallowed: H15 (11 unique
+sequences, sister to H7 with 1\,712) came out with $\Neff = 0.0$, and H13 and
+H16 with 0.7 and 0.4. At $\theta = 0.8$ the entropy is therefore one vote per
+\emph{cluster of sister subtypes}, not per subtype, and the rarest subtypes drop
+out of the average altogether. That is a worse definition than intended, so
+prefer the $\theta = 0.95$ files and keep 0.8 only as a comparison.
+
 \section{What the answer should look like}
 
 A prediction worth writing down before looking, because it makes the result
