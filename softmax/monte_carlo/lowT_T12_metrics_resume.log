@@ -155,3 +155,6 @@ python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/r
 GPU free memory: 23990 MB   Running: 0 / 1 (soft cap)
   PID 9367  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/nsites_study/logs/equil_lowT_T12_chain0.log
 All launched. Waiting...
+PID 9367 finished (exit 0).
+Phase equil finished. Analyse with:
+  python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_nsites.py equil /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/nsites_study --equil-dir equil_lowT
