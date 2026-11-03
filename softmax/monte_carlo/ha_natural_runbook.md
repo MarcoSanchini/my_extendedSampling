@@ -87,15 +87,53 @@ had, plus `ref_aa, gap_fraction, n_eff`; a `.summary.tsv` with the per-subtype
 counts, N_eff and median identity to the reference; and a `.png` of the
 profile with the signal peptide, HA1 and HA2 spans marked.
 
-### One caveat on the weighting
+### The one real judgement call: the weighting threshold
 
-At 0.8 identity each subtype collapses to roughly one cluster, so N_eff comes
-out near the number of subtypes and the entropy is then almost entirely
-between-subtype variation. That is a defensible definition of "what the fold
-requires", but it is a choice, so build a second file at
-`--weight-identity 0.95` (within-subtype drift kept, each subtype weighted by
-how much it was sequenced) or at `0` (raw counts, i.e. sampling-biased towards
-H1, H3 and H5) and check that the K-site comparison does not depend on it.
+Every sequence gets the weight `w = 1 / m`, where `m` counts the sequences at
+identity `--weight-identity` or above to it, itself included, and the effective
+number of sequences is `N_eff = sum(w)`. This is the standard DCA correction
+(Morcos et al. 2011, PNAS 108:E1293: 80% threshold, weight `1/m`, `N_eff` the
+sum of the weights). A sequence with no close neighbours counts fully; each
+member of a cluster of 100 near-identical sequences counts 1/100, so the
+cluster counts about 1 in total.
+
+Now apply that at the default 0.8 to a set spanning subtypes. Within a subtype,
+sequences sit far above 80% identity to each other (human H3 is at 0.966 median
+identity to the reference), so they are all mutual neighbours. Between
+subtypes they are far below it (H1 against our H3 reference is about 0.44). So
+the neighbour sets essentially coincide with the subtypes: `m` is about the size
+of the sequence's own subtype, each subtype's weights sum to about 1, and
+
+    N_eff ~ the number of subtypes
+
+which is why the two-subtype test printed `N_eff = 2.0`. That looks broken and
+is not: it is exactly what the formula is for.
+
+The consequence is the part that matters. With these weights the entropy at a
+site is almost entirely **between**-subtype variation: it asks "do the
+different subtypes agree at this position?" and is nearly blind to variation
+inside a subtype, including all of human H3N2's antigenic drift. That is a
+defensible, arguably the right, definition of "what the fold requires", since
+the within-subtype signal is the part most contaminated by host-specific immune
+pressure and by how much each virus happened to be sequenced. But it is a
+choice, not a fact, so show that it does not decide the answer:
+
+- `--weight-identity 0.8` (default): one effective sequence per subtype, pure
+  between-subtype conservation.
+- `--weight-identity 0.95`: within-subtype drift kept, since only nearly
+  identical sequences count as neighbours, and each subtype contributes in
+  proportion to how much of it was sequenced. A middle course, and the closest
+  to what the original H3N2-only file measured.
+- `--weight-identity 0`: raw counts, so the entropy follows sequencing effort,
+  in practice H1, H3 and H5. The sampling-biased extreme, useful as a control.
+
+Build the file at 0.8 and at 0.95, run the K-site comparison on both, and
+report that the conclusion is the same. If it is not the same, that is a finding
+about which kind of conservation the sampler reproduces, and more interesting
+than either number on its own.
+
+`softmax/docs/ha_natural_methods.tex` works through this, and the rest of the
+method, with references.
 
 ## Checks already done in the cloud container
 

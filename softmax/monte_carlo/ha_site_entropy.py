@@ -360,9 +360,17 @@ def cmd_build(args):
 	print(f"\ntotal: {int(mult.sum())} sequences, {len(seqs)} unique, N_eff = {n_eff:.1f} "
 		f"(weights 1/neighbours at identity >= {args.weight_identity})")
 	if args.weight_identity >= 0.8 and len(files) > 1:
-		print("  N_eff near the number of subtypes means each subtype collapses to about one\n"
-			"  cluster at this identity: the entropy is then mostly between-subtype variation.\n"
-			"  Build a second file at --weight-identity 0.95 (or 0) to see the difference.")
+		print(f"  N_eff ({n_eff:.1f}) near the number of subtypes ({len(files)}) is expected, not a bug:\n"
+			f"  within a subtype every sequence is above {args.weight_identity} identity to the others, so they\n"
+			"  are all mutual neighbours and each subtype's weights sum to about 1, while between\n"
+			"  subtypes nothing is a neighbour. The entropy is then almost entirely BETWEEN-subtype\n"
+			"  variation: it asks whether the subtypes agree at a site and is nearly blind to drift\n"
+			"  inside one subtype. That is a defensible definition of what the fold requires, but it\n"
+			"  is a choice: rebuild at --weight-identity 0.95 (within-subtype drift kept, each subtype\n"
+			"  weighted by how much it was sequenced) and check the K-site comparison agrees.\n"
+			"  --weight-identity 0 is the other extreme, raw counts, so entropy follows sequencing\n"
+			"  effort (H1, H3, H5); useful only as a control. See ha_natural_runbook.md and\n"
+			"  ../docs/ha_natural_methods.tex.")
 	nan = table["entropy_bits"].isna()
 	print(f"sites with gap fraction > {args.max_gap}: {nan.sum()}/{L} (entropy NaN)"
 		+ (f": {', '.join(str(i) for i in np.where(nan)[0])} (0-based)" if 0 < nan.sum() <= 40 else ""))
