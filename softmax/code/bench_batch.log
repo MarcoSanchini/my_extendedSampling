@@ -1,0 +1,65 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 103679.42it/s]
+# device NVIDIA RTX 4500 Ada Generation, free 18944 MiB at start
+# reference: zero_polymer (L=566)
+
+state A: ../monte_carlo/nsites_study/equil_lowT/T12/chain0 at move 1000000
+
+=== (A) cost vs batch size ===
+batched U vs _exact_energy, 4 sequences: max relative difference 0.00e+00  (OK; bf16 batched kernels need not be bit-identical)
+
+no-grad forward (exact U), B sequences at once:
+   B    t [ms]   per seq [ms]   vs B single calls
+    1      60.4          60.4        0.99x
+    2     112.4          56.2        1.07x
+    4     228.0          57.0        1.05x
+    8     476.5          59.6        1.01x
+   19    OOM
+
+forward+backward (one-pass gradient), B sequences at once:
+   B    t [ms]   per seq [ms]   vs B single calls   peak MiB
+    1     162.0         162.0          0.94x           6340
+    2     304.4         152.2          1.00x           9905
+
+=== (B) GPU busy fraction, single-sequence forward ===
+/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/profiler/profiler.py:272: UserWarning: Warning: Profiler clears events at the end of each cycle.Only events from the current cycle will be reported.To keep events across cycles, set acc_events=True.
+  _warn_once(
+USDT:2026-11-03 10:20:14 25564:25564 ActivityProfilerController.cpp:415] profiler_start
+USDT:2026-11-03 10:20:15 25564:25564 ActivityProfilerController.cpp:455] profiler_stop
+wall 63.8 ms/forward, GPU kernels 117.0 ms/forward: busy 183%
+(under the profiler; other jobs on the card make both numbers larger)
+
+=== (C) exact single-site neighbourhood of A, 20 sites x 19 mutants ===
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/bench_batch.py", line 276, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/bench_batch.py", line 242, in main
+    dU += (batched_U(model, probs_of(mutants[k:k+CHUNK], device), ref_am) - U_A).tolist()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/bench_batch.py", line 98, in batched_U
+    am = batched_attention(model, probs)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/bench_batch.py", line 93, in batched_attention
+    attention = model.transformer.last_attention(x, None, affine, affine_mask, None)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 125, in last_attention
+    x = block(x, sequence_id, affine, affine_mask, chain_id)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 156, in forward
+    r2 = self.geom_attn(x, frames, frames_mask, sequence_id, chain_id)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/geom_attention.py", line 106, in forward
+    distance_term = (query_dist - key_dist).norm(dim=-1) / sqrt(3)
+                     ~~~~~~~~~~~^~~~~~~~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 17.54 GiB. GPU 0 has a total capacity of 23.52 GiB of which 1.85 GiB is free. Including non-PyTorch memory, this process has 21.28 GiB memory in use. Of the allocated memory 3.11 GiB is allocated by PyTorch, and 17.91 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
