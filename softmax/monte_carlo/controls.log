@@ -1,0 +1,63 @@
+Sequences:
+  P0DUB6[16:511]: 496 residues
+  P08659: 550 residues
+  P02768[25:609]: 585 residues
+  P0AEX9[27:396]: 370 residues
+  reference(zero_polymer): 566 residues
+  random0: 566 residues
+  random1: 566 residues
+Fetching 22 files: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 157197.08it/s]
+  P0DUB6[16:511] steps=8 repeat=0: Rg_ca=23.112  Rg_allatom=23.073  mean_plddt=0.899
+  P08659 steps=8 repeat=0: Rg_ca=23.584  Rg_allatom=23.599  mean_plddt=0.917
+  P02768[25:609] steps=8 repeat=0: Rg_ca=34.390  Rg_allatom=34.382  mean_plddt=0.772
+  P0AEX9[27:396] steps=8 repeat=0: Rg_ca=20.671  Rg_allatom=20.696  mean_plddt=0.931
+  reference(zero_polymer) steps=8 repeat=0: Rg_ca=45.041  Rg_allatom=44.975  mean_plddt=0.512
+  random0 steps=8 repeat=0: Rg_ca=45.715  Rg_allatom=45.745  mean_plddt=0.436
+  random1 steps=8 repeat=0: Rg_ca=29.916  Rg_allatom=29.914  mean_plddt=0.344
+  P0DUB6[16:511] steps=32 repeat=0: Rg_ca=23.284  Rg_allatom=23.246  mean_plddt=0.913
+  P08659 steps=32 repeat=0: Rg_ca=23.707  Rg_allatom=23.726  mean_plddt=0.931
+  P02768[25:609] steps=32 repeat=0: Rg_ca=31.049  Rg_allatom=31.046  mean_plddt=0.759
+  P0AEX9[27:396] steps=32 repeat=0: Rg_ca=20.571  Rg_allatom=20.597  mean_plddt=0.942
+  reference(zero_polymer) steps=32 repeat=0: Rg_ca=54.115  Rg_allatom=54.029  mean_plddt=0.604
+  random0 steps=32 repeat=0: Rg_ca=46.877  Rg_allatom=46.894  mean_plddt=0.539
+  random1 steps=32 repeat=0: Rg_ca=32.334  Rg_allatom=32.313  mean_plddt=0.366
+  P0DUB6[16:511] steps=128 repeat=0: Rg_ca=23.274  Rg_allatom=23.237  mean_plddt=0.914
+  P08659 steps=128 repeat=0: Rg_ca=23.678  Rg_allatom=23.694  mean_plddt=0.943
+  P02768[25:609] steps=128 repeat=0: Rg_ca=32.876  Rg_allatom=32.873  mean_plddt=0.789
+  P0AEX9[27:396] steps=128 repeat=0: Rg_ca=20.579  Rg_allatom=20.605  mean_plddt=0.940
+  reference(zero_polymer) steps=128 repeat=0: Rg_ca=70.549  Rg_allatom=70.422  mean_plddt=0.623
+  random0 steps=128 repeat=0: Rg_ca=46.087  Rg_allatom=46.105  mean_plddt=0.583
+  random1 steps=128 repeat=0: Rg_ca=88.160  Rg_allatom=88.145  mean_plddt=0.527
+
+                                    Rg_ca     Rg_allatom     mean_plddt    
+                                     mean std       mean std       mean std
+label                   num_steps                                          
+P02768[25:609]          8          34.390 NaN     34.382 NaN      0.772 NaN
+                        32         31.049 NaN     31.046 NaN      0.759 NaN
+                        128        32.876 NaN     32.873 NaN      0.789 NaN
+P08659                  8          23.584 NaN     23.599 NaN      0.917 NaN
+                        32         23.707 NaN     23.726 NaN      0.931 NaN
+                        128        23.678 NaN     23.694 NaN      0.943 NaN
+P0AEX9[27:396]          8          20.671 NaN     20.696 NaN      0.931 NaN
+                        32         20.571 NaN     20.597 NaN      0.942 NaN
+                        128        20.579 NaN     20.605 NaN      0.940 NaN
+P0DUB6[16:511]          8          23.112 NaN     23.073 NaN      0.899 NaN
+                        32         23.284 NaN     23.246 NaN      0.913 NaN
+                        128        23.274 NaN     23.237 NaN      0.914 NaN
+random0                 8          45.715 NaN     45.745 NaN      0.436 NaN
+                        32         46.877 NaN     46.894 NaN      0.539 NaN
+                        128        46.087 NaN     46.105 NaN      0.583 NaN
+random1                 8          29.916 NaN     29.914 NaN      0.344 NaN
+                        32         32.334 NaN     32.313 NaN      0.366 NaN
+                        128        88.160 NaN     88.145 NaN      0.527 NaN
+reference(zero_polymer) 8          45.041 NaN     44.975 NaN      0.512 NaN
+                        32         54.115 NaN     54.029 NaN      0.604 NaN
+                        128        70.549 NaN     70.422 NaN      0.623 NaN
+
+Saved -> nsites_study/structure/controls.csv
+  globule Rg estimate for P0DUB6[16:511] (496 aa): 23.3 A
+  globule Rg estimate for P08659 (550 aa): 24.2 A
+  globule Rg estimate for P02768[25:609] (585 aa): 24.8 A
+  globule Rg estimate for P0AEX9[27:396] (370 aa): 20.8 A
+  globule Rg estimate for reference(zero_polymer) (566 aa): 24.5 A
+  globule Rg estimate for random0 (566 aa): 24.5 A
