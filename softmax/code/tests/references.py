@@ -17,6 +17,12 @@ variable:
     REF=zero_polymer python tests/test_steepest_descent.py
     REF=zero_polymer_mature python tests/test_steepest_descent.py
     REF=polymer_one python tests/test_steepest_descent.py
+    REF=zero_polymer_ectodomain python tests/test_steepest_descent.py
+
+The structure-decode controls of 2026-11-04 are here too: the ectodomain, the
+glycine-linked trimer, the two random 566-mers, and (once
+tests/add_reference.py has been run on a machine with network) the four UniProt
+monomers that the decode does fold confidently.
 
 zero_polymer is a hemagglutinin HA0 precursor, which in the mature protein
 is cleaved into two chains (HA1 and HA2) held together by a single
@@ -209,6 +215,62 @@ def chain_index(chain: str, position: int) -> int:
 	return offset + position - 1
 
 
+# ---------------------------------------------------------------------------
+# Structure-decode controls (DEVLOG 2026-11-04). Used to find out whether the
+# ESM3 decode is confident on proteins it can fold: it is (pLDDT 0.76-0.94 on
+# four unrelated monomers), while zero_polymer sits with the random sequences
+# at 0.51-0.62. Add the four UniProt monomers with
+#     python tests/add_reference.py          (needs network; see that script)
+# The three below need no network, being built from ZERO_POLYMER or from a
+# fixed seed.
+# ---------------------------------------------------------------------------
+
+# The ectodomain alone, ZERO_POLYMER[16:529]: no signal peptide (0-15), no
+# transmembrane helix or cytoplasmic tail (529-565). 513 aa.
+ZERO_POLYMER_ECTODOMAIN = ZERO_POLYMER[16:529]
+
+# Three copies of the ectodomain joined by 25 glycines, 1589 aa: the way a
+# single-chain model is given a homotrimer (monte_carlo/decode_trimer.py).
+# HA is a trimer, so this is the closest ESM3-open comes to the real assembly.
+# It decoded to Rg 51.6 A and pLDDT 0.478 at 32 steps, against 42.1 A for
+# 2HMG's experimental assembly -- more compact than the monomer, no more
+# confident.
+TRIMER_LINKER = "G" * 25
+ZERO_POLYMER_TRIMER_G25 = TRIMER_LINKER.join([ZERO_POLYMER_ECTODOMAIN] * 3)
+
+# The two random 566-mers used as the pLDDT floor in that comparison, stored
+# verbatim so the numbers in the DEVLOG stay reproducible. They were drawn as
+#     rng = numpy.random.default_rng(0)
+#     "".join(rng.choice(list("ACDEFGHIKLMNPQRSTVWY"), 566))    # twice
+# (numpy 2.5.3). Decoded to pLDDT 0.34-0.58, i.e. the same range as the
+# zero_polymer reference itself.
+RANDOM_566_0 = (
+	"VPMGHACAETPWMPYRPMNWGTQAIVNASRTECVAMCGLKKAADAQMPGPSILYTYIQYQ"
+	"TQRIVDNRTMIHKLRVCWMIQNGHRNMHSIHVGFRPACITKSHFSVCCQHNEVLVSRFSC"
+	"NKYEWCPNVGWQVESWAIPDMPSWKKLYELAKWPHYPWALTSKLKMFSCKGRRRWWEDDR"
+	"YWQYVADVCYTYIDMYIVITFLHFVTDWYGKMQKDWQATREPMAWRHACSDMVWGCLTPC"
+	"QHFKVYDNSGGFFVFFDDSGTNVNSTCNLGLKLTTPRYPICNFNATWDTKAWWANTSKVT"
+	"DADIDCGQMGYRPWSDAVKCLIKKHLLYQSAHYGMVPVEMPHNYRHCEGVGTGQMYNWYR"
+	"PVYFNDDQARTEQIVWNNRNRESMSMHCMYANKAMSRYMNYHSEIQNEQNWPVYCCMLNR"
+	"HEQIWCRRGCHIYVFLNWDSWWGDNCDCFVQPYLAEGQIHDRALRMQSFCCNGERTYLMY"
+	"MEGYATPLTTKPSQLWVCMTCIMHQYISDLAKAVYCTRHSYSQHPSRFKIQKKMNDWKEA"
+	"KRGVEDIRGTAYATAKHYQYKMMSMW"
+)
+
+RANDOM_566_1 = (
+	"ELFVDRWGGSNNVCGIWCLLAKPKHNYDGWGQITNVPNLADRPNDTSMGTMYGITEHIRS"
+	"SKPNSDHRFGYEYVENHLPVWCEQFHNEYQFIPHPWIEGMNAPEPVESANQFSNKADRKR"
+	"YPRPHCPFDNPIPYSWCEINQQWDEHERKWGHGFTTGNVLWGFCPAENKEMYYDSLLITF"
+	"NRKPDRHCGIPMTKVAHEIWDEKVATSIALRTEQNTRSVQIWNTDEMRYCVKYIWFHWYC"
+	"DAWHMYTGITLEWNSYPRVYMNQYLTGSDVHPDICMYFGSEEFNMMAQHSTDGPEKIPRQ"
+	"HNTRSMNLPGLFMQSQEEIYAQGMCTVLSLRGHELRSTEQGIINNNCWVINEPVWVCARE"
+	"EPCSEPPEKDYMDTRFHCNNCELCRSRTTIKGEGRIYNQMSIPPVQNNCIHPHNLHMHFM"
+	"YPPPVIKNNYEKFTNCEVKWCGMAILFEWYMVLYAPAMVTFQEFKWQKFSNMQEWGLNED"
+	"LAPKFSHPFHPRPLGYWSGTNGSENECKKMAECSAVFHHMINIRYDDGFRRNYVYKNKGH"
+	"RFDQMGHVAGNQNNSPPVSEYDWDYC"
+)
+
+
 REFERENCES = {
 	"protein_g": PROTEIN_G,
 	"zero_polymer": ZERO_POLYMER,
@@ -223,6 +285,12 @@ REFERENCES = {
 	# Disulfide calibration controls -- see the block above KNOWN_DISULFIDES.
 	"bpti": BPTI,
 	"crambin": CRAMBIN,
+	# Structure-decode controls and derived zero_polymer forms (see the block
+	# above RANDOM_566_0).
+	"zero_polymer_ectodomain": ZERO_POLYMER_ECTODOMAIN,
+	"zero_polymer_trimer_g25": ZERO_POLYMER_TRIMER_G25,
+	"random566_0": RANDOM_566_0,
+	"random566_1": RANDOM_566_1,
 }
 
 # References carrying a chainbreak. Deliberately kept OUT of REFERENCES: the
