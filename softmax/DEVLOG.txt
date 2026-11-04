@@ -5845,3 +5845,106 @@ sampling itself (U, Hd plateaus) is unaffected.
 Next: T=12 to 1M, structural metrics rerun on it; T=5 resumed to 580k; K-site
 comparison against a multi-subtype HA entropy profile.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-11-03 -- 2026-11-04 -- T=12 to 1M, T=5 not equilibrated, and the decode diagnosed: ESM3-open folds 500-residue monomers, but not HA
+--------------------------------------------------------------------------------
+T=12, equil_lowT/T12/chain0, 580000 -> 1000000 moves (data.dat.gz ~60 MB):
+
+  moves        acc     U      Hd (sd)
+  400-500k     0.052   6818   377 (7)
+  500-600k     0.056   6816   381 (8)
+  600-700k     0.054   6800   378 (6)
+  700-800k     0.052   6980   386 (11)
+  800-900k     0.052   6969   391 (5)
+  900k-1M      0.053   7110   388 (7)
+
+Quasi-plateau with a slow residual drift: Hd slope 0.28 +- 0.10 per 10k over
+500k-1M (outside 2 SE of 0), -0.06 +- 0.21 over the last 200k. U and Hd both
+creep AWAY from the reference, i.e. slow entropy gain, not a return. The chain
+does mix at site level: 26666 accepted mutations over 513 of the 566 sites
+between 500k and 1M, so the per-site entropies of that window are not frozen
+leftovers of the start. Reported as "quasi-equilibrated, Hd ~385 +- 7"; one
+chain, so still no R-hat.
+
+T=5, equil_lowT/T5/chain0, resumed to 580000: NOT equilibrated.
+
+  moves        local acc   U     Hd (sd)
+  0-40k        0.0011      74    5 (3)
+  200-240k     0.0029      255   20 (2)
+  360-400k     0.0034      399   30 (3)
+  480-520k     0.0036      419   36 (2)
+  540-580k     0.0046      478   38 (3)
+
+Hd slope 0.51 +- 0.06 per 10k over the last 280k, the same over the last 120k:
+still climbing, nowhere near flat. Cumulative acceptance (the acc_rate column)
+is 0.00308 = 1786/580000; the LOCAL rate has roughly tripled from 0.0016 to
+0.0046 but is still ~11x below T=12's 0.052. Only 1062 accepted mutations over
+147 distinct sites in the last 290k moves, so most sites have never changed and
+a per-site entropy at T=5 would measure "never tried" rather than "constrained".
+At 0.5 Hd per 10k a plateau near T=12's 380 is millions of moves away: T=5 is
+the case the speed-up work is for, not a run to finish on the current sampler.
+A usable sub-crossover point sooner would be T=8-10.
+
+Decode diagnosis (monte_carlo/decode_controls.py, PRs #24/#25, and
+monte_carlo/decode_trimer.py, PR #26). The 2026-11-02 conclusion -- that
+Rg/pLDDT cannot test "the sampled sequences keep the fold" -- rested on an
+untested assumption: that this decode path WOULD be confident on a protein it
+can fold. Both halves are now measured, same model, same generate() path, same
+metrics.
+
+(a) Monomers of comparable length (mature chain from UniProt's CHAIN feature):
+
+  protein                             aa    Rg_ca (8/32/128 steps)  pLDDT      globule est
+  P0AEX9 E. coli MBP                  370   20.7 / 20.6 / 20.6      0.93-0.94  20.8
+  P0DUB6 human salivary amylase       496   23.1 / 23.3 / 23.3      0.90-0.91  23.3
+  P08659 firefly luciferase           550   23.6 / 23.7 / 23.7      0.92-0.94  24.2
+  P02768 human serum albumin          585   34.4 / 31.0 / 32.9      0.76-0.79  24.8
+  zero_polymer reference (HA0)        566   45.0 / 54.1 / 70.5      0.51-0.62  24.5
+  random sequences                    566   30-46 / 32-47 / 46-88   0.34-0.58  24.5
+
+So the decoder is NOT weak at this length: it folds four unrelated monomers
+with pLDDT 0.76-0.94 and an Rg within ~1 A of the compact-globule estimate
+(albumin is larger because it is genuinely elongated, and is the one control
+below 0.8). HA0 sits with the RANDOM sequences, not with the folded proteins.
+
+A useful by-product: step-count stability tracks confidence. The four controls
+move by <0.2 A between 8 and 128 steps, while HA0 goes 45 -> 70 A and one
+random sequence 30 -> 88 A. An Rg that depends on the step count is a symptom
+of a decode the model is not confident about, not a parameter to tune.
+
+(b) The trimer. zero_polymer's ectodomain (16:529, 513 aa) x3 joined by 25
+glycines, 1589 residues, linker residues excluded from every metric:
+
+  decode                Rg_ca   Rg per protomer   pLDDT   linker pLDDT
+  monomer, 8 steps      53.9    53.9              0.398   -
+  trimer, 8 steps       50.6    46.6 (44.4-49.3)  0.417   0.132
+  monomer, 32 steps     60.2    60.2              0.527   -
+  trimer, 32 steps      51.6    49.0 (47.9-51.0)  0.478   0.173
+  experimental 2HMG     42.1    38.7 (HA1+HA2)    -       -
+
+(2HMG's first biological assembly: 3 x (328 + 175) CA = 1509 residues, each
+protomer Rg 38.71 A, the whole trimer 42.10 A.) The quaternary context does
+make it more compact -- 60 -> 49 A per protomer, against 38.7 experimental --
+but not more confident: pLDDT stays 0.42-0.48, and at 32 steps the trimer is
+WORSE than the monomer. The linkers decode at pLDDT 0.13-0.17, i.e. they are
+ignored as intended and are not what lowers the mean.
+
+Conclusion: the failure is specific to HA, not a property of this decoder or of
+566-residue sequences. ESM3-open, sequence only, does not predict HA as a
+monomer or as a glycine-linked trimer, and the HA0 reference's pLDDT (0.51-0.62)
+is barely above random sequences (0.34-0.58). Since the decoder itself is
+competent, what is missing is the quaternary context, which a real multimer
+predictor (AF2-multimer via ColabFold, Boltz-1, Chai-1) models natively -- so
+such a predictor is likely to help here, unlike more ESM3 step counts.
+Caveat for later: reusing the reference MSA for sampled sequences at ~33%
+identity biases predictions toward the native fold.
+
+Scripts: decode_controls.py (--entries ACCESSION[:START:END], --fasta,
+--no-mature, --num-steps, --n-random) and decode_trimer.py (--residues,
+--n-chains, --linker, --pdb). Both need network (UniProt, RCSB), so they run on
+the GPU machine. P04745 was dropped from the amylase default: UniProt demerged
+it into P0DUB6/P0DTE7/P0DTE8 and now answers 200 with an empty body, which only
+surfaced as "ESMProteinError has no attribute structure" from deep inside
+model.generate(); an empty or very short sequence is now refused up front.
+--------------------------------------------------------------------------------
