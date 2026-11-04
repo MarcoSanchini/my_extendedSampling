@@ -23,8 +23,19 @@ What to decode (pick one; default --ref zero_polymer):
                         above; the PDB keeps the ORIGINAL numbering, so residue
                         17 is still called 17 in the file
 
+A G-linked trimer, as in decode_trimer.py (that script builds the sequence on
+the fly; it is NOT stored in references.py):
+  --copies N            decode N copies of the (sliced) sequence ...
+  --linker L            ... joined by L glycines (default 25, as decode_trimer.py)
+The copies are written as chains A, B, C, ..., each with the original residue
+numbering; the glycine linkers are decoded but NOT written to the file (they
+are not part of HA and would only clutter the comparison). Their mean pLDDT is
+printed.
+
 Usage (on the GPU machine, from softmax/monte_carlo):
     python decode_to_pdb.py --ref zero_polymer --num-steps 32 --out structure_compare/ha0_pred.pdb
+    python decode_to_pdb.py --ref zero_polymer --residues 17:529 --copies 3 --linker 25 \
+        --num-steps 32 --out structure_compare/ha_trimer_pred.pdb
     python decode_to_pdb.py --uniprot P0AEX9 --num-steps 32 --out structure_compare/mbp_pred.pdb
 """
 import argparse
@@ -47,24 +58,36 @@ AA1TO3 = {
 }
 
 
-def write_pdb(path, sequence, positions, mask, bfactor, atom_types, first_resseq=1, chain="A"):
+def write_pdb(path, sequence, positions, mask, bfactor, atom_types, first_resseq=1, chain="A",
+		segments=None):
 	"""Plain PDB writer: one ATOM line per present atom (atom37 layout), the
 	B-factor column set per residue. Written by hand so the B-factor is certain
-	to be what we put there, whatever the ESM helper does with confidence."""
+	to be what we put there, whatever the ESM helper does with confidence.
+
+	positions (L, 37, 3) and mask (L, 37) as returned by
+	decode_structure_with_mask; bfactor (L,) is usually pLDDT on 0-100;
+	atom_types is custom_esm.utils.residue_constants.atom_types.
+	segments: optional list of (chain id, start, end, first_resseq) to write
+	residues start..end-1 as that chain; residues in no segment are skipped.
+	Default: the whole sequence as one chain."""
+	if segments is None:
+		segments = [(chain, 0, len(sequence), first_resseq)]
 	lines, serial = [], 1
-	for i, aa in enumerate(sequence):
-		resname = AA1TO3.get(aa, "UNK")
-		for a in np.where(mask[i])[0]:
-			name = atom_types[a]
-			x, y, z = positions[i, a]
-			if not np.isfinite([x, y, z]).all():
-				continue
-			# PDB atom-name column: 4-letter names start in column 13, shorter in 14
-			padded = name if len(name) == 4 else f" {name:<3s}"
-			lines.append(f"ATOM  {serial:5d} {padded} {resname} {chain}{first_resseq + i:4d}    "
-				f"{x:8.3f}{y:8.3f}{z:8.3f}{1.0:6.2f}{bfactor[i]:6.2f}          {name[0]:>2s}")
-			serial += 1
-	lines += ["TER", "END"]
+	for ch, a0, a1, first in segments:
+		for i in range(a0, a1):
+			resname = AA1TO3.get(sequence[i], "UNK")
+			for a in np.where(mask[i])[0]:
+				name = atom_types[a]
+				x, y, z = positions[i, a]
+				if not np.isfinite([x, y, z]).all():
+					continue
+				# PDB atom-name column: 4-letter names start in column 13, shorter in 14
+				padded = name if len(name) == 4 else f" {name:<3s}"
+				lines.append(f"ATOM  {serial:5d} {padded} {resname} {ch}{first + i - a0:4d}    "
+					f"{x:8.3f}{y:8.3f}{z:8.3f}{1.0:6.2f}{bfactor[i]:6.2f}          {name[0]:>2s}")
+				serial += 1
+		lines.append("TER")
+	lines.append("END")
 	os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
 	with open(path, "w") as fh:
 		fh.write("\n".join(lines) + "\n")
@@ -78,6 +101,8 @@ def main():
 	src.add_argument("--seq", default=None, help="raw amino-acid sequence")
 	ap.add_argument("--residues", default=None, help="keep residues START:END (1-based, inclusive)")
 	ap.add_argument("--no-mature", action="store_true", help="with --uniprot: the whole entry, not the mature chain")
+	ap.add_argument("--copies", type=int, default=1, help="decode this many copies joined by glycine linkers")
+	ap.add_argument("--linker", type=int, default=25, help="glycines between copies (with --copies > 1)")
 	ap.add_argument("--num-steps", type=int, default=32, help="structure-generation steps (as in decode-ref)")
 	ap.add_argument("--seed", type=int, default=0)
 	ap.add_argument("--out", required=True, help="output .pdb path")
@@ -101,6 +126,14 @@ def main():
 			raise SystemExit(f"--residues {s}:{e} outside 1:{len(seq)}")
 		seq, first = seq[s - 1:e], first + s - 1
 		label = f"{label}[{s}:{e}]"
+	unit, n_unit = seq, len(seq)
+	segments, pos = [], 0
+	for c in range(args.copies):
+		segments.append((chr(ord("A") + c), pos, pos + n_unit, first))
+		pos += n_unit + args.linker
+	if args.copies > 1:
+		seq = ("G" * args.linker).join([unit] * args.copies)
+		label = f"{args.copies} x {label} joined by G{args.linker}"
 	print(f"Decoding {label}: {len(seq)} residues, num_steps={args.num_steps}", flush=True)
 
 	import torch
@@ -127,11 +160,19 @@ def main():
 	else:
 		pl = plddt.float().numpy()
 		pl = pl * 100.0 if pl.max() <= 1.0 else pl   # store on the usual 0-100 scale
-	write_pdb(args.out, seq, pos, msk, pl, atom_types, first_resseq=first)
+	write_pdb(args.out, seq, pos, msk, pl, atom_types, segments=segments)
 
-	print(f"  mean pLDDT {pl.mean():.1f} / 100   Rg_ca {radius_of_gyration(positions[:, CA_IDX, :]):.2f} A")
-	print(f"  residues with pLDDT >= 70: {np.mean(pl >= 70):.0%}   < 50: {np.mean(pl < 50):.0%}")
-	print(f"Saved -> {args.out}  (pLDDT 0-100 in the B-factor column, residues numbered from {first})")
+	keep = np.concatenate([np.arange(a, b) for _, a, b, _ in segments])
+	print(f"  mean pLDDT {pl[keep].mean():.1f} / 100   Rg_ca {radius_of_gyration(positions[keep, CA_IDX, :]):.2f} A"
+		+ ("  (protomers only)" if args.copies > 1 else ""))
+	print(f"  residues with pLDDT >= 70: {np.mean(pl[keep] >= 70):.0%}   < 50: {np.mean(pl[keep] < 50):.0%}")
+	if args.copies > 1:
+		link = np.setdiff1d(np.arange(len(seq)), keep)
+		for ch, a, b, _ in segments:
+			print(f"  chain {ch}: mean pLDDT {pl[a:b].mean():.1f}, Rg_ca {radius_of_gyration(positions[a:b, CA_IDX, :]):.2f} A")
+		print(f"  glycine linkers (not written): mean pLDDT {pl[link].mean():.1f}")
+	print(f"Saved -> {args.out}  (pLDDT 0-100 in the B-factor column; chains "
+		f"{', '.join(s[0] for s in segments)}, residues numbered from {first})")
 
 
 if __name__ == "__main__":

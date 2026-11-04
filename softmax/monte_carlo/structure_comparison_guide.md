@@ -112,6 +112,26 @@ tail -f structure_compare/decode_ha0.log          # Ctrl-C stops watching, not t
 It prints the mean pLDDT and Rg and ends with `Saved -> ...`. `--num-steps` is the same knob as in
 `decode_controls.py` (8, 32, 128 were used there).
 
+### 3b'. The G-linked trimer (GPU)
+
+The trimer is not in `references.py`; `decode_trimer.py` builds it on the fly
+from `zero_polymer` (residues 17-529, i.e. the python slice `16:529`, three
+copies joined by 25 glycines, 1589 residues). `decode_to_pdb.py` does the same
+and writes the copies as chains A, B, C (linkers decoded but not written):
+
+```bash
+nohup python -u decode_to_pdb.py --ref zero_polymer --residues 17:529 --copies 3 --linker 25 \
+    --num-steps 32 --out structure_compare/ha_trimer_pred.pdb \
+    > structure_compare/decode_trimer.log 2>&1 &
+python compare_structures.py --pred structure_compare/ha_trimer_pred.pdb \
+    --exp structure_compare/2HMG.pdb --out-prefix structure_compare/trimer_vs_2HMG
+```
+
+`compare_structures.py` puts 2HMG's three HA1/HA2 pairs on the three predicted
+chains and tries every order of the copies, keeping the lowest RMSD. The full
+walk-through, including calling `write_pdb()` from your own code, is in
+`softmax/docs/structure_comparison.pdf`.
+
 ### 3c. Optional positive control: a protein ESM3 does fold
 
 Maltose-binding protein (UniProt P0AEX9, mature chain, 370 aa) decoded at pLDDT

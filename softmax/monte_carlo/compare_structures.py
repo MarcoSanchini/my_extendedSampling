@@ -15,6 +15,14 @@ that picks HA1 (chain A) and HA2 (chain B) of the first protomer and skips the
 other two copies, which would only map onto the same predicted residues again.
 Use --exp-chains A,B to choose by hand.
 
+A PREDICTED TRIMER (decode_to_pdb.py --copies 3) is written as chains A, B, C,
+one per protomer. All predicted chains are used by default; residues already
+paired are hidden from the next alignment, so 2HMG's HA1/HA2 pairs land on
+three different predicted protomers instead of all on the first. Which
+experimental protomer goes with which predicted one is arbitrary, so every
+assignment of identical predicted chains is tried and the lowest RMSD kept
+(the others are printed). Use --pred-chain A to compare a single protomer.
+
 WHAT IT REPORTS, and what each number means in plain words:
 
   sequence identity   of the aligned residues. Far below 100% means the
@@ -132,10 +140,12 @@ def match_chains(pred_seq, exp_chains, wanted=None, min_identity=0.3, min_new=10
 		if ch not in exp_chains:
 			raise SystemExit(f"chain {ch!r} not in the experimental file (has {sorted(exp_chains)})")
 		eseq = seq_of(exp_chains[ch])
-		mapping, n_match, _ = align(eseq, pred_seq)   # mapping[exp i] -> pred j
-		aligned = [(j, i) for i, j in enumerate(mapping) if j is not None]
-		ident = n_match / len(aligned) if aligned else 0.0
-		new = [(j, i) for j, i in aligned if j not in taken]
+		# hide residues already paired ('-' never matches), so a second HA1
+		# chain aligns to the second predicted protomer, not the first again
+		masked = "".join("-" if j in taken else a for j, a in enumerate(pred_seq))
+		mapping, _, _ = align(eseq, masked)   # mapping[exp i] -> pred j
+		new = [(j, i) for i, j in enumerate(mapping) if j is not None and j not in taken]
+		ident = sum(1 for j, i in new if pred_seq[j] == eseq[i]) / len(new) if new else 0.0
 		if not wanted and (ident < min_identity or len(new) < min_new):
 			skipped.append((ch, len(eseq), ident, len(new)))
 			continue
@@ -160,6 +170,39 @@ def core_fit(P, Q, cutoff, cycles):
 		keep = new
 		R, t = kabsch(P[keep], Q[keep])
 	return R, t, keep
+
+
+def best_assignment(pairs, pred, P_of, Q):
+	"""Try every way of swapping predicted chains that have identical
+	sequences (the protomers of a predicted trimer) and keep the one with the
+	lowest global CA RMSD. Returns (pairs, list of (labels, rmsd))."""
+	import itertools
+	chains = []
+	for r in pred:
+		if r["chain"] not in chains:
+			chains.append(r["chain"])
+	if len(chains) < 2 or len(chains) > 6:
+		return pairs, []
+	start = {c: next(k for k, r in enumerate(pred) if r["chain"] == c) for c in chains}
+	seqs = {c: "".join(r["aa"] for r in pred if r["chain"] == c) for c in chains}
+	group = [c for c in chains if seqs[c] == seqs[chains[0]]]
+	if len(group) < 2:
+		return pairs, []
+	results = []
+	for perm in itertools.permutations(group):
+		swap = dict(zip(group, perm))
+		new = []
+		for j, c, i in pairs:
+			pc = pred[j]["chain"]
+			if pc in swap:
+				j = start[swap[pc]] + (j - start[pc])
+			new.append((j, c, i))
+		P = np.array([P_of(j) for j, _, _ in new])
+		Rm, tm_ = kabsch(P, Q)
+		rmsd = float(np.sqrt(((P @ Rm.T + tm_ - Q) ** 2).sum(1).mean()))
+		results.append((rmsd, perm, new))
+	results.sort(key=lambda x: x[0])
+	return results[0][2], [("".join(p), r) for r, p, _ in results]
 
 
 def transform_pdb(src, dst, R, t):
@@ -228,7 +271,7 @@ def plot(prefix, idx, dev, pl_resseq, pl, chain_of):
 		return
 	fig, ax = plt.subplots(figsize=(11, 3.6))
 	ax.plot(idx, dev, lw=1, color="#3a5fa0", label="CA deviation after fit")
-	ax.set_xlabel("predicted residue number")
+	ax.set_xlabel("predicted residue, position in the file (chains one after another)")
 	ax.set_ylabel("CA deviation (A)", color="#3a5fa0")
 	if pl is not None:
 		ax2 = ax.twinx()
@@ -250,7 +293,8 @@ def main():
 	ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	ap.add_argument("--pred", required=True, help="predicted PDB (e.g. from decode_to_pdb.py)")
 	ap.add_argument("--exp", required=True, help="experimental PDB (e.g. 2HMG.pdb from rcsb.org)")
-	ap.add_argument("--pred-chain", default=None, help="default: the longest chain")
+	ap.add_argument("--pred-chain", default=None,
+		help="comma-separated predicted chains to use; default: all (a trimer from decode_to_pdb.py is A,B,C)")
 	ap.add_argument("--exp-chains", default=None, help="comma-separated, e.g. A,B; default: automatic")
 	ap.add_argument("--cutoff", type=float, default=2.0, help="A, outlier cutoff for the core RMSD")
 	ap.add_argument("--cycles", type=int, default=5, help="outlier-rejection cycles for the core RMSD")
@@ -258,30 +302,40 @@ def main():
 	args = ap.parse_args()
 
 	pchains = read_chains(args.pred)
-	pch = args.pred_chain or max(pchains, key=lambda c: len(pchains[c]))
-	pred = pchains[pch]
+	pch = [c.strip() for c in args.pred_chain.split(",")] if args.pred_chain else sorted(pchains)
+	for c in pch:
+		if c not in pchains:
+			raise SystemExit(f"predicted chain {c!r} not in {args.pred} (has {sorted(pchains)})")
+	pred = [dict(r, chain=c) for c in pch for r in pchains[c]]
 	pseq = seq_of(pred)
 	echains = read_chains(args.exp)
 	wanted = [c.strip() for c in args.exp_chains.split(",")] if args.exp_chains else None
 
-	print(f"predicted:    {args.pred}  chain {pch}, {len(pred)} residues")
+	print(f"predicted:    {args.pred}  chains " + ", ".join(f"{c} ({len(pchains[c])})" for c in pch))
 	print(f"experimental: {args.exp}  chains " +
 		", ".join(f"{c} ({len(r)})" for c, r in sorted(echains.items())))
 
 	pairs, used, skipped = match_chains(pseq, echains, wanted)
 	if len(pairs) < 4:
 		raise SystemExit("fewer than 4 residues could be paired; check the chains (--exp-chains)")
+	Q0 = np.array([echains[c][i]["ca"] for _, c, i in pairs])
+	pairs, assignments = best_assignment(pairs, pred, lambda j: pred[j]["ca"], Q0)
+	pairs.sort()
 	print("\n--- which experimental chains were used ---")
 	for ch, n, ident in used:
 		js = [j for j, c, _ in pairs if c == ch]
-		print(f"  chain {ch}: {n} residues paired with predicted {pred[min(js)]['resseq']}-"
-			f"{pred[max(js)]['resseq']}, sequence identity {ident:.0%}")
+		a, b = pred[min(js)], pred[max(js)]
+		print(f"  chain {ch}: {n} residues paired with predicted {a['chain']}{a['resseq']}-"
+			f"{b['chain']}{b['resseq']}, sequence identity {ident:.0%}")
 	for ch, n, ident, new in skipped:
-		why = "low identity" if ident < 0.3 else "covers residues already paired (a symmetry copy)"
+		why = "only matches predicted residues already paired (a symmetry copy)" if new < 10 else "low identity"
 		print(f"  chain {ch} ({n} residues) skipped: {why}")
 	n_id = sum(1 for j, c, i in pairs if pseq[j] == echains[c][i]["aa"])
 	print(f"  total: {len(pairs)} of {len(pred)} predicted residues paired "
 		f"({len(pairs) / len(pred):.0%}), identity {n_id / len(pairs):.0%}")
+	if assignments:
+		print("  predicted protomers tried in every order; RMSD per order (best first): "
+			+ ", ".join(f"{lab} {r:.2f} A" for lab, r in assignments))
 	unpaired = len(pred) - len(pairs)
 	if unpaired:
 		print(f"  {unpaired} predicted residues have no experimental partner (not in the crystal, "
@@ -339,7 +393,7 @@ def main():
 	for o in order:
 		j, c, i = pairs[o]
 		pl = f"   pLDDT {pl_all[j]:5.1f}" if pl_all is not None else ""
-		print(f"  predicted {pseq[j]}{pred[j]['resseq']:<4d} = exp chain {c} "
+		print(f"  predicted {pred[j]['chain']} {pseq[j]}{pred[j]['resseq']:<4d} = exp chain {c} "
 			f"{echains[c][i]['aa']}{echains[c][i]['resseq']:<4d} {dev[o]:7.2f} A{pl}")
 
 	if args.out_prefix:
@@ -349,10 +403,10 @@ def main():
 		dev_of = {j: dev[n] for n, (j, _, _) in enumerate(pairs)}
 		exp_of = {j: (c, echains[c][i]) for j, c, i in pairs}
 		with open(f"{args.out_prefix}_per_residue.csv", "w") as fh:
-			fh.write("pred_resseq,aa,plddt,exp_chain,exp_resseq,exp_aa,ca_deviation\n")
+			fh.write("pred_chain,pred_resseq,aa,plddt,exp_chain,exp_resseq,exp_aa,ca_deviation\n")
 			for j, r in enumerate(pred):
 				c, e = exp_of.get(j, ("", None))
-				fh.write(f"{r['resseq']}{r['icode']},{r['aa']},"
+				fh.write(f"{r['chain']},{r['resseq']}{r['icode']},{r['aa']},"
 					f"{'' if pl_all is None else f'{pl_all[j]:.2f}'},{c},"
 					f"{'' if e is None else str(e['resseq']) + e['icode']},{'' if e is None else e['aa']},"
 					f"{'' if j not in dev_of else f'{dev_of[j]:.3f}'}\n")
@@ -361,8 +415,10 @@ def main():
 		print(f"  wrote {args.out_prefix}_per_residue.csv")
 		print(f"  wrote {args.out_prefix}_view.pml   (PyMOL; run it from its own folder)")
 		print(f"  wrote {args.out_prefix}_view.cxc   (ChimeraX; run it from its own folder)")
-		idx = np.array([pred[j]["resseq"] for j, _, _ in pairs])
-		plot(args.out_prefix, idx, dev, [r["resseq"] for r in pred], pl_all, [c for _, c, _ in pairs])
+		# x axis: position in the predicted file (1, 2, ...), since a trimer
+		# repeats residue numbers in each chain
+		idx = np.array([j + 1 for j, _, _ in pairs])
+		plot(args.out_prefix, idx, dev, np.arange(1, len(pred) + 1), pl_all, [c for _, c, _ in pairs])
 
 
 if __name__ == "__main__":
