@@ -1,0 +1,12 @@
+# 2026-11-04 09:05:18  moves=580000  resume=True
+T 5.0
+n_sites 1
+dt 0.0451744
+grad_mode one_pass
+seed 100
+start resume
+wall_total_s 81762.3
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 6350
+peak_reserved_MB 8616
+
