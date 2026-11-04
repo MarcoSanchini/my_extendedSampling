@@ -16,7 +16,7 @@ decode-ref.
 The defaults are monomers of 396-609 residues, each with experimental
 structures in the PDB and no obligate partner:
 
-  P04745  human salivary alpha-amylase
+  P0DUB6  human salivary alpha-amylase AMY1A
   P08659  firefly luciferase (Photinus pyralis)
   P02768  human serum albumin
   P0AEX9  E. coli maltose-binding protein
@@ -61,7 +61,7 @@ for p in (MONTE_CARLO_DIR, CODE_DIR, CUSTOMS_DIR, os.path.join(CODE_DIR, "tests"
 import numpy as np
 import pandas as pd
 
-DEFAULT_ENTRIES = ["P04745", "P08659", "P02768", "P0AEX9"]
+DEFAULT_ENTRIES = ["P0DUB6", "P08659", "P02768", "P0AEX9"]
 UNIPROT_URL = "https://rest.uniprot.org/uniprotkb/{}.fasta"
 UNIPROT_JSON = "https://rest.uniprot.org/uniprotkb/{}.json?fields=ft_chain"
 CANONICAL = "ACDEFGHIKLMNPQRSTVWY"
@@ -92,7 +92,14 @@ def read_fasta(path):
 def fetch_uniprot(accession):
 	with urllib.request.urlopen(UNIPROT_URL.format(accession), timeout=60) as r:
 		text = r.read().decode()
-	return "".join(line.strip() for line in text.splitlines() if not line.startswith(">"))
+	seq = "".join(line.strip() for line in text.splitlines() if not line.startswith(">"))
+	if not seq:
+		# UniProt answers 200 with an empty body for an accession that has been
+		# deleted or demerged (P04745 was split into P0DUB6/P0DTE7/P0DTE8), and a
+		# zero-length sequence only fails much later, inside model.generate().
+		raise SystemExit(f"{accession}: UniProt returned no sequence; the accession is "
+			f"probably obsolete or demerged. Check https://www.uniprot.org/uniprotkb/{accession}")
+	return seq
 
 
 def mature_range(accession):
@@ -130,6 +137,8 @@ def resolve(entry, local, mature=False):
 		if not 1 <= start <= end <= len(seq):
 			raise SystemExit(f"{acc}: range {start}:{end} outside 1:{len(seq)}")
 		seq, label = seq[start - 1:end], f"{acc}[{start}:{end}]"
+	if len(seq) < 30:
+		raise SystemExit(f"{label}: {len(seq)} residues is too short to decode")
 	bad = sorted(set(seq) - set(CANONICAL))
 	if bad:
 		# U (selenocysteine), X and friends have no token here; the sampler's
@@ -186,7 +195,12 @@ def main():
 				torch.manual_seed(args.seed + r)
 				eprot = ExtendedProtein(sequence=seq, requires_grad=False, device=device)
 				eprot.expand()
-				positions, mask, plddt = decode_structure_with_mask(sampler.model, eprot, config)
+				try:
+					positions, mask, plddt = decode_structure_with_mask(sampler.model, eprot, config)
+				except AttributeError as exc:
+					# model.generate() returns an ESMProteinError instead of raising.
+					print(f"  {label} steps={num_steps}: decode failed ({exc}); skipped", flush=True)
+					continue
 				row = [label, radius_of_gyration(positions[:, CA_IDX, :]), radius_of_gyration(positions[mask]),
 					plddt.mean().item() if plddt is not None else float("nan"), num_steps, r, len(seq)]
 				rows.append(row)
