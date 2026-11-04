@@ -1,0 +1,6 @@
+nohup: ignoring input
+Decoding zero_polymer: 566 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 203248.21it/s]
+  mean pLDDT 60.4 / 100   Rg_ca 54.12 A
+  residues with pLDDT >= 70: 27%   < 50: 25%
+Saved -> structure_compare/ha0_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)

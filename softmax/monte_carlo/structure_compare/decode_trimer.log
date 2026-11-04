@@ -1,0 +1,10 @@
+nohup: ignoring input
+Decoding 3 x zero_polymer[17:529] joined by G25: 1589 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 18015.36it/s]
+  mean pLDDT 47.8 / 100   Rg_ca 51.64 A  (protomers only)
+  residues with pLDDT >= 70: 13%   < 50: 52%
+  chain A: mean pLDDT 47.7, Rg_ca 47.91 A
+  chain B: mean pLDDT 49.8, Rg_ca 47.91 A
+  chain C: mean pLDDT 46.0, Rg_ca 51.01 A
+  glycine linkers (not written): mean pLDDT 17.3
+Saved -> structure_compare/ha_trimer_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, B, C, residues numbered from 17)
