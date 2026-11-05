@@ -5948,3 +5948,48 @@ it into P0DUB6/P0DTE7/P0DTE8 and now answers 200 with an empty body, which only
 surfaced as "ESMProteinError has no attribute structure" from deep inside
 model.generate(); an empty or very short sequence is now refused up front.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-11-05 -- Choosing the next sampling target: criteria, shortlist, and what the K-site comparison needs from a natural alignment
+--------------------------------------------------------------------------------
+Open decision, nothing run. Written up in docs/target_selection.md.
+
+After the 2026-11-04 decode verdict (ESM3-open folds 500-residue monomers at
+pLDDT 0.91-0.93 but not HA, monomer or glycine-linked trimer), the target has to
+change. Marco's criteria: keep the chain LONG (>= ~350 aa), because that is
+where the gradient-informed move is expected to pay off and a small domain would
+not test what the thesis builds; and weigh how much natural sequence variation
+exists, because the K-site comparison needs a deep alignment. Added to that: one
+test decode of the reference must reach pLDDT ~0.9 before any sampling run.
+Ubiquitin, lysozyme and the SH3/WW domains are therefore out.
+
+Shortlist: neuraminidase catalytic head (~390 of ~470 aa, the supervisor's
+suggestion and first choice; a self-contained beta-propeller unlike HA's stalk,
+but a tetramer in vivo, so the decode check comes first; 2BAT, 3TI6/3B7E;
+segment 6, so ha_site_entropy.py applies while the repo's segment-4 FASTA sets
+do not cover it); soluble bacterial cytochrome P450 (414 aa P450cam or ~455 aa
+BM3 heme domain, the best non-viral option); luciferase (550 aa, decode already
+0.93, family large but divergent); MBP (370 aa, 0.93, needs no new data);
+protein kinase catalytic domain (~290 aa, deep family but short).
+
+The substantive point, expanded in the doc: a viral alignment is nearly gap-free
+and trivially mappable onto reference columns, but its sequences descend from one
+trajectory and its variation is partly antibody-driven, so the profile mixes
+foldability with that virus's history -- the objection already hit with H3N2,
+where the agreement sat in the head and RBS while the quaternary-constrained
+stalk looked variable. Widening to a whole subtype group fixes the pressure but
+not the statistics: at the 0.8 redundancy weighting each subtype collapses to
+about one cluster, so N_eff falls to the number of subtypes and cannot support a
+20-letter distribution over 566 columns. Large protein families invert this:
+near-independent variation and N_eff in the thousands, at the price of real
+indels and a gap-handling cutoff, with sites in long insertions dropping out of
+the comparison. Since the effective energy contains no function, no immunity and
+no phylogeny, the matching natural reference is the diverse family.
+
+Practical: report N_eff per column rather than raw counts; for NA build the
+profile across subtypes and hosts, cross-checking the weighting at 0.95; vary the
+gap cutoff; and check the natural entropy against burial and contact number,
+which is the part of the profile the energy can be expected to reproduce.
+
+Next: Marco picks the target; then one decode of its reference for criterion 3.
+--------------------------------------------------------------------------------
