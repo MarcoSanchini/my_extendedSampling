@@ -6039,4 +6039,3 @@ Then the decision: accept a target whose predicted structure is only partly
 correct (the effective energy is defined on that structure, so its minimum need
 not be the native fold), or move to the next candidate, cytochrome P450.
 
-Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
