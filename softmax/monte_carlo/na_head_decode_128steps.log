@@ -1,0 +1,6 @@
+nohup: ignoring input
+Decoding na_head_2hu0: 385 residues, num_steps=128
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 215092.51it/s]
+  mean pLDDT 74.0 / 100   Rg_ca 19.49 A
+  residues with pLDDT >= 70: 64%   < 50: 5%
+Saved -> structure_compare/na_head_pred_128steps.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)

@@ -1,0 +1,40 @@
+nohup: ignoring input
+predicted:    structure_compare/na_head_pred_128steps.pdb  chains A (385)
+experimental: ../code/bridge_test/pdb/na_head_2HU0_monomer.pdb  chains A (385)
+
+--- which experimental chains were used ---
+  chain A: 385 residues paired with predicted A1-A385, sequence identity 100%
+  total: 385 of 385 predicted residues paired (100%), identity 100%
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues     13.17 A   over 385 residues
+  CA RMSD, core                     1.11 A   over 120 residues (31%) after 5 cycles at 2.0 A
+  residues within  1 A:   2%   2 A:  16%   4 A:  43%   8 A:  60%
+  TM-score (approx., lower bound)  0.583   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  74.0 over all 385 residues,  74.0 over the paired ones
+  fraction  >=90: 10%   70-90: 54%   50-70: 31%   <50: 5%
+  Spearman(pLDDT, CA deviation) -0.78   (negative: low confidence where the prediction is wrong)
+    pLDDT  0-50 :   19 residues, mean CA deviation  15.64 A
+    pLDDT 50-70 :  118 residues, mean CA deviation  18.00 A
+    pLDDT 70-90 :  208 residues, mean CA deviation   5.27 A
+    pLDDT 90-100:   40 residues, mean CA deviation   1.95 A
+
+--- largest CA deviations ---
+  predicted A S352  = exp chain A S435    41.22 A   pLDDT  56.8
+  predicted A T353  = exp chain A T436    39.54 A   pLDDT  57.2
+  predicted A E351  = exp chain A E433    39.34 A   pLDDT  58.0
+  predicted A K350  = exp chain A K432    37.62 A   pLDDT  60.1
+  predicted A I354  = exp chain A I437    36.74 A   pLDDT  59.4
+  predicted A R348  = exp chain A R430    35.75 A   pLDDT  56.4
+  predicted A V1    = exp chain A V83     35.36 A   pLDDT  74.2
+  predicted A K2    = exp chain A K84     35.33 A   pLDDT  74.5
+  predicted A P349  = exp chain A P431    35.13 A   pLDDT  57.4
+  predicted A G347  = exp chain A G429    34.98 A   pLDDT  52.9
+
+  wrote structure_compare/na_head_vs_2HU0_128steps_superposed.pdb
+  wrote structure_compare/na_head_vs_2HU0_128steps_per_residue.csv
+  wrote structure_compare/na_head_vs_2HU0_128steps_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/na_head_vs_2HU0_128steps_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/na_head_vs_2HU0_128steps_per_residue.png
