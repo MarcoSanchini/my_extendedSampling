@@ -5993,3 +5993,90 @@ which is the part of the profile the energy can be expected to reproduce.
 
 Next: Marco picks the target; then one decode of its reference for criterion 3.
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+2026-11-06 -- NA head decode gate: better than HA, but the propeller does not close
+--------------------------------------------------------------------------------
+Marco ran the gate on astaroth (commit 6912b9a, logs na_head_decode.log and
+na_head_cmp.log). na_head_2hu0, 385 aa, --num-steps 32, against the supplied
+2HU0 chain A.
+
+  mean pLDDT                67.7 / 100   (9% >=90, 40% 70-90, 33% 50-70, 17% <50)
+  Rg_ca predicted           19.72 A
+  Rg_ca experimental        18.88 A      (2.2*N^0.38 estimate: 21.1 A)
+  CA RMSD, all 385 paired   14.93 A
+  CA RMSD, core             1.17 A over 116 residues (30%)
+  TM-score (lower bound)    0.563
+  Spearman(pLDDT, deviation) -0.80
+  sequence identity         100% (same construct, as intended)
+
+Reading: this is NOT the 0.9 gate, but it is a different failure from HA0's.
+The size is right (19.7 vs 18.9 A experimental, and HA0 was 45-70 against 38.7),
+a 116-residue core superposes at 1.17 A, TM is above the 0.5 same-fold line even
+as a lower bound, and the confidence is honest -- Spearman -0.80, with the
+pLDDT<50 residues averaging 24.6 A of error and the pLDDT>90 ones 2.1 A. The
+decoder knows which parts it got wrong.
+
+Where the error sits (RMSD per 20-residue block of the prediction):
+
+  1-20    29.6     101-240  2.8-4.7     301-320  15.5
+  21-100  5.2-11.6                      321-340  32.6
+                                        341-385  21.5-41.1
+
+So the middle of the chain is roughly right and both ENDS are thrown far away,
+which trimming does not rescue: dropping 30 residues from each end still leaves
+12.1 A. In a six-bladed beta-propeller the N- and C-terminal strands close the
+ring on the same blade (the "velcro" closure), so the natural hypothesis is that
+the prediction builds most of the blades but fails to close the propeller, which
+would displace both ends together exactly as seen. That is a hypothesis from the
+deviation profile, not something confirmed by eye yet -- the pinwheel check in
+the viewer is what would confirm it.
+
+Next, cheap: --num-steps 8 and 128 to different --out names. HA0's signature was
+instability (Rg 45 -> 70). If NA's numbers improve with more steps the decode is
+merely under-sampled; if they sit at ~0.68 the fold really is only half right.
+Then the decision: accept a target whose predicted structure is only partly
+correct (the effective energy is defined on that structure, so its minimum need
+not be the native fold), or move to the next candidate, cytochrome P450.
+
+
+--------------------------------------------------------------------------------
+2026-11-06 (later) -- NA head, step-count check: the same wrong structure every time
+--------------------------------------------------------------------------------
+Marco ran --num-steps 8 and 128 (commit 0d6dd55) to settle whether the 32-step
+result was merely under-sampled.
+
+  steps   pLDDT   Rg_ca    RMSD all   core RMSD / residues   TM     Spearman
+    8     65.8    19.62    13.59      1.17 / 117 (30%)       0.592   -0.61
+   32     67.7    19.72    14.93      1.17 / 116 (30%)       0.563   -0.80
+  128     74.0    19.49    13.17      1.11 / 120 (31%)       0.583   -0.78
+
+  (experimental Rg_ca 18.88 A)
+
+It is not under-sampling. Across a 16-fold range of step counts the geometry is
+the same: Rg within 0.23 A, the core fixed at 1.1-1.2 A over 116-120 residues,
+TM 0.56-0.59, global RMSD 13-15 A with no trend. The per-residue error profiles
+correlate at 0.83-0.90 between step counts, i.e. the same regions are wrong by
+the same amounts -- the per-20-residue table has 101-240 at 3-5 A and
+301-385 at 13-29 A in all three runs. The decoder converges on one specific
+structure that is about 30% right.
+
+What more steps do change is confidence: pLDDT 65.8 -> 74.0, with the fraction
+below 50 falling from 26% to 5%, while the error stays put. That is the opposite
+of reassuring; the model becomes more certain about a structure that is still
+13 A from the crystal. (At 128 steps the largest deviations also move off the
+artificial N-terminus onto 430-437 in experimental numbering, so the ends are
+not the whole story.)
+
+By the HA0 criterion -- step-count instability was HA0's tell, Rg 45 -> 70 --
+NA passes stability and still fails accuracy. Both readings point the same way:
+this is a reproducible, confidently-held, partly-wrong fold, which is worse for
+us than a noisy one, because the effective energy would be defined on it and its
+minimum would sit at the wrong structure with no symptom to warn us.
+
+Verdict: NA does not pass the gate. Recommendation to Marco: move to the next
+candidate, soluble bacterial cytochrome P450 (P450cam 414 aa / BM3 heme domain
+~455 aa), and run the same gate there before anything else. The open-ring
+hypothesis for WHY NA fails is still unconfirmed and now matters less, though it
+would be worth one look in the viewer, since a predictor that cannot close a
+beta-propeller is a fact worth knowing about our tooling.

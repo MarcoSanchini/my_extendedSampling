@@ -241,12 +241,29 @@ every B-factor at 1.00 and writes pLDDT to a separate \file{.plddt.tsv}.
 
 \section{Looking at the structures}
 
-astaroth has no screen. Copy the folder to your laptop (from the laptop; replace
-the user name and path):
+A viewer draws 3D graphics, so it needs a graphical session on the machine that
+runs it. astaroth has a screen, so pick by where you are sitting.
+
+\paragraph{At astaroth's keyboard} install the viewer there and open the files in
+place. Nothing to copy.
+
+\paragraph{Over ssh} either render the picture on astaroth and copy back only the
+image, which needs no graphics session at all,
 \begin{lstlisting}[language=bash]
-scp -r user@astaroth:~/my_extendedSampling/softmax/monte_carlo/structure_compare .
+chimerax --offscreen --exit --cmd "open trimer_vs_2HMG_view.cxc ; \
+    save view.png width 2000 supersample 3"
+\end{lstlisting}
+(\texttt{--offscreen} needs a build with OSMesa, which the Linux builds normally
+have; if yours does not it says so immediately), or copy the folder to your
+laptop and look at it there (run this from the laptop; replace the login and
+path):
+\begin{lstlisting}[language=bash]
+scp -r marco.sanchini@astaroth:~/my_project/extendedSampling/softmax/monte_carlo/structure_compare .
 cd structure_compare
 \end{lstlisting}
+Copy the whole folder, not single files: the \file{.cxc} and \file{.pml} scripts
+refer to the others by relative path. \texttt{ssh -X} also works but forwards
+every frame, so it is only good for checking that a file opens.
 
 \paragraph{ChimeraX} (free for academic use,
 \url{https://www.cgl.ucsf.edu/chimerax/download.html}). Quickest: \emph{File
@@ -302,6 +319,62 @@ to colour by the B-factor column.
   \item \textbf{Step count}: report \file{-{}-num-steps} with every number.
   \item \textbf{Strain}: the identity line says how close 2HMG's sequence is to
         ours; mention it if it is well below 100\%.
+\end{itemize}
+
+\section{The neuraminidase candidate}\label{sec:na}
+
+HA0 failed the decode gate, so the sampling target is being chosen again
+(\file{target\_selection.md}). The first candidate is the influenza neuraminidase
+catalytic head, and unlike HA it comes with an experimental structure of the
+construct itself: 2HU0 chain A, supplied by the supervisor stripped to one chain,
+kept at \file{code/bridge\_test/pdb/na\_head\_2HU0\_monomer.pdb}. Its sequence is
+\file{references.py} key \file{na\_head\_2hu0}, 385\,aa.
+
+Everything that made HA awkward is absent here: one predicted chain against one
+experimental chain, no cleavage, no trimer, and no waters or ligands left in the
+file, so nothing has to be stripped and \file{matchmaker \#2 to \#1} needs no
+chain selector.
+\begin{lstlisting}[language=bash]
+python decode_to_pdb.py --ref na_head_2hu0 --num-steps 32 \
+    --out structure_compare/na_head_pred.pdb
+
+python compare_structures.py \
+    --pred structure_compare/na_head_pred.pdb \
+    --exp ../code/bridge_test/pdb/na_head_2HU0_monomer.pdb \
+    --out-prefix structure_compare/na_head_vs_2HU0
+\end{lstlisting}
+
+How to read it. A mean pLDDT near $0.9$ with a low RMSD means the candidate
+passes the gate and sampling can start on it; a pLDDT near HA0's $0.5$ means drop
+it and move to the next candidate. The picture carries information the numbers do
+not: a six-bladed $\beta$-propeller is a pinwheel, so rotate until you look down
+the central axis and six four-stranded sheets should fan out around it. A
+prediction that is compact but shows no pinwheel has failed even if its RMSD is
+not catastrophic. Run \file{-{}-num-steps 8} and \file{128} as well, to different
+\file{-{}-out} names: a confident decode barely moves between step counts, while
+HA0 wandered from $R_g$ 45 to 70\,\AA.
+
+Traps specific to this pair, on top of the list above:
+\begin{itemize}
+  \item \textbf{Numbering}: the crystal runs 83--468 with five gaps totalling six
+        unobserved loop residues and insertion codes 169A and 412A--D, while the
+        prediction runs 1--385. The offset is not a constant 82 and changes at
+        every gap, so take the pairing from
+        \file{na\_head\_vs\_2HU0\_per\_residue.csv} and never compute it by hand.
+  \item \textbf{The reference is the observed sequence}: those six residues are
+        missing from \file{na\_head\_2hu0}, which closes the gaps up. Acceptable
+        for the gate, since all six are in loops, but before any sampling run or
+        K-site comparison replace it from 2HU0's SEQRES
+        (\file{pdb\_to\_reference.py -{}-use-seqres} on the unstripped file) or
+        from the strain's UniProt entry (\file{add\_reference.py}).
+  \item \textbf{A tetramer, but not HA's problem}: native NA is a homotetramer
+        with a Ca$^{2+}$ site on the fourfold axis, so a monomer prediction is
+        missing partners here too. The difference is that the head's fold is
+        entirely intra-chain, a self-contained $\beta$-propeller, whereas HA2's
+        long helix exists only as part of the trimeric coiled coil. Expect the
+        interface surface to be the loosest part of the prediction, and flag
+        interface residues before the per-site entropy comparison: they are
+        conserved for quaternary reasons a single-chain energy cannot see.
 \end{itemize}
 
 \end{document}
