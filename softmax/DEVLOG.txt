@@ -6039,3 +6039,44 @@ Then the decision: accept a target whose predicted structure is only partly
 correct (the effective energy is defined on that structure, so its minimum need
 not be the native fold), or move to the next candidate, cytochrome P450.
 
+
+--------------------------------------------------------------------------------
+2026-11-06 (later) -- NA head, step-count check: the same wrong structure every time
+--------------------------------------------------------------------------------
+Marco ran --num-steps 8 and 128 (commit 0d6dd55) to settle whether the 32-step
+result was merely under-sampled.
+
+  steps   pLDDT   Rg_ca    RMSD all   core RMSD / residues   TM     Spearman
+    8     65.8    19.62    13.59      1.17 / 117 (30%)       0.592   -0.61
+   32     67.7    19.72    14.93      1.17 / 116 (30%)       0.563   -0.80
+  128     74.0    19.49    13.17      1.11 / 120 (31%)       0.583   -0.78
+
+  (experimental Rg_ca 18.88 A)
+
+It is not under-sampling. Across a 16-fold range of step counts the geometry is
+the same: Rg within 0.23 A, the core fixed at 1.1-1.2 A over 116-120 residues,
+TM 0.56-0.59, global RMSD 13-15 A with no trend. The per-residue error profiles
+correlate at 0.83-0.90 between step counts, i.e. the same regions are wrong by
+the same amounts -- the per-20-residue table has 101-240 at 3-5 A and
+301-385 at 13-29 A in all three runs. The decoder converges on one specific
+structure that is about 30% right.
+
+What more steps do change is confidence: pLDDT 65.8 -> 74.0, with the fraction
+below 50 falling from 26% to 5%, while the error stays put. That is the opposite
+of reassuring; the model becomes more certain about a structure that is still
+13 A from the crystal. (At 128 steps the largest deviations also move off the
+artificial N-terminus onto 430-437 in experimental numbering, so the ends are
+not the whole story.)
+
+By the HA0 criterion -- step-count instability was HA0's tell, Rg 45 -> 70 --
+NA passes stability and still fails accuracy. Both readings point the same way:
+this is a reproducible, confidently-held, partly-wrong fold, which is worse for
+us than a noisy one, because the effective energy would be defined on it and its
+minimum would sit at the wrong structure with no symptom to warn us.
+
+Verdict: NA does not pass the gate. Recommendation to Marco: move to the next
+candidate, soluble bacterial cytochrome P450 (P450cam 414 aa / BM3 heme domain
+~455 aa), and run the same gate there before anything else. The open-ring
+hypothesis for WHY NA fails is still unconfirmed and now matters less, though it
+would be worth one look in the viewer, since a predictor that cannot close a
+beta-propeller is a fact worth knowing about our tooling.
