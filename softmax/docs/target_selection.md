@@ -125,3 +125,48 @@ UniProt, NCBI, BV-BRC and EBI are all refused by the cloud container's egress
 proxy, so every sequence fetch for a new target has to run on the GPU machine:
 `tests/add_reference.py` for single chains, `ha_site_entropy.py fetch` for the
 influenza sets.
+
+## Status: neuraminidase is in references.py (2026-11-06)
+
+The supervisor supplied a stripped single-chain structure of the NA head, 2HU0
+chain A, kept at `code/bridge_test/pdb/na_head_2HU0_monomer.pdb`. Its sequence
+is in `references.py` as `na_head_2hu0` (385 aa) and in `FASTA/na_head_2hu0.fa`,
+extracted by the new `code/tests/pdb_to_reference.py`, which needs no network.
+
+What the structure says: 385 residues observed, numbered 83-468, one chain, no
+ligands left in the file, five gaps totalling six unobserved loop residues
+(306->308, 333->335, 336->339, 392->394, 433->435) and insertion codes 169A and
+412A-D. The reference string closes those gaps, which is fine for the decode
+gate because they are all in loops, but it is NOT the construct's true sequence:
+before any sampling run or entropy comparison, replace it from 2HU0's SEQRES
+(`pdb_to_reference.py --use-seqres` on the unstripped file) or from the strain's
+UniProt entry (`add_reference.py`), either of which needs network access.
+
+The gate, criterion 3, on the GPU machine from `softmax/monte_carlo`:
+
+    nohup python -u decode_to_pdb.py --ref na_head_2hu0 --num-steps 32 \
+        --out structure_compare/na_head_pred.pdb > na_head_decode.log 2>&1 &
+
+    nohup python -u compare_structures.py \
+        --pred structure_compare/na_head_pred.pdb \
+        --exp ../code/bridge_test/pdb/na_head_2HU0_monomer.pdb \
+        --out-prefix structure_compare/na_head_vs_2HU0 > na_head_cmp.log 2>&1 &
+
+This is a better gate than HA ever got, because the experimental monomer is in
+hand: pLDDT and RMSD against the real structure, not just pLDDT and Rg. Read it
+as pLDDT ~0.9 with a low RMSD means the target is usable; pLDDT near HA's 0.5
+means drop it and move to cytochrome P450.
+
+Step-count stability is the cheap second signal from the HA work: a confident
+decode moves by less than ~0.2 A between 8 and 128 steps, so
+
+    for s in 8 32 128; do python -u decode_to_pdb.py --ref na_head_2hu0 \
+        --num-steps $s --out structure_compare/na_head_pred_$s.pdb; done
+
+distinguishes a real fold from a decode that merely looks compact once.
+
+If the gate passes, the next decision is the one in the previous section: the
+natural profile for the K-site comparison should come from NA across subtypes
+and host species rather than one human lineage, and the tetramer interface and
+the Ca2+ site on the fourfold axis need flagging, because they are conserved for
+quaternary reasons a single-chain energy cannot see.

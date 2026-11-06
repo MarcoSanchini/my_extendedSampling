@@ -271,6 +271,42 @@ RANDOM_566_1 = (
 )
 
 
+# ---------------------------------------------------------------------------
+# Influenza A neuraminidase, catalytic head -- CANDIDATE TARGET, 2026-11-06
+# ---------------------------------------------------------------------------
+# Supplied by the supervisor as a stripped single-chain .pdb (2HU0, influenza A
+# N1 neuraminidase), kept at code/bridge_test/pdb/na_head_2HU0_monomer.pdb.
+# Candidate replacement for zero_polymer: HA0 does not decode (pLDDT 0.51-0.62
+# as a monomer, 0.42-0.48 as a G25 trimer, against 0.91-0.93 for single-chain
+# controls of the same length), and the NA head is a six-bladed beta-propeller
+# whose fold is entirely intra-chain, unlike HA2's trimeric coiled coil. See
+# docs/target_selection.md. Native NA is a homotetramer, so the gate before any
+# sampling run is a decode of this sequence alone reaching pLDDT ~0.9.
+#
+# CAVEAT, read before using this for anything but that gate: this string is
+# what the crystal OBSERVED, so the six unobserved loop residues listed below
+# are missing and the string joins across them. For the decode gate that is
+# acceptable (the gaps are in loops). For sampling, and for any comparison
+# against an alignment, replace it with the construct-true sequence -- from
+# 2HU0's SEQRES (pdb_to_reference.py --use-seqres on the unstripped file) or
+# from the strain's UniProt entry via add_reference.py -- both of which need a
+# machine with network access.
+#
+# na_head_2hu0, 385 aa.
+# Read from na_head_2HU0_monomer.pdb chain A (observed residues only), numbered 83-468.
+# Insertion codes in the file: 169A, 412A, 412B, 412C, 412D.
+# UNOBSERVED residues, closed up in this string: 306->308 (1), 333->335 (1), 336->339 (2), 392->394 (1), 433->435 (1).
+# Added by tests/pdb_to_reference.py.
+NA_HEAD_2HU0 = (
+	"VKLAGNSSLCPINGWAVYSKDNSIRIGSKGDVFVIREPFISCSHLECRTFFLTQGALLND"
+	"KHSNGTVKDRSPHRTLMSCPVGEAPSPYNSRFESVAWSASACHDGTSWLTIGISGPDNGA"
+	"VAVLKYNGIITDTIKSWRNNILRTQESECACVNGSCFTVMTDGPSNGQASYKIFKMEKGK"
+	"VVKSVELDAPNYHYEECSCYPNAGEITCVCRDNWHGSNRPWVSFNQNLEYQIGYICSGVF"
+	"GDNPRPNDGTGSCGPVSSNGAYGVKGFSFKYGNGVWIGRTKSTNSRSGFEMIWDPNGWTE"
+	"TDSSFSVKQDIVAITDWSGYSGSFVQHPELTGLDCIRPCFWVELIRGRPKESTIWTSGSS"
+	"ISFCGVNSDTVGWSWPDGAELPFTI"
+)
+
 REFERENCES = {
 	"protein_g": PROTEIN_G,
 	"zero_polymer": ZERO_POLYMER,
@@ -291,6 +327,7 @@ REFERENCES = {
 	"zero_polymer_trimer_g25": ZERO_POLYMER_TRIMER_G25,
 	"random566_0": RANDOM_566_0,
 	"random566_1": RANDOM_566_1,
+	"na_head_2hu0": NA_HEAD_2HU0,
 }
 
 # References carrying a chainbreak. Deliberately kept OUT of REFERENCES: the
