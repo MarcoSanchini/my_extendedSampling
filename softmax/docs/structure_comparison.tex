@@ -400,11 +400,12 @@ Everything from here on was written for the supervisor meeting. In one page:
         (section~\ref{sec:p450}). It is 414 residues, monomeric, soluble, and
         from a very large sequence family, so it satisfies every criterion we
         set.
-  \item \textbf{A measured threshold, instead of a guessed one.} Expressing both
+  \item \textbf{A measured threshold, instead of a guessed one.} Expressing the
         results in the contact-map energy of equation~\eqref{eq:energy} gives
-        $E = 0.11$ for P450cam and $E = 0.60$ for neuraminidase. That is the
-        first calibration of what ``good'' means in the units the energy uses
-        (section~\ref{sec:gate-number}).
+        $E = 0.11$ for P450cam, $E = 0.18$ for protein~G (the paper's own target,
+        which is predicted well but is short) and $E = 0.60$ for neuraminidase.
+        So ``good'' is $E \approx 0.1$--0.2 and ``failed'' is above 0.5, with the
+        caveat that short chains sit higher (section~\ref{sec:gate-number}).
   \item \textbf{One thing to be clear about with the supervisor.} The energy the
         sampler actually minimises never looks at a crystal structure: it
         compares the model's output for a candidate sequence with the model's
@@ -796,23 +797,42 @@ correct and not a failure.
 We now have the calibration that was missing when the gate was first written:
 
 \begin{center}
-\begin{tabular}{lrrr}
+\begin{tabular}{lrrrr}
 \toprule
- & P450cam (passes) & NA head (fails) & HA0 (fails) \\
+ & protein~G & P450cam & NA head & HA0 \\
+ & (the paper's target) & (passes) & (fails) & (fails) \\
 \midrule
-mean pLDDT                   & 0.92  & 0.68  & 0.51--0.62 \\
-$E$ against the crystal      & 0.109 & 0.596 & not measured \\
-crystal contacts recovered   & 88\%  & 39\%  & not measured \\
+length                       & 56 aa & 414 aa & 385 aa & 566 aa \\
+mean pLDDT                   & 0.92  & 0.92  & 0.68  & 0.51--0.62 \\
+C$\alpha$ RMSD, all          & 3.02\,\AA & 1.98\,\AA & 14.93\,\AA & --- \\
+core RMSD / residues         & 0.70\,\AA{} / 86\% & 0.96\,\AA{} / 79\% & 1.17\,\AA{} / 30\% & --- \\
+TM-score                     & 0.821 & 0.942 & 0.563 & --- \\
+$E$ against the crystal      & 0.180 & 0.109 & 0.596 & not measured \\
+crystal contacts recovered   & 80\%  & 88\%  & 39\%  & not measured \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-So a usable target looks like $E \lesssim 0.15$ with pLDDT $\gtrsim 0.9$, and an
-unusable one like $E \gtrsim 0.5$. The gap is wide and there is nothing
-borderline in between, which is convenient: the gate can now be stated as a
-number rather than as a judgement. Worth computing $E$ for HA0 as well, for
-completeness in the thesis --- the structures are already in the repository, so it
-is one command.
+The protein~G column is the useful surprise, and it is worth showing the
+supervisor. Protein~G is the target of Zambon et al.\ (2024) and ESM3 predicts it
+well by every local measure --- pLDDT 0.92, a 0.70\,\AA{} core over 86\% of the
+chain --- yet its $E$ is 0.180, \emph{higher} than P450cam's 0.109, and its global
+RMSD is 3.0\,\AA. The reason is length: at 56 residues there are only 137
+contacts, so a frayed terminus moves $E$ a great deal, whereas P450cam's 1195
+contacts average that kind of local error away. Two consequences:
+
+\begin{itemize}
+  \item A threshold on $E$ has to be read with the chain length in mind. ``Good''
+        is $E \approx 0.1$--0.2 and ``failed'' is $E \gtrsim 0.5$; a single sharp
+        cut would have classified the paper's own protein as marginal.
+  \item The gap between good and failed is nevertheless a factor of three, and
+        nothing we have measured falls inside it, so the gate is still a usable
+        criterion: pLDDT $\gtrsim 0.9$ \emph{and} $E$ well below 0.3, with the
+        core RMSD and the fraction of recovered contacts quoted alongside.
+\end{itemize}
+
+$E$ for HA0 is still worth computing for the thesis, which needs the 2HMG entry
+downloaded on astaroth; \file{ha0\_pred.pdb} is already in the repository.
 
 \section{The pipeline from here, and its expected cost}\label{sec:pipeline}
 
@@ -879,8 +899,9 @@ specifically.
         predicts correctly (position~(i)), or is a well-defined but
         biologically-wrong reference acceptable for the purely methodological
         part of the thesis (position~(ii))?
-  \item Is the gate right as a criterion: pLDDT $\gtrsim0.9$ \emph{and}
-        $E\lesssim0.15$ against the crystal?
+  \item Is the gate right as a criterion: pLDDT $\gtrsim0.9$ \emph{and} an $E$
+        against the crystal well below 0.3, read with the chain length in mind,
+        as section~\ref{sec:gate-number} argues from protein~G?
   \item P450cam as the new target --- or P450-BM3's heme domain, which is
         $\sim$455 residues and from the same family, or luciferase at 550
         residues, which also passes the decode gate but has a more divergent
