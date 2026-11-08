@@ -14,6 +14,7 @@
 \usepackage{lmodern}
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{xcolor}
@@ -28,11 +29,10 @@
         breaklines=true, breakatwhitespace=false, showstringspaces=false,
         upquote=true, xleftmargin=2pt, xrightmargin=2pt}
 
-\title{Saving ESM3 structures as PDB files\\
-       and comparing them with 2HMG\\
-       \large Monomer and glycine-linked trimer: commands, numbers, viewers}
+\title{Comparing ESM3 structures with experiments\\
+       \large HA and 2HMG, the neuraminidase test, and choosing the next target}
 \author{}
-\date{4 November 2026}
+\date{8 November 2026}
 
 \begin{document}
 \maketitle
@@ -375,6 +375,555 @@ Traps specific to this pair, on top of the list above:
         interface surface to be the loosest part of the prediction, and flag
         interface residues before the per-site entropy comparison: they are
         conserved for quaternary reasons a single-chain energy cannot see.
+\end{itemize}
+
+\clearpage
+\section{Summary for the meeting of 9 November}\label{sec:meeting}
+
+Everything from here on was written for the supervisor meeting. In one page:
+
+\begin{itemize}
+  \item \textbf{Neuraminidase does not pass the decode gate.} Mean pLDDT 68,
+        C$\alpha$ RMSD 14.9\,\AA{} against the crystal your supervisor supplied,
+        and only 39\% of the crystal's contacts recovered. Repeating the decode
+        at 8, 32 and 128 generation steps gives the \emph{same} structure, so
+        this is not a sampling artefact (section~\ref{sec:na-result}).
+  \item \textbf{But the failure is specific, not diffuse.} A 116-residue core
+        superposes at 1.17\,\AA, the overall size is right, and the one
+        long-range disulfide bridge of the protein --- Cys92 to Cys417, 325
+        residues apart --- is placed 20.5\,\AA{} wide instead of 4.1\,\AA. The
+        prediction looks like a six-bladed propeller whose ring never closes
+        (sections~\ref{sec:diag} and~\ref{sec:why}).
+  \item \textbf{Cytochrome P450cam passes, comfortably.} Mean pLDDT 92, RMSD
+        1.98\,\AA{} over 405 residues, core 0.96\,\AA{} over 79\% of the chain,
+        TM-score 0.94, 88\% of the crystal's contacts recovered
+        (section~\ref{sec:p450}). It is 414 residues, monomeric, soluble, and
+        from a very large sequence family, so it satisfies every criterion we
+        set.
+  \item \textbf{A measured threshold, instead of a guessed one.} Expressing both
+        results in the contact-map energy of equation~\eqref{eq:energy} gives
+        $E = 0.11$ for P450cam and $E = 0.60$ for neuraminidase. That is the
+        first calibration of what ``good'' means in the units the energy uses
+        (section~\ref{sec:gate-number}).
+  \item \textbf{One thing to be clear about with the supervisor.} The energy the
+        sampler actually minimises never looks at a crystal structure: it
+        compares the model's output for a candidate sequence with the model's
+        output for the \emph{reference sequence}, so it is zero at the reference
+        by construction. The decode gate therefore does not test whether the
+        sampler is well posed; it tests whether its reference means the real
+        protein (section~\ref{sec:r0}). This is the point on which ``can we use
+        neuraminidase anyway'' turns.
+  \item \textbf{Cheapest open experiments}, in order: look down the propeller
+        axis in a viewer (minutes); decode a monomeric bacterial sialidase, which
+        has the same fold, to find out whether the propeller or the tetramer is
+        the problem (one GPU-minute); re-decode NA with its disulfides supplied
+        as constraints, using the tooling already in \file{code/bridge\_test}
+        (an hour).
+\end{itemize}
+
+\section{What the neuraminidase test measured}\label{sec:na-result}
+
+Section~\ref{sec:na} said how to run the gate. This section is the result, run on
+astaroth on 6 November 2026. The decode was repeated at three generation step
+counts, because step-count instability was HA0's tell.
+
+\begin{center}
+\begin{tabular}{rrrrrr}
+\toprule
+steps & mean pLDDT & $R_g$ (\AA) & RMSD, all (\AA) & core RMSD / residues & TM \\
+\midrule
+8   & 65.8 & 19.62 & 13.59 & 1.17 / 117 (30\%) & 0.592 \\
+32  & 67.7 & 19.72 & 14.93 & 1.17 / 116 (30\%) & 0.563 \\
+128 & 74.0 & 19.49 & 13.17 & 1.11 / 120 (31\%) & 0.583 \\
+\midrule
+\multicolumn{2}{l}{experimental, 2HU0 chain A} & 18.88 & --- & --- & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Three things follow immediately.
+
+\paragraph{It is not under-sampling.} Over a sixteen-fold range of step counts
+the geometry does not move: $R_g$ within 0.23\,\AA, the core fixed at
+1.1--1.2\,\AA{} over 116--120 residues, TM 0.56--0.59, global RMSD 13--15\,\AA{}
+with no trend. The three runs' per-residue error profiles correlate with each
+other at 0.83--0.90, so the same residues are wrong by the same amounts every
+time. The decoder converges on one specific structure that is about a third
+correct.
+
+\paragraph{More steps buy confidence, not accuracy.} pLDDT rises from 65.8 to
+74.0 and the fraction of residues below 50 falls from 26\% to 5\%, while the
+error stays where it was. A model that is uncertain and wrong can be caught by
+its own confidence; a model that is confident and wrong cannot.
+
+\paragraph{The error is localised, and not only at the chain ends.} By blocks of
+20 residues at 32 steps: 1--20 at 29.6\,\AA, 101--240 at 2.8--4.7\,\AA, 241--300
+at 7.7--14.8\,\AA, 301--340 at 15.5--32.6\,\AA, 341--385 at 21.5--41.1\,\AA.
+Trimming 30 residues from each end still leaves 12.1\,\AA{} over the remaining
+325, so this is not a pair of floppy tails.
+
+\subsection{Two further diagnostics}\label{sec:diag}
+
+\file{prediction\_diagnostics.py} (new, 8 November) adds two numbers an RMSD
+does not give:
+\begin{lstlisting}[language=bash]
+python prediction_diagnostics.py --pred structure_compare/na_head_pred.pdb \
+    --exp ../code/bridge_test/pdb/na_head_2HU0_monomer.pdb \
+    --csv structure_compare/na_head_vs_2HU0_per_residue.csv
+\end{lstlisting}
+
+\paragraph{The contact-map energy.} The effective energy of Zambon et al.\
+(2024) is not an RMSD but a normalised difference of contact maps,
+\begin{equation}
+E = \frac{\sum_{ij} \left| \Delta_{ij}(r_1) - \Delta_{ij}(r_2) \right|}
+         {\sum_{ij} \left[ \Delta_{ij}(r_1) + \Delta_{ij}(r_2) \right]},
+\qquad |i-j| > 2,
+\label{eq:energy}
+\end{equation}
+where $\Delta_{ij}=1$ when residues $i$ and $j$ are in contact and $E=0$ means
+identical maps. Evaluating it between the \emph{predicted} structure and the
+\emph{crystal} asks, in the natural structural units of this project, how far
+the model's idea of neuraminidase is from the real protein. With a
+C$\alpha$--C$\alpha$ cutoff of 8\,\AA{} (the coarse stand-in for the paper's
+4\,\AA{} heavy-atom definition, since our decodes carry backbone and
+C$\beta$ only):
+
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+ & contacts predicted & in crystal & shared & $E$ \\
+\midrule
+NA head, 32 steps  & 1312 & 1403 & 549 & 0.596 \\
+NA head, 128 steps & 1386 & 1403 & 526 & 0.623 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Only 39\% and 37\% of the crystal's contacts are reproduced. Note that more
+generation steps make this slightly \emph{worse} even as pLDDT improves, which is
+the same pattern as above.
+
+\paragraph{Disulfide bridges, which say \emph{where} the assembly failed.} The
+crystal has eight disulfide bridges in this single chain, found as cysteine pairs
+whose S$\gamma$ atoms lie within 2.5\,\AA. Measuring the same pairs in the
+prediction as C$\beta$--C$\beta$ distances, where a real bridge is 3.8--4.1\,\AA:
+
+\begin{center}
+\begin{tabular}{rrrr}
+\toprule
+pair (2HU0 numbering) & residues apart & crystal (\AA) & predicted (\AA) \\
+\midrule
+92--417  & 325 & 4.10 & \textbf{20.54} \\
+124--129 & 5   & 4.05 & 3.29 \\
+183--230 & 47  & 3.78 & 4.07 \\
+232--237 & 5   & 4.05 & 5.52 \\
+278--291 & 13  & 3.95 & 4.04 \\
+280--289 & 9   & 3.95 & 4.14 \\
+318--336 & 17  & 4.20 & \textbf{8.64} \\
+421--447 & 25  & 4.13 & \textbf{10.43} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Five of eight are formed. The one that fails worst, by a factor of five, is the
+only long-range one: Cys92 to Cys417, 325 residues apart, the bridge that staples
+the beginning of the chain to its end. The 128-step run behaves the same way
+(15.7\,\AA). So the prediction gets the local covalent topology right and the one
+global staple wrong, which is a far more specific statement than ``RMSD
+14\,\AA''.
+
+\section{Why the neuraminidase prediction might fail}\label{sec:why}
+
+Several explanations fit ``pLDDT 68, one third correct''. They have different
+consequences and most can be separated by a cheap experiment. Each is stated
+below with the evidence we have for and against it and with the test that would
+settle it. None is established; that is the point of listing them.
+
+\subsection{The propeller ring does not close}
+
+\paragraph{The claim.} The catalytic head is a six-bladed $\beta$-propeller: six
+repeats (``blades''), each a four-stranded antiparallel $\beta$-sheet, arranged
+around a central axis like turbine vanes, with the active site in the funnel on
+the axis (Varghese, Laver \& Colman, 1983). The chain threads the blades in
+order, so its first and last strands end up side by side in the \emph{same}
+blade, and that blade is complete only because the C-terminal strand packs
+against the N-terminal ones. The closure is called the molecular Velcro and it is
+what makes the arrangement a closed ring rather than an open spiral (F\"ul\"op \&
+Jones, 1999). A predictor that builds most blades but never makes that last
+contact leaves the ring open, and the two ends of the chain, which should be
+pressed together, drift apart.
+
+\paragraph{For.} The best-supported explanation we have. The middle of the chain
+is 3--5\,\AA{} while \emph{both} ends are 20--40\,\AA{} out, which is the
+signature of an unclosed ring rather than of a generally poor model. And
+Cys92--Cys417, the covalent staple between the chain's beginning and its end, is
+the single worst-predicted feature in the structure (section~\ref{sec:diag}).
+
+\paragraph{Against.} Nothing so far --- but the test below has not been done.
+
+\paragraph{Test.} Thirty seconds in ChimeraX: open
+\file{na\_head\_vs\_2HU0\_view.cxc}, look down the propeller axis, count the
+blades, and see whether the first and last strands sit in one blade or point away
+from each other.
+
+\subsection{The blades are built in the wrong register}
+
+\paragraph{The claim.} Six blades of one fold are six near-identical sequence
+repeats. A model that recognises ``propeller'' but misassigns which repeat goes
+where would produce locally correct blades in globally shifted positions; a shift
+by one blade would leave local geometry excellent and swap the chain ends.
+
+\paragraph{For.} Locally the model is very good --- 1.1\,\AA{} over 30\% of the
+chain --- which is what a register error looks like. Repeat proteins are a known
+hard case for structure predictors.
+
+\paragraph{Against.} A clean one-blade shift should leave a larger correct core
+than 30\%.
+
+\paragraph{Test.} Superpose the prediction's blade $k$ on the crystal's blade
+$k\pm1$ and see whether a shifted assignment fits better than the straight one.
+Needs blade boundaries from the crystal's secondary structure: an hour, not
+minutes.
+
+\subsection{Neuraminidase is an obligate tetramer}
+
+\paragraph{The claim.} The native protein is a homotetramer with a Ca$^{2+}$ ion
+on the molecular fourfold axis, and the head's surface includes a large interface
+that in life is never exposed to solvent. A predictor given one chain must fold a
+surface that does not exist on its own.
+
+\paragraph{For.} HA failed for the analogous reason, and this is the obvious
+prior for a viral surface glycoprotein.
+
+\paragraph{Against.} Unlike HA2's long helix, the head's fold is entirely
+intra-chain: every contact defining the propeller is within one chain, and
+isolated heads are used experimentally. This is why NA was the better candidate
+in the first place.
+
+\paragraph{Test.} Two. (i) Map the badly predicted residues onto the tetramer
+interface, computed from 2HU0's full biological assembly: if the error sits on
+the interface the claim gains, if it sits in the ring closure it does not. The
+unstripped entry has to be downloaded on astaroth, since the cloud container
+cannot reach RCSB. (ii) Predict the tetramer with a real multimer predictor
+(AlphaFold-Multimer, Boltz, Chai): useful to know, a week of work, and not needed
+for the target decision.
+
+\subsection{The fold depends on disulfides the model does not know about}
+
+\paragraph{The claim.} Eight bridges in 385 residues is a lot, and in the real
+protein they form in the endoplasmic reticulum \emph{during} folding. A
+sequence-only predictor has no explicit notion of them.
+
+\paragraph{For.} Three of eight are not formed (section~\ref{sec:diag}).
+
+\paragraph{Against.} Cause and effect are hard to separate: a wrong global fold
+necessarily misplaces a long-range bridge, so the missing bridge may be a symptom
+rather than the cause.
+
+\paragraph{Test.} The tooling already exists here: the bridge experiments in
+\file{code/bridge\_test} prompt ESM3 with known disulfides
+(\file{*\_prompt\_allbonds\_*}), developed for BPTI and crambin. Supplying the
+eight bridges as constraints and re-measuring separates the two readings: if the
+fold snaps into place, the model's problem is that it cannot \emph{find} the
+bridges, not that it does not know the fold. The cheapest informative experiment
+after the viewer check.
+
+\subsection{Glycosylation and ligands are absent}
+
+\paragraph{The claim.} Neuraminidase is a glycoprotein with several N-linked
+glycosylation sequons, and the crystal has a Ca$^{2+}$ site. The prediction is a
+bare polypeptide.
+
+\paragraph{For.} Loops held in place by a glycan or an ion are exactly the local
+features a bare prediction gets wrong.
+
+\paragraph{Against.} Glycans and ions rarely determine a \emph{global} fold, and
+the error here is global. A contributing factor at most.
+
+\paragraph{Test.} Check whether the displaced residues coincide with the sequons
+and the metal site; cheap once the interface analysis is set up.
+
+\subsection{The construct is a fragment}
+
+\paragraph{The claim.} Residue 83 is an artificial chain start: in the real
+protein the stalk continues towards the membrane, so the model may be folding an
+N-terminus that does not exist in life.
+
+\paragraph{For.} The first 20 residues are the worst block at 8 and 32 steps.
+
+\paragraph{Against.} At 128 steps the largest deviations move off the N-terminus
+onto residues 430--437, and residue 468 is near the real C-terminus, so this does
+not cover the 301--385 region at all.
+
+\paragraph{Test.} Decode the head plus the stalk, or the full-length sequence,
+and see whether the head improves. One decode.
+
+\subsection{The model is simply weaker on this class of fold}\label{sec:boring}
+
+\paragraph{The claim.} The dullest explanation, and therefore the one to exclude
+first: ESM3-open, sequence only and without an MSA, may be worse on $\beta$-rich
+repeat folds than on the compact $\alpha/\beta$ globular proteins we happen to
+have calibrated on. Our passing controls --- maltose binding protein, amylase,
+luciferase, albumin, and now P450cam --- are all of the latter kind.
+
+\paragraph{For.} It explains everything we see without invoking neuraminidase at
+all.
+
+\paragraph{Against.} Nothing. It is untested.
+
+\paragraph{Test, and it is a good one.} Bacterial sialidases have the \emph{same}
+six-bladed propeller fold as viral neuraminidase but are monomeric; the classic
+case is the sialidase of \emph{Salmonella typhimurium} (NanH, PDB 2SIL, about 380
+residues), whose structure was solved precisely to demonstrate the shared fold
+(Crennell et al., 1993). One decode separates the hypotheses:
+\begin{itemize}
+  \item NanH folds well $\Rightarrow$ the propeller fold is not the problem, and
+        what fails in NA is specific to NA: the tetramer, the glycans, or this
+        particular ring closure.
+  \item NanH fails too $\Rightarrow$ the problem is the fold class. Our tooling
+        cannot be trusted on $\beta$-propellers, which is a limitation to state
+        in the thesis rather than a fact about neuraminidase.
+\end{itemize}
+Either way it costs one GPU-minute and it changes what we would write.
+
+\subsection{What this means for the decision}
+
+The explanations differ scientifically but not practically: for the purpose of
+choosing a target, neuraminidase is out either way, because the model's
+neuraminidase is not the real one ($E\approx0.6$). The diagnosis is still worth
+an afternoon, because ``our decoder cannot close a $\beta$-propeller'' --- or
+``cannot fold a subunit of an obligate oligomer'' --- is a statement about the
+method's domain of validity, and that belongs in the thesis.
+
+\section{What the energy is actually measured against}\label{sec:r0}
+
+This is the subtlety most worth being explicit about tomorrow, because it decides
+whether ``use neuraminidase anyway'' is coherent.
+
+In the paper, equation~\eqref{eq:energy} compares the predicted structure of a
+candidate sequence with a reference conformation $r_0$. In \emph{this}
+implementation the energy that the Monte Carlo minimises is
+\begin{equation}
+U_{\mathrm{am}}(\sigma) = \sum_{i<j}
+  \Big[ \log A_{ij}(\sigma) - \log A_{ij}(\sigma_{\text{ref}}) \Big]^2 ,
+\label{eq:uam}
+\end{equation}
+where $A(\sigma)$ is the symmetrised final-layer attention map that ESM3 produces
+for sequence $\sigma$ (\file{utils/energies.py:compute\_U\_am},
+\file{custom\_esm/models/esm3.py:predict\_attention}). Three consequences, none
+of them obvious from the paper:
+
+\begin{enumerate}
+  \item \textbf{No crystal structure enters the energy at all.} The reference is
+        the model's own output for the reference \emph{sequence}. This is why
+        $U(\sigma_{\text{ref}}) = 0$ holds exactly, a property the code relies on
+        as a sanity check, and why the landscape is well posed whatever the
+        experimental structure looks like.
+  \item \textbf{The energy is differentiable in the sequence probabilities},
+        which is what makes the gradient-informed move of
+        \file{one\_pass\_move.tex} possible at all. A discrete contact map is
+        not. The optional second term $U_{\text{structure\_ce}}$ is closer in
+        spirit to the paper's contact-map energy and is also differentiable, but
+        it is off by default and has no exact zero at the reference.
+  \item \textbf{So the decode gate is not a test of well-posedness.} It is a test
+        of \emph{interpretation}: whether a low $U$ can be read as ``this
+        sequence folds like the real protein''.
+\end{enumerate}
+
+Hence two defensible positions, which the supervisor should pick between
+explicitly:
+
+\paragraph{(i) The reference must be a protein the model predicts correctly.}
+Then low $U$ means ``folds like the real thing'', the per-site entropy comparison
+against natural sequences tests something clean, and biological conclusions are
+available. Neuraminidase is excluded. This is the position the gate implements.
+
+\paragraph{(ii) The reference need only be well defined.} Then neuraminidase, or
+any sequence, is a usable \emph{benchmark}: acceptance rates, decorrelation
+times, the speed-up from the one-pass move and the $n_{\text{sites}}$ scan are
+all measured exactly as before, and the thesis's stated aim --- making the method
+faster --- is served. What is lost is biology: comparing the resulting entropies
+with a natural alignment no longer tests anything, because the reference is not
+the natural fold.
+
+The paper did not have to choose: protein~G is small and predicted well, so the
+two readings coincide. We now have a target where they do not, which is why the
+choice should be made out loud and stated with every figure.
+
+\section{Cytochrome P450cam passes the gate}\label{sec:p450}
+
+Run on astaroth on 8 November 2026 (\file{compare\_structure\_p450cam.log}),
+P450cam, UniProt P00183, 414 residues, against PDB 2CPP, 32 generation steps:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+ & P450cam / 2CPP & NA head / 2HU0 \\
+\midrule
+length decoded                    & 414 aa          & 385 aa \\
+residues paired with the crystal  & 405 (98\%)      & 385 (100\%) \\
+mean pLDDT                        & \textbf{91.9}   & 67.7 \\
+residues with pLDDT $\ge 90$      & 80\%            & 9\% \\
+residues with pLDDT $< 50$        & \textbf{0\%}    & 17\% \\
+$R_g$ predicted / experimental    & 21.70 / ---     & 19.72 / 18.88 \\
+C$\alpha$ RMSD, all paired        & \textbf{1.98\,\AA} & 14.93\,\AA \\
+core RMSD / residues              & 0.96\,\AA{} / 320 (79\%) & 1.17\,\AA{} / 116 (30\%) \\
+residues within 2\,\AA            & 77\%            & 11\% \\
+TM-score (lower bound)            & \textbf{0.942}  & 0.563 \\
+crystal contacts recovered        & \textbf{88\%}   & 39\% \\
+$E$ of eq.~\eqref{eq:energy}      & \textbf{0.109}  & 0.596 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This is a different kind of result, not a better score on the same scale. Four
+fifths of the chain superposes at sub-angstrom accuracy, no residue is predicted
+with low confidence, and the worst single deviation in the whole protein is
+7.6\,\AA{} --- a surface loop around residues 186--192, plus the last two
+residues of the chain, which are a terminus. The nine N-terminal residues of our
+construct are absent from the crystal and are simply left out of every number.
+For comparison, neuraminidase's worst deviations are 40--50\,\AA.
+
+Two caveats to state when quoting these numbers. 2CPP carries camphor and a heme
+group; the scripts ignore non-protein atoms, so a few active-site residues are
+held by a ligand in the crystal that the ligand-free prediction cannot reproduce,
+which is the likely origin of part of the residual 1.98\,\AA. And P450cam has no
+disulfide bridges, so that diagnostic is silent here --- it reports zero, which is
+correct and not a failure.
+
+\subsection{A measured gate, instead of a guessed one}\label{sec:gate-number}
+
+We now have the calibration that was missing when the gate was first written:
+
+\begin{center}
+\begin{tabular}{lrrr}
+\toprule
+ & P450cam (passes) & NA head (fails) & HA0 (fails) \\
+\midrule
+mean pLDDT                   & 0.92  & 0.68  & 0.51--0.62 \\
+$E$ against the crystal      & 0.109 & 0.596 & not measured \\
+crystal contacts recovered   & 88\%  & 39\%  & not measured \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+So a usable target looks like $E \lesssim 0.15$ with pLDDT $\gtrsim 0.9$, and an
+unusable one like $E \gtrsim 0.5$. The gap is wide and there is nothing
+borderline in between, which is convenient: the gate can now be stated as a
+number rather than as a judgement. Worth computing $E$ for HA0 as well, for
+completeness in the thesis --- the structures are already in the repository, so it
+is one command.
+
+\section{The pipeline from here, and its expected cost}\label{sec:pipeline}
+
+With a target that passes, this is what the following weeks look like. The
+numbers are extrapolations from the HA runs, so they are orders of magnitude, not
+promises.
+
+\begin{enumerate}
+  \item \textbf{Sanity checks on the new reference} (minutes).
+        $U(\sigma_{\text{ref}})=0$ exactly, by equation~\eqref{eq:uam}, and the
+        single-mutant $\Delta U$ distribution from
+        \file{scan\_U\_am\_landscape.py} should contain no negative values. These
+        reproduce known protein~G landmarks and catch a broken harness before any
+        long run.
+  \item \textbf{Temperature scan} (hours). The selective temperature is set by
+        the peak of $\mathrm{Var}(U)/T^2$. For HA the transition sat around
+        $T\approx8$--18, with $T\approx5$ inside the reference basin and
+        $T\gtrsim32$ unfolded. A 414-residue protein with a different fold will
+        have its own scale: this must be measured, not carried over.
+  \item \textbf{Equilibration} (days). At 566 residues the one-pass move cost
+        0.153\,s per move, a 2.4$\times$ speed-up over site-soft. Scaling with
+        length, expect roughly 0.10--0.12\,s per move at 414 residues, about
+        $10^5$ moves per three hours. HA needed of order $10^6$ moves to plateau
+        at $T=12$ and had \emph{not} equilibrated at $T=5$ after 580k, which is
+        exactly the problem this thesis is about. Budget one to three days per
+        low-temperature chain.
+  \item \textbf{The $n_{\text{sites}}$ scan} (a day). At HA the answer was $N=1$
+        at low temperature, with acceptance falling roughly as $a_1^{\,N}$.
+        Unless the proposal itself changes, expect the same; a different answer
+        would be interesting in itself.
+  \item \textbf{The K-site comparison} (days, mostly data work).
+        \file{ha\_site\_entropy.py} takes any aligned set, so it can build the
+        natural per-site entropy for the new family. Report $N_{\text{eff}}$ per
+        column after the redundancy weighting rather than raw sequence counts:
+        for P450 the family is deep enough that $N_{\text{eff}}$ should stay in
+        the thousands, which is the main reason to prefer it over a viral family,
+        where the 0.8 weighting collapses each subtype to about one cluster.
+  \item \textbf{Structural check on the sampled ensemble} (hours). Decode a
+        handful of sampled sequences and report RMSD and $E$ against the
+        reference: this is what tells us whether low energy really means ``folds
+        like the reference''. With P450cam's $E=0.11$ floor in hand, that
+        statement now has a scale.
+\end{enumerate}
+
+\subsection{What we can say tomorrow, and what we cannot}
+
+We can say that neuraminidase does not pass, with numbers, and that the failure
+is reproducible and specific rather than noisy. We can say that the replacement
+is found and already measured: P450cam, 414 residues, pLDDT 92, RMSD 2\,\AA, TM
+0.94. We can say what the gate now is, as a number.
+
+We cannot yet say \emph{why} NA fails. The ring-closure explanation is the best
+supported --- by the deviation profile and by the broken 325-residue disulfide ---
+but nobody has looked at it in a viewer, and the dull alternative of
+section~\ref{sec:boring}, that the model is weak on $\beta$-propellers in
+general, has not been excluded. One decode of a bacterial sialidase would settle
+that, and it should be done before claiming anything about neuraminidase
+specifically.
+
+\subsection{Questions for the supervisor}
+
+\begin{enumerate}
+  \item Section~\ref{sec:r0}: should the reference always be a protein the model
+        predicts correctly (position~(i)), or is a well-defined but
+        biologically-wrong reference acceptable for the purely methodological
+        part of the thesis (position~(ii))?
+  \item Is the gate right as a criterion: pLDDT $\gtrsim0.9$ \emph{and}
+        $E\lesssim0.15$ against the crystal?
+  \item P450cam as the new target --- or P450-BM3's heme domain, which is
+        $\sim$455 residues and from the same family, or luciferase at 550
+        residues, which also passes the decode gate but has a more divergent
+        family?
+  \item Is the bacterial sialidase control worth a GPU-minute for the thesis's
+        limitations section?
+  \item Does he want the NA post-mortem written up at all, or is it enough to
+        record that the target was changed?
+\end{enumerate}
+
+\section{References}
+
+\begin{itemize}
+  \item A.~Zambon, R.~Zecchina, G.~Tiana, \emph{Structure of the space of folding
+        protein sequences defined by large language models}, Phys.\ Biol.\
+        \textbf{21}, 026002 (2024). The effective energy and the sampling
+        framework.
+  \item J.~N.~Varghese, W.~G.~Laver, P.~M.~Colman, \emph{Structure of the
+        influenza virus glycoprotein antigen neuraminidase at 2.9\,\AA{}
+        resolution}, Nature \textbf{303}, 35 (1983). The six-bladed propeller and
+        the tetramer.
+  \item S.~J.~Crennell, E.~F.~Garman, W.~G.~Laver, E.~R.~Vimr, G.~L.~Taylor,
+        \emph{Crystal structure of a bacterial sialidase (from Salmonella
+        typhimurium LT2) shows the same fold as an influenza virus
+        neuraminidase}, PNAS \textbf{90}, 9852 (1993). The monomeric control of
+        section~\ref{sec:boring}.
+  \item V.~F\"ul\"op, D.~T.~Jones, \emph{$\beta$ propellers: structural rigidity
+        and functional diversity}, Curr.\ Opin.\ Struct.\ Biol.\ \textbf{9}, 715
+        (1999). Blades and the molecular Velcro closure.
+  \item T.~L.~Poulos, B.~C.~Finzel, A.~J.~Howard, \emph{High-resolution crystal
+        structure of cytochrome P450cam}, J.\ Mol.\ Biol.\ \textbf{195}, 687
+        (1987). The 2CPP entry used in section~\ref{sec:p450}.
+  \item W.~Kabsch, \emph{A solution for the best rotation to relate two sets of
+        vectors}, Acta Cryst.\ A \textbf{32}, 922 (1976). The superposition.
+  \item Y.~Zhang, J.~Skolnick, \emph{Scoring function for automated assessment of
+        protein structure template quality}, Proteins \textbf{57}, 702 (2004);
+        J.~Xu, Y.~Zhang, \emph{How significant is a protein structure similarity
+        with TM-score = 0.5?}, Bioinformatics \textbf{26}, 889 (2010).
+  \item V.~Mariani, M.~Biasini, A.~Barbato, T.~Schwede, \emph{lDDT: a local
+        superposition-free score}, Bioinformatics \textbf{29}, 2722 (2013);
+        J.~Jumper et al., \emph{Highly accurate protein structure prediction with
+        AlphaFold}, Nature \textbf{596}, 583 (2021), for pLDDT and its colour
+        bands.
 \end{itemize}
 
 \end{document}

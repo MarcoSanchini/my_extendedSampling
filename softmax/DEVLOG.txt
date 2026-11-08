@@ -6080,3 +6080,69 @@ candidate, soluble bacterial cytochrome P450 (P450cam 414 aa / BM3 heme domain
 hypothesis for WHY NA fails is still unconfirmed and now matters less, though it
 would be worth one look in the viewer, since a predictor that cannot close a
 beta-propeller is a fact worth knowing about our tooling.
+
+--------------------------------------------------------------------------------
+2026-11-08 -- P450cam passes the gate; the gate becomes a number; what U is really measured against
+--------------------------------------------------------------------------------
+Marco ran the P450cam gate on astaroth (commit d7095be,
+compare_structure_p450cam.log): P00183, 414 aa, 32 steps, against 2CPP.
+
+                            P450cam/2CPP    NA head/2HU0
+  mean pLDDT                91.9            67.7
+  pLDDT >= 90               80%             9%
+  pLDDT < 50                0%              17%
+  CA RMSD, all paired       1.98 A (405)    14.93 A (385)
+  core RMSD / residues      0.96 A / 320 (79%)   1.17 A / 116 (30%)
+  within 2 A                77%             11%
+  TM-score (lower bound)    0.942           0.563
+  crystal contacts kept     88%             39%
+  contact-map E             0.109           0.596
+
+P450cam passes, and not marginally: four fifths of the chain is sub-angstrom, no
+residue is below pLDDT 50, and the worst deviation in the protein is 7.6 A (a
+surface loop at 186-192, plus the last two residues). The 9 N-terminal residues
+of the construct are not in the crystal and are excluded from every number.
+Caveats when quoting: 2CPP has camphor and heme bound, so a few active-site
+residues are ligand-held and a ligand-free prediction cannot match them, which
+is probably part of the residual 1.98 A; and P450cam has no disulfides, so that
+diagnostic correctly reports zero.
+
+New tooling (PR on claude/project-thread-0trm9x):
+- monte_carlo/prediction_diagnostics.py: the contact-map energy of Zambon et al
+  2024 between prediction and crystal (CA at 8 A by default, --heavy-atom for the
+  paper's 4 A definition), the disulfide check (SG-SG < 2.5 A in the crystal,
+  CB-CB in the prediction), and the per-block deviation table. Pairs residues
+  from the *_per_residue.csv, so it copes with missing crystal residues.
+- monte_carlo/run_target_gate.sh: the whole gate for a candidate in one command.
+
+The gate can now be stated as a number instead of a judgement: usable is
+E <~ 0.15 with pLDDT >~ 0.9, unusable is E >~ 0.5. Nothing we have measured sits
+in between. Worth computing E for HA0 too, since those structures are in the
+repo.
+
+The NA disulfide result, which is the specific part of that failure: 8 bridges in
+the crystal chain, 5 formed in the prediction, and the one that fails worst is
+the only long-range one, Cys92-Cys417, 325 residues apart, at 20.5 A instead of
+4.1 A. That is the staple between the chain's start and its end, so it supports
+the open-ring reading of the deviation profile.
+
+Clarification worth recording, because it changes what the gate means. The energy
+the sampler minimises is NOT the paper's contact-map E. It is
+U_am = sum_{i<j} [log A_ij(sigma) - log A_ij(ref)]^2 over ESM3's symmetrised
+final-layer attention map (utils/energies.py:compute_U_am,
+custom_esm/models/esm3.py:predict_attention), with the reference map computed by
+the same model from the reference SEQUENCE. So no crystal structure enters the
+energy at all, U(ref) = 0 holds by construction, and the landscape is well posed
+whatever the crystal looks like. The decode gate is therefore a test of
+interpretation -- whether low U can be read as "folds like the real protein" --
+not of well-posedness. Which means NA would still be a valid METHODOLOGICAL
+benchmark for the speed-up work; what it cannot support is the biological half,
+in particular the K-site comparison against natural sequences. That choice is
+written up for the supervisor in docs/structure_comparison.tex section 11.
+
+Open experiments, cheapest first: (1) look down the propeller axis in a viewer;
+(2) decode a monomeric bacterial sialidase (NanH, 2SIL, ~380 aa, same fold) to
+separate "beta-propellers are hard for this model" from "NA specifically";
+(3) re-decode NA with its 8 disulfides supplied as constraints, reusing the
+bridge_test prompting tooling; (4) one decode of MBP vs 1ANF for a second point
+on the E calibration.
