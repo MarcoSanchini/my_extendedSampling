@@ -367,3 +367,47 @@ Specific traps for this pair, in addition to section 5:
   of the prediction, and flag interface residues before using the per-site
   entropy comparison, because they are conserved for quaternary reasons a
   single-chain energy cannot see.
+
+## 7. Two more diagnostics, and the gate as one command (added 2026-11-08)
+
+`prediction_diagnostics.py` answers two questions `compare_structures.py` does
+not. First, the **contact-map energy** of Zambon et al 2024, computed between the
+prediction and the crystal: that is the project's own structural unit, and it
+turns "the prediction is wrong" into a number on the same scale as the sampler's
+energy. Second, the **disulfide bridges**: it finds them in the experimental file
+(cysteine pairs with their SG atoms within 2.5 A) and measures the same pairs in
+the prediction, which says *where* an assembly failed rather than only how far
+off it is. It also prints the per-block deviation table.
+
+```bash
+python prediction_diagnostics.py --pred structure_compare/na_head_pred.pdb \
+    --exp ../code/bridge_test/pdb/na_head_2HU0_monomer.pdb \
+    --csv structure_compare/na_head_vs_2HU0_per_residue.csv
+```
+
+Pass the `--csv` that `compare_structures.py` wrote: it carries the residue
+pairing, so the diagnostics work when the crystal is missing residues or numbers
+them differently (which is the normal case).
+
+`run_target_gate.sh` is the whole gate for a new candidate in one command: the
+sequence from UniProt into `references.py`, the crystal from RCSB, decodes at 8,
+32 and 128 steps, then both comparison scripts, with everything logged.
+
+```bash
+./run_target_gate.sh p450cam P00183 2CPP            # ~10 minutes on astaroth
+./run_target_gate.sh p450bm3 P14779 1BU7 1:455      # only the heme domain
+```
+
+**Results so far, as a calibration of what the numbers mean:**
+
+| target | mean pLDDT | RMSD, all | core | TM | contact-map E |
+|---|---|---|---|---|---|
+| P450cam vs 2CPP | 0.92 | 1.98 A | 0.96 A / 79% | 0.94 | 0.109 |
+| NA head vs 2HU0 | 0.68 | 14.93 A | 1.17 A / 30% | 0.56 | 0.596 |
+| HA0 vs 2HMG | 0.51-0.62 | not comparable (cleaved, trimeric) | | | not measured |
+
+So a usable target looks like E below ~0.15 with pLDDT above ~0.9, and an
+unusable one like E above ~0.5. The discussion of why NA fails, what the energy
+is really measured against, and what the pipeline costs once a target passes is
+in `../docs/structure_comparison.tex` (sections 9 to 13), which is the document
+written for the supervisor meeting.
