@@ -1,0 +1,55 @@
+--2026-11-08 18:11:37--  https://files.rcsb.org/download/2CPP.pdb
+Resolving files.rcsb.org (files.rcsb.org)... 99.86.171.25, 99.86.171.74, 99.86.171.75, ...
+Connecting to files.rcsb.org (files.rcsb.org)|99.86.171.25|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified [text/plain]
+Saving to: ‘structure_compare/2CPP.pdb’
+
+2CPP.pdb                              [ <=>                                                          ] 320.84K  --.-KB/s    in 0.02s   
+
+2026-11-08 18:11:38 (13.6 MB/s) - ‘structure_compare/2CPP.pdb’ saved [328536]
+
+Decoding p450cam: 414 residues, num_steps=32
+Fetching 22 files: 100%|███████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 192238.93it/s]
+  mean pLDDT 91.9 / 100   Rg_ca 21.70 A
+  residues with pLDDT >= 70: 96%   < 50: 0%
+Saved -> structure_compare/p450cam_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)
+predicted:    structure_compare/p450cam_pred.pdb  chains A (414)
+experimental: structure_compare/2CPP.pdb  chains A (405)
+
+--- which experimental chains were used ---
+  chain A: 405 residues paired with predicted A10-A414, sequence identity 100%
+  total: 405 of 414 predicted residues paired (98%), identity 100%
+  9 predicted residues have no experimental partner (not in the crystal, e.g. signal peptide, cleavage loop, transmembrane part); they are left out of every number
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues      1.98 A   over 405 residues
+  CA RMSD, core                     0.96 A   over 320 residues (79%) after 5 cycles at 2.0 A
+  residues within  1 A:  39%   2 A:  77%   4 A:  95%   8 A: 100%
+  TM-score (approx., lower bound)  0.942   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  91.9 over all 414 residues,  92.7 over the paired ones
+  fraction  >=90: 80%   70-90: 15%   50-70: 4%   <50: 0%
+  Spearman(pLDDT, CA deviation) -0.53   (negative: low confidence where the prediction is wrong)
+    pLDDT 50-70 :    9 residues, mean CA deviation   4.17 A
+    pLDDT 70-90 :   63 residues, mean CA deviation   2.48 A
+    pLDDT 90-100:  333 residues, mean CA deviation   1.32 A
+
+--- largest CA deviations ---
+  predicted A G189  = exp chain A G189     7.58 A   pLDDT  90.0
+  predicted A S190  = exp chain A S190     7.03 A   pLDDT  92.3
+  predicted A V414  = exp chain A V414     6.77 A   pLDDT  53.4
+  predicted A D188  = exp chain A D188     6.32 A   pLDDT  88.0
+  predicted A G93   = exp chain A G93      6.19 A   pLDDT  57.0
+  predicted A P187  = exp chain A P187     5.99 A   pLDDT  85.8
+  predicted A M191  = exp chain A M191     5.97 A   pLDDT  93.4
+  predicted A A413  = exp chain A A413     5.78 A   pLDDT  61.1
+  predicted A T192  = exp chain A T192     5.59 A   pLDDT  89.6
+  predicted A R186  = exp chain A R186     5.20 A   pLDDT  83.3
+
+  wrote structure_compare/p450cam_vs_2CPP_superposed.pdb
+  wrote structure_compare/p450cam_vs_2CPP_per_residue.csv
+  wrote structure_compare/p450cam_vs_2CPP_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_per_residue.png
