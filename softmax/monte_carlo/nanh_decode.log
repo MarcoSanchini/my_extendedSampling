@@ -1,0 +1,6 @@
+nohup: ignoring input
+Decoding nanh: 381 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 187932.15it/s]
+  mean pLDDT 86.3 / 100   Rg_ca 19.25 A
+  residues with pLDDT >= 70: 91%   < 50: 0%
+Saved -> structure_compare/nanh_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)

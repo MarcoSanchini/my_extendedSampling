@@ -1,0 +1,40 @@
+predicted:    structure_compare/p450cam_pred_8steps.pdb  chains A (414)
+experimental: structure_compare/2CPP.pdb  chains A (405)
+
+--- which experimental chains were used ---
+  chain A: 405 residues paired with predicted A10-A414, sequence identity 100%
+  total: 405 of 414 predicted residues paired (98%), identity 100%
+  9 predicted residues have no experimental partner (not in the crystal, e.g. signal peptide, cleavage loop, transmembrane part); they are left out of every number
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues      1.99 A   over 405 residues
+  CA RMSD, core                     0.94 A   over 318 residues (79%) after 5 cycles at 2.0 A
+  residues within  1 A:  39%   2 A:  79%   4 A:  95%   8 A: 100%
+  TM-score (approx., lower bound)  0.942   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  90.3 over all 414 residues,  91.1 over the paired ones
+  fraction  >=90: 77%   70-90: 18%   50-70: 5%   <50: 0%
+  Spearman(pLDDT, CA deviation) -0.44   (negative: low confidence where the prediction is wrong)
+    pLDDT  0-50 :    2 residues, mean CA deviation   6.71 A
+    pLDDT 50-70 :   13 residues, mean CA deviation   2.43 A
+    pLDDT 70-90 :   73 residues, mean CA deviation   2.42 A
+    pLDDT 90-100:  317 residues, mean CA deviation   1.30 A
+
+--- largest CA deviations ---
+  predicted A V414  = exp chain A V414     8.77 A   pLDDT  48.1
+  predicted A G189  = exp chain A G189     7.20 A   pLDDT  89.0
+  predicted A S190  = exp chain A S190     6.75 A   pLDDT  91.7
+  predicted A D188  = exp chain A D188     6.01 A   pLDDT  87.0
+  predicted A M191  = exp chain A M191     5.87 A   pLDDT  93.2
+  predicted A T192  = exp chain A T192     5.69 A   pLDDT  89.8
+  predicted A A413  = exp chain A A413     5.69 A   pLDDT  51.3
+  predicted A P187  = exp chain A P187     5.65 A   pLDDT  85.4
+  predicted A T411  = exp chain A T411     5.28 A   pLDDT  51.5
+  predicted A N49   = exp chain A N49      5.26 A   pLDDT  75.6
+
+  wrote structure_compare/p450cam_vs_2CPP_8steps_superposed.pdb
+  wrote structure_compare/p450cam_vs_2CPP_8steps_per_residue.csv
+  wrote structure_compare/p450cam_vs_2CPP_8steps_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_8steps_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_8steps_per_residue.png

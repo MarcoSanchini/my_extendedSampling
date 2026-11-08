@@ -1,0 +1,39 @@
+nohup: ignoring input
+predicted:    structure_compare/nanh_pred.pdb  chains A (381)
+experimental: structure_compare/2SIL.pdb  chains A (381)
+
+--- which experimental chains were used ---
+  chain A: 381 residues paired with predicted A1-A381, sequence identity 100%
+  total: 381 of 381 predicted residues paired (100%), identity 100%
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues      3.20 A   over 381 residues
+  CA RMSD, core                     0.94 A   over 277 residues (73%) after 5 cycles at 2.0 A
+  residues within  1 A:  39%   2 A:  71%   4 A:  83%   8 A:  97%
+  TM-score (approx., lower bound)  0.895   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  86.3 over all 381 residues,  86.3 over the paired ones
+  fraction  >=90: 48%   70-90: 43%   50-70: 9%   <50: 0%
+  Spearman(pLDDT, CA deviation) -0.54   (negative: low confidence where the prediction is wrong)
+    pLDDT 50-70 :   36 residues, mean CA deviation   7.02 A
+    pLDDT 70-90 :  164 residues, mean CA deviation   2.16 A
+    pLDDT 90-100:  181 residues, mean CA deviation   1.17 A
+
+--- largest CA deviations ---
+  predicted A T1    = exp chain A T2      15.42 A   pLDDT  62.9
+  predicted A S28   = exp chain A S29     14.70 A   pLDDT  66.7
+  predicted A G29   = exp chain A G30     12.24 A   pLDDT  68.4
+  predicted A G27   = exp chain A G28     10.88 A   pLDDT  66.6
+  predicted A V2    = exp chain A V3      10.13 A   pLDDT  67.2
+  predicted A G334  = exp chain A G335     9.44 A   pLDDT  69.5
+  predicted A A336  = exp chain A A337     9.17 A   pLDDT  69.2
+  predicted A N303  = exp chain A N304     9.05 A   pLDDT  67.8
+  predicted A Q18   = exp chain A Q19      9.04 A   pLDDT  50.1
+  predicted A K19   = exp chain A K20      8.83 A   pLDDT  55.8
+
+  wrote structure_compare/nanh_vs_2SIL_superposed.pdb
+  wrote structure_compare/nanh_vs_2SIL_per_residue.csv
+  wrote structure_compare/nanh_vs_2SIL_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/nanh_vs_2SIL_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/nanh_vs_2SIL_per_residue.png

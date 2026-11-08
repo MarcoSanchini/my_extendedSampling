@@ -1,0 +1,181 @@
+nohup: ignoring input
+=== gate for p450cam (UniProt P00183, PDB 2CPP)
+--- 2. experimental structure
+   ATOM records: 3204
+   chains: A 
+--- 3. decode at 8 steps
+Decoding p450cam: 414 residues, num_steps=8
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 187169.75it/s]
+  mean pLDDT 90.3 / 100   Rg_ca 21.68 A
+  residues with pLDDT >= 70: 94%   < 50: 0%
+Saved -> structure_compare/p450cam_pred_8steps.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)
+--- 4. compare at 8 steps
+predicted:    structure_compare/p450cam_pred_8steps.pdb  chains A (414)
+experimental: structure_compare/2CPP.pdb  chains A (405)
+
+--- which experimental chains were used ---
+  chain A: 405 residues paired with predicted A10-A414, sequence identity 100%
+  total: 405 of 414 predicted residues paired (98%), identity 100%
+  9 predicted residues have no experimental partner (not in the crystal, e.g. signal peptide, cleavage loop, transmembrane part); they are left out of every number
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues      1.99 A   over 405 residues
+  CA RMSD, core                     0.94 A   over 318 residues (79%) after 5 cycles at 2.0 A
+  residues within  1 A:  39%   2 A:  79%   4 A:  95%   8 A: 100%
+  TM-score (approx., lower bound)  0.942   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  90.3 over all 414 residues,  91.1 over the paired ones
+  fraction  >=90: 77%   70-90: 18%   50-70: 5%   <50: 0%
+  Spearman(pLDDT, CA deviation) -0.44   (negative: low confidence where the prediction is wrong)
+    pLDDT  0-50 :    2 residues, mean CA deviation   6.71 A
+    pLDDT 50-70 :   13 residues, mean CA deviation   2.43 A
+    pLDDT 70-90 :   73 residues, mean CA deviation   2.42 A
+    pLDDT 90-100:  317 residues, mean CA deviation   1.30 A
+
+--- largest CA deviations ---
+  predicted A V414  = exp chain A V414     8.77 A   pLDDT  48.1
+  predicted A G189  = exp chain A G189     7.20 A   pLDDT  89.0
+  predicted A S190  = exp chain A S190     6.75 A   pLDDT  91.7
+  predicted A D188  = exp chain A D188     6.01 A   pLDDT  87.0
+  predicted A M191  = exp chain A M191     5.87 A   pLDDT  93.2
+  predicted A T192  = exp chain A T192     5.69 A   pLDDT  89.8
+  predicted A A413  = exp chain A A413     5.69 A   pLDDT  51.3
+  predicted A P187  = exp chain A P187     5.65 A   pLDDT  85.4
+  predicted A T411  = exp chain A T411     5.28 A   pLDDT  51.5
+  predicted A N49   = exp chain A N49      5.26 A   pLDDT  75.6
+
+  wrote structure_compare/p450cam_vs_2CPP_8steps_superposed.pdb
+  wrote structure_compare/p450cam_vs_2CPP_8steps_per_residue.csv
+  wrote structure_compare/p450cam_vs_2CPP_8steps_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_8steps_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_8steps_per_residue.png
+predicted:    structure_compare/p450cam_pred_8steps.pdb  414 residues
+experimental: structure_compare/2CPP.pdb  405 residues
+paired by structure_compare/p450cam_vs_2CPP_8steps_per_residue.csv: 405 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 1157, experimental 1195, shared 1051
+  crystal contacts recovered        0.88
+  E = sum|dP-dE| / sum(dP+dE)      0.106   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20     2.34 A
+     21-  40     2.93 A
+     41-  60     1.44 A
+     61-  80     0.65 A
+     81- 100     1.23 A
+    101- 120     1.08 A
+    121- 140     1.39 A
+    141- 160     1.55 A
+    161- 180     4.34 A
+    181- 200     3.68 A
+    201- 220     1.92 A
+    221- 240     1.19 A
+    241- 260     1.00 A
+    261- 280     0.89 A
+    281- 300     1.06 A
+    301- 320     1.17 A
+    321- 340     1.66 A
+    341- 360     0.64 A
+    361- 380     0.74 A
+    381- 400     1.44 A
+    401- 405     5.96 A
+--- 3. decode at 128 steps
+Decoding p450cam: 414 residues, num_steps=128
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 195083.91it/s]
+  mean pLDDT 94.2 / 100   Rg_ca 21.88 A
+  residues with pLDDT >= 70: 100%   < 50: 0%
+Saved -> structure_compare/p450cam_pred_128steps.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)
+--- 4. compare at 128 steps
+predicted:    structure_compare/p450cam_pred_128steps.pdb  chains A (414)
+experimental: structure_compare/2CPP.pdb  chains A (405)
+
+--- which experimental chains were used ---
+  chain A: 405 residues paired with predicted A10-A414, sequence identity 100%
+  total: 405 of 414 predicted residues paired (98%), identity 100%
+  9 predicted residues have no experimental partner (not in the crystal, e.g. signal peptide, cleavage loop, transmembrane part); they are left out of every number
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues      2.36 A   over 405 residues
+  CA RMSD, core                     0.95 A   over 315 residues (78%) after 5 cycles at 2.0 A
+  residues within  1 A:  38%   2 A:  76%   4 A:  95%   8 A:  99%
+  TM-score (approx., lower bound)  0.938   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  94.2 over all 414 residues,  94.6 over the paired ones
+  fraction  >=90: 86%   70-90: 14%   50-70: 0%   <50: 0%
+  Spearman(pLDDT, CA deviation) -0.46   (negative: low confidence where the prediction is wrong)
+    pLDDT 70-90 :   49 residues, mean CA deviation   3.48 A
+    pLDDT 90-100:  356 residues, mean CA deviation   1.40 A
+
+--- largest CA deviations ---
+  predicted A V414  = exp chain A V414    17.34 A   pLDDT  75.6
+  predicted A A413  = exp chain A A413    14.24 A   pLDDT  82.4
+  predicted A K412  = exp chain A K412    11.77 A   pLDDT  81.4
+  predicted A T411  = exp chain A T411     9.54 A   pLDDT  81.2
+  predicted A G93   = exp chain A G93      8.69 A   pLDDT  73.4
+  predicted A A92   = exp chain A A92      7.58 A   pLDDT  73.5
+  predicted A G189  = exp chain A G189     7.12 A   pLDDT  94.4
+  predicted A T410  = exp chain A T410     6.82 A   pLDDT  84.7
+  predicted A S190  = exp chain A S190     6.68 A   pLDDT  95.8
+  predicted A D188  = exp chain A D188     6.16 A   pLDDT  92.8
+
+  wrote structure_compare/p450cam_vs_2CPP_128steps_superposed.pdb
+  wrote structure_compare/p450cam_vs_2CPP_128steps_per_residue.csv
+  wrote structure_compare/p450cam_vs_2CPP_128steps_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_128steps_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_128steps_per_residue.png
+predicted:    structure_compare/p450cam_pred_128steps.pdb  414 residues
+experimental: structure_compare/2CPP.pdb  405 residues
+paired by structure_compare/p450cam_vs_2CPP_128steps_per_residue.csv: 405 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 1139, experimental 1195, shared 1037
+  crystal contacts recovered        0.87
+  E = sum|dP-dE| / sum(dP+dE)      0.111   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20     1.99 A
+     21-  40     2.67 A
+     41-  60     1.29 A
+     61-  80     0.96 A
+     81- 100     2.97 A
+    101- 120     1.15 A
+    121- 140     1.24 A
+    141- 160     1.61 A
+    161- 180     4.23 A
+    181- 200     3.37 A
+    201- 220     2.13 A
+    221- 240     1.28 A
+    241- 260     0.98 A
+    261- 280     0.87 A
+    281- 300     0.99 A
+    301- 320     1.15 A
+    321- 340     1.92 A
+    341- 360     0.61 A
+    361- 380     0.59 A
+    381- 400     1.49 A
+    401- 405    12.49 A
+
+=== summary
+  mean pLDDT 94.2 / 100   Rg_ca 21.88 A
+  mean pLDDT 90.3 / 100   Rg_ca 21.68 A
+  CA RMSD, all paired residues      2.36 A   over 405 residues
+  CA RMSD, core                     0.95 A   over 315 residues (78%) after 5 cycles at 2.0 A
+  TM-score (approx., lower bound)  0.938   (>0.5 same fold, <0.17 random)
+  CA RMSD, all paired residues      1.99 A   over 405 residues
+  CA RMSD, core                     0.94 A   over 318 residues (79%) after 5 cycles at 2.0 A
+  TM-score (approx., lower bound)  0.942   (>0.5 same fold, <0.17 random)
+  E = sum|dP-dE| / sum(dP+dE)      0.111   (0 = identical maps)
+  E = sum|dP-dE| / sum(dP+dE)      0.106   (0 = identical maps)
+Commit the logs and structure_compare/ so the next session can read them:
+  git add p450cam_*.log structure_compare/p450cam_* && git commit -m 'p450cam gate' && git push

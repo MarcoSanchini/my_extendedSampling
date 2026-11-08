@@ -1,0 +1,5 @@
+Decoding p450cam: 414 residues, num_steps=8
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 187169.75it/s]
+  mean pLDDT 90.3 / 100   Rg_ca 21.68 A
+  residues with pLDDT >= 70: 94%   < 50: 0%
+Saved -> structure_compare/p450cam_pred_8steps.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)

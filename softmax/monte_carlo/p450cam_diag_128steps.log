@@ -1,0 +1,35 @@
+predicted:    structure_compare/p450cam_pred_128steps.pdb  414 residues
+experimental: structure_compare/2CPP.pdb  405 residues
+paired by structure_compare/p450cam_vs_2CPP_128steps_per_residue.csv: 405 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 1139, experimental 1195, shared 1037
+  crystal contacts recovered        0.87
+  E = sum|dP-dE| / sum(dP+dE)      0.111   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20     1.99 A
+     21-  40     2.67 A
+     41-  60     1.29 A
+     61-  80     0.96 A
+     81- 100     2.97 A
+    101- 120     1.15 A
+    121- 140     1.24 A
+    141- 160     1.61 A
+    161- 180     4.23 A
+    181- 200     3.37 A
+    201- 220     2.13 A
+    221- 240     1.28 A
+    241- 260     0.98 A
+    261- 280     0.87 A
+    281- 300     0.99 A
+    301- 320     1.15 A
+    321- 340     1.92 A
+    341- 360     0.61 A
+    361- 380     0.59 A
+    381- 400     1.49 A
+    401- 405    12.49 A

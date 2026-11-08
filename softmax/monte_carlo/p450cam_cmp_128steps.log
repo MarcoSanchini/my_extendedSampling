@@ -1,0 +1,38 @@
+predicted:    structure_compare/p450cam_pred_128steps.pdb  chains A (414)
+experimental: structure_compare/2CPP.pdb  chains A (405)
+
+--- which experimental chains were used ---
+  chain A: 405 residues paired with predicted A10-A414, sequence identity 100%
+  total: 405 of 414 predicted residues paired (98%), identity 100%
+  9 predicted residues have no experimental partner (not in the crystal, e.g. signal peptide, cleavage loop, transmembrane part); they are left out of every number
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues      2.36 A   over 405 residues
+  CA RMSD, core                     0.95 A   over 315 residues (78%) after 5 cycles at 2.0 A
+  residues within  1 A:  38%   2 A:  76%   4 A:  95%   8 A:  99%
+  TM-score (approx., lower bound)  0.938   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  94.2 over all 414 residues,  94.6 over the paired ones
+  fraction  >=90: 86%   70-90: 14%   50-70: 0%   <50: 0%
+  Spearman(pLDDT, CA deviation) -0.46   (negative: low confidence where the prediction is wrong)
+    pLDDT 70-90 :   49 residues, mean CA deviation   3.48 A
+    pLDDT 90-100:  356 residues, mean CA deviation   1.40 A
+
+--- largest CA deviations ---
+  predicted A V414  = exp chain A V414    17.34 A   pLDDT  75.6
+  predicted A A413  = exp chain A A413    14.24 A   pLDDT  82.4
+  predicted A K412  = exp chain A K412    11.77 A   pLDDT  81.4
+  predicted A T411  = exp chain A T411     9.54 A   pLDDT  81.2
+  predicted A G93   = exp chain A G93      8.69 A   pLDDT  73.4
+  predicted A A92   = exp chain A A92      7.58 A   pLDDT  73.5
+  predicted A G189  = exp chain A G189     7.12 A   pLDDT  94.4
+  predicted A T410  = exp chain A T410     6.82 A   pLDDT  84.7
+  predicted A S190  = exp chain A S190     6.68 A   pLDDT  95.8
+  predicted A D188  = exp chain A D188     6.16 A   pLDDT  92.8
+
+  wrote structure_compare/p450cam_vs_2CPP_128steps_superposed.pdb
+  wrote structure_compare/p450cam_vs_2CPP_128steps_per_residue.csv
+  wrote structure_compare/p450cam_vs_2CPP_128steps_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_128steps_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/p450cam_vs_2CPP_128steps_per_residue.png
