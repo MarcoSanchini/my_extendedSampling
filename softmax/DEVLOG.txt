@@ -6158,3 +6158,61 @@ a lot. The gate's E threshold therefore has to be read with chain length in mind
 good is 0.1-0.2, failed is >= 0.5, and a sharp cut at 0.15 would have called
 protein G marginal. Table and wording fixed in docs/structure_comparison.tex
 section 12.1 before the meeting.
+
+--------------------------------------------------------------------------------
+2026-11-08 (evening) -- the sialidase control: a monomeric beta-propeller folds correctly, so NA's failure is NA's
+--------------------------------------------------------------------------------
+Marco ran both remaining checks (commits 4f8d4de, aca9099).
+
+(a) NanH, the Salmonella typhimurium sialidase (2SIL, 381 aa): same six-bladed
+propeller fold as viral NA but monomeric. Sequence taken from the crystal with
+pdb_to_reference.py, so no accession lookup.
+
+                              NanH/2SIL      NA head/2HU0
+  mean pLDDT                  86.3           67.7
+  pLDDT < 50                  0%             17%
+  CA RMSD, all paired         3.20 A         14.93 A
+  core RMSD / residues        0.94 A / 277 (73%)   1.17 A / 116 (30%)
+  TM-score                    0.895          0.563
+  contact-map E               0.230          0.596
+  first 20 residues           6.0 A          29.6 A
+  last 20 residues            0.83 A         21-41 A
+  long-range disulfide        1/1 formed     0/1 formed
+
+The decisive rows are the last two. NanH's C-terminal block lands at 0.83 A, so
+the model DOES make the ring-closing (molecular Velcro) contact, and its one
+long-range bridge, Cys42-Cys103 at 61 residues' separation, is formed (4.91 A
+predicted vs 4.25 A). NanH's residual error is its first thirty residues (6 A), a
+loose N-terminal extension on an otherwise correct fold.
+
+So "ESM3 is weak on beta-propellers" is EXCLUDED. The failure on NA is specific
+to NA, and the leading explanation is now the quaternary one: NanH is monomeric,
+NA is an obligate homotetramer with a Ca2+ on its fourfold axis. Alternatives not
+excluded: NA's eight disulfides against NanH's one (and in particular the
+325-separation staple), and glycosylation. The disulfide-prompted decode
+(bridge_test tooling) would separate those from the tetramer. Caveat: NanH shares
+the fold but not the sequence family, so this shows the architecture is
+predictable, not that NA's sequence should have been.
+
+(b) P450cam step-count stability, the check the rejected targets got:
+
+  steps  pLDDT  Rg      RMSD all  core / residues      TM      E
+  8      90.3   21.68   1.99 A    0.94 A / 318 (79%)   0.942   0.106
+  32     91.9   21.70   1.98 A    0.96 A / 320 (79%)   0.942   0.109
+  128    94.2   21.88   2.36 A    0.95 A / 315 (78%)   0.938   0.111
+
+Flat. Same mild pattern as NA (more steps -> more confidence, marginally worse
+agreement) but at a tenth of an angstrom instead of a different structure. Keep
+32 steps as the default.
+
+E calibration now has four points, and it says E alone cannot be the gate:
+  P450cam  414 aa  alpha/beta   E 0.109  (correct)
+  protein G 56 aa  alpha/beta   E 0.180  (correct, short, so E is inflated)
+  NanH     381 aa  propeller    E 0.230  (correct fold, one loose N-terminal segment)
+  NA head  385 aa  propeller    E 0.596  (wrong fold)
+Good is 0.1-0.25, failed is >= 0.5, and E has to be quoted with pLDDT, the core
+FRACTION and TM, which are what separate "correct fold, one loose end" (NanH, 73%
+of the chain at 0.94 A) from "a third of a fold" (NA, 30% at 1.17 A).
+
+docs/structure_comparison.tex gains section 13 (the control) and 12.2 (the step
+counts), and its gate wording is rewritten accordingly. 17 pages.
