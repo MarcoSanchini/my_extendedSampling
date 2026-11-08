@@ -1,0 +1,62 @@
+--2026-11-08 18:35:33--  https://files.rcsb.org/download/2SIL.pdb
+Resolving files.rcsb.org (files.rcsb.org)... 99.86.171.75, 99.86.171.101, 99.86.171.25, ...
+Connecting to files.rcsb.org (files.rcsb.org)|99.86.171.75|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified [text/plain]
+Saving to: ‘structure_compare/2SIL.pdb’
+
+2SIL.pdb                              [  <=>                                                         ] 284.45K   813KB/s    in 0.3s    
+
+2026-11-08 18:35:34 (813 KB/s) - ‘structure_compare/2SIL.pdb’ saved [291276]
+
+2SIL.pdb chain A: 381 residues observed, numbered 2-382
+  no gaps: the observed residues are numbered consecutively
+  SEQRES present: 381 residues deposited for this chain
+
+TVEKSVVFKAEGEHFTDQKGNTIVGSGSGGTTKYFRIPAMCTTSKGTIVVFADARHNTASDQSFIDTAAARSTDGGKTWNKKIAIYNDRVNSKLSRVMDPTCIVANIQGRETILVMVGKWNNNDKTWGAYRDKAPDTDWDLVLYKSTDDGVTFSKVETNIHDIVTKNGTISAMLGGVGSGLQLNDGKLVFPVQMVRTKNITTVLNTSFIYSTDGITWSLPSGYCEGFGSENNIIEFNASLVNNIRNSGLRRSFETKDFGKTWTEFPPMDKKVDNRNHGVQGSTITIPSGNKLVAAHSSAQNKNNDYTRSDISLYAHNLYSGEVKLIDDFYPKVGNASGAGYSCLSYRKNVDKETLYVVYEANGSIEFQDLSRHLPVIKSYN
+
+Wrote /home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/references.py: nanh, 381 aa
+Decoding nanh: 381 residues, num_steps=32
+Fetching 22 files: 100%|███████████████████████████████████████████████████████████████████████████| 22/22 [00:00<00:00, 175427.16it/s]
+  mean pLDDT 86.3 / 100   Rg_ca 19.25 A
+  residues with pLDDT >= 70: 91%   < 50: 0%
+Saved -> structure_compare/nanh_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)
+(dev) marco.sanchini@astaroth:~/my_project/extendedSampling/softmax/monte_carlo$ python -u compare_structures.py --pred structure_compare/nanh_pred.pdb --exp structure_compare/2SIL.pdb --out-prefix structure_compare/nanh_vs_2SIL
+predicted:    structure_compare/nanh_pred.pdb  chains A (381)
+experimental: structure_compare/2SIL.pdb  chains A (381)
+
+--- which experimental chains were used ---
+  chain A: 381 residues paired with predicted A1-A381, sequence identity 100%
+  total: 381 of 381 predicted residues paired (100%), identity 100%
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues      3.20 A   over 381 residues
+  CA RMSD, core                     0.94 A   over 277 residues (73%) after 5 cycles at 2.0 A
+  residues within  1 A:  39%   2 A:  71%   4 A:  83%   8 A:  97%
+  TM-score (approx., lower bound)  0.895   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  86.3 over all 381 residues,  86.3 over the paired ones
+  fraction  >=90: 48%   70-90: 43%   50-70: 9%   <50: 0%
+  Spearman(pLDDT, CA deviation) -0.54   (negative: low confidence where the prediction is wrong)
+    pLDDT 50-70 :   36 residues, mean CA deviation   7.02 A
+    pLDDT 70-90 :  164 residues, mean CA deviation   2.16 A
+    pLDDT 90-100:  181 residues, mean CA deviation   1.17 A
+
+--- largest CA deviations ---
+  predicted A T1    = exp chain A T2      15.42 A   pLDDT  62.9
+  predicted A S28   = exp chain A S29     14.70 A   pLDDT  66.7
+  predicted A G29   = exp chain A G30     12.24 A   pLDDT  68.4
+  predicted A G27   = exp chain A G28     10.88 A   pLDDT  66.6
+  predicted A V2    = exp chain A V3      10.13 A   pLDDT  67.2
+  predicted A G334  = exp chain A G335     9.44 A   pLDDT  69.5
+  predicted A A336  = exp chain A A337     9.17 A   pLDDT  69.2
+  predicted A N303  = exp chain A N304     9.05 A   pLDDT  67.8
+  predicted A Q18   = exp chain A Q19      9.04 A   pLDDT  50.1
+  predicted A K19   = exp chain A K20      8.83 A   pLDDT  55.8
+
+  wrote structure_compare/nanh_vs_2SIL_superposed.pdb
+  wrote structure_compare/nanh_vs_2SIL_per_residue.csv
+  wrote structure_compare/nanh_vs_2SIL_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/nanh_vs_2SIL_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/nanh_vs_2SIL_per_residue.png
