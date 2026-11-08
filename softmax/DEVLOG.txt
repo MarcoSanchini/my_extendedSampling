@@ -6146,3 +6146,15 @@ separate "beta-propellers are hard for this model" from "NA specifically";
 (3) re-decode NA with its 8 disulfides supplied as constraints, reusing the
 bridge_test prompting tooling; (4) one decode of MBP vs 1ANF for a second point
 on the E calibration.
+
+2026-11-08 (addendum) -- protein G calibrates the E threshold, and warns against a sharp cut.
+Ran compare_structures + prediction_diagnostics on the protein G decode already
+in the repo (structure_compare/protein_g.pdb vs bridge_test/pdb/protein_g_1PGB.pdb),
+no GPU needed: pLDDT 92.4, core RMSD 0.70 A over 48 of 56 residues (86%), TM
+0.821, global CA RMSD 3.02 A, 80% of crystal contacts, E = 0.180. So the paper's
+own target, which ESM3 predicts well, has a HIGHER E than P450cam's 0.109,
+because at 56 residues there are only 137 contacts and a frayed terminus moves E
+a lot. The gate's E threshold therefore has to be read with chain length in mind:
+good is 0.1-0.2, failed is >= 0.5, and a sharp cut at 0.15 would have called
+protein G marginal. Table and wording fixed in docs/structure_comparison.tex
+section 12.1 before the meeting.
