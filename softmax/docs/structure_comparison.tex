@@ -414,12 +414,18 @@ Everything from here on was written for the supervisor meeting. In one page:
         sampler is well posed; it tests whether its reference means the real
         protein (section~\ref{sec:r0}). This is the point on which ``can we use
         neuraminidase anyway'' turns.
-  \item \textbf{Cheapest open experiments}, in order: look down the propeller
-        axis in a viewer (minutes); decode a monomeric bacterial sialidase, which
-        has the same fold, to find out whether the propeller or the tetramer is
-        the problem (one GPU-minute); re-decode NA with its disulfides supplied
-        as constraints, using the tooling already in \file{code/bridge\_test}
-        (an hour).
+  \item \textbf{The $\beta$-propeller fold is not the problem.} The control was
+        run on 8 November: a monomeric bacterial sialidase (NanH, 2SIL, 381
+        residues), which has the \emph{same} six-bladed propeller fold as
+        neuraminidase, is predicted well --- pLDDT 86, core 0.94\,\AA{} over 73\%
+        of the chain, TM 0.895, and its C-terminal block lands at 0.83\,\AA, so
+        the ring closes. Whatever defeats neuraminidase is specific to
+        neuraminidase (section~\ref{sec:nanh}).
+  \item \textbf{Cheapest remaining experiments}: look down the NA propeller axis
+        in a viewer (minutes); re-decode NA with its disulfides supplied as
+        constraints, using the tooling already in \file{code/bridge\_test} (an
+        hour); and, if the quaternary explanation is to be settled, a real
+        multimer predictor on the tetramer (a week).
 \end{itemize}
 
 \section{What the neuraminidase test measured}\label{sec:na-result}
@@ -594,7 +600,11 @@ that in life is never exposed to solvent. A predictor given one chain must fold 
 surface that does not exist on its own.
 
 \paragraph{For.} HA failed for the analogous reason, and this is the obvious
-prior for a viral surface glycoprotein.
+prior for a viral surface glycoprotein. It is also now the \emph{leading}
+explanation, because the control of section~\ref{sec:nanh} removed the
+alternative that propellers as such are hard: the protein that succeeds is
+monomeric and the one that fails is an obligate tetramer, which is the most
+visible difference between them.
 
 \paragraph{Against.} Unlike HA2's long helix, the head's fold is entirely
 intra-chain: every contact defining the propeller is within one chain, and
@@ -667,10 +677,12 @@ repeat folds than on the compact $\alpha/\beta$ globular proteins we happen to
 have calibrated on. Our passing controls --- maltose binding protein, amylase,
 luciferase, albumin, and now P450cam --- are all of the latter kind.
 
-\paragraph{For.} It explains everything we see without invoking neuraminidase at
-all.
+\paragraph{For.} It would explain everything we see without invoking
+neuraminidase at all.
 
-\paragraph{Against.} Nothing. It is untested.
+\paragraph{Against.} \textbf{This explanation is now excluded}, by the control
+described in section~\ref{sec:nanh}: a monomeric bacterial sialidase with the
+same fold is predicted well. ESM3 can build a closed six-bladed propeller.
 
 \paragraph{Test, and it is a good one.} Bacterial sialidases have the \emph{same}
 six-bladed propeller fold as viral neuraminidase but are monomeric; the classic
@@ -797,42 +809,146 @@ correct and not a failure.
 We now have the calibration that was missing when the gate was first written:
 
 \begin{center}
-\begin{tabular}{lrrrr}
+\begin{tabular}{lrrrrr}
 \toprule
- & protein~G & P450cam & NA head & HA0 \\
- & (the paper's target) & (passes) & (fails) & (fails) \\
+ & P450cam & NanH & protein~G & NA head & HA0 \\
+ & (passes) & (control) & (the paper's) & (fails) & (fails) \\
 \midrule
-length                       & 56 aa & 414 aa & 385 aa & 566 aa \\
-mean pLDDT                   & 0.92  & 0.92  & 0.68  & 0.51--0.62 \\
-C$\alpha$ RMSD, all          & 3.02\,\AA & 1.98\,\AA & 14.93\,\AA & --- \\
-core RMSD / residues         & 0.70\,\AA{} / 86\% & 0.96\,\AA{} / 79\% & 1.17\,\AA{} / 30\% & --- \\
-TM-score                     & 0.821 & 0.942 & 0.563 & --- \\
-$E$ against the crystal      & 0.180 & 0.109 & 0.596 & not measured \\
-crystal contacts recovered   & 80\%  & 88\%  & 39\%  & not measured \\
+length                       & 414 aa & 381 aa & 56 aa & 385 aa & 566 aa \\
+fold                         & $\alpha/\beta$ & 6-blade & $\alpha/\beta$ & 6-blade & --- \\
+mean pLDDT                   & 0.92 & 0.86 & 0.92 & 0.68 & 0.51--0.62 \\
+C$\alpha$ RMSD, all          & 1.98\,\AA & 3.20\,\AA & 3.02\,\AA & 14.93\,\AA & --- \\
+core RMSD / residues         & 0.96 / 79\% & 0.94 / 73\% & 0.70 / 86\% & 1.17 / 30\% & --- \\
+TM-score                     & 0.942 & 0.895 & 0.821 & 0.563 & --- \\
+$E$ against the crystal      & 0.109 & 0.230 & 0.180 & 0.596 & not measured \\
+crystal contacts recovered   & 88\%  & 76\%  & 80\%  & 39\%  & not measured \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-The protein~G column is the useful surprise, and it is worth showing the
-supervisor. Protein~G is the target of Zambon et al.\ (2024) and ESM3 predicts it
-well by every local measure --- pLDDT 0.92, a 0.70\,\AA{} core over 86\% of the
-chain --- yet its $E$ is 0.180, \emph{higher} than P450cam's 0.109, and its global
-RMSD is 3.0\,\AA. The reason is length: at 56 residues there are only 137
-contacts, so a frayed terminus moves $E$ a great deal, whereas P450cam's 1195
-contacts average that kind of local error away. Two consequences:
+Two lessons, both of which argue against a single sharp threshold.
 
-\begin{itemize}
-  \item A threshold on $E$ has to be read with the chain length in mind. ``Good''
-        is $E \approx 0.1$--0.2 and ``failed'' is $E \gtrsim 0.5$; a single sharp
-        cut would have classified the paper's own protein as marginal.
-  \item The gap between good and failed is nevertheless a factor of three, and
-        nothing we have measured falls inside it, so the gate is still a usable
-        criterion: pLDDT $\gtrsim 0.9$ \emph{and} $E$ well below 0.3, with the
-        core RMSD and the fraction of recovered contacts quoted alongside.
-\end{itemize}
+\paragraph{Protein~G: short chains sit higher.} Protein~G is the target of Zambon
+et al.\ (2024) and ESM3 predicts it well by every local measure --- pLDDT 0.92, a
+0.70\,\AA{} core over 86\% of the chain --- yet its $E$ is 0.180, higher than
+P450cam's 0.109, and its global RMSD is 3.0\,\AA. At 56 residues there are only
+137 contacts, so a frayed terminus moves $E$ a great deal, whereas P450cam's 1195
+contacts average that kind of local error away.
+
+\paragraph{NanH: a correct fold can sit at $E=0.23$.} The sialidase control is a
+genuinely correct prediction --- TM 0.895, three quarters of the chain inside
+1\,\AA, the propeller closed --- and still reaches $E = 0.230$ at 381 residues,
+where length cannot be the excuse. Its error is concentrated in the first thirty
+residues (6.0 and 6.4\,\AA{} for the first two blocks, against 0.7--2\,\AA{}
+through the middle and 0.83\,\AA{} at the C-terminal block), i.e.\ one misplaced
+N-terminal segment is enough to double $E$ while leaving the fold right.
+
+\paragraph{So the gate, restated.} ``Good'' is $E \approx 0.1$--0.25 and ``failed''
+is $E \gtrsim 0.5$; the gap is still a factor of two and nothing we have measured
+falls inside it. But $E$ alone is not the criterion: it must be read together
+with the pLDDT, the \emph{fraction} of the chain in the core, and the TM-score,
+because those three separate ``a correct fold with one loose end'' (NanH, 73\% of
+the chain at 0.94\,\AA) from ``a third of a fold'' (NA, 30\% at 1.17\,\AA). A
+single number would have called the paper's own protein marginal and the sialidase
+control a failure.
 
 $E$ for HA0 is still worth computing for the thesis, which needs the 2HMG entry
 downloaded on astaroth; \file{ha0\_pred.pdb} is already in the repository.
+
+\subsection{Step-count stability for the chosen target}\label{sec:p450-steps}
+
+The gate includes repeating the decode at several step counts, since that is how
+HA0 and NA were convicted. For P450cam (8 November):
+
+\begin{center}
+\begin{tabular}{rrrrrrr}
+\toprule
+steps & pLDDT & $R_g$ (\AA) & RMSD all (\AA) & core / residues & TM & $E$ \\
+\midrule
+8   & 90.3 & 21.68 & 1.99 & 0.94\,\AA{} / 318 (79\%) & 0.942 & 0.106 \\
+32  & 91.9 & 21.70 & 1.98 & 0.96\,\AA{} / 320 (79\%) & 0.942 & 0.109 \\
+128 & 94.2 & 21.88 & 2.36 & 0.95\,\AA{} / 315 (78\%) & 0.938 & 0.111 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Flat, as it should be: $R_g$ within 0.2\,\AA, the core fixed at 0.94--0.96\,\AA{}
+over 78--79\% of the chain, $E$ within 0.005. The same mild pattern as NA appears
+--- more steps raise the confidence (90.3 to 94.2) and very slightly worsen the
+agreement (RMSD 1.99 to 2.36\,\AA) --- but here it is a tenth of an \AA ngstrom
+rather than a different structure. 32 steps is a sensible default to keep.
+
+\section{The control: a monomeric propeller folds correctly}\label{sec:nanh}
+
+This is the experiment proposed in section~\ref{sec:boring} and it was run the
+same evening, so the ``maybe ESM3 is just bad at $\beta$-propellers'' explanation
+can be removed from the discussion.
+
+Bacterial sialidases have the same six-bladed propeller fold as viral
+neuraminidase but are monomeric; the sialidase of \emph{Salmonella typhimurium}
+(NanH, PDB 2SIL, 381 residues) was solved precisely to demonstrate the shared
+fold (Crennell et al., 1993). Its sequence was taken straight from the crystal
+with \file{pdb\_to\_reference.py}, so no accession lookup was needed.
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+ & NanH / 2SIL & NA head / 2HU0 \\
+ & monomeric propeller & tetrameric propeller \\
+\midrule
+length                            & 381 aa & 385 aa \\
+mean pLDDT                        & \textbf{86.3} & 67.7 \\
+residues with pLDDT $<50$         & \textbf{0\%}  & 17\% \\
+C$\alpha$ RMSD, all paired        & \textbf{3.20\,\AA} & 14.93\,\AA \\
+core RMSD / residues              & 0.94\,\AA{} / 277 (\textbf{73\%}) & 1.17\,\AA{} / 116 (30\%) \\
+TM-score                          & \textbf{0.895} & 0.563 \\
+$E$ against the crystal           & \textbf{0.230} & 0.596 \\
+first block (residues 1--20)      & 6.0\,\AA  & 29.6\,\AA \\
+last block (C-terminal 20)        & \textbf{0.83\,\AA} & 21--41\,\AA \\
+long-range disulfide              & \textbf{1 of 1 formed} & 0 of 1 formed \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The last three rows are the ones that matter, and they are why this control was
+worth a GPU-minute:
+
+\begin{itemize}
+  \item \textbf{The ring closes.} NanH's C-terminal twenty residues land at
+        0.83\,\AA{} from their crystal positions. In a propeller that is the
+        strand which completes the first blade, so the model demonstrably can
+        make the molecular Velcro contact. In NA the same region is 21--41\,\AA{}
+        out.
+  \item \textbf{Its one long-range disulfide is formed}: Cys42--Cys103, 61
+        residues apart, 4.9\,\AA{} predicted against 4.25\,\AA{} in the crystal.
+        NA's Cys92--Cys417, 325 residues apart, is 20.5\,\AA.
+  \item \textbf{The remaining error is one segment, not the architecture.} NanH's
+        first thirty residues are 6\,\AA{} out and everything from residue 41 to
+        the end is 0.7--5\,\AA. That is a loose N-terminal extension on a correct
+        fold.
+\end{itemize}
+
+\paragraph{What this excludes, and what it leaves.} ESM3-open can fold a
+six-bladed $\beta$-propeller from sequence alone, closed ring and all. So the
+failure on neuraminidase is \emph{not} a property of the fold class, and
+section~\ref{sec:boring} is settled negatively. What remains is what distinguishes
+the two proteins:
+\begin{itemize}
+  \item NanH is monomeric; NA is an obligate homotetramer with a Ca$^{2+}$ ion on
+        its fourfold axis (section~\ref{sec:why}, the quaternary explanation,
+        which is now the leading one).
+  \item NA carries eight disulfide bridges to NanH's one, and is glycosylated,
+        while NanH is a bacterial cytoplasmic/secreted protein.
+  \item NA's ring closure is stapled by a 325-residue-separation disulfide, a
+        much longer-range constraint than anything in NanH.
+\end{itemize}
+These are not mutually exclusive, and the disulfide-prompting experiment of
+section~\ref{sec:why} would separate the second from the first.
+
+\paragraph{One honest caveat.} NanH is not a control for \emph{viral}
+neuraminidase in the strict sense: it shares the fold but not the sequence family
+(the structures were solved to show that distant homology). So it proves that the
+architecture is predictable, not that NA's particular sequence should have been.
 
 \section{The pipeline from here, and its expected cost}\label{sec:pipeline}
 
@@ -880,17 +996,19 @@ promises.
 \subsection{What we can say tomorrow, and what we cannot}
 
 We can say that neuraminidase does not pass, with numbers, and that the failure
-is reproducible and specific rather than noisy. We can say that the replacement
-is found and already measured: P450cam, 414 residues, pLDDT 92, RMSD 2\,\AA, TM
-0.94. We can say what the gate now is, as a number.
+is reproducible, specific, and stable across step counts. We can say that the
+replacement is found and measured, including its step-count stability: P450cam,
+414 residues, pLDDT 90--94, RMSD 2\,\AA, TM 0.94, $E = 0.11$. We can say what the
+gate is and why it cannot be a single number. And we can say that the fold class
+is not to blame, because a monomeric protein with the same propeller architecture
+is predicted correctly, ring closed and long-range disulfide formed.
 
-We cannot yet say \emph{why} NA fails. The ring-closure explanation is the best
-supported --- by the deviation profile and by the broken 325-residue disulfide ---
-but nobody has looked at it in a viewer, and the dull alternative of
-section~\ref{sec:boring}, that the model is weak on $\beta$-propellers in
-general, has not been excluded. One decode of a bacterial sialidase would settle
-that, and it should be done before claiming anything about neuraminidase
-specifically.
+What we cannot say is which NA-specific cause is responsible. The tetramer is now
+the leading explanation, the disulfide load and the glycans are alternatives, and
+the three are not mutually exclusive. Two experiments would narrow it: the
+disulfide-prompted decode (an hour, tooling already here) and a multimer
+predictor on the tetramer (a week, new tooling). Neither changes the target
+decision.
 
 \subsection{Questions for the supervisor}
 
@@ -906,8 +1024,11 @@ specifically.
         $\sim$455 residues and from the same family, or luciferase at 550
         residues, which also passes the decode gate but has a more divergent
         family?
-  \item Is the bacterial sialidase control worth a GPU-minute for the thesis's
-        limitations section?
+  \item The sialidase control is done (section~\ref{sec:nanh}) and the tetramer
+        is now the leading explanation for NA. Is it worth a week of new tooling
+        --- a multimer predictor --- to confirm that, or is it enough for the
+        thesis to record that the subunit of an obligate oligomer was not
+        predictable and move on?
   \item Does he want the NA post-mortem written up at all, or is it enough to
         record that the target was changed?
 \end{enumerate}
