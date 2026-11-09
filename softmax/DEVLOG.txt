@@ -6276,3 +6276,48 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     over 73%, TM 0.895; ns5b 23.49 A, no core, TM 0.534 -- all unchanged.
     (1C2P's 22 MODRES are MSE, which was already handled, so ns5b_1c2p was
     never affected.)
+
+2026-11-09 -- enterovirus 3Dpol: the best viral result so far, still not a pass
+    Gate on pol3d_1ra6 (461 aa, 1RA6 chain A, 32 steps): mean pLDDT 78.9, 4%
+    of residues below 50, CA RMSD 11.92 A, core 1.20 A over 188 residues
+    (41%), TM 0.797, E 0.274 with 69% of crystal contacts recovered.
+    Below the gate (pLDDT ~0.9, E 0.10-0.25) but clearly the best viral
+    protein tried: NA 0.68 / E 0.596, NS5B 0.70 / E 0.448, 3Dpol 0.79 / 0.274,
+    against P450cam 0.92 / 0.109.
+    The error is localised. The first 20-residue block is 49 A out and the
+    second 19 A, while everything from residue 41 on runs 3-5 A per block.
+    Refitting without the N-terminal tail (computed here from the per-residue
+    csv, no new decode): residues 41-461 give 3.58 A global, 1.21 A core over
+    51%; residues 31-461 give 4.41 A, 1.22 A over 50%. So the body of the
+    protein is roughly right and the N-terminus is thrown away.
+    That is a suggestive place to fail. 1RA6 is the structure solved to show
+    that 3Dpol is activated by precise proteolytic processing: the mature
+    N-terminal glycine has to be freed by 3CD cleavage and buried in a pocket,
+    and that burial is what orders the fingers domain. A sequence-only
+    predictor has no way to know the chain begins at a cleavage site.
+    Even so, the trunk alone (core 51%) is below P450cam (79% at 0.96 A) and
+    NanH (73% at 0.94 A), so trimming the tail would not by itself produce a
+    passing target, and trimming to make a number pass is not a good reason to
+    trim. Left as it is.
+    Pattern worth stating in the thesis: three viral proteins of three
+    different folds land at pLDDT 0.68-0.79 while every non-viral control of
+    comparable length sits at 0.90-0.93. The envelope-glycoprotein explanation
+    does not cover NS5B or 3Dpol, which are soluble monomeric enzymes.
+
+2026-11-09 -- all decodes in one table (structure_comparison.tex section 14)
+    Every prediction compared with a crystal, with a short introduction to each
+    protein. Rows (32 steps unless noted): P450cam 2CPP 414 aa pLDDT 91.9,
+    1.98/0.96 A over 79%, TM 0.942, E 0.109; protein G 1PGB 56 aa 92.4,
+    3.02/0.70 A over 86%, TM 0.821, E 0.180; NanH 2SIL 381 aa 86.3, 3.20/0.94 A
+    over 73%, TM 0.895, E 0.230; 3Dpol 1RA6 461 aa 78.9, 11.92/1.20 A over 41%,
+    TM 0.797, E 0.274; NS5B 1C2P 576 aa 70.0, 23.49 A and no core, TM 0.534,
+    E 0.448; NA head 2HU0 385 aa 67.7, 14.93/1.17 A over 30%, TM 0.563,
+    E 0.596; HA0 566 aa pLDDT 0.51-0.62, never compared with 2HMG.
+    Contacts recovered: 0.88, 0.80, 0.76, 0.69, 0.53, 0.39.
+    Protein G and the NA/P450cam/NanH energies were recomputed in the cloud
+    container from the committed pdbs, so the table is reproducible without a
+    GPU. pLDDT, TM and E rank the seven proteins identically, which is worth
+    stating: pLDDT never sees the crystal.
+    The decision boundary sits between E = 0.23 (correct) and E = 0.27 (not),
+    too narrow to trust E alone there, so quote it with the core fraction.
+    Pdf now 21 pages.

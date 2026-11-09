@@ -170,3 +170,31 @@ natural profile for the K-site comparison should come from NA across subtypes
 and host species rather than one human lineage, and the tetramer interface and
 the Ca2+ site on the fourfold axis need flagging, because they are conserved for
 quaternary reasons a single-chain energy cannot see.
+
+## Results of the viral gates (2026-11-09)
+
+| Target | Length | pLDDT | core RMSD | TM | E | Verdict |
+| --- | --- | --- | --- | --- | --- | --- |
+| P450cam (non-viral reference) | 414 | 0.92 | 0.96 A over 79% | 0.942 | 0.109 | pass |
+| Enterovirus 3Dpol | 461 | 0.79 | 1.20 A over 41% | 0.797 | 0.274 | fail, narrowly |
+| HCV NS5B | 576 | 0.70 | none | 0.534 | 0.448 | fail |
+| NA head | 385 | 0.68 | 1.17 A over 30% | 0.563 | 0.596 | fail |
+
+3Dpol's error is localised: the first two 20-residue blocks are 49 and 19 A
+out, the rest 3-5 A. Refitting residues 41-461 only gives 3.58 A global and
+1.21 A core over 51%. 1RA6 is the structure solved to show that 3Dpol is
+activated by precise proteolytic processing, with the mature N-terminal
+glycine buried in a pocket that orders the fingers domain, so a sequence-only
+predictor failing exactly there is not surprising. But 51% core is still below
+P450cam's 79% and NanH's 73%, so trimming the tail would not make it a passing
+target, and trimming in order to pass is not a reason to trim.
+
+**The pattern, which is the part worth telling the supervisor.** Three viral
+proteins of three unrelated folds land at pLDDT 0.68-0.79, while every
+non-viral control of comparable length sits at 0.90-0.93. The
+envelope-glycoprotein explanation drawn up above does not cover NS5B or 3Dpol:
+both are soluble monomeric enzymes with no glycans and no disulfide network. If
+the next viral candidate also lands in the 0.7s, the honest conclusion is that
+ESM3-open is weaker on viral sequences as a class -- which is itself a
+publishable observation, and an argument for running the sampler on a target
+the predictor handles and discussing the viral case separately.
