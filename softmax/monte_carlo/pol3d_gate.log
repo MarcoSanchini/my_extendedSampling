@@ -1,0 +1,15 @@
+nohup: ignoring input
+=== gate for pol3d_1ra6 (UniProt -, PDB 1RA6)
+--- 2. experimental structure
+   ATOM records: 3671
+   chains: A 
+--- 3. decode at 32 steps
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/decode_to_pdb.py", line 179, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/decode_to_pdb.py", line 122, in main
+    label, seq = get_reference(args.ref or "zero_polymer")
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/references.py", line 431, in get_reference
+    raise ValueError(
+ValueError: Unknown reference 'pol3d_1ra6'. Available: ['bpti', 'crambin', 'na_head_2hu0', 'nanh', 'ns5b_1c2p', 'p450cam', 'polymer_one', 'polymer_two', 'protein_g', 'random566_0', 'random566_1', 'zero_polymer', 'zero_polymer_ectodomain', 'zero_polymer_mature', 'zero_polymer_trimer_g25']. Set it via the REF environment variable, e.g. REF=protein_g.

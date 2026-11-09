@@ -1,0 +1,5 @@
+Decoding ns5b_1c2p: 576 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 34886.46it/s]
+  mean pLDDT 70.0 / 100   Rg_ca 34.07 A
+  residues with pLDDT >= 70: 55%   < 50: 11%
+Saved -> structure_compare/ns5b_1c2p_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)

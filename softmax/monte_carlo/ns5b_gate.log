@@ -1,0 +1,105 @@
+nohup: ignoring input
+=== gate for ns5b_1c2p (UniProt -, PDB 1C2P)
+--- 2. experimental structure
+   ATOM records: 8537
+   chains: A B 
+--- 3. decode at 32 steps
+Decoding ns5b_1c2p: 576 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 34886.46it/s]
+  mean pLDDT 70.0 / 100   Rg_ca 34.07 A
+  residues with pLDDT >= 70: 55%   < 50: 11%
+Saved -> structure_compare/ns5b_1c2p_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)
+--- 4. compare at 32 steps
+predicted:    structure_compare/ns5b_1c2p_pred.pdb  chains A (576)
+experimental: structure_compare/1C2P.pdb  chains A (558), B (561)
+
+--- which experimental chains were used ---
+  chain B: 561 residues paired with predicted A7-A572, sequence identity 100%
+  chain A (558 residues) skipped: only matches predicted residues already paired (a symmetry copy)
+  total: 561 of 576 predicted residues paired (97%), identity 100%
+  15 predicted residues have no experimental partner (not in the crystal, e.g. signal peptide, cleavage loop, transmembrane part); they are left out of every number
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues     23.49 A   over 561 residues
+  CA RMSD, core                    23.49 A   over 561 residues (100%) after 5 cycles at 2.0 A
+  residues within  1 A:   0%   2 A:   0%   4 A:   6%   8 A:  26%
+  TM-score (approx., lower bound)  0.534   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  70.0 over all 576 residues,  70.7 over the paired ones
+  fraction  >=90: 0%   70-90: 55%   50-70: 35%   <50: 11%
+  Spearman(pLDDT, CA deviation) -0.57   (negative: low confidence where the prediction is wrong)
+    pLDDT  0-50 :   54 residues, mean CA deviation  40.61 A
+    pLDDT 50-70 :  191 residues, mean CA deviation  20.50 A
+    pLDDT 70-90 :  314 residues, mean CA deviation  11.39 A
+    pLDDT 90-100:    2 residues, mean CA deviation   3.61 A
+
+--- largest CA deviations ---
+  predicted A G564  = exp chain B G558    84.04 A   pLDDT  39.9
+  predicted A G563  = exp chain B G557    83.91 A   pLDDT  43.0
+  predicted A D565  = exp chain B D559    83.06 A   pLDDT  37.2
+  predicted A Y561  = exp chain B Y555    83.00 A   pLDDT  47.8
+  predicted A G560  = exp chain B G554    82.57 A   pLDDT  49.6
+  predicted A A559  = exp chain B A553    82.23 A   pLDDT  49.4
+  predicted A S562  = exp chain B S556    81.98 A   pLDDT  45.9
+  predicted A I566  = exp chain B I560    80.88 A   pLDDT  34.3
+  predicted A Y567  = exp chain B Y561    80.41 A   pLDDT  33.7
+  predicted A G555  = exp chain B G549    80.13 A   pLDDT  47.8
+
+  wrote structure_compare/ns5b_1c2p_vs_1C2P_superposed.pdb
+  wrote structure_compare/ns5b_1c2p_vs_1C2P_per_residue.csv
+  wrote structure_compare/ns5b_1c2p_vs_1C2P_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/ns5b_1c2p_vs_1C2P_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/ns5b_1c2p_vs_1C2P_per_residue.png
+predicted:    structure_compare/ns5b_1c2p_pred.pdb  576 residues
+experimental: structure_compare/1C2P.pdb  1119 residues
+paired by structure_compare/ns5b_1c2p_vs_1C2P_per_residue.csv: 561 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 1535, experimental 1673, shared 885
+  crystal contacts recovered        0.53
+  E = sum|dP-dE| / sum(dP+dE)      0.448   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20    30.76 A
+     21-  40    28.08 A
+     41-  60    20.31 A
+     61-  80    11.50 A
+     81- 100    11.22 A
+    101- 120    11.32 A
+    121- 140    13.65 A
+    141- 160    12.44 A
+    161- 180    11.46 A
+    181- 200    10.60 A
+    201- 220     6.06 A
+    221- 240    11.20 A
+    241- 260    13.54 A
+    261- 280     6.22 A
+    281- 300     5.90 A
+    301- 320     4.09 A
+    321- 340     4.48 A
+    341- 360    16.05 A
+    361- 380    15.16 A
+    381- 400    24.81 A
+    401- 420    14.47 A
+    421- 440    16.58 A
+    441- 460    12.80 A
+    461- 480    22.83 A
+    481- 500    27.21 A
+    501- 520    15.84 A
+    521- 540    45.11 A
+    541- 560    79.52 A
+    561- 561    74.72 A
+
+=== summary
+  mean pLDDT 70.0 / 100   Rg_ca 34.07 A
+  CA RMSD, all paired residues     23.49 A   over 561 residues
+  CA RMSD, core                    23.49 A   over 561 residues (100%) after 5 cycles at 2.0 A
+  TM-score (approx., lower bound)  0.534   (>0.5 same fold, <0.17 random)
+  E = sum|dP-dE| / sum(dP+dE)      0.448   (0 = identical maps)
+Commit the logs and structure_compare/ so the next session can read them:
+  git add ns5b_1c2p_*.log structure_compare/ns5b_1c2p_* && git commit -m 'ns5b_1c2p gate' && git push

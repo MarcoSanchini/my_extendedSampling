@@ -1,0 +1,43 @@
+predicted:    structure_compare/ns5b_1c2p_pred.pdb  576 residues
+experimental: structure_compare/1C2P.pdb  1119 residues
+paired by structure_compare/ns5b_1c2p_vs_1C2P_per_residue.csv: 561 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 1535, experimental 1673, shared 885
+  crystal contacts recovered        0.53
+  E = sum|dP-dE| / sum(dP+dE)      0.448   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20    30.76 A
+     21-  40    28.08 A
+     41-  60    20.31 A
+     61-  80    11.50 A
+     81- 100    11.22 A
+    101- 120    11.32 A
+    121- 140    13.65 A
+    141- 160    12.44 A
+    161- 180    11.46 A
+    181- 200    10.60 A
+    201- 220     6.06 A
+    221- 240    11.20 A
+    241- 260    13.54 A
+    261- 280     6.22 A
+    281- 300     5.90 A
+    301- 320     4.09 A
+    321- 340     4.48 A
+    341- 360    16.05 A
+    361- 380    15.16 A
+    381- 400    24.81 A
+    401- 420    14.47 A
+    421- 440    16.58 A
+    441- 460    12.80 A
+    461- 480    22.83 A
+    481- 500    27.21 A
+    501- 520    15.84 A
+    521- 540    45.11 A
+    541- 560    79.52 A
+    561- 561    74.72 A

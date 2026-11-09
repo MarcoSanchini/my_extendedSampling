@@ -1,0 +1,11 @@
+open 1C2P.pdb
+open ns5b_1c2p_vs_1C2P_superposed.pdb
+delete solvent
+delete #1 & ~/B
+cartoon
+hide atoms
+color #1 lightgray
+color bfactor #2 palette alphafold
+# already superposed by compare_structures.py. To redo the fit inside ChimeraX
+# against one experimental chain:  matchmaker #2 to #1/B
+view
