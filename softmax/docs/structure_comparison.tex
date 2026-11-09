@@ -15,6 +15,7 @@
 \usepackage[margin=2.5cm]{geometry}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{xcolor}
@@ -421,8 +422,11 @@ Everything from here on was written for the supervisor meeting. In one page:
         of the chain, TM 0.895, and its C-terminal block lands at 0.83\,\AA, so
         the ring closes. Whatever defeats neuraminidase is specific to
         neuraminidase (section~\ref{sec:nanh}).
-  \item \textbf{Cheapest remaining experiments}: look down the NA propeller axis
-        in a viewer (minutes); re-decode NA with its disulfides supplied as
+  \item \textbf{The viewer check is done} (9 November, figure~\ref{fig:propeller}):
+        the crystal shows the closed six-bladed ring, the prediction builds blade-like
+        sheets but not the ring. Consistent with the open-ring reading, though not
+        on its own conclusive.
+  \item \textbf{Cheapest remaining experiments}: re-decode NA with its disulfides supplied as
         constraints, using the tooling already in \file{code/bridge\_test} (an
         hour); and, if the quaternary explanation is to be settled, a real
         multimer predictor on the tetramer (a week).
@@ -566,12 +570,61 @@ signature of an unclosed ring rather than of a generally poor model. And
 Cys92--Cys417, the covalent staple between the chain's beginning and its end, is
 the single worst-predicted feature in the structure (section~\ref{sec:diag}).
 
-\paragraph{Against.} Nothing so far --- but the test below has not been done.
+\paragraph{Against.} Nothing that the pictures contradict, but see the caveat
+at the end of this subsection: the viewer check supports this reading without
+proving it.
 
-\paragraph{Test.} Thirty seconds in ChimeraX: open
-\file{na\_head\_vs\_2HU0\_view.cxc}, look down the propeller axis, count the
+\paragraph{Test, and the result (9 November).} The test was thirty seconds in
+ChimeraX: open the two structures, look down the propeller axis, count the
 blades, and see whether the first and last strands sit in one blade or point away
-from each other.
+from each other. Figure~\ref{fig:propeller} is what came out.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/na_2hu0_crystal_axis.png}\\
+    {\small (a) crystal, 2HU0 monomer}
+  \end{minipage}\hfill
+  \begin{minipage}[t]{0.48\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/na_pred_axis.png}\\
+    {\small (b) ESM3 prediction, 32 steps}
+  \end{minipage}
+
+  \vspace{1em}
+  \begin{minipage}[t]{0.62\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figures/na_pred_vs_2hu0_super.png}\\
+    {\small (c) the two superposed (ChimeraX \file{matchmaker}), crystal blue,
+     prediction beige}
+  \end{minipage}
+  \caption{Looking down the pseudo-sixfold axis. In the crystal (a) the six
+  wedge-shaped blades fan out from a central point, each an antiparallel
+  $\beta$-sheet, and the ring is closed: following the outside of the molecule
+  never leaves the sheet. The prediction (b) has a comparable diameter and
+  plenty of $\beta$ structure, but the radial organisation survives only in part
+  of the molecule; elsewhere the sheets are short or replaced by loops, there is
+  no clean central funnel, and a long unstructured segment --- the N-terminus,
+  the block measured at 29.6\,\AA{} in section~\ref{sec:na-result} --- leaves the
+  body of the protein at the top. The superposition (c) shows that the two
+  occupy a similar envelope and that many individual segments run parallel, which
+  is the 1.1\,\AA{} core being matched, while the rest sits beside the crystal
+  rather than on it.}
+  \label{fig:propeller}
+\end{figure}
+
+\paragraph{What the pictures do and do not establish.} They are consistent with
+an unclosed ring and with nothing else we have proposed: the local blade motif is
+clearly being built, and it is the global arrangement that is wrong. But the
+honest limit is that a ribbon drawing at this size does not let one count six
+blades reliably or point to the strand that should complete the first one, and
+\file{matchmaker} aligns on the best-matching subset, so a respectable-looking
+overlay is exactly what a partially correct model gives. Taken with the numbers
+--- both chain ends 20--40\,\AA{} out while the middle is 3--5\,\AA, and
+Cys92--Cys417 at 20.5\,\AA{} instead of 4.1\,\AA{} --- the picture is
+supporting evidence, not a proof. The measurement that would settle it is the
+disulfide-constrained re-decode below.
 
 \subsection{The blades are built in the wrong register}
 
