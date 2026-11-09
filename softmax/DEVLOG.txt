@@ -6256,3 +6256,23 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     1RA6 (enterovirus 3Dpol) did not run: pol3d_1ra6 was never written into
     references.py, so decode_to_pdb.py raised Unknown reference. The gate
     itself is untouched by this; just the --write step to redo.
+
+2026-11-09 -- modified residues: the readers now take MODRES from the file
+    The 1RA6 reference could not be written: --use-seqres stopped on
+    "non-canonical residues ['X']". The four X's are at 96, 212, 281 and 290,
+    which are exactly the four positions pdb_to_reference.py had reported as
+    unobserved gaps. They are not disordered. They are CAS,
+    S-(dimethylarsenic)cysteine, cysteines adducted by the cacodylate buffer,
+    written as HETATM with their own residue name and LINKed into the chain.
+    Both readers knew only the 20 canonical names plus MSE, so they dropped
+    them, and the observed sequence came out 457 aa with four cysteines
+    silently missing and four fake loop gaps. For a project that counts
+    disulfides that is exactly the wrong failure.
+    Fix: a PDB file declares the parent of every modified residue in its own
+    MODRES records, so pdb_to_reference.py and compare_structures.py now build
+    their residue table from the file instead of from a hard-coded list.
+    1RA6 chain A now reads as 461 residues, no gaps, the four cysteines in
+    place. Regression: p450cam 1.98/0.96 A over 79%, TM 0.942; nanh 3.20/0.94 A
+    over 73%, TM 0.895; ns5b 23.49 A, no core, TM 0.534 -- all unchanged.
+    (1C2P's 22 MODRES are MSE, which was already handled, so ns5b_1c2p was
+    never affected.)
