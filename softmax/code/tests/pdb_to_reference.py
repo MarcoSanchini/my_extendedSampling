@@ -47,6 +47,33 @@ THREE_TO_ONE = {
 }
 
 
+def residue_table(path):
+	"""THREE_TO_ONE plus whatever this file's MODRES records declare.
+
+	A chemically modified residue (phosphoserine, an oxidised or
+	arsenic-adducted cysteine, ...) is written under its own three-letter
+	name and usually as HETATM, so a reader that knows only the 20 canonical
+	names drops it. Dropping it is the worst of the options: the residue is
+	part of the chain, so the sequence comes out one residue short and the
+	numbering gap looks like a disordered loop. 1RA6 is the case in point --
+	four of its cysteines are CAS, S-(dimethylarsenic)cysteine from the
+	crystallisation buffer, and reading them as absent would have written a
+	reference missing four cysteines without saying so.
+
+	A PDB file declares the parent of each modified residue itself, in its
+	MODRES records, so take the mapping from the file rather than from a
+	hard-coded list that would always be missing the next one.
+	"""
+	table = dict(THREE_TO_ONE)
+	for line in open(path):
+		if not line.startswith("MODRES"):
+			continue
+		name, parent = line[12:15].strip(), line[24:27].strip()
+		if parent in THREE_TO_ONE:
+			table[name] = THREE_TO_ONE[parent]
+	return table
+
+
 def read_chain(path, chain=None):
 	"""(residues, seqres, chains) for one chain.
 
@@ -54,6 +81,7 @@ def read_chain(path, chain=None):
 	deposited sequence for that chain if SEQRES records exist, chains the set of
 	chains with ATOM records.
 	"""
+	table = residue_table(path)
 	residues, seen, chains, seqres = [], set(), [], {}
 	for line in open(path):
 		if line.startswith("SEQRES"):
@@ -68,18 +96,18 @@ def read_chain(path, chain=None):
 			chains.append(ch)
 		if chain is not None and ch != chain:
 			continue
-		if name not in THREE_TO_ONE:
+		if name not in table:
 			continue
 		# An altloc duplicates a whole residue; keep whichever comes first.
 		key = (int(line[22:26]), line[26].strip())
 		if key in seen:
 			continue
 		seen.add(key)
-		residues.append((key[0], key[1], THREE_TO_ONE[name]))
+		residues.append((key[0], key[1], table[name]))
 	chain_seqres = None
 	if chain in seqres or (chain is None and len(seqres) == 1):
 		names = seqres[chain] if chain in seqres else next(iter(seqres.values()))
-		chain_seqres = "".join(THREE_TO_ONE.get(n, "X") for n in names)
+		chain_seqres = "".join(table.get(n, "X") for n in names)
 	return residues, chain_seqres, chains
 
 

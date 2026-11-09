@@ -86,7 +86,22 @@ from compare_to_pdb import AA3, align, kabsch, tm_score, spearman  # noqa: E402
 def read_chains(path):
 	"""{chain id: [residue, ...]} from the first MODEL, residues that have a CA.
 	A residue is a dict: aa, resseq, icode, ca (xyz), b (CA B-factor). First
-	alternate location only; HETATM kept only for selenomethionine."""
+	alternate location only; HETATM kept for selenomethionine and for any
+	residue the file's own MODRES records declare to be a modified form of a
+	standard one."""
+	# MODRES tells us which non-standard residue names are modified forms of
+	# a standard one (CAS = arsenic-adducted cysteine in 1RA6, MSE =
+	# selenomethionine nearly everywhere). They are part of the chain, so
+	# skipping them would leave holes that look like disorder.
+	modres = {}
+	with open(path) as fh:
+		for line in fh:
+			if line.startswith("MODRES"):
+				parent = line[24:27].strip()
+				if parent in AA3:
+					modres[line[12:15].strip()] = parent
+			elif line.startswith(("ATOM", "HETATM", "MODEL")):
+				break
 	chains, seen = {}, set()
 	with open(path) as fh:
 		for line in fh:
@@ -96,7 +111,7 @@ def read_chains(path):
 			if rec not in ("ATOM", "HETATM") or line[12:16].strip() != "CA":
 				continue
 			resname = line[17:20].strip()
-			if rec == "HETATM" and resname != "MSE":
+			if rec == "HETATM" and resname != "MSE" and resname not in modres:
 				continue
 			if line[16] not in (" ", "A", "1"):
 				continue
@@ -106,7 +121,7 @@ def read_chains(path):
 			seen.add((ch, resseq, icode))
 			b = float(line[60:66]) if len(line) >= 66 and line[60:66].strip() else float("nan")
 			chains.setdefault(ch, []).append({
-				"aa": AA3.get(resname, "X"), "resseq": resseq, "icode": icode.strip(),
+				"aa": AA3.get(modres.get(resname, resname), "X"), "resseq": resseq, "icode": icode.strip(),
 				"ca": np.array([float(line[30:38]), float(line[38:46]), float(line[46:54])]), "b": b})
 	if not chains:
 		raise SystemExit(f"{path}: no CA atoms found")
