@@ -1,0 +1,11 @@
+open 1RA6.pdb
+open pol3d_1ra6_vs_1RA6_superposed.pdb
+delete solvent
+delete #1 & ~/A
+cartoon
+hide atoms
+color #1 lightgray
+color bfactor #2 palette alphafold
+# already superposed by compare_structures.py. To redo the fit inside ChimeraX
+# against one experimental chain:  matchmaker #2 to #1/A
+view

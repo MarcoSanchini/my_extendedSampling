@@ -1,0 +1,37 @@
+predicted:    structure_compare/pol3d_1ra6_pred.pdb  461 residues
+experimental: structure_compare/1RA6.pdb  457 residues
+paired by structure_compare/pol3d_1ra6_vs_1RA6_per_residue.csv: 457 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 1177, experimental 1312, shared 903
+  crystal contacts recovered        0.69
+  E = sum|dP-dE| / sum(dP+dE)      0.274   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20    49.10 A
+     21-  40    19.45 A
+     41-  60     7.85 A
+     61-  80     3.69 A
+     81- 100     3.08 A
+    101- 120     5.41 A
+    121- 140     9.21 A
+    141- 160     5.65 A
+    161- 180     5.21 A
+    181- 200     4.01 A
+    201- 220     3.73 A
+    221- 240     3.10 A
+    241- 260     2.99 A
+    261- 280     5.12 A
+    281- 300     3.39 A
+    301- 320     2.68 A
+    321- 340     1.65 A
+    341- 360     5.22 A
+    361- 380     3.55 A
+    381- 400     3.62 A
+    401- 420     4.87 A
+    421- 440     3.25 A
+    441- 457     7.13 A

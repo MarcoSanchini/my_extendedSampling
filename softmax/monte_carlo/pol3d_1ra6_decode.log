@@ -1,9 +1,5 @@
-Traceback (most recent call last):
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/decode_to_pdb.py", line 179, in <module>
-    main()
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/decode_to_pdb.py", line 122, in main
-    label, seq = get_reference(args.ref or "zero_polymer")
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/references.py", line 431, in get_reference
-    raise ValueError(
-ValueError: Unknown reference 'pol3d_1ra6'. Available: ['bpti', 'crambin', 'na_head_2hu0', 'nanh', 'ns5b_1c2p', 'p450cam', 'polymer_one', 'polymer_two', 'protein_g', 'random566_0', 'random566_1', 'zero_polymer', 'zero_polymer_ectodomain', 'zero_polymer_mature', 'zero_polymer_trimer_g25']. Set it via the REF environment variable, e.g. REF=protein_g.
+Decoding pol3d_1ra6: 461 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 161319.38it/s]
+  mean pLDDT 78.9 / 100   Rg_ca 24.79 A
+  residues with pLDDT >= 70: 80%   < 50: 4%
+Saved -> structure_compare/pol3d_1ra6_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)

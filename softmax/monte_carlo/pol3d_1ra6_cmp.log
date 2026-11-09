@@ -1,0 +1,39 @@
+predicted:    structure_compare/pol3d_1ra6_pred.pdb  chains A (461)
+experimental: structure_compare/1RA6.pdb  chains A (461)
+
+--- which experimental chains were used ---
+  chain A: 461 residues paired with predicted A1-A461, sequence identity 100%
+  total: 461 of 461 predicted residues paired (100%), identity 100%
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues     11.92 A   over 461 residues
+  CA RMSD, core                     1.20 A   over 188 residues (41%) after 5 cycles at 2.0 A
+  residues within  1 A:   3%   2 A:  18%   4 A:  51%   8 A:  83%
+  TM-score (approx., lower bound)  0.797   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  78.9 over all 461 residues,  78.9 over the paired ones
+  fraction  >=90: 13%   70-90: 67%   50-70: 16%   <50: 4%
+  Spearman(pLDDT, CA deviation) -0.66   (negative: low confidence where the prediction is wrong)
+    pLDDT  0-50 :   20 residues, mean CA deviation  12.24 A
+    pLDDT 50-70 :   74 residues, mean CA deviation  19.77 A
+    pLDDT 70-90 :  307 residues, mean CA deviation   4.03 A
+    pLDDT 90-100:   60 residues, mean CA deviation   2.33 A
+
+--- largest CA deviations ---
+  predicted A Q4    = exp chain A Q4      59.08 A   pLDDT  69.0
+  predicted A E2    = exp chain A E2      57.82 A   pLDDT  67.9
+  predicted A W5    = exp chain A W5      57.63 A   pLDDT  67.1
+  predicted A R7    = exp chain A R7      56.10 A   pLDDT  67.2
+  predicted A I3    = exp chain A I3      55.78 A   pLDDT  69.2
+  predicted A M6    = exp chain A M6      55.37 A   pLDDT  66.3
+  predicted A G1    = exp chain A G1      55.07 A   pLDDT  60.3
+  predicted A V12   = exp chain A V12     53.32 A   pLDDT  67.8
+  predicted A E11   = exp chain A E11     52.98 A   pLDDT  65.4
+  predicted A P8    = exp chain A P8      52.25 A   pLDDT  65.8
+
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_superposed.pdb
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_per_residue.csv
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_per_residue.png

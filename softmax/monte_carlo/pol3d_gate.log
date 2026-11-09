@@ -4,12 +4,94 @@ nohup: ignoring input
    ATOM records: 3671
    chains: A 
 --- 3. decode at 32 steps
-Traceback (most recent call last):
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/decode_to_pdb.py", line 179, in <module>
-    main()
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/decode_to_pdb.py", line 122, in main
-    label, seq = get_reference(args.ref or "zero_polymer")
-                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/tests/references.py", line 431, in get_reference
-    raise ValueError(
-ValueError: Unknown reference 'pol3d_1ra6'. Available: ['bpti', 'crambin', 'na_head_2hu0', 'nanh', 'ns5b_1c2p', 'p450cam', 'polymer_one', 'polymer_two', 'protein_g', 'random566_0', 'random566_1', 'zero_polymer', 'zero_polymer_ectodomain', 'zero_polymer_mature', 'zero_polymer_trimer_g25']. Set it via the REF environment variable, e.g. REF=protein_g.
+Decoding pol3d_1ra6: 461 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 161319.38it/s]
+  mean pLDDT 78.9 / 100   Rg_ca 24.79 A
+  residues with pLDDT >= 70: 80%   < 50: 4%
+Saved -> structure_compare/pol3d_1ra6_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)
+--- 4. compare at 32 steps
+predicted:    structure_compare/pol3d_1ra6_pred.pdb  chains A (461)
+experimental: structure_compare/1RA6.pdb  chains A (461)
+
+--- which experimental chains were used ---
+  chain A: 461 residues paired with predicted A1-A461, sequence identity 100%
+  total: 461 of 461 predicted residues paired (100%), identity 100%
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues     11.92 A   over 461 residues
+  CA RMSD, core                     1.20 A   over 188 residues (41%) after 5 cycles at 2.0 A
+  residues within  1 A:   3%   2 A:  18%   4 A:  51%   8 A:  83%
+  TM-score (approx., lower bound)  0.797   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  78.9 over all 461 residues,  78.9 over the paired ones
+  fraction  >=90: 13%   70-90: 67%   50-70: 16%   <50: 4%
+  Spearman(pLDDT, CA deviation) -0.66   (negative: low confidence where the prediction is wrong)
+    pLDDT  0-50 :   20 residues, mean CA deviation  12.24 A
+    pLDDT 50-70 :   74 residues, mean CA deviation  19.77 A
+    pLDDT 70-90 :  307 residues, mean CA deviation   4.03 A
+    pLDDT 90-100:   60 residues, mean CA deviation   2.33 A
+
+--- largest CA deviations ---
+  predicted A Q4    = exp chain A Q4      59.08 A   pLDDT  69.0
+  predicted A E2    = exp chain A E2      57.82 A   pLDDT  67.9
+  predicted A W5    = exp chain A W5      57.63 A   pLDDT  67.1
+  predicted A R7    = exp chain A R7      56.10 A   pLDDT  67.2
+  predicted A I3    = exp chain A I3      55.78 A   pLDDT  69.2
+  predicted A M6    = exp chain A M6      55.37 A   pLDDT  66.3
+  predicted A G1    = exp chain A G1      55.07 A   pLDDT  60.3
+  predicted A V12   = exp chain A V12     53.32 A   pLDDT  67.8
+  predicted A E11   = exp chain A E11     52.98 A   pLDDT  65.4
+  predicted A P8    = exp chain A P8      52.25 A   pLDDT  65.8
+
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_superposed.pdb
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_per_residue.csv
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/pol3d_1ra6_vs_1RA6_per_residue.png
+predicted:    structure_compare/pol3d_1ra6_pred.pdb  461 residues
+experimental: structure_compare/1RA6.pdb  457 residues
+paired by structure_compare/pol3d_1ra6_vs_1RA6_per_residue.csv: 457 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 1177, experimental 1312, shared 903
+  crystal contacts recovered        0.69
+  E = sum|dP-dE| / sum(dP+dE)      0.274   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20    49.10 A
+     21-  40    19.45 A
+     41-  60     7.85 A
+     61-  80     3.69 A
+     81- 100     3.08 A
+    101- 120     5.41 A
+    121- 140     9.21 A
+    141- 160     5.65 A
+    161- 180     5.21 A
+    181- 200     4.01 A
+    201- 220     3.73 A
+    221- 240     3.10 A
+    241- 260     2.99 A
+    261- 280     5.12 A
+    281- 300     3.39 A
+    301- 320     2.68 A
+    321- 340     1.65 A
+    341- 360     5.22 A
+    361- 380     3.55 A
+    381- 400     3.62 A
+    401- 420     4.87 A
+    421- 440     3.25 A
+    441- 457     7.13 A
+
+=== summary
+  mean pLDDT 78.9 / 100   Rg_ca 24.79 A
+  CA RMSD, all paired residues     11.92 A   over 461 residues
+  CA RMSD, core                     1.20 A   over 188 residues (41%) after 5 cycles at 2.0 A
+  TM-score (approx., lower bound)  0.797   (>0.5 same fold, <0.17 random)
+  E = sum|dP-dE| / sum(dP+dE)      0.274   (0 = identical maps)
+Commit the logs and structure_compare/ so the next session can read them:
+  git add pol3d_1ra6_*.log structure_compare/pol3d_1ra6_* && git commit -m 'pol3d_1ra6 gate' && git push
