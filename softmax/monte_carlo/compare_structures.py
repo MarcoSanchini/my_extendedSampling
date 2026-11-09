@@ -165,7 +165,14 @@ def core_fit(P, Q, cutoff, cycles):
 	for _ in range(cycles):
 		d = np.linalg.norm(P @ R.T + t - Q, axis=1)
 		new = np.where(d <= cutoff)[0]
-		if len(new) < 4 or len(new) == len(keep):
+		if len(new) < 4:
+			# Fewer than four residues are within the cutoff, so there is no
+			# core to speak of. Returning `keep` here would hand back the
+			# GLOBAL fit over 100% of the residues, which prints as a core
+			# RMSD equal to the global one and reads like a result rather
+			# than like a failure. Say there is no core instead.
+			return R, t, None
+		if len(new) == len(keep):
 			break
 		keep = new
 		R, t = kabsch(P[keep], Q[keep])
@@ -347,13 +354,17 @@ def main():
 	dev = np.linalg.norm(P @ R.T + t - Q, axis=1)
 	rmsd = float(np.sqrt((dev ** 2).mean()))
 	Rc, tc, keep = core_fit(P, Q, args.cutoff, args.cycles)
-	dcore = np.linalg.norm(P[keep] @ Rc.T + tc - Q[keep], axis=1)
+	dcore = None if keep is None else np.linalg.norm(P[keep] @ Rc.T + tc - Q[keep], axis=1)
 	tm = tm_score(P, Q, sum(len(echains[c]) for c, _, _ in used))
 
 	print("\n--- global comparison (CA atoms, predicted fitted onto experimental) ---")
 	print(f"  CA RMSD, all paired residues   {rmsd:7.2f} A   over {len(pairs)} residues")
-	print(f"  CA RMSD, core                  {float(np.sqrt((dcore ** 2).mean())):7.2f} A   over "
-		f"{len(keep)} residues ({len(keep) / len(pairs):.0%}) after {args.cycles} cycles at {args.cutoff} A")
+	if dcore is None:
+		print(f"  CA RMSD, core                       none   fewer than 4 residues within "
+			f"{args.cutoff} A of the global fit, so no core could be extracted")
+	else:
+		print(f"  CA RMSD, core                  {float(np.sqrt((dcore ** 2).mean())):7.2f} A   over "
+			f"{len(keep)} residues ({len(keep) / len(pairs):.0%}) after {args.cycles} cycles at {args.cutoff} A")
 	print("  residues within  " + "   ".join(f"{c:g} A: {np.mean(dev <= c):4.0%}" for c in (1, 2, 4, 8)))
 	print(f"  TM-score (approx., lower bound) {tm:6.3f}   (>0.5 same fold, <0.17 random)")
 

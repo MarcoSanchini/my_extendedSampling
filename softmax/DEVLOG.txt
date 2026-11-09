@@ -6233,3 +6233,26 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     softmax/docs/figures/na_*.png and figure 1 of structure_comparison.tex
     (now 18 pages). The disulfide-constrained re-decode is still the
     measurement that would settle it.
+
+2026-11-09 -- HCV NS5B fails the gate, and a reporting bug that hid it
+    Gate on ns5b_1c2p (576 aa from 1C2P SEQRES chain A, 32 steps): mean pLDDT
+    70.0, 11% of residues below 50, CA RMSD 23.49 A over 561 paired residues,
+    TM 0.534, contact-map E 0.448 with 53% of crystal contacts recovered. That
+    is a fail: the gate wants pLDDT around 0.9 and E in 0.10-0.25. For scale,
+    the NA head scored 0.68 / E 0.596 and P450cam 0.92 / E 0.109.
+    Shape of the error: no tight core anywhere (not one residue pair within
+    2 A), the middle of the chain at 4-6 A per 20-residue block, and the last
+    ~50 residues 45-80 A out. The C-terminal tail is the disordered segment
+    restored from SEQRES, so part of that is expected, but the failure is not
+    the tail: blocks across the whole chain run 10-25 A. TM 0.53 and half the
+    contacts means the fold is roughly right and the assembly of it is not,
+    which is the same picture as NA, one notch better.
+    This also exposed a bug in compare_structures.py: core_fit() bails out when
+    fewer than 4 residues sit within the cutoff and returned the GLOBAL fit
+    over 100% of residues, which printed as "CA RMSD, core 23.49 A over 561
+    residues (100%)" -- a line that reads like a result and is how this run was
+    first read as a pass. It now prints "none" and says why. P450cam still
+    reports 0.96 A over 79%, unchanged.
+    1RA6 (enterovirus 3Dpol) did not run: pol3d_1ra6 was never written into
+    references.py, so decode_to_pdb.py raised Unknown reference. The gate
+    itself is untouched by this; just the --write step to redo.
