@@ -6276,3 +6276,30 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     over 73%, TM 0.895; ns5b 23.49 A, no core, TM 0.534 -- all unchanged.
     (1C2P's 22 MODRES are MSE, which was already handled, so ns5b_1c2p was
     never affected.)
+
+2026-11-09 -- enterovirus 3Dpol: the best viral result so far, still not a pass
+    Gate on pol3d_1ra6 (461 aa, 1RA6 chain A, 32 steps): mean pLDDT 78.9, 4%
+    of residues below 50, CA RMSD 11.92 A, core 1.20 A over 188 residues
+    (41%), TM 0.797, E 0.274 with 69% of crystal contacts recovered.
+    Below the gate (pLDDT ~0.9, E 0.10-0.25) but clearly the best viral
+    protein tried: NA 0.68 / E 0.596, NS5B 0.70 / E 0.448, 3Dpol 0.79 / 0.274,
+    against P450cam 0.92 / 0.109.
+    The error is localised. The first 20-residue block is 49 A out and the
+    second 19 A, while everything from residue 41 on runs 3-5 A per block.
+    Refitting without the N-terminal tail (computed here from the per-residue
+    csv, no new decode): residues 41-461 give 3.58 A global, 1.21 A core over
+    51%; residues 31-461 give 4.41 A, 1.22 A over 50%. So the body of the
+    protein is roughly right and the N-terminus is thrown away.
+    That is a suggestive place to fail. 1RA6 is the structure solved to show
+    that 3Dpol is activated by precise proteolytic processing: the mature
+    N-terminal glycine has to be freed by 3CD cleavage and buried in a pocket,
+    and that burial is what orders the fingers domain. A sequence-only
+    predictor has no way to know the chain begins at a cleavage site.
+    Even so, the trunk alone (core 51%) is below P450cam (79% at 0.96 A) and
+    NanH (73% at 0.94 A), so trimming the tail would not by itself produce a
+    passing target, and trimming to make a number pass is not a good reason to
+    trim. Left as it is.
+    Pattern worth stating in the thesis: three viral proteins of three
+    different folds land at pLDDT 0.68-0.79 while every non-viral control of
+    comparable length sits at 0.90-0.93. The envelope-glycoprotein explanation
+    does not cover NS5B or 3Dpol, which are soluble monomeric enzymes.
