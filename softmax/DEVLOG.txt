@@ -6216,3 +6216,20 @@ of the chain at 0.94 A) from "a third of a fold" (NA, 30% at 1.17 A).
 
 docs/structure_comparison.tex gains section 13 (the control) and 12.2 (the step
 counts), and its gate wording is rewritten accordingly. 17 pages.
+
+2026-11-09 -- the viewer check on neuraminidase, now in the write-up
+    Marco opened the 2HU0 monomer and the 32-step prediction in ChimeraX and
+    looked down the pseudo-sixfold axis, then superposed them with matchmaker.
+    Crystal: six wedge-shaped blades fanning out from a centre, ring closed.
+    Prediction: comparable diameter and plenty of beta, but the radial
+    organisation survives only in part of the molecule, no clean central funnel,
+    and the N-terminal segment (the 29.6 A block) hangs off the body. The
+    superposition shows a shared envelope with many segments running parallel --
+    the 1.1 A core -- and the rest sitting beside the crystal rather than on it.
+    Consistent with the unclosed-ring reading and with nothing else proposed,
+    but not a proof: a ribbon drawing does not let you count six blades
+    reliably, and matchmaker aligns on the best-matching subset, so a decent
+    overlay is what a partially correct model gives anyway. The three images are
+    softmax/docs/figures/na_*.png and figure 1 of structure_comparison.tex
+    (now 18 pages). The disulfide-constrained re-decode is still the
+    measurement that would settle it.

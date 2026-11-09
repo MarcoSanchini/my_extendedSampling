@@ -94,3 +94,6 @@ softmax/monte_carlo/onepass_study/**/*.npy
 grad_cache.pt
 log.pt
 generator.npy
+
+# figures used by softmax/docs/*.tex must be tracked, or the documents cannot be rebuilt
+!softmax/docs/figures/*.png
