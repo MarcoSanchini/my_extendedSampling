@@ -1061,6 +1061,32 @@ membrane anchor; the last residues of the deposited construct were never
 observed and are restored here from SEQRES, which is why a disordered tail
 appears in the prediction.
 
+\paragraph{Human DNA topoisomerase I (1A36, 591 aa).} Added on the
+supervisor's suggestion, 10 November. The enzyme that relieves the torsional
+stress built up ahead of a replication fork: it nicks one strand of the duplex,
+lets it rotate, and reseals it. It is the target of the camptothecin anticancer
+drugs. Structurally it is a bilobed clamp that closes \emph{around} duplex DNA,
+and 1A36 is that complex, caught with a catalytically dead active-site mutant so
+the intermediate does not resolve. Chain A is the protein, 544 observed
+residues; chains B and C are the two DNA strands.
+
+\paragraph{PTEN (1D5R, 324 aa).} Also the supervisor's, 10 November. A human
+tumour suppressor, the phosphatase that opposes PI3K signalling and one of the
+most frequently mutated genes in cancer. Two domains, a phosphatase domain and a
+C2 membrane-binding domain, in one chain with no partner and no nucleic acid.
+A 31-residue loop in the C2 domain (282--312) has no coordinates in the crystal
+and is restored here from SEQRES, as is the convention for every reference in
+this table.
+
+\paragraph{HCV NS3 helicase domain (3KQH, 436 aa).} Also the supervisor's,
+10 November. The helicase half of hepatitis C NS3, which unwinds the viral RNA;
+3KQH is this domain with a six-nucleotide single strand in its binding cleft,
+two copies per asymmetric unit. The protease half, which needs an NS4A cofactor
+peptide to fold, is not in this construct, so the usual objection to NS3 does
+not apply here. Its fold is a RecA-like SF2 helicase, an architecture shared with
+a very large number of bacterial and human proteins, which is what makes it
+informative.
+
 \paragraph{Enterovirus 3D polymerase (1RA6, 461 aa).} The poliovirus equivalent
 of NS5B, same right-hand fold, 130 residues shorter. Its distinctive feature is
 that it is activated by precise proteolysis: the mature N-terminal glycine is
@@ -1079,9 +1105,12 @@ Protein & Crystal & aa & steps & pLDDT & RMSD global / core & TM & $E$ & verdict
 P450cam        & 2CPP & 414 &  8 & 90.3 & 1.99 / 0.94\,\AA{} (79\%) & 0.942 & 0.106 & pass \\
 P450cam        & 2CPP & 414 & 32 & \textbf{91.9} & \textbf{1.98 / 0.96\,\AA{} (79\%)} & \textbf{0.942} & \textbf{0.109} & \textbf{pass} \\
 P450cam        & 2CPP & 414 & 128 & 94.2 & 2.36 / 0.95\,\AA{} (78\%) & 0.938 & 0.111 & pass \\
+Topoisomerase I & 1A36 & 591 & 32 & 91.3 & 1.33 / 1.04\,\AA{} (93\%) & 0.977 & 0.061 & pass \\
+PTEN           & 1D5R & 324 & 32 & 93.8 & 2.07 / 0.82\,\AA{} (86\%) & 0.939 & 0.111 & pass \\
 Protein G B1   & 1PGB &  56 & 32 & 92.4 & 3.02 / 0.70\,\AA{} (86\%) & 0.821 & 0.180 & control \\
 NanH sialidase & 2SIL & 381 & 32 & 86.3 & 3.20 / 0.94\,\AA{} (73\%) & 0.895 & 0.230 & control, folds \\
 3D polymerase  & 1RA6 & 461 & 32 & 78.9 & 11.92 / 1.20\,\AA{} (41\%) & 0.797 & 0.274 & fail \\
+NS3 helicase   & 3KQH & 436 & 32 & 74.5 & 15.09 / none & 0.560 & 0.381 & fail \\
 NS5B           & 1C2P & 576 & 32 & 70.0 & 23.49 / none & 0.534 & 0.448 & fail \\
 NA head        & 2HU0 & 385 &  8 & 65.8 & 13.59 / 1.17\,\AA{} (30\%) & 0.592 & --- & fail \\
 NA head        & 2HU0 & 385 & 32 & 67.7 & 14.93 / 1.17\,\AA{} (30\%) & 0.563 & 0.596 & fail \\
@@ -1098,8 +1127,8 @@ dropping pairs further than 2\,\AA{} and refitting, with the percentage of
 residues that survived. \emph{TM} is the TM-score, length-independent, above 0.5
 meaning the same fold. $E$ is the contact-map energy against the crystal, 0 being
 identical maps. The fraction of crystal contacts recovered, not shown to keep the
-table narrow, runs 0.88 (P450cam), 0.80 (protein G), 0.76 (NanH), 0.69 (3Dpol),
-0.53 (NS5B), 0.39 (NA).
+table narrow, runs 0.93 (topoisomerase I), 0.88 (P450cam and PTEN), 0.80 (protein G),
+0.76 (NanH), 0.69 (3Dpol), 0.65 (NS3 helicase), 0.53 (NS5B), 0.39 (NA).
 
 \subsection{How to read it}
 
@@ -1114,10 +1143,22 @@ wrong arrangement. The percentage is the part that separates these cases, which
 is why it is printed next to the core RMSD and why a core RMSD quoted alone is
 close to meaningless.
 
-\paragraph{The three measures agree on the ordering.} pLDDT, TM and $E$ rank the
-seven proteins identically. That is worth noting because pLDDT is the model's
-opinion of itself, computed without the crystal, while TM and $E$ are
-measurements against the crystal. The model knows when it is wrong.
+\paragraph{The three measures agree on the split, not on the fine ordering.}
+pLDDT, TM and $E$ put the same proteins on the same side of the line, with no
+overlap: everything the model is confident about is close to its crystal, and
+everything it is unsure about is not. That is worth stating because pLDDT is the
+model's opinion of itself, computed without ever seeing a crystal, while TM and
+$E$ are measurements against one. The model knows when it is wrong.
+
+Inside the passing group they do disagree, and the disagreements are
+instructive rather than worrying. Protein G has the second-highest pLDDT but
+only the fourth-best $E$, because at 56 residues it has 137 contacts in total,
+so a handful of differences at the termini move the energy a long way.
+Topoisomerase I has the best $E$ in the table (0.061) and the lowest pLDDT of
+the four passing proteins, which is the opposite effect: a 591-residue chain
+with 1447 contacts averages its errors away. Neither ranking is wrong; they
+measure different things, and this is why the gate is read as a pair of numbers
+with the core fraction beside them rather than as a league table.
 
 \paragraph{Step count is not the variable.} P450cam changes by 0.02\,\AA{} of
 core RMSD and 0.005 of $E$ between 8 and 128 steps; neuraminidase changes by
@@ -1125,25 +1166,59 @@ core RMSD and 0.005 of $E$ between 8 and 128 steps; neuraminidase changes by
 per-residue error profiles correlating 0.83--0.90. Neither result is a sampling
 artefact.
 
-\paragraph{The line falls between 0.27 and 0.23.} Everything at $E \le 0.23$ is a
+\paragraph{The line falls between 0.23 and 0.27.} Everything at $E \le 0.23$ is a
 correct fold, everything at $E \ge 0.27$ is not, and the gap is narrow enough
 that $E$ alone should not be trusted near it: 3Dpol at 0.274 is a mostly correct
 protein with a thrown-away N-terminus, while NS5B at 0.448 is wrong throughout.
-Read $E$ with the core fraction.
+Read $E$ with the core fraction. Ten runs later the boundary has not moved,
+which is the only reason to believe it.
 
-\paragraph{The pattern across the table is about viruses, not folds.} The three
-viral proteins, of three unrelated folds --- a $\beta$-propeller, two polymerase
-right hands --- land at pLDDT 0.68--0.79. The non-viral proteins of comparable
-length land at 0.86--0.94, and so do the earlier monomer controls (maltose
-binding protein 0.93 at 370 aa, amylase 0.93 at 496 aa, luciferase 0.93 at
-550 aa). The envelope-glycoprotein explanation of section~\ref{sec:why} covers
-HA and neuraminidase but not NS5B or 3Dpol, which are soluble monomeric cytosolic
-enzymes with no glycans and no disulfide network. Whatever is going on is shared
-by viral sequences as a class, and the obvious candidate --- that viral proteins
-are a thin and idiosyncratic part of what a sequence model has seen, with
-families that are large in sequence count but shallow in independent variation
---- is also what makes them awkward for the per-site entropy comparison. That is
-an argument the thesis can make in its own right.
+\paragraph{The pattern across the table is about viruses, not folds, and it is
+now the main result of this document.} Count the two columns:
+
+\begin{center}
+\begin{tabular}{l l}
+\toprule
+Viral, pLDDT 0.68--0.79 & Non-viral, pLDDT 0.86--0.94 \\
+\midrule
+HA0 (0.51--0.62) & topoisomerase I 0.913 \\
+neuraminidase head 0.677 & PTEN 0.938 \\
+NS5B polymerase 0.700 & P450cam 0.919 \\
+NS3 helicase 0.745 & protein G 0.924 \\
+3D polymerase 0.789 & NanH sialidase 0.863 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent Five viral proteins, five failures. Five non-viral proteins, five
+passes, and the earlier monomer controls agree (maltose binding protein 0.93 at
+370 aa, amylase 0.93 at 496 aa, luciferase 0.93 at 550 aa). There is no overlap
+in pLDDT, in TM or in $E$.
+
+The folds rule out the obvious alternatives. The viral set contains a
+$\beta$-propeller, two polymerase right hands and a RecA-like helicase; the
+non-viral set contains an all-$\beta$ propeller of the same architecture
+(NanH), an $\alpha$-helical globule, a two-domain phosphatase and a
+DNA-clamping enzyme twice the size of most of the viral ones. Length does not
+separate them either: the longest protein in the table, topoisomerase I at 591
+residues, is also the most accurately predicted, and the shortest viral one
+fails.
+
+The envelope-glycoprotein explanation of section~\ref{sec:why} covers HA and
+neuraminidase but not NS5B, 3Dpol or NS3, which are soluble monomeric cytosolic
+enzymes with no glycans and no disulfide network. NS3 is the sharpest case: its
+RecA-like fold is one of the most common in biology, shared with large numbers
+of bacterial and human proteins the model handles, and it still fails.
+
+What is left is the sequences themselves. The natural reading is that viral
+proteins are a thin and idiosyncratic part of what a sequence model has seen:
+their families are large in raw sequence count but shallow in independent
+variation, since they are repeated samples of a few evolutionary trajectories
+under selection that is not primarily about folding. That is exactly the same
+property that made the H3N2 profile a poor reference for the per-site entropy
+comparison (section~\ref{sec:na}), so the two problems have one cause. This is
+an argument the thesis can make in its own right, and it is a better use of the
+neuraminidase work than treating it as a failed candidate search.
 
 \section{The pipeline from here, and its expected cost}\label{sec:pipeline}
 
