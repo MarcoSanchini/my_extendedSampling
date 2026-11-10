@@ -1,0 +1,40 @@
+predicted:    structure_compare/ns3_hel_3kqh_pred.pdb  chains A (436)
+experimental: structure_compare/3KQH.pdb  chains A (436), B (436)
+
+--- which experimental chains were used ---
+  chain A: 436 residues paired with predicted A1-A436, sequence identity 100%
+  chain B (436 residues) skipped: only matches predicted residues already paired (a symmetry copy)
+  total: 436 of 436 predicted residues paired (100%), identity 100%
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues     15.09 A   over 436 residues
+  CA RMSD, core                       none   fewer than 4 residues within 2.0 A of the global fit, so no core could be extracted
+  residues within  1 A:   0%   2 A:   1%   4 A:   5%   8 A:  48%
+  TM-score (approx., lower bound)  0.560   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  74.5 over all 436 residues,  74.5 over the paired ones
+  fraction  >=90: 28%   70-90: 34%   50-70: 25%   <50: 14%
+  Spearman(pLDDT, CA deviation) -0.50   (negative: low confidence where the prediction is wrong)
+    pLDDT  0-50 :   59 residues, mean CA deviation  19.36 A
+    pLDDT 50-70 :  107 residues, mean CA deviation  17.45 A
+    pLDDT 70-90 :  148 residues, mean CA deviation  10.51 A
+    pLDDT 90-100:  122 residues, mean CA deviation   7.22 A
+
+--- largest CA deviations ---
+  predicted A G406  = exp chain A G594    39.40 A   pLDDT  38.0
+  predicted A H405  = exp chain A H593    38.63 A   pLDDT  38.8
+  predicted A P402  = exp chain A P590    37.27 A   pLDDT  45.0
+  predicted A P407  = exp chain A P595    35.37 A   pLDDT  34.6
+  predicted A T403  = exp chain A T591    35.36 A   pLDDT  43.1
+  predicted A E420  = exp chain A E608    34.86 A   pLDDT  40.0
+  predicted A P146  = exp chain A P334    34.54 A   pLDDT  68.4
+  predicted A N147  = exp chain A N335    34.41 A   pLDDT  77.9
+  predicted A L404  = exp chain A L592    33.43 A   pLDDT  43.3
+  predicted A N419  = exp chain A N607    33.25 A   pLDDT  39.3
+
+  wrote structure_compare/ns3_hel_3kqh_vs_3KQH_superposed.pdb
+  wrote structure_compare/ns3_hel_3kqh_vs_3KQH_per_residue.csv
+  wrote structure_compare/ns3_hel_3kqh_vs_3KQH_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/ns3_hel_3kqh_vs_3KQH_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/ns3_hel_3kqh_vs_3KQH_per_residue.png

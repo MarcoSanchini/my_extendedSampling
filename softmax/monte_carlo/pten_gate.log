@@ -1,0 +1,89 @@
+nohup: ignoring input
+=== gate for pten_1d5r (UniProt -, PDB 1D5R)
+--- 2. experimental structure
+   ATOM records: 2576
+   chains: A 
+--- 3. decode at 32 steps
+Decoding pten_1d5r: 324 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 199297.38it/s]
+  mean pLDDT 93.8 / 100   Rg_ca 21.80 A
+  residues with pLDDT >= 70: 100%   < 50: 0%
+Saved -> structure_compare/pten_1d5r_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)
+--- 4. compare at 32 steps
+predicted:    structure_compare/pten_1d5r_pred.pdb  chains A (324)
+experimental: structure_compare/1D5R.pdb  chains A (307)
+
+--- which experimental chains were used ---
+  chain A: 307 residues paired with predicted A8-A322, sequence identity 100%
+  total: 307 of 324 predicted residues paired (95%), identity 100%
+  17 predicted residues have no experimental partner (not in the crystal, e.g. signal peptide, cleavage loop, transmembrane part); they are left out of every number
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues      2.07 A   over 307 residues
+  CA RMSD, core                     0.82 A   over 263 residues (86%) after 5 cycles at 2.0 A
+  residues within  1 A:  64%   2 A:  86%   4 A:  93%   8 A:  99%
+  TM-score (approx., lower bound)  0.939   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  93.8 over all 324 residues,  94.2 over the paired ones
+  fraction  >=90: 85%   70-90: 15%   50-70: 0%   <50: 0%
+  Spearman(pLDDT, CA deviation) -0.29   (negative: low confidence where the prediction is wrong)
+    pLDDT 70-90 :   41 residues, mean CA deviation   1.96 A
+    pLDDT 90-100:  266 residues, mean CA deviation   1.23 A
+
+--- largest CA deviations ---
+  predicted A V39   = exp chain A V45     10.34 A   pLDDT  93.2
+  predicted A G38   = exp chain A G44      9.30 A   pLDDT  95.2
+  predicted A D110  = exp chain A D116     8.53 A   pLDDT  96.7
+  predicted A D13   = exp chain A D19      7.55 A   pLDDT  92.4
+  predicted A D230  = exp chain A D236     7.03 A   pLDDT  92.5
+  predicted A Y10   = exp chain A Y16      6.99 A   pLDDT  96.6
+  predicted A Q11   = exp chain A Q17      6.44 A   pLDDT  95.7
+  predicted A R8    = exp chain A R14      6.27 A   pLDDT  96.5
+  predicted A A304  = exp chain A A333     6.26 A   pLDDT  84.6
+  predicted A R9    = exp chain A R15      6.19 A   pLDDT  96.6
+
+  wrote structure_compare/pten_1d5r_vs_1D5R_superposed.pdb
+  wrote structure_compare/pten_1d5r_vs_1D5R_per_residue.csv
+  wrote structure_compare/pten_1d5r_vs_1D5R_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/pten_1d5r_vs_1D5R_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/pten_1d5r_vs_1D5R_per_residue.png
+predicted:    structure_compare/pten_1d5r_pred.pdb  324 residues
+experimental: structure_compare/1D5R.pdb  307 residues
+paired by structure_compare/pten_1d5r_vs_1D5R_per_residue.csv: 307 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 869, experimental 883, shared 779
+  crystal contacts recovered        0.88
+  E = sum|dP-dE| / sum(dP+dE)      0.111   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20     3.79 A
+     21-  40     3.74 A
+     41-  60     0.83 A
+     61-  80     1.50 A
+     81- 100     0.74 A
+    101- 120     2.63 A
+    121- 140     0.66 A
+    141- 160     0.75 A
+    161- 180     0.84 A
+    181- 200     1.37 A
+    201- 220     1.73 A
+    221- 240     2.59 A
+    241- 260     1.76 A
+    261- 280     2.06 A
+    281- 300     2.34 A
+    301- 307     1.42 A
+
+=== summary
+  mean pLDDT 93.8 / 100   Rg_ca 21.80 A
+  CA RMSD, all paired residues      2.07 A   over 307 residues
+  CA RMSD, core                     0.82 A   over 263 residues (86%) after 5 cycles at 2.0 A
+  TM-score (approx., lower bound)  0.939   (>0.5 same fold, <0.17 random)
+  E = sum|dP-dE| / sum(dP+dE)      0.111   (0 = identical maps)
+Commit the logs and structure_compare/ so the next session can read them:
+  git add pten_1d5r_*.log structure_compare/pten_1d5r_* && git commit -m 'pten_1d5r gate' && git push

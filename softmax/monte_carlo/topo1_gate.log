@@ -1,0 +1,101 @@
+nohup: ignoring input
+=== gate for topo1_1a36 (UniProt -, PDB 1A36)
+--- 2. experimental structure
+   ATOM records: 5228
+   chains: A B C 
+--- 3. decode at 32 steps
+Decoding topo1_1a36: 591 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 40542.48it/s]
+  mean pLDDT 91.3 / 100   Rg_ca 30.28 A
+  residues with pLDDT >= 70: 95%   < 50: 3%
+Saved -> structure_compare/topo1_1a36_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)
+--- 4. compare at 32 steps
+predicted:    structure_compare/topo1_1a36_pred.pdb  chains A (591)
+experimental: structure_compare/1A36.pdb  chains A (544)
+
+--- which experimental chains were used ---
+  chain A: 544 residues paired with predicted A41-A591, sequence identity 100%
+  total: 544 of 591 predicted residues paired (92%), identity 100%
+  47 predicted residues have no experimental partner (not in the crystal, e.g. signal peptide, cleavage loop, transmembrane part); they are left out of every number
+
+--- global comparison (CA atoms, predicted fitted onto experimental) ---
+  CA RMSD, all paired residues      1.33 A   over 544 residues
+  CA RMSD, core                     1.04 A   over 506 residues (93%) after 5 cycles at 2.0 A
+  residues within  1 A:  56%   2 A:  93%   4 A:  99%   8 A: 100%
+  TM-score (approx., lower bound)  0.977   (>0.5 same fold, <0.17 random)
+
+--- pLDDT (predicted file's B-factor column) ---
+  mean pLDDT  91.3 over all 591 residues,  93.8 over the paired ones
+  fraction  >=90: 85%   70-90: 10%   50-70: 2%   <50: 3%
+  Spearman(pLDDT, CA deviation) -0.11   (negative: low confidence where the prediction is wrong)
+    pLDDT 70-90 :   52 residues, mean CA deviation   1.09 A
+    pLDDT 90-100:  492 residues, mean CA deviation   1.10 A
+
+--- largest CA deviations ---
+  predicted A K468  = exp chain A K642     6.79 A   pLDDT  95.2
+  predicted A S469  = exp chain A S643     5.46 A   pLDDT  94.3
+  predicted A M470  = exp chain A M644     4.83 A   pLDDT  96.1
+  predicted A T475  = exp chain A T649     4.61 A   pLDDT  97.1
+  predicted A N472  = exp chain A N646     4.53 A   pLDDT  96.0
+  predicted A M471  = exp chain A M645     4.43 A   pLDDT  96.8
+  predicted A Q474  = exp chain A Q648     4.09 A   pLDDT  96.7
+  predicted A L473  = exp chain A L647     4.09 A   pLDDT  95.7
+  predicted A E467  = exp chain A E641     4.00 A   pLDDT  95.6
+  predicted A K476  = exp chain A K650     3.69 A   pLDDT  96.2
+
+  wrote structure_compare/topo1_1a36_vs_1A36_superposed.pdb
+  wrote structure_compare/topo1_1a36_vs_1A36_per_residue.csv
+  wrote structure_compare/topo1_1a36_vs_1A36_view.pml   (PyMOL; run it from its own folder)
+  wrote structure_compare/topo1_1a36_vs_1A36_view.cxc   (ChimeraX; run it from its own folder)
+  wrote structure_compare/topo1_1a36_vs_1A36_per_residue.png
+predicted:    structure_compare/topo1_1a36_pred.pdb  591 residues
+experimental: structure_compare/1A36.pdb  544 residues
+paired by structure_compare/topo1_1a36_vs_1A36_per_residue.csv: 544 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 1434, experimental 1447, shared 1352
+  crystal contacts recovered        0.93
+  E = sum|dP-dE| / sum(dP+dE)      0.061   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20     0.97 A
+     21-  40     1.62 A
+     41-  60     1.47 A
+     61-  80     0.74 A
+     81- 100     1.42 A
+    101- 120     0.94 A
+    121- 140     0.95 A
+    141- 160     0.50 A
+    161- 180     0.97 A
+    181- 200     0.85 A
+    201- 220     0.73 A
+    221- 240     0.58 A
+    241- 260     0.73 A
+    261- 280     0.83 A
+    281- 300     1.07 A
+    301- 320     1.15 A
+    321- 340     1.03 A
+    341- 360     1.01 A
+    361- 380     0.56 A
+    381- 400     1.03 A
+    401- 420     1.07 A
+    421- 440     3.62 A
+    441- 460     1.94 A
+    461- 480     1.30 A
+    481- 500     1.68 A
+    501- 520     1.21 A
+    521- 540     1.88 A
+    541- 544     1.30 A
+
+=== summary
+  mean pLDDT 91.3 / 100   Rg_ca 30.28 A
+  CA RMSD, all paired residues      1.33 A   over 544 residues
+  CA RMSD, core                     1.04 A   over 506 residues (93%) after 5 cycles at 2.0 A
+  TM-score (approx., lower bound)  0.977   (>0.5 same fold, <0.17 random)
+  E = sum|dP-dE| / sum(dP+dE)      0.061   (0 = identical maps)
+Commit the logs and structure_compare/ so the next session can read them:
+  git add topo1_1a36_*.log structure_compare/topo1_1a36_* && git commit -m 'topo1_1a36 gate' && git push

@@ -1,0 +1,5 @@
+Decoding ns3_hel_3kqh: 436 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 98689.51it/s]
+  mean pLDDT 74.5 / 100   Rg_ca 24.81 A
+  residues with pLDDT >= 70: 62%   < 50: 14%
+Saved -> structure_compare/ns3_hel_3kqh_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)

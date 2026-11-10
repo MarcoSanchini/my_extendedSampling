@@ -1,0 +1,5 @@
+Decoding topo1_1a36: 591 residues, num_steps=32
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 40542.48it/s]
+  mean pLDDT 91.3 / 100   Rg_ca 30.28 A
+  residues with pLDDT >= 70: 95%   < 50: 3%
+Saved -> structure_compare/topo1_1a36_pred.pdb  (pLDDT 0-100 in the B-factor column; chains A, residues numbered from 1)

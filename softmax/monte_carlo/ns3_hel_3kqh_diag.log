@@ -1,0 +1,36 @@
+predicted:    structure_compare/ns3_hel_3kqh_pred.pdb  436 residues
+experimental: structure_compare/3KQH.pdb  872 residues
+paired by structure_compare/ns3_hel_3kqh_vs_3KQH_per_residue.csv: 436 residues
+
+--- contact-map energy, contacts as CA-CA < 8.0 A ---
+  contacts: predicted 1404, experimental 1292, shared 834
+  crystal contacts recovered        0.65
+  E = sum|dP-dE| / sum(dP+dE)      0.381   (0 = identical maps)
+  This is the sampler's own energy between the predicted reference and the real
+  protein. Everything the sampler then does is measured from the predicted map.
+
+--- disulfide bridges: 0 found in the experimental file ---
+
+--- CA deviation by block of 20 paired residues ---
+      1-  20    10.81 A
+     21-  40     6.99 A
+     41-  60     7.56 A
+     61-  80     7.90 A
+     81- 100     7.43 A
+    101- 120     6.73 A
+    121- 140     7.04 A
+    141- 160    28.52 A
+    161- 180     9.26 A
+    181- 200     9.95 A
+    201- 220     7.34 A
+    221- 240     5.60 A
+    241- 260    15.58 A
+    261- 280     6.09 A
+    281- 300     7.00 A
+    301- 320    14.18 A
+    321- 340    22.01 A
+    341- 360    17.16 A
+    361- 380    20.30 A
+    381- 400    22.43 A
+    401- 420    28.89 A
+    421- 436    22.05 A
