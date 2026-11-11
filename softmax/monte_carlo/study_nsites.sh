@@ -31,9 +31,10 @@ set -u
 #   nohup bash study_nsites.sh > study_equil.log 2>&1 &
 #   RESUME=1 MOVES_EQ=40000 nohup bash study_nsites.sh > study_equil_more.log 2>&1 &
 #   PHASE=scan nohup bash study_nsites.sh > study_scan.log 2>&1 &
-#   REF=pten_1d5r RUN_DIR=$PWD/pten_study GRAD_MODE=one_pass MAX_RUNNING=2 \
-#       TS_OVERRIDE="1 2 4 8 16 32 64 128 316" NCHAINS=2 MOVES_EQ=5000 \
-#       nohup bash study_nsites.sh > pten_tsweep.log 2>&1 &
+#   REF=pten_1d5r RUN_DIR=$PWD/pten1d5r_study GRAD_MODE=one_pass MAX_RUNNING=2 \
+#       TS_OVERRIDE="1 2 4 8 16 32 64 128 316" NCHAINS=2 MOVES_EQ=30000 \
+#       nohup bash study_nsites.sh > pten1d5r_tsweep.log 2>&1 &
+#       (9 pairs x 30000 moves at 0.152 s/move paired = ~11.4 h on one card.)
 #   GRAD_MODE=one_pass EQ_DIR=equil_op CONTINUE_FROM=equil TS_OVERRIDE="18 32 100" MOVES_EQ=40000 \
 #       nohup bash study_nsites.sh > study_equil_op.log 2>&1 &
 # ============================================================
@@ -77,6 +78,25 @@ RESUME_FLAG=""
 [ "${RESUME:-0}" = "1" ] && RESUME_FLAG="--resume"
 
 mkdir -p "${RUN_DIR}/logs"
+
+# One RUN_DIR holds one reference. Mixing two is silent: every per-chain file
+# is still written, the analysis reads its reference from run_info.txt, and
+# the numbers only disagree when someone compares two temperatures. It has
+# happened once (2026-11-11: REF=pten_1d5r was passed to a checkout of this
+# script that predated REF support, so a whole 9-point ladder ran on
+# zero_polymer and the directory name said pten). Refuse to add to a
+# directory that already holds another reference.
+existing_ref=""
+while IFS= read -r info; do
+    r="$(awk '$1 == "ref" { print $2; exit }' "$info")"
+    [ -n "$r" ] && existing_ref="$r" && break
+done < <(find "${RUN_DIR}" -name run_info.txt -print 2>/dev/null)
+if [ -n "$existing_ref" ] && [ "$existing_ref" != "$REF" ]; then
+    echo "ERROR: ${RUN_DIR} already holds runs of reference '${existing_ref}'," >&2
+    echo "       but REF is '${REF}'. Use a separate RUN_DIR per reference." >&2
+    exit 1
+fi
+echo "reference: ${REF}   run dir: ${RUN_DIR}"
 
 launch() {   # launch <log name> <run_nsites.py args...>
     local name="$1"; shift

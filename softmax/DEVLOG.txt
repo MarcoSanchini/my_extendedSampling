@@ -6374,3 +6374,47 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     Tooling: study_nsites.sh now takes REF as study_onepass.sh does, and
     analyze_nsites.py takes the reference from run_info.txt like
     analyze_onepass.py.
+
+2026-11-11 -- the first temperature ladder ran on the WRONG REFERENCE
+    Marco launched the 9-point ladder ~14:15 with REF=pten_1d5r, but on a
+    checkout of study_nsites.sh that predated REF support (PR #43 was not
+    merged yet). An unknown environment variable is silently ignored by bash,
+    so every chain ran on zero_polymer. Proof in the data, not inferred:
+    every run_info.txt in monte_carlo/pten_study says "ref zero_polymer" and
+    "ref_len 566"; peak_allocated is 6350 MB, the 566-aa figure, not PTEN's
+    4327; s/move is 0.33, the 566-aa paired figure, not 0.152; and the random
+    chain starts at Hd 534, which is a 566-residue distance. So the directory
+    monte_carlo/pten_study holds zero_polymer data despite its name, and the
+    PTEN ladder has still to be run. Rename the directory when nothing is
+    writing to it.
+    Guard added to study_nsites.sh: it reads the first run_info.txt under
+    RUN_DIR and refuses to start if that reference differs from REF, and it
+    now prints the reference and run dir before launching anything. One
+    RUN_DIR holds one reference.
+    What the run is still worth, as zero_polymer data (analyze_nsites.py equil
+    pten_study, 2 chains per T, chain0 from the reference and chain1 random,
+    5000 moves, one-pass, two jobs at a time at 0.33 s/move each):
+
+      T    mean_Hd(5k)   Rhat_Hd(5k)   dHd/dt(last)   mean_U(5k)
+      1    268.6         532           0.6            15233
+      2    268.4         360           0.6            13057
+      4    269.7         519           -0.2           12931
+      8    272.1         189           2.1            13891
+      16   291.1          43           8.4            14142
+      32   351.2          12           17.3           15721
+      64   378.1 (2.5k)   11 (2.5k)    40.8           19704
+
+    mean_Hd is the average over the two chains, so 268 means the chains stayed
+    in their own basins (ref ~2, random ~534) and the rise above it is the
+    reference chain escaping. Rhat_Hd falls monotonically with T, from 532 at
+    T=1 to 12 at T=32: the two starts become comparable between T=16 and
+    T=32 in 5000 moves. t_eq is not reached at ANY temperature in 5000 moves,
+    including T=64. Consistent with the earlier estimate that the transition
+    lies between ~8 and ~18 (equil_lowT at 20000 moves), and T1/T2/T4/T64 are
+    new points for zero_polymer. No new 5000-move temperature is worth adding;
+    what the ladder needs is moves.
+    For PTEN the transition temperature is not known and should not be guessed
+    from this: U_am is a sum over residue pairs, so dU per mutation scales
+    roughly with L^2, and (324/566)^2 = 0.33, which would put PTEN's T* several
+    times lower. That is exactly what the ladder is for, so keep the full
+    1..316 span rather than pre-selecting a band.
