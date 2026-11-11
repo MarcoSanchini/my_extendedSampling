@@ -6321,3 +6321,37 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     The decision boundary sits between E = 0.23 (correct) and E = 0.27 (not),
     too narrow to trust E alone there, so quote it with the core fraction.
     Pdf now 21 pages.
+
+2026-11-10 -- the supervisor's three sequences, and the viral pattern becomes
+    the result
+    Gates at 32 steps on the three structures Zambon asked for.
+      topo1_1a36 (human DNA topoisomerase I, 1A36 chain A, 591 aa from SEQRES):
+        pLDDT 91.3 (93.8 over paired), CA RMSD 1.33 A over 544, core 1.04 A
+        over 506 (93%), TM 0.977, E 0.061, 93% of crystal contacts. The best
+        prediction in the whole project, and the longest protein in it. Notable
+        because 1A36 is a protein-DNA complex: the enzyme is a bilobed clamp
+        closed around a 22-bp duplex, and the prediction closes the clamp
+        correctly without the DNA being there. 1A36 is a catalytically dead
+        active-site mutant, so the reference carries that substitution.
+      pten_1d5r (PTEN, 1D5R chain A, 324 aa from SEQRES): pLDDT 93.8, RMSD
+        2.07 A over 307 paired, core 0.82 A over 263 (86%), TM 0.939, E 0.111,
+        88% contacts. Passes. 17 of 324 residues unpaired: the 31-residue C2
+        loop 282-312 that has no coordinates in the crystal, restored from
+        SEQRES.
+      ns3_hel_3kqh (HCV NS3 helicase domain, 3KQH chain A, 436 aa): pLDDT 74.5,
+        RMSD 15.09 A, NO core (not one pair within 2 A), TM 0.560, E 0.381, 65%
+        contacts. Fails. 3KQH is the helicase domain alone with a 6-nt ssDNA,
+        so the usual NS4A-cofactor objection to NS3 does not apply.
+    Running total: five viral proteins, five failures (pLDDT 0.51-0.79); five
+    non-viral, five passes (0.86-0.94). No overlap in pLDDT, TM or E. The folds
+    rule out a fold-class explanation -- NanH shares neuraminidase's propeller
+    and passes, NS3's RecA-like helicase fold is one of the commonest in
+    biology and fails -- and length rules out size, since the longest protein
+    in the table is the most accurate one. The envelope-glycoprotein story
+    covers HA and NA but not NS5B, 3Dpol or NS3.
+    Energy boundary unmoved after ten runs: non-viral E <= 0.230, viral
+    E >= 0.274.
+    Written up as section 14 of structure_comparison.tex, now 22 pages, with
+    the viral/non-viral table and the argument that the shallow independent
+    variation of viral families explains both this and the H3N2 entropy
+    problem.
