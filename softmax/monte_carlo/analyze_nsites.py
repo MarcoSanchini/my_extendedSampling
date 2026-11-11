@@ -127,6 +127,15 @@ def reconstruct(d, start, stride, ref=None):
 	number of inconsistencies found on the way (should be 0)."""
 	state = np.frombuffer(start.encode(), dtype=np.uint8).copy()
 	ref_arr = np.frombuffer(ref.encode(), dtype=np.uint8) if ref else None
+	if ref_arr is not None and len(ref_arr) != len(state):
+		# The run is on a different reference from the one passed in. The Hd
+		# cross-check below would raise a broadcast error, which says nothing
+		# useful; everything else here works on the run's own data and does
+		# not need the reference at all. So drop the check and say why.
+		print(f"NOTE: the reference given is {len(ref_arr)} residues and this run is "
+			f"{len(state)}; skipping the Hd consistency check for it. Pass --ref "
+			"with the run's own reference to get the check back.")
+		ref_arr = None
 	snaps, snap_moves, bad = [], [], 0
 	for i, m in enumerate(d["move"]):
 		if m > 0:

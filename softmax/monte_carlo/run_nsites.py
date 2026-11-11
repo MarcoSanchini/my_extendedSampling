@@ -203,6 +203,9 @@ def main(args):
 	with open(f"{out}/run_info.txt", "a") as f:
 		f.write(f"# {time.strftime('%Y-%m-%d %H:%M:%S')}  moves={args.moves}  resume={bool(args.resume)}\n")
 		f.write(f"T {args.T}\nn_sites {args.n_sites}\ndt {pars['dt']}\ngrad_mode {args.grad_mode}\nseed {args.seed}\nstart {start_note}\n")
+		# Which reference this run used. Without it the analysis has to be told
+		# on the command line, and getting it wrong is silent or confusing.
+		f.write(f"ref {ref_name}\nref_len {len(ref_seq)}\n")
 		f.write(f"wall_total_s {wall_total:.1f}\n")
 		if torch.cuda.is_available():
 			f.write(f"gpu {torch.cuda.get_device_name(0)}\n")
