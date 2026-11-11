@@ -255,6 +255,22 @@ def analyze_equil(args, ref):
 	write(f"{args.run_dir}/analysis", "equil_speed.tsv", speed)
 
 
+def ref_of_run_dir(run_dir):
+	"""The reference these runs used, from the first run_info.txt that names one.
+
+	run_nsites.py records it since 2026-11-11. Older runs do not have the line,
+	and the caller then falls back to zero_polymer, which is what they all were.
+	"""
+	for info in sorted(glob.glob(f"{run_dir}/*/*/run_info.txt")
+			+ glob.glob(f"{run_dir}/*/run_info.txt")
+			+ glob.glob(f"{run_dir}/*/*/*/run_info.txt")):
+		with open(info) as f:
+			for line in f:
+				if line.startswith("ref "):
+					return line.split()[1]
+	return None
+
+
 def main():
 	p = argparse.ArgumentParser()
 	p.add_argument("phase", choices=["bench", "transient", "equil"])
@@ -263,11 +279,15 @@ def main():
 	p.add_argument("--checkpoints", type=int, nargs="+", default=[250, 500, 1000, 2000, 3000, 5000],
 		help="transient: moves at which the modes are compared")
 	p.add_argument("--burn", type=int, default=0, help="equil: moves dropped at the start of each chain")
-	p.add_argument("--ref", type=str, default="zero_polymer")
+	p.add_argument("--ref", type=str, default=None,
+		help="reference name; by default the one recorded in the runs' run_info.txt, "
+			"falling back to zero_polymer for runs written before that was recorded")
 	args = p.parse_args()
 	args.run_dir = args.run_dir.rstrip("/")
 	from references import get_reference
-	_, ref = get_reference(args.ref)
+	name = args.ref or ref_of_run_dir(args.run_dir) or "zero_polymer"
+	ref_name, ref = get_reference(name)
+	print(f"reference: {ref_name}, {len(ref)} residues")
 	{"bench": analyze_bench, "transient": analyze_transient, "equil": analyze_equil}[args.phase](args, ref)
 
 
