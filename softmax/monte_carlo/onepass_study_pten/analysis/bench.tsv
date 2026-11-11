@@ -1,0 +1,9 @@
+# T6 cost per move (analyze_onepass.py bench)
+run	moves	wall_s/move	cpu_s/move	peak_alloc_MB	smi_mem_MB	gpu_util_%
+one_pass_alone	300	0.1118	0.1122	4327	5514	59
+one_pass_pair0	300	0.1516	0.1521	4327	10773	92
+one_pass_pair1	300	0.1516	0.1521	4327	10773	92
+site_soft_alone	300	0.2632	0.2637	4327	5514	61
+# speed-up per move, alone: 2.36x (predicted 361/150 = 2.4x)
+# T6: one_pass alone 0.112 s/move -> PASS (criterion <= 0.170, set for zero_polymer at 566 aa; override with T6_CRITERION, and read the ratio on another reference)
+# two one_pass jobs together: 0.152 s/move each, i.e. a move every 0.076 s vs 0.112 s alone
