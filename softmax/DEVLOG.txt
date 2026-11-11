@@ -6355,3 +6355,22 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     the viral/non-viral table and the argument that the shallow independent
     variation of viral families explains both this and the H3N2 entropy
     problem.
+
+2026-11-11 -- the one-pass move at PTEN length, and two chains at a time
+    T6 rerun on pten_1d5r (324 aa), 300 moves at T=100, one job at a time:
+    one_pass 0.1118 s/move against site_soft 0.2632, a 2.36x speed-up. At 566
+    residues it was 2.38x (0.153 vs 0.365). So the advantage is the same at
+    both lengths and the ~350 aa floor is not an objection to PTEN; what
+    changes with length is the absolute cost, 0.112 vs 0.153 s/move, a factor
+    1.37 cheaper per move.
+    New and more useful: at 324 residues ONE JOB NO LONGER SATURATES THE CARD.
+    GPU utilisation is 59% alone and 92% with two jobs, and two one_pass jobs
+    take 0.1516 s/move each, i.e. a move every 0.076 s against 0.112 s alone
+    -- 1.47x the throughput. At 566 the same test was slightly negative (0.329
+    s/move each, 7% worse overall). Peak allocated is 4327 MB per job, 10773 MB
+    of card memory for two, so a third would also fit in 24 GB and is worth
+    measuring. Consequence: run the PTEN chains two at a time (MAX_RUNNING=2),
+    and compare s/move only between runs at the same MAX_RUNNING.
+    Tooling: study_nsites.sh now takes REF as study_onepass.sh does, and
+    analyze_nsites.py takes the reference from run_info.txt like
+    analyze_onepass.py.

@@ -423,6 +423,22 @@ def analyze_scan(args, ref):
 	write(out_dir, "scan_summary.tsv", summary)
 
 
+def ref_of_run_dir(run_dir):
+	"""The reference these runs used, from the first run_info.txt that names one.
+
+	run_nsites.py records it since 2026-11-11; older runs have no such line and
+	the caller falls back to zero_polymer, which is what they all were.
+	"""
+	for info in sorted(glob.glob(f"{run_dir}/*/*/run_info.txt")
+			+ glob.glob(f"{run_dir}/*/*/*/run_info.txt")
+			+ glob.glob(f"{run_dir}/*/*/*/*/run_info.txt")):
+		with open(info) as f:
+			for line in f:
+				if line.startswith("ref "):
+					return line.split()[1]
+	return None
+
+
 def main():
 	p = argparse.ArgumentParser()
 	p.add_argument("phase", choices=["equil", "scan"])
@@ -432,12 +448,15 @@ def main():
 	p.add_argument("--rhat", type=float, default=1.1, help="equil: R-hat threshold")
 	p.add_argument("--equil-dir", type=str, default="equil", help="equil: chain directory under run_dir (e.g. equil_op)")
 	p.add_argument("--burn", type=int, default=0, help="scan: moves dropped at the start of each chain")
-	p.add_argument("--ref", type=str, default="zero_polymer", help="reference name, for the Hd_to_ref check")
+	p.add_argument("--ref", type=str, default=None,
+		help="reference name, for the Hd_to_ref check; by default the one recorded in the "
+			"runs' run_info.txt, falling back to zero_polymer for runs written before that")
 	args = p.parse_args()
 	args.run_dir = args.run_dir.rstrip("/")
 
 	from references import get_reference
-	_, ref = get_reference(args.ref)
+	ref_name, ref = get_reference(args.ref or ref_of_run_dir(args.run_dir) or "zero_polymer")
+	print(f"reference: {ref_name}, {len(ref)} residues")
 	if args.every % args.stride:
 		sys.exit("--every must be a multiple of --stride")
 	(analyze_equil if args.phase == "equil" else analyze_scan)(args, ref)

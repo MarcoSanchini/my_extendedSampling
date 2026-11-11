@@ -31,6 +31,9 @@ set -u
 #   nohup bash study_nsites.sh > study_equil.log 2>&1 &
 #   RESUME=1 MOVES_EQ=40000 nohup bash study_nsites.sh > study_equil_more.log 2>&1 &
 #   PHASE=scan nohup bash study_nsites.sh > study_scan.log 2>&1 &
+#   REF=pten_1d5r RUN_DIR=$PWD/pten_study GRAD_MODE=one_pass MAX_RUNNING=2 \
+#       TS_OVERRIDE="1 2 4 8 16 32 64 128 316" NCHAINS=2 MOVES_EQ=5000 \
+#       nohup bash study_nsites.sh > pten_tsweep.log 2>&1 &
 #   GRAD_MODE=one_pass EQ_DIR=equil_op CONTINUE_FROM=equil TS_OVERRIDE="18 32 100" MOVES_EQ=40000 \
 #       nohup bash study_nsites.sh > study_equil_op.log 2>&1 &
 # ============================================================
@@ -38,6 +41,8 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_DIR="${RUN_DIR:-${SCRIPT_DIR}/nsites_study}"
 PHASE="${PHASE:-equil}"
+# Which reference to sample. Keep a separate RUN_DIR per reference.
+REF="${REF:-zero_polymer}"
 
 # Low, inside the 30-300 transition, high (DEVLOG 2026-10-14 acceptance table).
 TS=(${TS_OVERRIDE:-32 100 316})
@@ -56,9 +61,14 @@ GRAD_MODE="${GRAD_MODE:-site_soft}"
 EQ_DIR="${EQ_DIR:-equil}"
 CONTINUE_FROM="${CONTINUE_FROM:-}"
 
-# One job saturates the GPU: alone 0.364 s/move, two together 0.79 s/move each
-# (2026-10-22), so concurrency is ~8% slower and makes s/move depend on
-# neighbours. One at a time by default.
+# Whether a second job pays depends on the chain length, because a short chain
+# leaves the card idle. On zero_polymer (566 aa) one job saturates it: alone
+# 0.364 s/move, two together 0.79 s/move each (2026-10-22), i.e. ~8% worse
+# overall. On pten_1d5r (324 aa) it does not: 0.112 s/move alone at 59% GPU
+# utilisation, 0.152 s/move each for two at 92%, which is a move every 0.076 s
+# and 1.47x the throughput (2026-11-11). So MAX_RUNNING=2 is right for a short
+# reference and wrong for a long one; one at a time stays the default, and
+# s/move is only comparable between runs at the same MAX_RUNNING.
 MIN_FREE_MB="${MIN_FREE_MB:-12000}"
 MAX_RUNNING="${MAX_RUNNING:-1}"
 source "${SCRIPT_DIR}/gpu_scheduler.sh"
@@ -70,10 +80,11 @@ mkdir -p "${RUN_DIR}/logs"
 
 launch() {   # launch <log name> <run_nsites.py args...>
     local name="$1"; shift
-    echo "python -u ${SCRIPT_DIR}/run_nsites.py $* --grad-mode ${GRAD_MODE} ${RESUME_FLAG}"
+    echo "python -u ${SCRIPT_DIR}/run_nsites.py $* --ref ${REF} --grad-mode ${GRAD_MODE} ${RESUME_FLAG}"
     if [ "${DRY_RUN:-0}" = "1" ]; then return; fi
     wait_for_gpu_slot
-    nohup python -u "${SCRIPT_DIR}/run_nsites.py" "$@" --log-step "$LOG_STEP" --print-step "$LOG_STEP" \
+    nohup python -u "${SCRIPT_DIR}/run_nsites.py" "$@" --ref "$REF" \
+        --log-step "$LOG_STEP" --print-step "$LOG_STEP" \
         --dt-factor "$DT_FACTOR" --grad-mode "$GRAD_MODE" $RESUME_FLAG > "${RUN_DIR}/logs/${name}.log" 2>&1 &
     running_pids+=("$!")
     echo "  PID $!  log ${RUN_DIR}/logs/${name}.log"
