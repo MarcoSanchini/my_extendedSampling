@@ -26,12 +26,20 @@ set -u
 # RESUME=1 continues existing chains to larger MOVES_*. DRY_RUN=1 prints the
 # commands only. Examples:
 #   PHASE=bench     nohup bash study_onepass.sh > onepass_bench.log 2>&1 &
+#   REF=pten_1d5r RUN_DIR=$PWD/onepass_study_pten PHASE=bench \
+#       nohup bash study_onepass.sh > onepass_bench_pten.log 2>&1 &
 #   PHASE=transient nohup bash study_onepass.sh > onepass_transient.log 2>&1 &
 #   PHASE=equil     nohup bash study_onepass.sh > onepass_equil.log 2>&1 &
 # ============================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_DIR="${RUN_DIR:-${SCRIPT_DIR}/onepass_study}"
+# The reference decides the chain length, and the cost per move is dominated by
+# attention, which is quadratic in it. So a speed-up measured at one length does
+# not transfer to another, and the benchmark has to be rerun for every target.
+# Keep a separate RUN_DIR per reference; the analysis reads the directory, not
+# the sequence.
+REF="${REF:-zero_polymer}"
 NSITES_DIR="${NSITES_DIR:-${SCRIPT_DIR}/nsites_study}"
 PHASE="${PHASE:-transient}"
 
@@ -76,11 +84,12 @@ mkdir -p "${RUN_DIR}/logs"
 
 launch() {   # launch <log name> <run_nsites.py args...>
     local name="$1"; shift
-    echo "python -u ${SCRIPT_DIR}/run_nsites.py $* ${RESUME_FLAG}"
+    echo "python -u ${SCRIPT_DIR}/run_nsites.py $* --ref ${REF} ${RESUME_FLAG}"
     if [ "${DRY_RUN:-0}" = "1" ]; then return; fi
     wait_for_exclusive_gpu
     wait_for_gpu_slot
-    nohup python -u "${SCRIPT_DIR}/run_nsites.py" "$@" --log-step "$LOG_STEP" --print-step "$LOG_STEP" \
+    nohup python -u "${SCRIPT_DIR}/run_nsites.py" "$@" --ref "$REF" \
+        --log-step "$LOG_STEP" --print-step "$LOG_STEP" \
         $RESUME_FLAG > "${RUN_DIR}/logs/${name}.log" 2>&1 &
     running_pids+=("$!")
     echo "  PID $!  log ${RUN_DIR}/logs/${name}.log"

@@ -130,8 +130,16 @@ def analyze_bench(args, ref):
 		lines.append(f"# speed-up per move, alone: {res['site_soft_alone']/res['one_pass_alone']:.2f}x "
 			f"(predicted 361/150 = 2.4x)")
 	if "one_pass_alone" in res:
-		ok = res["one_pass_alone"] <= 0.170
-		lines.append(f"# T6: one_pass alone {res['one_pass_alone']:.3f} s/move -> {'PASS' if ok else 'FAIL'} (criterion <= 0.170)")
+		# The 0.170 s/move criterion was set for zero_polymer, 566 residues.
+		# Attention is quadratic in length, so it means nothing on a shorter
+		# reference: a 324-residue chain passes it whatever the move does. On
+		# another reference the figure to read is the ratio above, and
+		# T6_CRITERION can be set to the number that belongs to that length.
+		crit = float(os.environ.get("T6_CRITERION", 0.170))
+		ok = res["one_pass_alone"] <= crit
+		lines.append(f"# T6: one_pass alone {res['one_pass_alone']:.3f} s/move -> {'PASS' if ok else 'FAIL'} "
+			f"(criterion <= {crit:.3f}, set for zero_polymer at 566 aa; "
+			f"override with T6_CRITERION, and read the ratio on another reference)")
 	pair = [v for k, v in res.items() if "pair" in k]
 	if pair and "one_pass_alone" in res:
 		lines.append(f"# two one_pass jobs together: {np.mean(pair):.3f} s/move each, i.e. a move every "
