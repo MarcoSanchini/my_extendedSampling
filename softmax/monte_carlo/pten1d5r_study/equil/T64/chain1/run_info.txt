@@ -1,0 +1,14 @@
+# 2026-11-12 03:15:50  moves=30000  resume=False
+T 64.0
+n_sites 1
+dt 0.161621
+grad_mode one_pass
+seed 101
+start random (numpy seed 101)
+ref pten_1d5r
+ref_len 324
+wall_total_s 4582.7
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 4327
+peak_reserved_MB 5004
+
