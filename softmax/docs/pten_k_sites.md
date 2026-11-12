@@ -136,3 +136,6 @@ InterPro, which the cloud container cannot reach.
         T8=$R/T8/chain0 T16=$R/T16/chain0 T32=$R/T32/chain0 T64=$R/T64/chain0 \
         --cold T1 T2 --show T1 T2 T4 T8
     python pten_k_sites.py family
+
+Figures (png is git-ignored under monte_carlo, so copies are kept in `docs/figures/`):
+`pten_k_pten_site_profile_sampled.png`, `pten_k_sampled_vs_references.png`, `pten_k_pten_ptp_superfamily.png`.
