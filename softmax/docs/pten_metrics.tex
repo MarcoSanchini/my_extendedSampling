@@ -1,0 +1,302 @@
+% ---------------------------------------------------------------------------
+% PTEN as the sampling reference: what a move costs, what equilibrium costs,
+% and how both compare with the zero_polymer (HA0) reference.
+%
+% Every number is measured, and the file or DEVLOG entry it comes from is named
+% next to it. Sources: softmax/DEVLOG.txt entries 2026-11-11 and 2026-11-12,
+% softmax/monte_carlo/onepass_study_pten/analysis/bench.tsv,
+% softmax/monte_carlo/pten1d5r_study/analysis/.
+% Companion to one_pass_move.tex (the move itself) and speedup_status.tex
+% (the speed-up programme on zero_polymer).
+%
+% Build:  cd softmax/docs && pdflatex pten_metrics.tex && pdflatex pten_metrics.tex
+% ---------------------------------------------------------------------------
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash}p{#1}}
+\usepackage[hidelinks]{hyperref}
+\sloppy
+
+\newcommand{\Hd}{H_d}
+\newcommand{\file}[1]{\texttt{#1}}
+\newcommand{\Uam}{U_{\mathrm{am}}}
+
+\title{PTEN as the sampling reference: cost and equilibration metrics}
+\author{Marco Sanchini \\ \small\texttt{my\_extendedSampling} / \texttt{softmax}}
+\date{2026--11--12}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+The sampling reference changed from influenza HA0 (\file{zero\_polymer},
+$L=566$) to human PTEN (\file{pten\_1d5r}, $L=324$, crystal 1D5R). This note
+collects what that costs and what it buys, with every number measured on
+astaroth (RTX 4500 Ada, 24\,GB). Three things matter. A move is
+$1.37\times$ cheaper, as the chain is shorter. Two chains now run on one card
+for $1.47\times$ the throughput, where at $L=566$ pairing was slightly
+\emph{negative}: the shorter chain no longer saturates the GPU. And the
+reference-side chain reaches its $\Hd$ plateau in $10^4$--$2.5\times10^4$
+moves, against ${\sim}4\times10^5$ for \file{zero\_polymer} at a matched
+melted fraction, a factor of roughly 30. Taken together, a measurement that
+took a day now takes under an hour. The open problem has not gone away: below
+the transition the chains are trapped, and $t_{\mathrm{eq}}$ is reached at no
+temperature in the ladder.
+\end{abstract}
+
+\section{Setup, and what is being measured}
+
+All numbers use the gradient-informed sampler with \texttt{grad\_mode =
+one\_pass} and one mutation per move ($N=1$), the configuration the
+mutations-per-move scan selected (\file{DEVLOG} 2026--11--02: at fixed
+$\Delta t$ the acceptance of an $N$-site move falls roughly like $a_1^N$ while
+the cost of a move barely depends on $N$, so $N\!\cdot\!a$ peaks at $N=1$ below
+the transition). The energy is the attention-map distance
+\begin{equation}
+  \Uam(\sigma) \;=\; \sum_{i<j}\Bigl[\log A_{ij}(\sigma) - \log A_{ij}(\sigma_{\mathrm{ref}})\Bigr]^2 ,
+\end{equation}
+with the reference map computed by ESM3 from the reference \emph{sequence}, so
+$\Uam(\sigma_{\mathrm{ref}}) = 0$ by construction and no experimental structure
+enters. Two consequences are used below: $\Uam$ is a sum over residue
+\emph{pairs}, so the energy scale of one mutation grows roughly like $L^2$; and
+$\Hd$, the Hamming distance to the reference, runs from 0 to $L$.
+
+Hardware and software are unchanged between the two references, so every
+comparison below is a comparison of chain length, not of machine.
+
+\section{Cost of one move}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llrrr}
+\toprule
+reference & \texttt{grad\_mode} & s/move, one job & s/move, two jobs & effective interval \\
+\midrule
+\file{pten\_1d5r} ($L=324$)     & \texttt{one\_pass}  & 0.1118 & 0.1516 & \textbf{0.0758} \\
+\file{pten\_1d5r} ($L=324$)     & \texttt{site\_soft} & 0.2632 & ---    & 0.2632 \\
+\file{zero\_polymer} ($L=566$)  & \texttt{one\_pass}  & 0.153  & 0.330  & 0.165 \\
+\file{zero\_polymer} ($L=566$)  & \texttt{site\_soft} & 0.365  & 0.79   & 0.395 \\
+\bottomrule
+\end{tabular}
+\caption{Seconds of wall clock per move. ``Two jobs'' is the per-chain figure
+with two independent chains sharing the card; ``effective interval'' is the
+wall time per move produced in total, i.e. half the two-job figure. PTEN
+numbers from \file{onepass\_study\_pten/analysis/bench.tsv} (300 moves at
+$T=100$) and from the 2026--11--12 ladder; \file{zero\_polymer} from
+\file{DEVLOG} 2026--10--22 and 2026--11--02 and the 2026--11--11 ladder.}
+\end{table}
+
+\noindent
+The one-pass move is worth $2.36\times$ at $L=324$ against $2.38\times$ at
+$L=566$: \textbf{the speed-up does not depend on chain length}, so the shorter
+reference costs the method nothing. What length changes is the absolute cost,
+$0.1118$ against $0.153$\,s, a factor $1.37$.
+
+\section{Cost of \texorpdfstring{$10^5$}{1e5} moves}
+
+The same table read as wall-clock hours for $10^5$ accepted-or-rejected moves
+of \emph{aggregate} sampling, which is the unit a run is actually planned in.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llrr}
+\toprule
+reference & configuration & h per $10^5$ moves & moves per hour \\
+\midrule
+\file{pten\_1d5r}    & \texttt{one\_pass}, two chains  & \textbf{2.11} & \textbf{47\,500} \\
+\file{pten\_1d5r}    & \texttt{one\_pass}, one chain   & 3.11 & 32\,200 \\
+\file{pten\_1d5r}    & \texttt{site\_soft}, one chain  & 7.31 & 13\,700 \\
+\file{zero\_polymer} & \texttt{one\_pass}, one chain   & 4.25 & 23\,500 \\
+\file{zero\_polymer} & \texttt{one\_pass}, two chains  & 4.58 & 21\,800 \\
+\file{zero\_polymer} & \texttt{site\_soft}, one chain  & 10.14 & 9\,900 \\
+\bottomrule
+\end{tabular}
+\caption{Derived from Table 1. Best configuration per reference in bold for
+PTEN; note that for \file{zero\_polymer} the best is \emph{one} chain.}
+\end{table}
+
+\noindent
+Between the worst row and the best there is a factor $4.8$, and $2.9$ of it is
+free: the one-pass move and running two chains instead of one.
+
+\section{Two chains on one card, which pays only now}
+
+At $L=324$ a single job leaves the GPU 41\,\% idle. Pairing therefore buys
+throughput, which it did not at $L=566$.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+ & one job & two jobs & change \\
+\midrule
+s/move, each chain (PTEN)      & 0.1118 & 0.1516 & \\
+effective interval (PTEN)      & 0.1118 & 0.0758 & $1.47\times$ throughput \\
+GPU utilisation (PTEN)         & 59\,\% & 92\,\% & \\
+card memory in use (PTEN)      & 5514\,MB & 10\,773\,MB & \\
+peak allocated per job (PTEN)  & 4327\,MB & 4327\,MB & \\
+\midrule
+effective interval (\file{zero\_polymer}, \texttt{one\_pass}) & 0.153 & 0.165 & 8\,\% \emph{worse} \\
+peak allocated per job (\file{zero\_polymer}) & 6350\,MB & --- & \\
+\bottomrule
+\end{tabular}
+\caption{Concurrency at the two chain lengths. The sign of the effect reverses
+with length, so \texttt{MAX\_RUNNING=2} is right for PTEN and wrong for
+\file{zero\_polymer}.}
+\end{table}
+
+\noindent
+Two practical consequences. First, 10\,773\,MB of 24\,GB means a third
+concurrent chain would fit, and whether it pays has not been measured. Second,
+\textbf{s/move is only comparable between runs at the same
+\texttt{MAX\_RUNNING}}: the 0.33\,s/move in the 2026--11--11
+\file{zero\_polymer} ladder and the 0.153\,s/move single-job figure are the
+same sampler.
+
+\section{Equilibration}
+
+The ladder of 2026--11--12: nine temperatures, two chains each (one started at
+the reference, one at a random canonical sequence), $3\times10^4$ one-pass
+moves per chain, $5.4\times10^5$ moves in all, 11.5\,h of card time. Per chain,
+over the second half of each run (\file{pten1d5r\_study/analysis/}):
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rrrrrrr}
+\toprule
+ & \multicolumn{3}{c}{started at the reference} & \multicolumn{3}{c}{started at random} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}
+$T$ & $\langle U\rangle$ & $\langle \Hd\rangle$ & acceptance & $\langle U\rangle$ & $\langle \Hd\rangle$ & acceptance \\
+\midrule
+1   &    45 &  18 & 0.0097 & 46\,691 & 303 & 0.0018 \\
+2   &   304 &  74 & 0.0552 & 43\,838 & 305 & 0.0033 \\
+4   &   996 & 162 & 0.1234 & 44\,694 & 305 & 0.0011 \\
+8   &  1879 & 215 & 0.2138 & 43\,636 & 308 & 0.0019 \\
+16  &  2870 & 246 & 0.2950 & 45\,690 & 307 & 0.0037 \\
+32  &  4220 & 267 & 0.3631 & 44\,915 & 307 & 0.0105 \\
+64  &  5799 & 272 & 0.4516 & 42\,048 & 310 & 0.0581 \\
+128 &  9000 & 285 & 0.5238 & 45\,163 & 305 & 0.3717 \\
+316 & 16\,324 & 289 & 0.5736 & 39\,279 & 305 & 0.6137 \\
+\bottomrule
+\end{tabular}
+\caption{The chain-averaged table that \file{analyze\_nsites.py} printed before
+2026--11--12 hid all of this: its $\langle \Hd\rangle = 268$ at $T=1$ is the
+average of 18 and 303, a value neither chain ever visits. The per-chain block
+is now printed under every temperature.}
+\end{table}
+
+\subsection{How long the reference-side chain takes to plateau}
+
+$\Hd$ of the reference-started chain, averaged over 5000-move blocks:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rllr}
+\toprule
+$T$ & $\Hd$ per 5000-move block & plateau & moves to plateau \\
+\midrule
+4   & 66 / 121 / 143 / 158 / 168 / 160 & $\approx 160$ & ${\sim}20\,000$ \\
+8   & 125 / 205 / 211 / 213 / 220 / 213 & $\approx 213$ & ${\sim}12\,500$ \\
+16  & 177 / 242 / 240 / 243 / 249 / 246 & $\approx 246$ & ${\sim}10\,000$ \\
+32  & 214 / 270 / 268 / 273 / 265 / 262 & $\approx 267$ & ${\sim}10\,000$ \\
+\bottomrule
+\end{tabular}
+\caption{$U$ plateaus in the same window. $T=1$ and $T=2$ are omitted
+deliberately: see the caveat below.}
+\end{table}
+
+\noindent
+The comparison with \file{zero\_polymer} has to pair temperatures by
+\emph{melted fraction}, not by the number $T$, because the two references have
+different $L$ and therefore different energy scales. PTEN at $T=8$ plateaus at
+$\Hd/L = 213/324 = 66\,\%$; \file{zero\_polymer} at $T=12$ plateaus at
+$380/566 = 67\,\%$. Those are the comparable runs, and
+\file{zero\_polymer}'s took about $4\times10^5$ moves to get there: a fast rise
+to ${\sim}2\times10^5$ at $\Hd=346$, a step to ${\sim}380$ near
+$4\times10^5$, then flat over the last ${\sim}1.5\times10^5$ of a
+$5.8\times10^5$-move run (\file{DEVLOG} 2026--11--02).
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llrr}
+\toprule
+reference & matched run & moves to plateau & card time \\
+\midrule
+\file{pten\_1d5r}    & $T=8$, 66\,\% melted  & ${\sim}12\,500$ & \textbf{0.5\,h} \\
+\file{zero\_polymer} & $T=12$, 67\,\% melted & ${\sim}400\,000$ & 17\,h \\
+\bottomrule
+\end{tabular}
+\caption{Card time at each reference's best configuration (PTEN two chains at
+0.1516\,s/move each, \file{zero\_polymer} one chain at 0.153\,s/move). The
+factor is about 30 in moves and about 30 in time; pairing other temperatures
+instead gives 16--40, so the honest claim is ``an order of magnitude'', not a
+precise number.}
+\end{table}
+
+\section{Where the transition is}
+
+$\langle \Hd\rangle$ of the reference-side chain runs 18, 74, 162, 215, 246,
+267, 272, 285, 289 over $T=1\ldots316$ with no jump, and acceptance rises
+smoothly from 0.0097 to 0.57. Halfway to a random sequence
+($\Hd \approx 307$) falls at $T \approx 4$, so the crossover is at
+$T \approx 3$--5, against ${\sim}8$--18 for \file{zero\_polymer}. That is what
+the pair-sum structure of $\Uam$ predicts: the energy per mutation scales
+roughly like $L^2$ and $(324/566)^2 = 0.33$, so PTEN's crossover should sit a
+few times lower, and it does.
+
+\section{Caveats}
+
+\begin{enumerate}
+\item \textbf{$t_{\mathrm{eq}}$ is reached at no temperature} in this ladder,
+      by the criterion in \file{analyze\_nsites.py} ($\hat{R} < 1.1$ on both
+      $U$ and $\Hd$ from $t_{\mathrm{eq}}$ to the end). The plateaus above are
+      one-sided: they say the reference-started chain has stopped moving, not
+      that it samples the equilibrium distribution.
+\item \textbf{$T=1$ and $T=2$ are flat because they are trapped}, not
+      equilibrated: 207 and 1425 accepted moves in $3\times10^4$. Only
+      $T \ge 4$ has thousands of accepted moves and a plateau worth the name.
+\item \textbf{The random-started chain is useless below the crossover}, exactly
+      as on \file{zero\_polymer}: $U \approx 42\,000$--$47\,000$ at every
+      $T \le 64$ and $\Hd$ never leaving 303--310. At $T=64$ it fell from
+      48\,285 to 41\,183 over $3\times10^4$ moves with ${\sim}23\,000$ still to
+      go. So $\hat{R}$ across opposite starts compares two basins instead of
+      measuring one. \file{study\_nsites.sh} now takes \texttt{STARTS}, and
+      \texttt{STARTS="reference reference"} gives two reference-side chains
+      differing only by proposal seed: a weaker diagnostic, but one about the
+      basin being measured.
+\item \textbf{$\Hd$ to the reference stops being a convergence coordinate above
+      the crossover.} $\hat{R}_{\Hd}$ sits at 3--9 for every $T \ge 16$ and
+      looks converged while $\hat{R}_U$ is 10--150 on the same rows. A random
+      canonical sequence is $19/20 = 95\,\%$ different from any reference, so
+      once the reference-side chain melts past $\Hd \approx 250$ both chains
+      are near 300 and $\Hd$ cannot separate them. $U$ can: at $T=316$ the two
+      are at 16\,324 and 39\,279. Read $\hat{R}_U$.
+\item A third concurrent chain fits in memory and has not been timed.
+\item The mutations-per-move choice $N=1$ is carried over from
+      \file{zero\_polymer} and has not been re-measured on PTEN.
+\end{enumerate}
+
+\section{Reproducing the numbers}
+
+Per-chain tables, the $\hat{R}$ series and the per-temperature plots of $U$ and
+$\Hd$ (one curve per chain, with $t_{\mathrm{eq}}$ marked):
+\begin{verbatim}
+cd softmax/monte_carlo
+python analyze_nsites.py equil $PWD/pten1d5r_study --every 1000
+\end{verbatim}
+It writes \file{pten1d5r\_study/analysis/equil\_T<T>.tsv} and
+\file{equil\_T<T>.png} and needs only numpy and matplotlib, no GPU. The
+move-cost benchmark is \file{study\_onepass.sh} with
+\texttt{REF=pten\_1d5r}, analysed by \file{analyze\_onepass.py}; the ladder is
+\file{study\_nsites.sh} with \texttt{REF=pten\_1d5r
+TS\_OVERRIDE="1 2 4 8 16 32 64 128 316" NCHAINS=2 MOVES\_EQ=30000
+GRAD\_MODE=one\_pass MAX\_RUNNING=2}.
+
+\end{document}

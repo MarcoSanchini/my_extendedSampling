@@ -6418,3 +6418,82 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     roughly with L^2, and (324/566)^2 = 0.33, which would put PTEN's T* several
     times lower. That is exactly what the ladder is for, so keep the full
     1..316 span rather than pre-selecting a band.
+
+2026-11-12 -- PTEN temperature ladder, 9 T x 2 chains x 30000 one-pass moves
+    Run overnight on the right reference this time (every run_info.txt says
+    ref pten_1d5r / ref_len 324, peak 4327 MB, 0.153 s/move with two jobs at a
+    time, 4583 s per pair, 11.5 h in all). analyze_nsites.py equil
+    pten1d5r_study. Per chain over the second half, which is the view that
+    matters and which the chain-averaged table hides:
+
+      T     reference-started chain      random-started chain
+            <U>      <Hd>   acc          <U>      <Hd>   acc
+      1        45      18   0.0097       46691     303   0.0018
+      2       304      74   0.0552       43838     305   0.0033
+      4       996     162   0.1234       44694     305   0.0011
+      8      1879     215   0.2138       43636     308   0.0019
+      16     2870     246   0.2950       45690     307   0.0037
+      32     4220     267   0.3631       44915     307   0.0105
+      64     5799     272   0.4516       42048     310   0.0581
+      128    9000     285   0.5238       45163     305   0.3717
+      316   16324     289   0.5736       39279     305   0.6137
+
+    Three results.
+
+    (1) THE REFERENCE-SIDE CHAIN PLATEAUS IN 10000-20000 MOVES at every T >= 4.
+    Hd per 5000-move block, reference-started: T=8 125/205/211/213/220/213,
+    T=16 177/242/240/243/249/246, T=32 214/270/268/273/265/262, T=4
+    66/121/143/158/168/160. U plateaus in the same window. Compare
+    zero_polymer at T=12, which was at Hd 139 after 20000 moves and still
+    climbing 30-45 per 5000, and whose plateau at Hd ~380 was reached near
+    400000 moves (fast rise to ~200k at Hd 346, a step to ~380 near 400k, flat
+    over the last ~150k of the 580k run). The right pairing is by melted
+    FRACTION, which matches PTEN's T=8 to zero_polymer's T=12: 213/324 = 66%
+    against 380/566 = 67%. 400000 against ~12500 moves is a factor of about
+    30, and 16-40x depending on which temperatures are paired. (An earlier note
+    and PR #44 said "50x", taking zero_polymer's plateau as 500000 moves, where
+    it had merely been MEASURED as flat, and PTEN's as 10000. About 30x is the
+    defensible number.) Either way it is the strongest practical argument yet
+    for the target change, independent of the decode quality.
+
+    (2) HD_TO_REF IS A BAD CONVERGENCE COORDINATE ABOVE THE TRANSITION.
+    Rhat_Hd sits at 3-9 for every T >= 16 and looks converged, but Rhat_U is
+    10-150 over the same rows. The reason is geometric: a random canonical
+    sequence is 19/20 = 95% different from any reference, so once the
+    reference-side chain melts past Hd ~ 250 both chains are near 300 and Hd
+    cannot tell them apart. U can: at T=316 the two are at 16324 and 39279.
+    t_eq is reached at NO temperature, and that is the honest reading.
+    Lean on Rhat_U; treat a low Rhat_Hd at high T as uninformative.
+
+    (3) THE TRANSITION IS AROUND T = 3-5, LOWER THAN ZERO_POLYMER'S ~8-18, AND
+    THE MELTING IS GRADUAL. <Hd> of the reference-side chain goes 18, 74, 162,
+    215, 246, 267, 272, 285, 289 with no jump. Halfway to random (~307) falls
+    at T ~ 4. Acceptance rises smoothly 0.0097 -> 0.57 with no plateau either.
+    This is what the L^2 argument predicted: U_am sums over residue pairs and
+    (324/566)^2 = 0.33, so PTEN's T* should be a few times below
+    zero_polymer's. The top of the ladder (64, 128, 316) is settled; the band
+    worth resolving is T = 1-8.
+
+    CAVEAT, not to be skipped: T=1 and T=2 are flat because they are TRAPPED,
+    not because they are equilibrated. T=1 accepted 207 moves in 30000 (acc
+    0.0097) and T=2 accepted 1425, so those chains have explored almost
+    nothing. T >= 4 has thousands of accepted moves and a real plateau.
+
+    The random-started chain is useless below the transition, exactly as on
+    zero_polymer: U ~ 42000-47000 at every T up to 64, Hd never leaving 303-310,
+    acceptance 0.001-0.01. It is not descending towards the reference basin on
+    any affordable timescale (at T=64 it fell 48285 -> 41183 over 30000 moves,
+    with ~23000 still to go). So R-hat across opposite starts compares two
+    basins and only reports that they differ.
+    Tooling, from this: analyze_nsites.py equil now prints a per-chain block
+    (<U>, <Hd>, acc, dHd/10k) under each temperature, because the
+    chain-averaged mean is a number no chain ever visits -- mean_Hd 268 at T=1
+    is the average of 18 and 303. study_nsites.sh takes STARTS, cycled over
+    the chains, default "reference random" as before;
+    STARTS="reference reference" gives two reference-side chains differing only
+    by proposal seed, a weaker diagnostic but one about the basin being
+    measured. The plot title no longer hardcodes zero_polymer.
+    Housekeeping: monte_carlo/pten_study, which held the 2026-11-11
+    zero_polymer ladder under a PTEN name, is renamed monte_carlo/zp_tsweep
+    (and pten_tsweep.log -> zp_tsweep.log). The PTEN runs are in
+    monte_carlo/pten1d5r_study.
