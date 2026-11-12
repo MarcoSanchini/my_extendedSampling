@@ -6445,10 +6445,16 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     T=16 177/242/240/243/249/246, T=32 214/270/268/273/265/262, T=4
     66/121/143/158/168/160. U plateaus in the same window. Compare
     zero_polymer at T=12, which was at Hd 139 after 20000 moves and still
-    climbing 30-45 per 5000, with its plateau near 385 reached only around
-    500000 moves. PTEN reaches a comparable melted fraction (213/324 = 66%
-    against 385/566 = 68%) about 50x sooner. That is the strongest practical
-    argument yet for the target change, independent of the decode quality.
+    climbing 30-45 per 5000, and whose plateau at Hd ~380 was reached near
+    400000 moves (fast rise to ~200k at Hd 346, a step to ~380 near 400k, flat
+    over the last ~150k of the 580k run). The right pairing is by melted
+    FRACTION, which matches PTEN's T=8 to zero_polymer's T=12: 213/324 = 66%
+    against 380/566 = 67%. 400000 against ~12500 moves is a factor of about
+    30, and 16-40x depending on which temperatures are paired. (An earlier note
+    and PR #44 said "50x", taking zero_polymer's plateau as 500000 moves, where
+    it had merely been MEASURED as flat, and PTEN's as 10000. About 30x is the
+    defensible number.) Either way it is the strongest practical argument yet
+    for the target change, independent of the decode quality.
 
     (2) HD_TO_REF IS A BAD CONVERGENCE COORDINATE ABOVE THE TRANSITION.
     Rhat_Hd sits at 3-9 for every T >= 16 and looks converged, but Rhat_U is
