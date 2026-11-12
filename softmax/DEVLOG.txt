@@ -6418,3 +6418,42 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     roughly with L^2, and (324/566)^2 = 0.33, which would put PTEN's T* several
     times lower. That is exactly what the ladder is for, so keep the full
     1..316 span rather than pre-selecting a band.
+
+2026-11-12 -- PTEN K-sites: three references, and the sampled entropy is not flat across them
+    New monte_carlo/pten_k_sites.py (fetch / build / compare / family), outputs
+    and logs in monte_carlo/pten_natural/, reading in docs/pten_k_sites.md.
+    Ran entirely in the cloud container: github raw and the OpenFold S3 bucket
+    (OpenProteinSet) are reachable, NCBI / UniProt / EBI are not.
+    References per site of pten_1d5r (UniProt 7-285 + 310-353; sites 0 and 279
+    are not native): natural entropy from the UniRef90 alignment of the 1D5R
+    chain at four depths, VAMP-seq abundance (Matreyek 2018, PMID 29785012,
+    plus the 2021 fill-in) and lipid phosphatase activity (Mighell 2018,
+    PMC5986715).
+    Flatness: vertebrate orthologs are flat (median entropy 0.01 nats, 176/280
+    sites < 0.05), the PTEN-like family (2716 seq, N_eff 506) is not (0.56 to
+    2.57 nats, 10th-90th percentile), neither are abundance (0.34-0.94) and
+    activity (-2.8 to 0.0).
+    K-like sets: natural 28 sites (family entropy < 0.5), abundance 108
+    (authors' "intolerant"), activity 97 (>= half the missense below -1.11).
+    natural & activity 24 vs 8.4 expected (P 2e-10), abundance & activity 56 vs
+    32 (P 2e-9), natural & abundance 12 vs 9.3 (P 0.18): conservation in the
+    family is catalysis, abundance is the fold (R15, H123, R130 conserved, yet
+    abundance 0.92-1.03). Abundance is the reference for U_am.
+    Sampler (reference-started chains of the ladder, last 15000 moves):
+    Spearman of sampled entropy with family / abundance / activity is
+    +0.39 / +0.36 / +0.44 at T=4 and +0.42 / +0.36 / +0.47 at T=8; mean entropy
+    inside each K-like set is 0.34-0.49 of the outside at T=4, 0.54-0.69 at
+    T=8, all at the floor of a circular-shift test (p 0.003).
+    Cautions: (1) half of it is burial; with RSA regressed out T=4 keeps +0.18
+    with abundance and +0.24 with activity. (2) chains not equilibrated, at
+    T=1 284 sites sit at entropy 0 because unvisited, so the strict K-site
+    list (183 sites) is not a result yet. (3) proposals are uniform over
+    sites (68-134 per site), so the proposal is not the source of the signal.
+    PF00102: PTEN is not in it. 71 classical PTP templates align to UniProt
+    89-179 only (53% of the phosphatase domain); 116 dual-specificity-like
+    ones reach 78%. PF00102 entropy carried over through PTP1B correlates
+    +0.48 with PTEN-family entropy, +0.49 with activity, -0.06 with abundance.
+    Not worth building on; the 6002-sequence phosphatase tier is the
+    superfamily alignment anchored on PTEN and is already in the table.
+    Next: an in-silico single-mutant scan of U_am on the reference (324 x 19
+    forward passes) as the direct counterpart of VAMP-seq.

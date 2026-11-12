@@ -1,0 +1,71 @@
+chains (entropy over the last 50% of the moves):
+  T1       30001 moves, start reference, final Hd  16,   146 accepted in the kept part, mean entropy 0.094, sites at entropy 0: 284/324, sites never accepted: 277
+  T2       30001 moves, start reference, final Hd  67,   828 accepted in the kept part, mean entropy 0.424, sites at entropy 0: 182/324, sites never accepted: 165
+  T4       30001 moves, start reference, final Hd 161,  1852 accepted in the kept part, mean entropy 0.916, sites at entropy 0: 78/324, sites never accepted: 61
+  T8       30001 moves, start reference, final Hd 208,  3208 accepted in the kept part, mean entropy 1.307, sites at entropy 0: 31/324, sites never accepted: 18
+  T16      30001 moves, start reference, final Hd 258,  4426 accepted in the kept part, mean entropy 1.639, sites at entropy 0: 16/324, sites never accepted: 13
+  T32      30001 moves, start reference, final Hd 259,  5447 accepted in the kept part, mean entropy 1.840, sites at entropy 0: 9/324, sites never accepted: 6
+  T64      30001 moves, start reference, final Hd 273,  6775 accepted in the kept part, mean entropy 1.991, sites at entropy 0: 3/324, sites never accepted: 3
+
+Spearman, sampled entropy vs each reference (all are 'higher = more tolerant'; n = sites with data).
+A second line gives the same for -mean_dU of the proposals, the sampler's own mutation cost.
+chain quantity  orthologs entropy  family entropy  abundance mean  activity mean
+   T1  entropy             +0.099          +0.115          +0.234         +0.175
+   T1 -mean_dU             +0.047          +0.163          +0.295         +0.261
+   T2  entropy             +0.198          +0.236          +0.295         +0.286
+   T2 -mean_dU             +0.064          +0.187          +0.321         +0.291
+   T4  entropy             +0.224          +0.391          +0.363         +0.438
+   T4 -mean_dU             +0.080          +0.249          +0.343         +0.338
+   T8  entropy             +0.239          +0.424          +0.356         +0.466
+   T8 -mean_dU             +0.114          +0.282          +0.380         +0.383
+  T16  entropy             +0.202          +0.399          +0.323         +0.444
+  T16 -mean_dU             +0.111          +0.322          +0.376         +0.371
+  T32  entropy             +0.183          +0.383          +0.283         +0.410
+  T32 -mean_dU             +0.155          +0.355          +0.391         +0.419
+  T64  entropy             +0.223          +0.400          +0.318         +0.415
+  T64 -mean_dU             +0.271          +0.438          +0.461         +0.504
+  n: orthologs entropy 280, family entropy 305, abundance mean 289, activity mean 311; |rho| above about 0.12 is beyond chance at the 5% level
+
+How much of that is burial? Spearman of each quantity with the relative solvent accessibility (RSA) of the
+crystal, and the sampled-vs-reference Spearman with RSA regressed out (the 277 sites resolved in 1D5R):
+  RSA vs orthologs entropy +0.40, family entropy +0.53, abundance mean +0.65, activity mean +0.64
+chain  entropy vs RSA  orthologs entropy | RSA  family entropy | RSA  abundance mean | RSA  activity mean | RSA
+   T1          +0.159                   +0.048                +0.038                +0.189               +0.092
+   T2          +0.288                   +0.120                +0.049                +0.196               +0.140
+   T4          +0.455                   +0.101                +0.186                +0.180               +0.242
+   T8          +0.458                   +0.059                +0.226                +0.141               +0.244
+  T16          +0.447                   +0.060                +0.210                +0.122               +0.208
+  T32          +0.465                   +0.021                +0.221                +0.048               +0.173
+  T64          +0.470                   +0.049                +0.235                +0.073               +0.179
+
+Is the sampled entropy flat across each K-like set? mean inside / mean outside,
+p against circular shifts of the set along the sequence (smallest possible 1/L = 0.003):
+chain         set  n_in  mean_in  mean_out  ratio  frac_zero_in  frac_zero_out  shift_p
+   T1   K_natural    28    0.024     0.101  0.237         0.964          0.868    0.185
+   T1 K_abundance   108    0.025     0.129  0.197         0.963          0.833    0.006
+   T1  K_activity    97    0.030     0.121  0.251         0.948          0.846    0.049
+   T2   K_natural    28    0.077     0.456  0.169         0.821          0.537    0.019
+   T2 K_abundance   108    0.221     0.525  0.420         0.704          0.491    0.003
+   T2  K_activity    97    0.217     0.512  0.424         0.680          0.511    0.006
+   T4   K_natural    28    0.329     0.972  0.338         0.536          0.213    0.003
+   T4 K_abundance   108    0.543     1.103  0.492         0.398          0.162    0.003
+   T4  K_activity    97    0.527     1.082  0.487         0.433          0.159    0.003
+   T8   K_natural    28    0.732     1.362  0.538         0.321          0.074    0.003
+   T8 K_abundance   108    1.010     1.456  0.694         0.148          0.069    0.003
+   T8  K_activity    97    0.890     1.486  0.599         0.237          0.035    0.003
+  T16   K_natural    28    1.023     1.697  0.602         0.250          0.030    0.003
+  T16 K_abundance   108    1.395     1.761  0.792         0.074          0.037    0.003
+  T16  K_activity    97    1.272     1.796  0.708         0.103          0.026    0.003
+  T32   K_natural    28    1.438     1.878  0.765         0.143          0.017    0.003
+  T32 K_abundance   108    1.632     1.944  0.839         0.037          0.023    0.003
+  T32  K_activity    97    1.508     1.982  0.761         0.062          0.013    0.003
+  T64   K_natural    28    1.528     2.035  0.751         0.071          0.003    0.003
+  T64 K_abundance   108    1.747     2.114  0.827         0.019          0.005    0.003
+  T64  K_activity    97    1.676     2.126  0.789         0.021          0.004    0.003
+
+sampled K-sites (entropy < 0.05 at every one of ['T1', 'T2']): 183/324
+  overlap with K_natural: 23/28  expected 15.8  P=0.0029
+  overlap with K_abundance: 76/108  expected 61.0  P=0.00025
+  overlap with K_activity: 66/97  expected 54.8  P=0.0041
+
+Outputs in /home/user/my_extendedSampling/softmax/monte_carlo/pten_natural: pten_site_table_sampled.csv, sampled_vs_references_spearman.tsv, sampled_vs_references_partial_rsa.tsv, sampled_entropy_in_K_sets.tsv, pten_site_profile_sampled.png, sampled_vs_references.png

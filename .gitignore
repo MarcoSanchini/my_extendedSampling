@@ -97,3 +97,7 @@ generator.npy
 
 # figures used by softmax/docs/*.tex must be tracked, or the documents cannot be rebuilt
 !softmax/docs/figures/*.png
+
+# Raw downloads of pten_k_sites.py fetch: re-fetchable, and the VAMP-seq scores are
+# (c) University of Washington, academic non-commercial licence, so not redistributed here.
+softmax/monte_carlo/pten_natural/raw/

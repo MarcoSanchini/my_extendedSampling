@@ -1,0 +1,5 @@
+tier	sequences	weight_identity	n_eff	median_identity_to_PTEN	sites_with_entropy	mean_entropy_nats	sites_entropy_lt_0.05
+vertebrate	92	0.950	21.886	0.963	280	0.166	176
+orthologs	123	0.950	43.688	0.944	280	0.311	69
+family	2716	0.800	506.237	0.333	305	1.659	0
+pdomain	6002	0.800	1125.491	0.336	172	1.639	0
