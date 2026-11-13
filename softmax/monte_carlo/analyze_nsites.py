@@ -300,16 +300,21 @@ def analyze_equil(args, ref):
 		# chains, which hides the thing that matters most below the
 		# transition: the reference-started and random-started chains sit in
 		# different basins, and their mean is a number no chain ever visits.
-		lines.append("# per chain, second half of the run:")
-		lines.append("# chain\tstart\t<U>\t<Hd>\tacc\tdHd/10k(last 10k)")
+		# Each chain over ITS OWN full length, not the common range: a chain
+		# resumed to 220000 moves next to one left at 30000 would otherwise be
+		# reported on its first 30000 and the resume would be invisible. The
+		# R-hat table above still needs the common range; this block does not.
+		lines.append("# per chain, second half of each chain's OWN run:")
+		lines.append("# chain\tstart\tmoves\t<U>\t<Hd>\tacc\tdHd/10k(last 10k)")
 		for r in runs:
-			h = r["move"] > end / 2
-			last = r["move"] > max(0, end - 10000)
+			own = r["move"][-1]
+			h = r["move"] > own / 2
+			last = r["move"] > max(0, own - 10000)
 			sl = np.polyfit(r["move"][last] / 10000., r["Hd"][last], 1)[0] if last.sum() > 2 else np.nan
-			lines.append("# %s\t%s\t%.0f\t%.0f\t%.4f\t%+.1f" % (
+			lines.append("# %s\t%s\t%d\t%.0f\t%.0f\t%.4f\t%+.1f" % (
 				os.path.basename(r["run"]),
 				"ref" if r["Hd"][0] == 0 else "Hd%d" % r["Hd"][0],
-				r["U"][h].mean(), r["Hd"][h].mean(), r["acc"][h].mean(), sl))
+				own, r["U"][h].mean(), r["Hd"][h].mean(), r["acc"][h].mean(), sl))
 		write(out_dir, f"{tag}_T{T:g}.tsv", lines)
 
 		if t_eq:
