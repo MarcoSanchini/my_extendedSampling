@@ -1,7 +1,7 @@
 # parameters (written by run_nsites.py)
 
 ## sampler
-moves               30000
+moves               60000
 T                   5.0
 dt                  0.0451744
 M                   1.0
