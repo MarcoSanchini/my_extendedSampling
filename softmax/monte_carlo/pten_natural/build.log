@@ -1,0 +1,38 @@
+reference pten_1d5r: 324 sites, 322 native, UniProt 8-353, 172 phosphatase, 144 C2
+
+natural alignment tiers (weights 1/neighbours at the identity shown, entropy NaN above 50% gaps):
+      tier  sequences  weight_identity    n_eff  median_identity_to_PTEN  sites_with_entropy  mean_entropy_nats  sites_entropy_lt_0.05
+vertebrate         92            0.950   21.886                    0.963                 280              0.166                    176
+ orthologs        123            0.950   43.688                    0.944                 280              0.311                     69
+    family       2716            0.800  506.237                    0.333                 305              1.659                      0
+   pdomain       6002            0.800 1125.491                    0.336                 172              1.639                      0
+
+flatness of each reference profile over the sites it covers:
+                         sites   mean    sd    cv    p10  median   p90
+nat_vertebrate_entropy 280.000  0.166 0.316 1.900 -0.000   0.013 0.550
+nat_orthologs_entropy  280.000  0.311 0.391 1.257 -0.000   0.191 0.725
+nat_family_entropy     305.000  1.659 0.746 0.449  0.557   1.761 2.565
+nat_pdomain_entropy    172.000  1.639 0.653 0.399  0.723   1.632 2.461
+abundance_mean         256.000  0.676 0.227 0.337  0.343   0.714 0.952
+abundance2021_mean     289.000  0.673 0.224 0.333  0.343   0.713 0.937
+activity_mean          311.000 -1.009 1.099 1.088 -2.789  -0.482 0.020
+
+K-like sets (sites of the reference):
+  K_natural     28 sites  (23 phosphatase, 3 C2)   family entropy < 0.5 nats
+  K_abundance  108 sites  (61 phosphatase, 47 C2)   authors' positional class 'intolerant' (Matreyek 2018)
+  K_activity    97 sites  (77 phosphatase, 19 C2)   >= 50% of scored missense variants below -1.11
+
+pairwise overlap of the sets (observed, expected by chance, P(overlap >= observed)):
+  K_natural & K_abundance: 12  expected 9.3  P=0.18
+  K_natural & K_activity: 24  expected 8.4  P=2e-10
+  K_abundance & K_activity: 56  expected 32.3  P=2.1e-09
+  in all three: 11 sites: L23 D24 L25 Y27 V53 H61 C124 G129 S170 Y177 D252
+
+Spearman between the reference profiles (sites where both exist):
+                       nat_orthologs_entropy  nat_family_entropy  abundance2021_mean  activity_mean
+nat_orthologs_entropy                  +1.00               +0.48               +0.33          +0.51
+nat_family_entropy                     +0.48               +1.00               +0.41          +0.69
+abundance2021_mean                     +0.33               +0.41               +1.00          +0.50
+activity_mean                          +0.51               +0.69               +0.50          +1.00
+
+Outputs in /home/user/my_extendedSampling/softmax/monte_carlo/pten_natural: pten_site_table.csv, natural_tiers.tsv, pten_site_profile.png
