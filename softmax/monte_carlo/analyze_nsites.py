@@ -295,6 +295,21 @@ def analyze_equil(args, ref):
 				t_eq = row["t"]
 				break
 		lines.append(f"# t_eq = {t_eq if t_eq else 'not reached (extend with RESUME=1 and a larger MOVES_EQ)'}")
+
+		# Per chain, over the second half. The table above averages over
+		# chains, which hides the thing that matters most below the
+		# transition: the reference-started and random-started chains sit in
+		# different basins, and their mean is a number no chain ever visits.
+		lines.append("# per chain, second half of the run:")
+		lines.append("# chain\tstart\t<U>\t<Hd>\tacc\tdHd/10k(last 10k)")
+		for r in runs:
+			h = r["move"] > end / 2
+			last = r["move"] > max(0, end - 10000)
+			sl = np.polyfit(r["move"][last] / 10000., r["Hd"][last], 1)[0] if last.sum() > 2 else np.nan
+			lines.append("# %s\t%s\t%.0f\t%.0f\t%.4f\t%+.1f" % (
+				os.path.basename(r["run"]),
+				"ref" if r["Hd"][0] == 0 else "Hd%d" % r["Hd"][0],
+				r["U"][h].mean(), r["Hd"][h].mean(), r["acc"][h].mean(), sl))
 		write(out_dir, f"{tag}_T{T:g}.tsv", lines)
 
 		if t_eq:
@@ -323,7 +338,7 @@ def analyze_equil(args, ref):
 					a.axvline(t_eq, color="k", ls="--", lw=.8)
 				a.set_xlabel("move")
 			ax[0].set_ylabel("Hd_to_ref"); ax[1].set_ylabel("U"); ax[0].legend(fontsize=7); ax[2].legend(fontsize=7)
-			fig.suptitle(f"zero_polymer equilibration, T={T:g}")
+			fig.suptitle(f"{args.ref_name} equilibration, T={T:g}")
 			fig.tight_layout()
 			fig.savefig(f"{out_dir}/{tag}_T{T:g}.png", dpi=130)
 			plt.close(fig)
@@ -456,6 +471,7 @@ def main():
 
 	from references import get_reference
 	ref_name, ref = get_reference(args.ref or ref_of_run_dir(args.run_dir) or "zero_polymer")
+	args.ref_name = ref_name
 	print(f"reference: {ref_name}, {len(ref)} residues")
 	if args.every % args.stride:
 		sys.exit("--every must be a multiple of --stride")

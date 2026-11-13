@@ -49,6 +49,16 @@ REF="${REF:-zero_polymer}"
 TS=(${TS_OVERRIDE:-32 100 316})
 
 NCHAINS="${NCHAINS:-4}"
+# Where each equil chain starts, cycled over the chains. The default puts the
+# even chains at the reference and the odd ones at a random canonical sequence,
+# as far apart as possible, which is the strongest R-hat there is -- when it can
+# be met. Below the transition it cannot: on pten_1d5r at every T up to 64 the
+# random-started chain never left U ~ 44000 while the reference-started one sat
+# between 45 and 5800 (2026-11-12), so R-hat compares two basins and says only
+# that they are different. STARTS="reference reference" instead gives two
+# reference-side chains that differ by their proposal seed, a weaker diagnostic
+# but one that is about the basin being measured.
+STARTS=(${STARTS:-reference random})
 N_EQ="${N_EQ:-1}"
 MOVES_EQ="${MOVES_EQ:-20000}"
 
@@ -128,8 +138,7 @@ fi
 if [ "$PHASE" = "equil" ]; then
     for T in "${TS[@]}"; do
         for ((c = 0; c < NCHAINS; c++)); do
-            START="reference"
-            [ $((c % 2)) -eq 1 ] && START="random"
+            START="${STARTS[$((c % ${#STARTS[@]}))]}"
             PREV="${RUN_DIR}/${CONTINUE_FROM}/T${T}/chain${c}"
             [ -n "$CONTINUE_FROM" ] && [ -d "${PREV}/eprot" ] && START="$PREV"
             launch "${EQ_DIR}_T${T}_chain${c}" --T "$T" --n-sites "$N_EQ" --moves "$MOVES_EQ" \

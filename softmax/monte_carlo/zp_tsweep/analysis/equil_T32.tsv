@@ -1,0 +1,13 @@
+# T=32.0: 2 chains, common length 5000 moves
+# starts: chain0=ref, chain1=Hd534
+t	Rhat_U	Rhat_Hd	dHd/dt	se	rms_Hd0	v_rms	mean_U	mean_Hd
+1000	24.351	68.966	28.69	19.11	137.9	-	18251.8	281.8
+2000	18.467	29.018	25.75	28.80	223.4	85.48	16449.2	304.5
+3000	35.782	21.779	25.08	19.68	282.5	59.17	15970.7	323.2
+4000	25.596	17.700	15.90	21.75	313.8	31.28	15835.6	337.3
+5000	18.084	12.364	17.25	22.86	349.8	35.94	15720.6	351.2
+# t_eq = not reached (extend with RESUME=1 and a larger MOVES_EQ)
+# per chain, second half of the run:
+# chain	start	<U>	<Hd>	acc	dHd/10k(last 10k)
+# chain0	ref	4743	169	0.1088	+445.4
+# chain1	Hd534	26698	533	0.2024	-10.5
