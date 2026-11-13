@@ -6604,3 +6604,54 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     The per-chain block now reports each chain over its OWN full length and
     prints that length, so a resumed chain is no longer shown on its first
     30000 moves. The R-hat table is unchanged and still uses the common range.
+
+2026-11-13 -- the t_eq at T=3 and T=5 did NOT survive doubling the length
+    The 60000-move top-up (T=3 and T=5, both reference-started chains, 30000
+    -> 60000) was run to test caveat (c) of the entry above: that one chain of
+    each pair was drifting at 19-24 Hd/10k while its partner fell, so the
+    chain-mean slope cancelled. It was the right test and it came back
+    negative.
+
+      T=3   t       Rhat_U  Rhat_Hd  mean_Hd        T=5   Rhat_U  Rhat_Hd  mean_Hd
+            30000   1.077   1.005    117                  1.007   1.038    187
+            40000   1.291   1.346    125                  1.050   1.120    188
+            50000   1.483   1.645    132                  1.062   1.151    188
+            60000   1.954   2.077    136                  1.014   1.173    188
+
+    T=3 gets WORSE with length: R-hat rises from ~1.0 to ~2.0 as the two
+    reference-started chains separate (chain0 Hd 126, chain1 145 at 60000,
+    against 118 and 117 at 30000). So the t_eq at 30000 was two wandering
+    chains crossing, not equilibrium. Below the crossover the basin is rugged
+    enough that two chains from the same start reach different Hd.
+
+    T=5 holds up much better and is now the best candidate in the project:
+    Rhat_U 1.014 and mean_Hd flat at 188 from 35000 to 60000 with slope
+    0.15 +- 0.24, but Rhat_Hd sits at 1.12-1.19, just above the 1.1 threshold,
+    so t_eq is not awarded. Not equilibrated by the criterion; close to it on
+    every component except Rhat_Hd.
+
+    Correction to the previous entry and to PR #46, both of which led with
+    "the first t_eq ever met": that claim is withdrawn. NO temperature in
+    pten1d5r_study has a t_eq at its current length. The caveat was stated at
+    the time, which is why the test was run, but the headline was too strong
+    for a result resting on two chains whose means happened to cross.
+
+    STATE OF pten1d5r_study, 2026-11-13 (chain0 / chain1 moves, start):
+      T      chain0            chain1            R-hat meaningful?
+      1      220000 ref        30000 random      no (partner stuck, capped 30k)
+      2      220000 ref        30000 random      no
+      3       60000 ref         60000 ref        yes -- and it fails, 1.95/2.08
+      4      220000 ref        30000 random      no
+      5       60000 ref         60000 ref        yes -- marginal, 1.01/1.17
+      6       30000 ref         30000 ref        yes -- 1.01/1.11 at 30000
+      8      220000 ref        30000 random      no
+      16-316  30000 ref        30000 random      no
+    Where chain1 is the random start, R-hat compares the reference basin with
+    a chain frozen at U ~ 44000 and is capped at the common length 30000, so
+    it can never be met however far chain0 is resumed.
+
+    Next, in priority order: (1) T=5 and T=6 to 120000 moves, about 6.3 h, as
+    T=5 is one component away and T=6 is the same physics 30000 moves behind;
+    (2) a second reference-side chain at T=1, 2, 4, 8 in a fresh EQ_DIR with
+    STARTS="reference reference", about 5 h, so those temperatures have a
+    usable R-hat at all; (3) T=3 needs understanding, not moves.
