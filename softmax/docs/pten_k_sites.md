@@ -89,6 +89,30 @@ A by-product worth keeping: `-mean_dU` of the proposals at a site (the sampler's
 mutating it, available from `data.dat` with no equilibration at all) correlates with abundance
 +0.30 at T=1 and +0.46 at T=64. That points at the cleaner experiment below.
 
+## Update 2026-11-13: the 220000-move chains
+
+Main now holds T=1, 2, 4, 8 pushed to 220000 moves on the reference side (and T=3, 5, 6 at
+30000). `compare` was re-run on them; `pten_natural/compare.log`, the tables and the two
+sampled figures are from this run, the numbers in the section above are the 30000-move ones.
+
+| T | moves | sites at entropy 0 | family | abundance | activity | abundance, RSA out | activity, RSA out |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 220000 | 220 | +0.15 | +0.19 | +0.19 | +0.11 | +0.07 |
+| 2 | 220000 | 100 | +0.37 | +0.31 | +0.38 | +0.09 | +0.19 |
+| 4 | 220000 | 25 | +0.52 | +0.41 | +0.53 | +0.15 | +0.32 |
+| 8 | 220000 | 9 | +0.61 | +0.46 | +0.61 | +0.19 | +0.41 |
+
+Every correlation at T >= 2 went up with seven times the moves (T=8: abundance +0.36 to +0.46,
+activity +0.47 to +0.61, family +0.42 to +0.61), so the 30000-move values were held down by
+sampling noise, not inflated by it. The strict K-site list (entropy < 0.05 at T=1 and T=2) fell
+from 183 to 104 sites and still overlaps all three sets above chance (16/28 natural, 43/108
+abundance, 46/97 activity). Two things did not improve: T=1 is still trapped (198 sites never
+accepted a move), and the part of the abundance correlation that survives the burial control
+stays at +0.15 to +0.19, while for activity and family entropy it grows to +0.41 and +0.45.
+Read plainly: beyond burial, the sampler tracks what the family conserves more than what keeps
+the protein abundant. That is worth putting to the supervisors, and it is one more reason for
+the single-mutant scan of U_am.
+
 ## The PTP superfamily (Pfam PF00102): feasible, but PF00102 is the wrong family
 
 PTEN is not a member of PF00102. PF00102 is the classical PTP domain (PTP1B, SHP2, CD45, about
@@ -122,7 +146,7 @@ InterPro, which the cloud container cannot reach.
    reference, about 6200 forward passes, minutes on the GPU. It is the direct counterpart of
    VAMP-seq, needs no equilibration, and separates "the energy is right" from "the chain has not
    moved yet". Not written yet.
-2. Re-run `compare` on the long reference-side chains (T=1, 2, 4 to 150000 moves) when they exist.
+2. Done 2026-11-13, see the update above.
 3. Keep abundance as the primary reference and report every correlation both raw and with RSA
    regressed out.
 
@@ -132,8 +156,9 @@ InterPro, which the cloud container cannot reach.
     python pten_k_sites.py fetch       # github raw + the OpenFold S3 bucket, 20 MB
     python pten_k_sites.py build
     R=pten1d5r_study/equil
-    python pten_k_sites.py compare --runs T1=$R/T1/chain0 T2=$R/T2/chain0 T4=$R/T4/chain0 \
-        T8=$R/T8/chain0 T16=$R/T16/chain0 T32=$R/T32/chain0 T64=$R/T64/chain0 \
+    python pten_k_sites.py compare --runs T1=$R/T1/chain0 T2=$R/T2/chain0 T3=$R/T3/chain0 \
+        T4=$R/T4/chain0 T5=$R/T5/chain0 T6=$R/T6/chain0 T8=$R/T8/chain0 T16=$R/T16/chain0 \
+        T32=$R/T32/chain0 T64=$R/T64/chain0 \
         --cold T1 T2 --show T1 T2 T4 T8
     python pten_k_sites.py family
 

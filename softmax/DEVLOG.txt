@@ -6536,3 +6536,15 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     superfamily alignment anchored on PTEN and is already in the table.
     Next: an in-silico single-mutant scan of U_am on the reference (324 x 19
     forward passes) as the direct counterpart of VAMP-seq.
+
+2026-11-13 -- PTEN K-sites re-run on the 220000-move chains
+    pten_k_sites.py compare on T=1, 2, 4, 8 at 220000 moves (T=3, 5, 6 and
+    16-64 at 30000). Spearman of sampled entropy with family / abundance /
+    activity: T=4 +0.52 / +0.41 / +0.53, T=8 +0.61 / +0.46 / +0.61, up from
+    +0.39 / +0.36 / +0.44 and +0.42 / +0.36 / +0.47 at 30000 moves, so the
+    short chains understated it. Strict K-sites (entropy < 0.05 at T=1 and 2)
+    183 -> 104, overlaps 16/28 natural, 43/108 abundance, 46/97 activity.
+    With RSA regressed out at T=8: family +0.45, activity +0.41, abundance
+    only +0.19. Beyond burial the sampler follows family conservation more
+    than abundance. T=1 still trapped (198 sites never accepted a move).
+    Table in docs/pten_k_sites.md.
