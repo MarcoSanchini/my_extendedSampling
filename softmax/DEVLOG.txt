@@ -6739,3 +6739,24 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     deletions; the high-confidence missense are 6564.
     docs/pten_k_sites_explained.md: the long explanation (both papers, tiers,
     figures, InterPro/Pfam, commands).
+
+2026-11-15 -- PTEN K-sites: Marco's questions on the doc; rule options; the loop
+    Options for the K-like sets: --natural-tier, --abundance-k (our rule in
+    place of the authors' list: share of a site's variants low or possibly
+    low), --activity-lof, --min-variants, besides --natural-k / --activity-k.
+    The authors' "intolerant" label is reproduced at 98% by ">= 5 variants and
+    >= 58% of them under the synonymous 5th percentile" (105 sites, 103 shared).
+    Sensitivity (build, one rule at a time): natural&activity and
+    abundance&activity stay strong under every rule tried. natural&abundance
+    DEPENDS ON THE CUT: 12 vs 9.3 (P 0.18) at entropy < 0.5 (28 sites), but
+    37 vs 23.0 (P 7e-5) at < 1.0 (69 sites). The tightest conserved sites are
+    the catalytic pocket; the moderately conserved ones include the fold's.
+    The earlier "no better than chance" was too strong as a general statement.
+    New subcommand loop (7JVX chain A alignment, full-length PTEN): 7612 hits
+    vs 7989; family tier 623 seq (N_eff 186) vs 2716 (506), because the
+    286-309 loop is PTEN-specific and breaks the relatives' alignments; 589
+    hits span the loop. Loop sites: abundance mean 0.94, activity -0.02, no
+    site in either K-like set, ortholog entropy 1.49 vs 0.24 elsewhere.
+    Recommendation given: keep the 324-aa construct as the sampled reference.
+    Mighell's conservation is ConSurf-DB grades (default settings), not an
+    ortholog alignment: closer to our family tier than to the 90% tier.

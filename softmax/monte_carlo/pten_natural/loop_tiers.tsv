@@ -1,0 +1,4 @@
+tier	sequences	n_eff	construct_sequences	construct_n_eff	loop_gap	loop_entropy	rest_entropy	after_loop_gap
+vertebrate	75	15.062	92	21.886	0.053	0.515	0.125	0.069
+orthologs	130	66.062	123	43.688	0.054	1.491	0.236	0.069
+family	623	186.019	2716	506.237	0.353	2.463	1.488	0.349

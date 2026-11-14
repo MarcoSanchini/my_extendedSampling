@@ -36,6 +36,52 @@ left out of every comparison. In the tables `site` is the 0-based index used in 
 and `uniprot_pos` is the numbering both papers use. The phosphatase domain is UniProt 14 to
 185 (172 sites) and the C2 domain is 186 to 351 (144 sites).
 
+## 1.1 The missing loop: should the sampler use the whole sequence?
+
+**What is missing.** The crystal construct leaves out three pieces of the 403-residue
+protein: residues 1 to 6, the loop 286 to 309 inside the C2 domain, and the tail 354 to 403.
+All three are disordered: they have no fixed shape, which is why they were removed to obtain
+crystals. The loop has no coordinates in any PTEN structure.
+
+**What the references say about the loop.** They cover it, because both scans were done on
+the full-length protein, and the full-length alignment exists (section 3.1).
+
+| over the 24 loop sites | loop | the 322 construct sites |
+| --- | --- | --- |
+| abundance, mean score | 0.94 (277 variants) | 0.67 |
+| activity, mean score | -0.02 (417 variants) | -1.01 |
+| sites in the abundance K-like set | 0 | 108 |
+| sites in the activity K-like set | 0 | 97 |
+| ortholog entropy [nats] | 1.49 | 0.24 |
+
+Every reference agrees: the loop is the freest part of the protein. Any residue can be put
+there without changing abundance or activity, and it is the region that varies most between
+species.
+
+**What including it would buy.** Native numbering with no junction, 24 more sites, and a
+length of 347 residues (7 to 353), or 353 from residue 1, which is at the 350 floor set when
+the target was chosen.
+
+**What it would cost.**
+
+1. Every chain run so far is on the 324-residue construct. The energy is defined by the
+   attention map of the reference sequence, so a new reference is a new landscape: the
+   decode gate, the temperature ladder and the 220,000-move chains would all be redone.
+2. The comparison would get easier, not better. The loop adds 24 sites where the right
+   answer is "anything goes". If the sampler also leaves them free, every correlation rises,
+   but for a trivial reason, and the hard question (which of the folded sites are
+   protected) is no better answered.
+3. The natural family alignment gets worse (section 3.1): the loop is specific to PTEN, the
+   relatives do not have it, and their alignments break there.
+4. The structure comparison cannot score the loop, since no crystal shows it.
+
+**Recommendation.** Keep the construct as the sampled reference. Treat the loop as a
+reference-only fact, as in the table above. If you want the loop tested, the cheap version
+is a positive control and not a new study: one decode of the 347-residue sequence, then a
+single short chain at T = 4 to see whether the loop sites become the most variable ones.
+That is half a day of GPU and does not disturb the ladder. This is a choice about the thesis
+design, so it is yours and your supervisors' to make.
+
 # 2. The two papers
 
 ## 2.1 Matreyek et al. 2018: abundance (VAMP-seq)
@@ -153,6 +199,45 @@ uses a single cut at -1.11 for "loss of activity", and that is the value our scr
   on average milder than those found in PTEN hamartoma tumour syndrome: 41% against 20% fall
   in the hypomorphic range.
 
+**The catalytic pocket.** It is the cavity on the surface of the phosphatase domain where
+the reaction happens: the phosphate group of the substrate enters it and is cut off there.
+Its walls are three loops of the chain.
+
+| loop | residues | role |
+| --- | --- | --- |
+| P loop | 123 to 130, sequence HCKAGKGR | the floor of the pocket. It is the signature motif of the whole enzyme superfamily, HCxxGxxR. C124 attacks the phosphate; R130 holds the phosphate in place; the backbone of the residues in between wraps around it |
+| WPD loop | 88 to 98 | one wall. It carries D92, the acid that completes the reaction, and H93 |
+| TI loop | 160 to 171 | the opposite wall. Named after T167 and I168; with Q171 it shapes the opening |
+
+Two features set PTEN's pocket apart from those of the protein phosphatases it descends
+from, and both follow from its substrate being the head group of a lipid, which is bigger
+and more negatively charged than a phosphorylated amino acid. The pocket is wider and
+deeper, and it is positively charged: H93 in the WPD loop and K125 and K128 in the P loop
+point into it. In our data this is the region marked by the pink bands in Figure 1, and it
+is where the natural K-like set concentrates.
+
+**Which sequences stand behind "fitness correlates with conservation".** Not ours, and not
+a 90% threshold. The paper takes the conservation values from **ConSurf-DB** with default
+settings and says nothing more. ConSurf is a public server that, for a given protein,
+collects homologs, aligns them, builds a phylogenetic tree and estimates how fast each site
+evolves; it reports a grade from 1 (variable) to 9 (conserved). Three differences from our
+tiers:
+
+- *Its thresholds work the other way round.* By default ConSurf keeps homologs between a
+  minimum identity to the query (35%) and removes sequences that are too similar to each
+  other (above 95%), then takes a sample of at most a few hundred. So it deliberately
+  reaches far from PTEN and discards near-duplicates. Our 90% rule does the opposite: it
+  keeps only the near-duplicates. ConSurf's selection resembles our **family** tier
+  (median identity to PTEN 0.33), not the vertebrate one. These default values are from my
+  memory of the ConSurf documentation, and the paper does not restate them.
+- *It measures rate, not entropy.* The grade accounts for the tree, so ten identical
+  mammals do not count ten times. Our redundancy weighting is a cruder way to the same end.
+- *It is a grade from 1 to 9*, so many sites are tied.
+
+Their value is Spearman 0.58 between the per-site median fitness and the grade. Ours, with
+the same activity data: +0.69 for the family tier and +0.51 for the orthologs tier. The
+three numbers tell the same story.
+
 **What the assay does not see.** Protein-protein interactions, localisation, regulation by
 phosphorylation and dominant-negative effects in human cells. It does partly see stability,
 because an unstable variant is also inactive.
@@ -181,6 +266,35 @@ statistical profile from the hits and searches again with the profile. UniRef90 
 clustered so that no two entries are more than 90% identical. The query is exactly our
 324-residue reference, so the alignment columns are our sites and nothing has to be
 re-aligned. It holds 7,989 hits.
+
+**And with the loop in the query?** OpenProteinSet also holds the alignment of a
+full-length PTEN chain (PDB 7JVX chain A), made the same way, so this can be answered with
+data in hand.
+
+| | construct query (1D5R, no loop) | full-length query (7JVX) |
+| --- | --- | --- |
+| hits | 7,989 | 7,612 |
+| hits covering the loop 286-309 | not applicable | 589 |
+| hits covering 310-353 | 1,181 | 500 |
+| vertebrate tier | 92 sequences, N_eff 22 | 75, N_eff 15 |
+| orthologs tier | 123, N_eff 44 | 130, N_eff 66 |
+| family tier | 2,716, N_eff 506 | 623, N_eff 186 |
+| phosphatase tier | 6,002 | 5,986 |
+
+(For the full-length query the tiers are computed over residues 7 to 353, loop included.
+Reproduce with `python pten_k_sites.py loop`.)
+
+So including the loop gives slightly fewer hits and a family tier four times smaller. The
+reason is that the loop exists only in PTEN itself. Tensins, auxilin and the
+voltage-sensing phosphatases do not have it, so with the loop in the query their alignment
+breaks at residue 286 and most of them no longer cover 80% of the sequence. Only 589 hits,
+essentially the PTEN orthologs, align across it. Within those the loop is by far the most
+variable region: 1.49 nats in the orthologs tier against 0.24 for the rest.
+
+The two queries agree where they overlap: the family entropy from the full-length alignment
+and from the construct alignment correlate at 0.95 over the 305 shared sites. The
+full-length alignment does one thing better: among orthologs it covers 310 to 353 almost
+completely (7% gaps), where the construct alignment is truncated.
 
 Most hits are not PTEN. The PTEN-like family includes TPTE and the voltage-sensing
 phosphatases, the tensins, and auxilin and GAK. All of them share the phosphatase domain and
@@ -241,13 +355,52 @@ the three profiles the sampler is compared with.
 
 # 4. The three K-like sets
 
-For a set comparison each reference is turned into a list of sites.
+Sections 3 and 5 compare whole profiles, one number per site, with rank correlations. A
+*set* comparison asks a blunter question, the one Zambon's paper asks: is this site on the
+list of sites that cannot change, yes or no? For that, each reference needs a rule that
+turns its profile into a list. A rule is a choice, so each one is explained here together
+with the option that changes it and what happens when you do.
 
-| set | rule | sites | in the phosphatase domain | in the C2 domain |
-| --- | --- | --- | --- | --- |
-| natural | family entropy below 0.5 nats | 28 | 23 | 3 |
-| abundance | the authors' "intolerant" positions | 108 | 61 | 47 |
-| activity | at least half of the scored variants below -1.11 | 97 | 77 | 19 |
+## 4.1 The rules
+
+**Natural set: the family entropy is below 0.5 nats.**
+The entropy of a site measures how many different amino acids the family uses there. A
+value of 0.5 nats corresponds to one amino acid present in about 90% of the weighted
+sequences and the rest scattered. In the 28 sites of the set, the dominant residue has a
+frequency between 0.89 and 0.98. The paper's own K-site rule for the *sampler* is much
+stricter (entropy essentially 0), but no site of a 2,716-sequence family alignment spanning
+PTEN, tensins and auxilin reaches 0, so a looser cut is needed on the natural side. The
+tier used is the family tier because the ortholog tiers are too flat to rank sites and the
+phosphatase tier covers only one domain.
+
+**Abundance set: the positions the authors themselves call "intolerant".**
+`PTEN_positional_data.tsv` from the 2018 paper carries a label per position: 115 are
+"intolerant" in the whole protein, 108 of them on our sites. Using the authors' list means
+the set is not tuned by us. I could not read the paper's exact definition, so I
+reconstructed it from the data: the label is given only to positions with at least 5 scored
+variants, and it agrees at 98% with the rule "at least 58% of the position's scored variants
+are low or possibly low", that is, have a score below the 5th percentile of the synonymous
+variants (0.71). On our sites that rule gives 105 sites, of which 103 are in the authors'
+list. So in plain words: a site is in the abundance set when most substitutions there make
+the protein disappear.
+
+**Activity set: at least half of the scored variants are below -1.11.**
+The paper gives no list of intolerant positions, so the rule is ours, built to mirror the
+abundance one. -1.11 is the score below which a variant counts as having lost activity in
+the 2021 paper that combines the two scans. Mighell's own paper uses two cuts: about -1 for
+"no longer wild-type-like" and about -2.15 for "as bad as a truncation". "At least half"
+means the typical substitution at that site kills the enzyme.
+
+**A site needs at least 5 scored variants** to enter the abundance or activity set, because
+a fraction over two or three variants means little.
+
+## 4.2 The sets with the default rules
+
+| set | sites | in the phosphatase domain | in the C2 domain |
+| --- | --- | --- | --- |
+| natural | 28 | 23 | 3 |
+| abundance | 108 | 61 | 47 |
+| activity | 97 | 77 | 19 |
 
 The natural set contains the catalytic residues H123, C124, G127, G129, R130 and G132, then
 D24, P38 and P96, the TI loop (P169, S170, Q171, R173, Y174, Y177) and D252 in the C2 domain.
@@ -264,11 +417,56 @@ sets were unrelated (hypergeometric test).
 
 Eleven sites are in all three sets: L23, D24, L25, Y27, V53, H61, C124, G129, S170, Y177, D252.
 
-**Reading.** What the family conserves is what the enzyme needs for catalysis, and it is
-almost unrelated to what the fold needs. The clearest examples are R15, H123 and R130: they
-are among the most conserved residues in the family, and their mean abundance is 0.92 to
-1.03, meaning the protein is perfectly stable without them. This is the main reason to judge
-the sampler against abundance first.
+## 4.3 The options that change the rules
+
+| option | default | what it changes |
+| --- | --- | --- |
+| `--natural-k` | 0.5 | the entropy cut of the natural set, in nats |
+| `--natural-tier` | family | which tier's entropy is used: vertebrate, orthologs, family or pdomain |
+| `--abundance-k` | not set | if given (for example 0.58), replaces the authors' list with our rule: share of a site's variants that are low or possibly low |
+| `--activity-k` | 0.5 | the share of a site's variants that must be below the activity cut |
+| `--activity-lof` | -1.11 | the activity cut itself |
+| `--min-variants` | 5 | scored variants a site needs |
+
+They work with `build`, `compare`, `family` and `pfam`. The rule in force is printed in the
+log next to each set. Examples:
+
+    python pten_k_sites.py build --natural-k 1.0
+    python pten_k_sites.py build --abundance-k 0.58 --activity-lof -2.15
+    python pten_k_sites.py compare --runs-dir pten1d5r_study/equil --cold T1 T2 \
+        --natural-k 1.0 --out-dir pten_natural/natural_k1
+
+## 4.4 How much the conclusions depend on the rules
+
+Measured by running `build` with one rule changed at a time.
+
+| rule changed | set size | natural and abundance | natural and activity | abundance and activity |
+| --- | --- | --- | --- | --- |
+| defaults | 28 / 108 / 97 | 12 vs 9.3, P 0.18 | 24 vs 8.4, P 2e-10 | 56 vs 32.3, P 2e-9 |
+| `--natural-k 0.3` | natural 13 | 4 vs 4.3, P 0.68 | 13 vs 3.9, P 9e-8 | unchanged |
+| `--natural-k 1.0` | natural 69 | **37 vs 23.0, P 7e-5** | 57 vs 20.7, P 2e-25 | unchanged |
+| `--natural-tier pdomain` | natural 9 | 3 vs 3.0, P 0.63 | 9 vs 2.7, P 2e-5 | unchanged |
+| `--natural-tier orthologs --natural-k 0.05` | natural 69 | 36 vs 23.0, P 2e-4 | 38 vs 20.7, P 7e-7 | unchanged |
+| `--abundance-k 0.58` | abundance 105 | 12 vs 9.1, P 0.15 | unchanged | 56 vs 31.4, P 4e-10 |
+| `--abundance-k 0.5` | abundance 126 | 13 vs 10.9, P 0.25 | unchanged | 59 vs 37.7, P 1e-7 |
+| `--activity-lof -2.15` | activity 73 | unchanged | 21 vs 6.3, P 7e-10 | 46 vs 24.3, P 3e-9 |
+| `--activity-lof -1` | activity 100 | unchanged | 24 vs 8.6, P 4e-10 | 58 vs 33.3, P 6e-10 |
+| `--activity-k 0.75` | activity 49 | unchanged | 19 vs 4.2, P 2e-11 | 28 vs 16.3, P 2e-4 |
+
+**Reading.** Two conclusions are robust: natural conservation and activity always overlap
+strongly, and so do abundance and activity. The third, "natural conservation and abundance
+overlap no better than chance", **depends on the cut**. It holds for the tightest natural
+sets (13 or 28 sites, or the 9 of the phosphatase tier), which are dominated by the
+catalytic pocket. With a looser cut (69 sites) the overlap with abundance becomes clear,
+37 against 23 expected. So the accurate statement is this: the *most* conserved sites of
+the family are catalytic and say nothing about the fold; the *moderately* conserved ones do
+include the sites the fold needs. The examples still stand (R15, H123 and R130 are among
+the most conserved residues and have abundance 0.92 to 1.03), and it is consistent with the
+profile correlation of section 3, which never depended on a cut: family entropy against
+abundance has a Spearman of +0.41.
+
+For the comparison with the sampler this argues for relying on the rank correlations of
+section 5.2, and for quoting set overlaps together with the rule that produced them.
 
 # 5. The sampler against the references
 
@@ -531,6 +729,9 @@ chains.
     # 4. the superfamily check from structure alignments
     python pten_k_sites.py family > pten_natural/family.log 2>&1
 
+    # 4b. the loop the construct lacks: full-length alignment and scans
+    python pten_k_sites.py loop > pten_natural/loop.log 2>&1
+
     # 5. the Pfam version (needs internet)
     nohup python -u pten_k_sites.py pfam > pten_natural/pfam.log 2>&1 &
 
@@ -560,6 +761,7 @@ labels with `--show`.
 | `sampled_vs_references_by_T.png` | Figure 3 |
 | `pten_site_table_family.csv`, `pten_ptp_superfamily.png` | the structure-alignment check and Figure 4 |
 | `pten_site_table_pfam.csv`, `pfam_summary.tsv`, `pten_pfam_profile.png` | the Pfam step |
+| `loop_tiers.tsv` | the tiers of the full-length alignment, with the entropy inside and outside the loop |
 | `*.log` | the printed tables of each step |
 
 The `.png` files are ignored by git under `monte_carlo/`. To keep one in the repository copy
@@ -576,16 +778,19 @@ it to `softmax/docs/figures/` and add it with `git add -f`.
    over abundance (section 5.3).
 4. **The orthologs are few.** 92 sequences, N_eff 22. "Flat" for that tier partly means
    "little data".
-5. **The natural thresholds are choices.** 0.5 nats for the natural K-like set, half the
-   variants for the activity set, 5 variants for a site mean. They are options of the script
-   (`--natural-k`, `--activity-k`) or constants at its top.
+5. **The set rules are choices**, and one conclusion depends on them: see section 4.4.
 6. **Sources.** The Matreyek summary is checked against the PubMed abstract, the paper's
    data files and its analysis notebook. The Mighell summary is checked against the bioRxiv
    preprint of the paper and the data file, because the PMC page would not load from the
    cloud machine; numbers in the published version may differ slightly from the preprint.
    An earlier note said "7,244 high-confidence missense variants": 7,244 is all
    high-confidence variants, of which 6,564 are missense.
-7. **The Pfam step is untested against the live InterPro service** (section 6.3).
+7. **Statements made from memory or by reconstruction.** ConSurf's default thresholds
+   (section 2.2) are from memory. The rule behind the authors' "intolerant" positions
+   (section 4.1) is reconstructed from the data and reproduces their list at 98%, not 100%.
+   The description of the catalytic pocket follows the 1D5R structure paper (Lee et al.,
+   Cell 1999) as I remember it, checked against what the Mighell preprint says about it.
+8. **The Pfam step is untested against the live InterPro service** (section 6.3).
 
 **The next experiment**, still not written: compute `U_am` for all 324 x 19 single mutants
 of the reference, about 6,200 forward passes on the GPU. It is the direct counterpart of the

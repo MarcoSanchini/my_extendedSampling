@@ -44,6 +44,9 @@ tier (PTEN, TPTE/VSP, tensins, auxilin/GAK, all with both domains) is the usable
 
 Overlaps: natural with activity 24 where 8.4 are expected (P = 2e-10); abundance with activity 56
 against 32 (P = 2e-9); **natural with abundance 12 against 9.3 (P = 0.18), no better than chance.**
+(Added 2026-11-15: this one depends on the cut. With family entropy < 1.0 nats the natural set has 69
+sites and overlaps abundance 37 against 23.0, P = 7e-5. The tightest conserved sites are catalytic;
+the moderately conserved ones include what the fold needs. See section 4.4 of the long version.)
 Eleven sites are in all three: L23 D24 L25 Y27 V53 H61 C124 G129 S170 Y177 D252.
 
 The non-overlap is the important biology: R15, H123, R130 are among the most conserved residues
