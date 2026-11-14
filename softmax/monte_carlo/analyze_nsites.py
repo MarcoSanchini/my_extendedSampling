@@ -300,28 +300,40 @@ def analyze_equil(args, ref):
 		# chains, which hides the thing that matters most below the
 		# transition: the reference-started and random-started chains sit in
 		# different basins, and their mean is a number no chain ever visits.
-		lines.append("# per chain, second half of the run:")
-		lines.append("# chain\tstart\t<U>\t<Hd>\tacc\tdHd/10k(last 10k)")
+		# Each chain over ITS OWN full length, not the common range: a chain
+		# resumed to 220000 moves next to one left at 30000 would otherwise be
+		# reported on its first 30000 and the resume would be invisible. The
+		# R-hat table above still needs the common range; this block does not.
+		lines.append("# per chain, second half of each chain's OWN run:")
+		lines.append("# chain\tstart\tmoves\t<U>\t<Hd>\tacc\tdHd/10k(last 10k)")
 		for r in runs:
-			h = r["move"] > end / 2
-			last = r["move"] > max(0, end - 10000)
+			own = r["move"][-1]
+			h = r["move"] > own / 2
+			last = r["move"] > max(0, own - 10000)
 			sl = np.polyfit(r["move"][last] / 10000., r["Hd"][last], 1)[0] if last.sum() > 2 else np.nan
-			lines.append("# %s\t%s\t%.0f\t%.0f\t%.4f\t%+.1f" % (
+			lines.append("# %s\t%s\t%d\t%.0f\t%.0f\t%.4f\t%+.1f" % (
 				os.path.basename(r["run"]),
 				"ref" if r["Hd"][0] == 0 else "Hd%d" % r["Hd"][0],
-				r["U"][h].mean(), r["Hd"][h].mean(), r["acc"][h].mean(), sl))
+				own, r["U"][h].mean(), r["Hd"][h].mean(), r["acc"][h].mean(), sl))
 		write(out_dir, f"{tag}_T{T:g}.tsv", lines)
 
 		if t_eq:
-			U = np.concatenate([r["U"][(r["move"] > t_eq) & (r["move"] <= end)] for r in runs])
-			H = np.concatenate([r["Hd"][(r["move"] > t_eq) & (r["move"] <= end)] for r in runs])
-			acc = np.mean(np.concatenate([r["acc"][(r["move"] > t_eq) & (r["move"] <= end)] for r in runs]))
+			# Normally average over (t_eq, end], the samples after burn-in. When
+			# t_eq lands ON the last grid point that window is EMPTY and every
+			# statistic came out nan, so fall back to (t_eq/2, t_eq], which is
+			# the window R-hat itself was computed on at t_eq. Such a row is
+			# marked with a trailing "*" on t_eq in the summary.
+			lo = t_eq if t_eq < end else t_eq // 2
+			U = np.concatenate([r["U"][(r["move"] > lo) & (r["move"] <= end)] for r in runs])
+			H = np.concatenate([r["Hd"][(r["move"] > lo) & (r["move"] <= end)] for r in runs])
+			acc = np.mean(np.concatenate([r["acc"][(r["move"] > lo) & (r["move"] <= end)] for r in runs]))
 			stats = f"{U.mean():.1f}\t{H.mean():.1f}\t{U.var() / T**2:.4f}\t{acc:.3f}"
 		else:
 			stats = "-\t-\t-\t-"
 		walls = np.concatenate([r["wall"] for r in runs]) if any(len(r["wall"]) for r in runs) else np.array([np.nan])
 		peak = max((float(r["info"].get("peak_allocated_MB", "nan")) for r in runs), default=np.nan)
-		summary.append(f"{T:g}\t{len(runs)}\t{end}\t{t_eq or '-'}\t{stats}\t{np.median(walls):.3f}\t{peak:.0f}")
+		t_eq_label = "-" if not t_eq else (f"{t_eq}" if t_eq < end else f"{t_eq}*")
+		summary.append(f"{T:g}\t{len(runs)}\t{end}\t{t_eq_label}\t{stats}\t{np.median(walls):.3f}\t{peak:.0f}")
 
 		if plt:
 			fig, ax = plt.subplots(1, 3, figsize=(15, 4))

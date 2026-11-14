@@ -59,6 +59,13 @@ NCHAINS="${NCHAINS:-4}"
 # reference-side chains that differ by their proposal seed, a weaker diagnostic
 # but one that is about the basin being measured.
 STARTS=(${STARTS:-reference random})
+# Seed of equil chain c is SEED_BASE + c. The seed fixes the proposal sequence,
+# so a chain with the same seed and the same start is the same chain: only
+# non-determinism in the GPU energies can separate them, and then only slowly.
+# A second pair of reference-started chains in a new EQ_DIR must therefore use
+# a different SEED_BASE, or chain0 re-runs the existing chain0 and costs a
+# night for nothing.
+SEED_BASE="${SEED_BASE:-100}"
 N_EQ="${N_EQ:-1}"
 MOVES_EQ="${MOVES_EQ:-20000}"
 
@@ -142,7 +149,7 @@ if [ "$PHASE" = "equil" ]; then
             PREV="${RUN_DIR}/${CONTINUE_FROM}/T${T}/chain${c}"
             [ -n "$CONTINUE_FROM" ] && [ -d "${PREV}/eprot" ] && START="$PREV"
             launch "${EQ_DIR}_T${T}_chain${c}" --T "$T" --n-sites "$N_EQ" --moves "$MOVES_EQ" \
-                --seed $((100 + c)) --start "$START" --out "${RUN_DIR}/${EQ_DIR}/T${T}/chain${c}"
+                --seed $((SEED_BASE + c)) --start "$START" --out "${RUN_DIR}/${EQ_DIR}/T${T}/chain${c}"
         done
     done
 elif [ "$PHASE" = "scan" ]; then
