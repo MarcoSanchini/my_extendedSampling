@@ -6548,3 +6548,28 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     only +0.19. Beyond burial the sampler follows family conservation more
     than abundance. T=1 still trapped (198 sites never accepted a move).
     Table in docs/pten_k_sites.md.
+
+2026-11-13 -- pten_k_sites.py: thresholds as options, compare every chain, a Pfam step
+    Asked by Marco; nothing below was run as a comparison, his machine does it.
+    Thresholds: --vertebrate-identity (0.9), --ortholog-identity (0.7),
+    --min-coverage (0.8), --pdomain-coverage (0.7); a fraction, a percentage or
+    "none". Without an identity threshold the vertebrate tier IS the family
+    tier (2716 seq); without coverage either, all 7990 hits count (N_eff 1325,
+    but only 255 sites keep an entropy). natural_tiers.tsv records the values.
+    flatness.tsv now carries the data behind each profile: sequences and N_eff
+    for the tiers, scored missense variants on the construct's sites for the
+    scans (3349 / 4079 / 5324).
+    compare --runs-dir DIR takes every T*/chain* (chain0 -> T4, others T4.c1),
+    --reference-only drops the random starts; scatter figures are now one file
+    per reference with a panel per chain, plus sampled_vs_references_by_T.png.
+    New subcommand pfam: asks InterPro which Pfam families lie on human PTEN
+    (P60484), downloads their alignments, projects them on the reference
+    through PTEN's own row (hmmalign on the family HMM when PTEN is not a
+    row), entropy and comparisons as for the tiers. Needs www.ebi.ac.uk, so
+    NOT run here: parsing and projection tested on a synthetic Stockholm file
+    only, the two API addresses are untested. --sto ACC=PATH takes a file
+    saved by hand.
+    Correction: Mighell's 7244 high-confidence variants include stops and
+    deletions; the high-confidence missense are 6564.
+    docs/pten_k_sites_explained.md: the long explanation (both papers, tiers,
+    figures, InterPro/Pfam, commands).

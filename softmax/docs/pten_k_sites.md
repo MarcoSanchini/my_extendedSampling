@@ -1,5 +1,8 @@
 # PTEN K-sites: three references and the sampler
 
+The long version, with the two papers summarised, every figure explained, the thresholds and
+the Pfam step, is `pten_k_sites_explained.md` (PDF in the project files).
+
 Written 2026-11-12. Script `monte_carlo/pten_k_sites.py`, outputs and logs in
 `monte_carlo/pten_natural/`. Everything here ran in the cloud container; nothing needs the GPU.
 
@@ -13,7 +16,7 @@ keeps. Three independent references say which sites those are.
 | --- | --- | --- | --- |
 | natural | variation among natural homologs of the 1D5R chain | UniRef90 jackhmmer alignment from OpenProteinSet, 7989 hits | 280 to 305 |
 | abundance | does the variant still exist in the cell, about "does it fold" | VAMP-seq, Matreyek 2018 (PMID 29785012), 4112 missense; 5083 with the 2021 fill-in | 256 / 289 |
-| activity | does the variant still dephosphorylate PIP3 | Mighell 2018 (PMC5986715), 7244 high-confidence missense | 311 |
+| activity | does the variant still dephosphorylate PIP3 | Mighell 2018 (PMC5986715), 6564 high-confidence missense (7244 with stops and deletions) | 311 |
 
 The reference is UniProt 7-285 + 310-353 (the 286-309 loop is deleted in the crystal construct).
 Site 0 (Met for Glu7) and site 279 (a junction Val) are not native and carry no score.
