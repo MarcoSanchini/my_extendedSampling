@@ -6655,3 +6655,62 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     (2) a second reference-side chain at T=1, 2, 4, 8 in a fresh EQ_DIR with
     STARTS="reference reference", about 5 h, so those temperatures have a
     usable R-hat at all; (3) T=3 needs understanding, not moves.
+
+2026-11-14 -- T=5 AND T=6 ARE EQUILIBRATED, and what the missed pull cost
+    Overnight 2026-11-13, two steps, 19 h.
+
+    THE MISSED PULL, first, because it was predicted. SEED_BASE was in PR #46,
+    unmerged, so `git pull origin main` did not have it and SEED_BASE=200 was
+    ignored by bash. Step 2 ran with seeds 100 and 101. Measured, not assumed:
+    equil_ref/T2/chain0 is bit-identical to equil/T2/chain0 over all 90000
+    moves (Hd equal at 90001 of 90001 logged moves, U 340 vs 340); at T=4 they
+    agree for 87614 moves and then separate, which puts a number on GPU
+    non-determinism in this sampler -- about 1 in 10^5 moves flips. So 3.8 h
+    of the 7.6 h recomputed a chain already on disk.
+    NOTHING IS LOST SCIENTIFICALLY, though. chain0 of equil_ref IS the existing
+    chain's first 90000 moves, and chain1 (seed 101 from the reference) is new,
+    because the old seed-101 chain was random-started. So the pair is still two
+    independent reference-started chains of equal length, which is exactly the
+    R-hat that was wanted.
+
+    STEP 1: T=5 and T=6, both reference-started chains, 60000/30000 -> 180000.
+
+      T=5   t        Rhat_U  Rhat_Hd  dHd/dt   mean_Hd      T=6   Rhat_U  Rhat_Hd  mean_Hd
+            100000   1.005   1.002    -0.14    185.5              1.022   1.021    204.2
+            120000   1.004   1.021     0.11    186.2              1.028   1.026    203.6
+            140000   1.004   1.000    -0.04    185.6              1.019   1.000    204.5
+            160000   1.024   1.005     0.09    187.5              1.040   1.012    205.7
+            180000   1.007   1.026     0.11    188.4              1.045   1.033    204.6
+
+    t_eq = 100000 at T=5 and 80000 at T=6. This is a far stronger statement
+    than the one withdrawn on 2026-11-13: there the criterion was met at a
+    SINGLE grid point and collapsed when the run doubled; here R-hat stays
+    between 1.00 and 1.05 at EVERY grid point from t_eq out to 180000, on both
+    U and Hd, and the per-chain slopes are +5.1/-2.4 (T=5) and +11.0/+6.0
+    (T=6) Hd per 10k, so the agreement does not rest on two opposite drifts
+    cancelling, which is what went wrong before.
+    First equilibrium averages in the project:
+      T=5  <U> 1297.8  <Hd> 189.4  Var(U)/T^2 302.8  acc 0.154
+      T=6  <U> 1573.4  <Hd> 205.4  Var(U)/T^2 204.3  acc 0.177
+
+    STEP 2: T=2 and T=4, two reference-started chains in equil_ref, 90000.
+      T=4  t_eq 90000, but ONLY at the last grid point, and Rhat_U is 1.117 at
+           t=70000 in between. Same shape as the claim that failed on 11-13,
+           so provisional until it is extended. <U> 998 <Hd> 165 acc 0.125.
+      T=2  NOT converged: Rhat_U 1.58 and Rhat_Hd 1.18 at 90000, having been
+           2.12 at 50000; the chains sit at <Hd> 77 and 82, <U> 304 and 348.
+           Below the crossover, as expected.
+
+    Var(U)/T^2, the heat-capacity proxy, is now available where t_eq exists:
+    301 at T=4 (fallback window), 303 at T=5, 204 at T=6. So it is flat over
+    T=4-5 and falls by T=6, putting the peak at or below T=5 and agreeing with
+    the crossover estimate of T~4-5 from the melting curve.
+
+    TOOL FIX. When t_eq landed exactly on the last grid point the averaging
+    window (t_eq, end] was empty and every summary statistic printed nan (T=4
+    did this). It now falls back to (t_eq/2, t_eq], the window R-hat was
+    computed on at t_eq, and marks such a row with a trailing "*" on t_eq.
+
+    Next: T=3 and T=4 to 180000 so the crossover band 3-6 is all at one depth,
+    about 8.9 h (T=3 in equil, +120000 on two chains, 5.05 h; T=4 in equil_ref,
+    +90000 on two chains, 3.8 h). T=2 needs far more than a night.
