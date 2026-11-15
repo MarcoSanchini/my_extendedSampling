@@ -148,14 +148,24 @@ InterPro, which the cloud container cannot reach.
 
 ## What to do next
 
-1. **An in-silico mutational scan of U_am**: U(mutant) for all 324 x 19 single mutants of the
-   reference, 6156 forward passes, well under an hour on the GPU. It is the direct counterpart of
-   VAMP-seq, needs no equilibration, and separates "the energy is right" from "the chain has not
-   moved yet". Written 2026-11-15 and still to be run: `scan_single_mutants.py` does the scan
-   (resumable, batched) and `pten_k_sites.py mutants` compares it with the papers both per site
-   and, for the first time here, per variant — the same substitution in silico and in the
-   laboratory, including the within-site correlation that asks whether the energy ranks the 19
-   residues at a site and not merely which sites are expensive. Section 6 of the long version.
+1. **An in-silico mutational scan of U_am**: DONE 2026-11-15. U(mutant) for all 324 x 19 single
+   mutants of the reference, 6156 forward passes, 4.5 minutes on astaroth at --batch 1.
+   `scan_single_mutants.py` + `pten_k_sites.py mutants`. Two results, section 6.4b of the long
+   version:
+   - **The energy sides with abundance; the sampler sides with conservation.** With burial
+     regressed out the energy keeps +0.12 with abundance and goes negative on both natural tiers
+     (-0.07 family, -0.11 orthologs), where the chains at T=8 keep +0.45 with family against
+     +0.19 with abundance. So that preference is made by the sampling, not by U_am.
+   - **Within a site, the energy ranks the 19 substitutions as well as it ranks sites**: +0.32 to
+     +0.35 within site against +0.35 to +0.37 pooled, AUC 0.69 (abundance) and 0.72 (activity)
+     for the authors' own damaging calls. U_am has substitution resolution, not just site
+     resolution. No per-site profile could have shown this.
+   At residue level it finds the P loop's packing (C124 and both glycines in the top fifth by
+   cost) and not its chemistry (both catalytic lysines in the bottom fifth; the WPD and TI loops
+   cheaper than average).
+   Two cautions: the +0.12 sits on the significance threshold, so the *contrast* with the chains
+   is the claim, not the number; and the batched forward is biased (see DEVLOG 2026-11-15), so
+   the scan must run at the default --batch 1.
 2. Done 2026-11-13, see the update above.
 3. Keep abundance as the primary reference and report every correlation both raw and with RSA
    regressed out.

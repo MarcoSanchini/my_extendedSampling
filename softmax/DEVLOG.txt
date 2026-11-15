@@ -6853,3 +6853,46 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     (2) within-site ~= pooled, so almost none of the agreement is burial: U_am
     ranks the 19 substitutions AT a site, not just the sites. Both need the
     --batch 1 rerun.
+
+2026-11-15 (third entry) -- the exact scan, and what the batch bias cost
+    Marco's --batch 1 rerun: 6156 mutants in 4.5 min (0.044 s each, vs 0.026
+    batched), no OOM, noise floor 0. dU 4.81 to 2860, median 32.3, none <= 0.
+    BATCH BIAS, measured by comparing the two scans mutant by mutant:
+      median |difference| 0.55 (1.6%), LARGEST 151 (22%) -- far worse than the
+      3.09 the 5-site check showed; 26.5% of mutants differ by > 1 unit;
+      25.1% change rank WITHIN their site; 9.0% of sites get a different
+      cheapest substitution (site 0: L batched, V exact).
+      BUT Spearman between the two scans is 0.99935 overall and 0.995 within a
+      site (median), so EVERY aggregate below is unchanged to 3 decimals.
+      Both halves matter: the rerun was necessary (none of this was knowable
+      without it) and it changed no conclusion.
+    RESULTS (exact scan), per site, -mean log10 dU, raw / RSA regressed out:
+      orthologs +0.08 / -0.104, family +0.21 / -0.069,
+      abundance +0.31 / +0.116, activity +0.30 / +0.047, RSA itself +0.43.
+    Per variant: pooled +0.345 / +0.372 / +0.365 (abundance 2021 / 2018 /
+      activity), WITHIN SITE +0.325 / +0.342 / +0.346, AUC(dU, damaging)
+      0.686 abundance and 0.720 activity.
+    K-sets, size-matched: top 28 by cost hold 1 of the 28 natural K-sites
+      (2.4 expected, P 0.93); top 108 hold 46 of 108 abundance (36, P 0.009);
+      top 97 hold 40 of 97 activity (29, P 0.003).
+    READING 1. The ENERGY prefers abundance; the SAMPLED entropy prefers
+      family conservation (5.3: +0.45 vs +0.19 at T=8, RSA out). The
+      conservation preference is made by the SAMPLING, not by U_am. Caveat:
+      +0.116 sits on the 5% threshold (0.12) for n=289, so the CONTRAST is the
+      claim, not the number.
+    READING 2 (no caveat). Within-site ~= pooled, so almost none of the
+      agreement is burial: U_am ranks the 19 substitutions AT a position about
+      as well as it ranks positions. Substitution resolution, which no
+      per-site profile in section 5 could have shown.
+    RESIDUE LEVEL, P loop 123-130 (ranks of 324 by cost): H123 64, C124 50,
+      K125 275, A126 258, G127 33, K128 242, G129 26, R130 59. It finds the
+      pocket's PACKING (catalytic Cys + both Gly in the top fifth) and not its
+      CHEMISTRY (both catalytic Lys in the bottom fifth). WPD (88-98) and TI
+      (160-171) loops are CHEAPER than average (1.36, 1.40 vs 1.53). Exactly
+      what a foldability proxy should do, and the concrete form of the
+      "conservation = catalysis, abundance = fold" split.
+    NEXT, five minutes of GPU: the same scan from an EQUILIBRATED sequence
+      instead of from PTEN. If the energy's preference moves toward
+      conservation there, the sampler sees the landscape around a site rather
+      than the reference's 19 mutants; if it does not, the difference in
+      reading 1 is just equilibration (198 sites never accepted at T=1).
