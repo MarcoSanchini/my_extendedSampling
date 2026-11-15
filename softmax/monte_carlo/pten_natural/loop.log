@@ -1,0 +1,16 @@
+full-length query (7JVX chain A): 7612 hits; tiers over UniProt 7-353, loop included
+  hits covering at least half of the loop 286-309: 589
+  hits covering at least half of 310-353: 500
+      tier  sequences  n_eff  construct_sequences  construct_n_eff  loop_gap  loop_entropy  rest_entropy  after_loop_gap
+vertebrate         75  15.06                   92            21.89      0.05          0.52          0.12            0.07
+ orthologs        130  66.06                  123            43.69      0.05          1.49          0.24            0.07
+    family        623 186.02                 2716           506.24      0.35          2.46          1.49            0.35
+  family entropy, full-length query vs construct query: Spearman +0.945 over 305 shared sites
+
+scans on the loop sites 286-309 against the construct's sites:
+  abundance 2018       loop: 16/24 sites with a mean, 188 variants, mean +0.96   construct: mean +0.68
+  abundance 2018+2021  loop: 20/24 sites with a mean, 277 variants, mean +0.94   construct: mean +0.67
+  activity             loop: 24/24 sites with a mean, 417 variants, mean -0.02   construct: mean -1.01
+  loop sites called 'intolerant' by the authors: 0; loop sites meeting the activity rule: 0
+
+Output in /home/user/my_extendedSampling/softmax/monte_carlo/pten_natural: loop_tiers.tsv

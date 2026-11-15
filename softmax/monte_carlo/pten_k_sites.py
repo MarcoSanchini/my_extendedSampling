@@ -37,6 +37,21 @@ Subcommands
            reach (PDB70 templates, classical PTPs = Pfam PF00102 among them),
            and the PF00102 conservation carried over from PTP1B.
 
+  loop     what the references say about the 286-309 loop that the construct
+           lacks: tiers of the full-length alignment (PDB 7JVX chain A) and
+           the two scans on the loop sites.
+  pfam     the natural reference rebuilt from Pfam: asks InterPro which Pfam
+           families lie on human PTEN, downloads their alignments, projects
+           them on the reference through PTEN's own row and compares the
+           per-site entropy with the tiers above and with the two scans.
+           Needs www.ebi.ac.uk, which the cloud container cannot reach: run
+           it on a machine with ordinary internet access.
+
+Thresholds. --vertebrate-identity (0.9), --ortholog-identity (0.7) and
+--min-coverage (0.8) decide which hits enter the vertebrate, orthologs and
+family tiers. Give 0 or 'none' to remove one: with no identity threshold a
+tier becomes the family tier, with no coverage threshold every hit counts.
+
 Numbering. The reference is the 1D5R construct, 324 aa: UniProt P60484
 residues 7-285 and 310-353, the 286-309 loop deleted. Two reference residues
 are not native: site 0 (Met in place of Glu7) and site 279 (a Val at the
@@ -48,7 +63,11 @@ Usage:
     python pten_k_sites.py build
     python pten_k_sites.py compare --runs T1=pten1d5r_study/equil/T1/chain0 \\
         T2=pten1d5r_study/equil/T2/chain0 T4=pten1d5r_study/equil/T4/chain0 --cold T1 T2
+    python pten_k_sites.py compare --runs-dir pten1d5r_study/equil --cold T1 T2    # every chain
     python pten_k_sites.py family
+    python pten_k_sites.py mutants                             # needs scan_single_mutants.py's CSV (GPU)
+    python pten_k_sites.py pfam                                # local machine only
+    python pten_k_sites.py build --vertebrate-identity 0.95    # or: none
 """
 import argparse
 import difflib
@@ -100,6 +119,7 @@ RAW_FILES = {
 	"1d5r_A_uniref90_hits.a3m": S3 + "1d5r_A/a3m/uniref90_hits.a3m",
 	"1d5r_A_pdb70_hits.hhr": S3 + "1d5r_A/hhr/pdb70_hits.hhr",
 	"2cm2_A_uniref90_hits.a3m": S3 + "2cm2_A/a3m/uniref90_hits.a3m",
+	"7jvx_A_uniref90_hits.a3m": S3 + "7jvx_A/a3m/uniref90_hits.a3m",      # full-length PTEN, for the loop subcommand
 }
 C_NAT, C_ABU, C_ACT, C_SAMP = "#2a7f62", "#3b6fb6", "#c2571a", "#444444"
 
@@ -186,19 +206,25 @@ def natural_tiers(a3m, ref, rmap, args):
 	cov = aligned.mean(1)
 	pd_cols = (rmap.domain == "phosphatase").values
 	cov_pd = aligned[:, pd_cols].mean(1)
+	# A threshold of 0 (or "none" on the command line) switches that filter off.
+	full = cov >= args.min_coverage
 	tiers = {
 		# the same protein in vertebrates, where PTEN is nearly invariant
-		"vertebrate": (cov >= 0.8) & (ident >= 0.9),
+		"vertebrate": full & (ident >= args.vertebrate_identity),
 		# the same protein in other species: both domains present and clearly PTEN
-		"orthologs": (cov >= 0.8) & (ident >= args.ortholog_identity),
+		"orthologs": full & (ident >= args.ortholog_identity),
 		# PTEN-like family: both domains present (PTEN, TPTE/VSP, tensins, auxilin/GAK)
-		"family": cov >= 0.8,
+		"family": full,
 		# anything whose phosphatase domain aligns; C2 columns are mostly gaps here
-		"pdomain": cov_pd >= 0.7,
+		"pdomain": cov_pd >= args.pdomain_coverage,
 	}
+	min_id = {"vertebrate": args.vertebrate_identity, "orthologs": args.ortholog_identity, "family": 0., "pdomain": 0.}
+	min_cov = {"vertebrate": args.min_coverage, "orthologs": args.min_coverage, "family": args.min_coverage,
+		"pdomain": args.pdomain_coverage}
 	# The ortholog tiers are within ~70-100% identity of each other, so the 0.8 weighting would
 	# collapse them to one or two clusters (N_eff 1-6): they are weighted at 0.95 instead.
-	theta = {"vertebrate": args.ortholog_weight_identity, "orthologs": args.ortholog_weight_identity}
+	# A tier whose identity threshold has been removed is as broad as the family, so it is weighted like it.
+	theta = {k: args.ortholog_weight_identity for k in ("vertebrate", "orthologs") if min_id[k] >= 0.5}
 	out, summary = {}, []
 	for tier, keep in tiers.items():
 		Xt = X[keep]
@@ -207,39 +233,43 @@ def natural_tiers(a3m, ref, rmap, args):
 		if tier == "pdomain":
 			H[~pd_cols] = np.nan
 		out[tier] = (H, gap, cons, cons_f)
-		summary.append({"tier": tier, "sequences": int(keep.sum()), "weight_identity": theta.get(tier, args.weight_identity), "n_eff": w.sum(),
+		summary.append({"tier": tier, "min_identity": min_id[tier], "min_coverage": min_cov[tier],
+			"sequences": int(keep.sum()), "weight_identity": theta.get(tier, args.weight_identity), "n_eff": w.sum(),
 			"median_identity_to_PTEN": float(np.median(ident[keep])), "sites_with_entropy": int(np.isfinite(H).sum()),
 			"mean_entropy_nats": float(np.nanmean(H)), "sites_entropy_lt_0.05": int((H < 0.05).sum())})
 	return out, pd.DataFrame(summary)
 
 
-def positional(df, pos_col, score_col, lof_below):
+def positional(df, pos_col, score_col, lof_below, min_variants=MIN_VARIANTS):
 	"""Missense variants -> per UniProt position: n scored, mean score, fraction below the loss threshold."""
 	g = df.dropna(subset=[score_col]).groupby(pos_col)[score_col]
 	out = pd.DataFrame({"n": g.size(), "mean": g.mean(), "frac_lof": g.apply(lambda s: (s < lof_below).mean())})
-	out.loc[out.n < MIN_VARIANTS, ["mean", "frac_lof"]] = np.nan
+	out.loc[out.n < min_variants, ["mean", "frac_lof"]] = np.nan
 	return out
 
 
-def load_scans(raw_dir):
+def load_scans(raw_dir, activity_lof=ACTIVITY_LOF, min_variants=MIN_VARIANTS):
 	v = pd.read_csv(os.path.join(raw_dir, "PTEN_variant_data.tsv"), sep="\t", low_memory=False)
 	v = v[v["class"] == "missense"]
 	# authors' classes: "low" = score and upper CI below the 5th percentile of synonymous
 	v_low = v.loc[v.abundance_class.notna(), ["position", "abundance_class"]].copy()
 	v_low["low"] = (v_low.abundance_class == "low").astype(float)
-	vamp = positional(v, "position", "score", lof_below=np.inf).drop(columns="frac_lof")
+	# "below" = low or possibly low, i.e. the score is under the 5th percentile of the synonymous variants
+	v_low["below"] = v_low.abundance_class.isin(["low", "possibly_low"]).astype(float)
+	vamp = positional(v, "position", "score", lof_below=np.inf, min_variants=min_variants).drop(columns="frac_lof")
 	vamp["frac_low"] = v_low.groupby("position").low.mean()
-	vamp.loc[vamp.n < MIN_VARIANTS, "frac_low"] = np.nan
+	vamp["frac_below"] = v_low.groupby("position").below.mean()
+	vamp.loc[vamp.n < min_variants, ["frac_low", "frac_below"]] = np.nan
 	p = pd.read_csv(os.path.join(raw_dir, "PTEN_positional_data.tsv"), sep="\t").set_index("position")
 	vamp["class_2018"] = p.abundance_class          # the authors' own positional call: intolerant / enhanced
 	vamp["rsa"] = p.rsa                             # relative solvent accessibility in 1D5R [%], from the same table
 	c = pd.read_csv(os.path.join(raw_dir, "Composite_abundance_data.tsv"), sep="\t", low_memory=False)
 	c = c[c["class"] == "missense"]
-	comp = positional(c, "position", "score_total", lof_below=np.inf).drop(columns="frac_lof")
+	comp = positional(c, "position", "score_total", lof_below=np.inf, min_variants=min_variants).drop(columns="frac_lof")
 	m = pd.read_csv(os.path.join(raw_dir, "Mighell_PTEN_phosphatase_data.csv"), encoding="utf-8-sig")
 	m = m[(m.Type == "missense") & (m.High_conf == True)].copy()      # noqa: E712  (NaN must fail)
 	m["position"] = m["Variant (one letter)"].str.extract(r"(\d+)").astype(int)
-	act = positional(m, "position", "Cum_score", lof_below=ACTIVITY_LOF)
+	act = positional(m, "position", "Cum_score", lof_below=activity_lof, min_variants=min_variants)
 	return vamp, comp, act
 
 
@@ -252,11 +282,12 @@ def build_table(args):
 		t[f"nat_{tier}_entropy"] = H
 		if tier == "family":
 			t["nat_family_gap"], t["nat_family_consensus"], t["nat_family_consensus_freq"] = gap, cons, cons_f
-	vamp, comp, act = load_scans(args.raw_dir)
+	vamp, comp, act = load_scans(args.raw_dir, args.activity_lof, args.min_variants)
 	pos = t.uniprot_pos.where(t.native)          # the two non-native residues get no experimental score
 	t["abundance_n"] = pos.map(vamp.n)
 	t["abundance_mean"] = pos.map(vamp["mean"])
 	t["abundance_frac_low"] = pos.map(vamp.frac_low)
+	t["abundance_frac_below"] = pos.map(vamp.frac_below)
 	t["abundance_class_2018"] = pos.map(vamp.class_2018)
 	t["rsa"] = pos.map(vamp.rsa)
 	t["abundance2021_n"] = pos.map(comp.n)
@@ -265,8 +296,11 @@ def build_table(args):
 	t["activity_mean"] = pos.map(act["mean"])
 	t["activity_frac_lof"] = pos.map(act.frac_lof)
 	# The three K-like sets. Each is the reference's own statement "this site cannot change".
-	t["K_natural"] = t.nat_family_entropy < args.natural_k
-	t["K_abundance"] = t.abundance_class_2018 == "intolerant"
+	t["K_natural"] = t[f"nat_{args.natural_tier}_entropy"] < args.natural_k
+	if args.abundance_k is None:
+		t["K_abundance"] = t.abundance_class_2018 == "intolerant"
+	else:
+		t["K_abundance"] = t.abundance_frac_below >= args.abundance_k
 	t["K_activity"] = t.activity_frac_lof >= args.activity_k
 	return ref, t, tier_summary
 
@@ -277,7 +311,7 @@ def shade_domains(ax, t):
 		ax.axvspan(s.min() - .5, s.max() + .5, color=col, zorder=0, lw=0)
 
 
-def plot_profile(t, tier_summary, path, sampled=None):
+def plot_profile(t, tier_summary, path, sampled=None, extra_ylabel="sampled {label}\nentropy [nats]"):
 	rows = [("nat_orthologs_entropy", "orthologs\nentropy [nats]", C_NAT),
 		("nat_family_entropy", "PTEN-like family\nentropy [nats]", C_NAT),
 		("abundance2021_mean", "abundance\n(VAMP-seq, mean)", C_ABU),
@@ -294,12 +328,12 @@ def plot_profile(t, tier_summary, path, sampled=None):
 		if col == "abundance2021_mean":
 			ax.axhline(1, color="k", lw=.5, ls=":")
 		if col == "activity_mean":
-			ax.axhline(ACTIVITY_LOF, color="k", lw=.5, ls=":")
+			ax.axhline(ACTIVITY_LOF, color="k", lw=.5, ls=":")     # the default cut; --activity-lof moves the set, not this line
 	if sampled is not None:
 		for ax, label in zip(axes[len(rows):], sampled.columns):
 			shade_domains(ax, t)
 			ax.bar(t.site, sampled[label], width=1., color=C_SAMP, lw=0)
-			ax.set_ylabel(f"sampled {label}\nentropy [nats]", fontsize=8)
+			ax.set_ylabel(extra_ylabel.format(label=label), fontsize=8)
 	ax = axes[-1]
 	shade_domains(ax, t)
 	for y, (col, c, lab) in enumerate((("K_natural", C_NAT, "natural"), ("K_abundance", C_ABU, "abundance"), ("K_activity", C_ACT, "activity"))):
@@ -320,7 +354,7 @@ def plot_profile(t, tier_summary, path, sampled=None):
 	ax.set_xlabel("UniProt position (286-309 are not in the 1D5R construct; shading: phosphatase domain, C2 domain)")
 	fig.align_ylabels(axes)
 	fig.subplots_adjust(hspace=.12, top=.93, bottom=.07, left=.09, right=.99)
-	fig.savefig(path, dpi=150)
+	fig.savefig(path, dpi=150 if n_extra <= 8 else 100)
 	plt.close(fig)
 
 
@@ -329,6 +363,17 @@ def flatness(x):
 	x = np.asarray(x, float); x = x[np.isfinite(x)]
 	return {"sites": len(x), "mean": x.mean(), "sd": x.std(), "cv": x.std() / abs(x.mean()) if x.mean() else np.nan,
 		"p10": np.percentile(x, 10), "median": np.median(x), "p90": np.percentile(x, 90)}
+
+
+def flatness_table(t, tier_summary):
+	"""flatness() of every reference profile, with how much data stands behind each."""
+	ts = tier_summary.set_index("tier")
+	rows = {}
+	for tier in ts.index:
+		rows[f"nat_{tier}_entropy"] = {"n": int(ts.sequences[tier]), "n_eff": ts.n_eff[tier], **flatness(t[f"nat_{tier}_entropy"])}
+	for col, ncol in (("abundance_mean", "abundance_n"), ("abundance2021_mean", "abundance2021_n"), ("activity_mean", "activity_n")):
+		rows[col] = {"n": int(t[ncol].sum()), "n_eff": np.nan, **flatness(t[col])}
+	return pd.DataFrame(rows).T
 
 
 def cmd_build(args):
@@ -343,12 +388,16 @@ def cmd_build(args):
 	print(f"natural alignment tiers (weights 1/neighbours at the identity shown, entropy NaN above {args.max_gap:.0%} gaps):")
 	print(tier_summary.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
 	print("\nflatness of each reference profile over the sites it covers:")
-	cols = ["nat_vertebrate_entropy", "nat_orthologs_entropy", "nat_family_entropy", "nat_pdomain_entropy", "abundance_mean", "abundance2021_mean", "activity_mean"]
-	print(pd.DataFrame({c: flatness(t[c]) for c in cols}).T.to_string(float_format=lambda x: f"{x:.3f}"))
+	fl = flatness_table(t, tier_summary)
+	print(fl.to_string(float_format=lambda x: f"{x:.3f}"))
+	fl.to_csv(os.path.join(args.out_dir, "flatness.tsv"), sep="\t", float_format="%.4f")
+	print("  n = sequences in the alignment (natural tiers) or scored missense variants on the construct's sites (scans);")
+	print("  n_eff = effective number of sequences after the redundancy weighting")
 	print("\nK-like sets (sites of the reference):")
-	for col, rule in (("K_natural", f"family entropy < {args.natural_k} nats"),
-			("K_abundance", "authors' positional class 'intolerant' (Matreyek 2018)"),
-			("K_activity", f">= {args.activity_k:.0%} of scored missense variants below {ACTIVITY_LOF}")):
+	for col, rule in (("K_natural", f"{args.natural_tier} entropy < {args.natural_k} nats"),
+			("K_abundance", "authors' positional class 'intolerant' (Matreyek 2018)" if args.abundance_k is None else
+				f">= {args.abundance_k:.0%} of scored missense variants low or possibly low (below the synonymous 5th percentile)"),
+			("K_activity", f">= {args.activity_k:.0%} of scored missense variants below {args.activity_lof}")):
 		k = t[t[col]]
 		print(f"  {col:12s} {len(k):3d} sites  ({(k.domain == 'phosphatase').sum()} phosphatase, {(k.domain == 'C2').sum()} C2)   {rule}")
 	L = len(t)
@@ -363,7 +412,7 @@ def cmd_build(args):
 	print("\nSpearman between the reference profiles (sites where both exist):")
 	prof = t[["nat_orthologs_entropy", "nat_family_entropy", "abundance2021_mean", "activity_mean"]]
 	print(prof.corr(method="spearman").to_string(float_format=lambda x: f"{x:+.2f}"))
-	print(f"\nOutputs in {args.out_dir}: pten_site_table.csv, natural_tiers.tsv, pten_site_profile.png")
+	print(f"\nOutputs in {args.out_dir}: pten_site_table.csv, natural_tiers.tsv, flatness.tsv, pten_site_profile.png")
 
 
 # ---------------------------------------------------------------- compare --- #
@@ -444,21 +493,91 @@ def shift_p(x, member):
 	return (1 + (np.abs(null) >= abs(obs) - 1e-12).sum()) / len(x)
 
 
-def cmd_compare(args):
-	ref, t, tier_summary = build_table(args)
-	os.makedirs(args.out_dir, exist_ok=True)
+def discover_runs(args):
+	"""LABEL -> run dir, from --runs and/or every T*/chain* under --runs-dir.
+
+	Discovered labels are the temperature directory for chain0 (T4) and T4.c1, T4.c2 for the
+	other chains, so that labels given by hand (T1, T2, ...) keep meaning chain0."""
 	runs = {}
-	for item in args.runs:
+	for item in args.runs or []:
 		label, _, path = item.partition("=")
 		if not path:
 			raise ValueError(f"--runs entries are LABEL=DIR, got {item!r}")
 		runs[label] = path
-	runs = dict(sorted(runs.items(), key=lambda kv: label_T(kv[0])))
-	stats, ent = {}, pd.DataFrame(index=t.site)
+	if args.runs_dir:
+		for tdir in sorted(os.listdir(args.runs_dir)):
+			for cdir in sorted(os.listdir(os.path.join(args.runs_dir, tdir))) if os.path.isdir(os.path.join(args.runs_dir, tdir)) else []:
+				path = os.path.join(args.runs_dir, tdir, cdir)
+				m = re.fullmatch(r"chain(\d+)", cdir)
+				if not m or not os.path.isfile(os.path.join(path, "start.txt")):
+					continue
+				if not (os.path.isfile(os.path.join(path, "data.dat")) or os.path.isfile(os.path.join(path, "data.dat.gz"))):
+					continue
+				runs.setdefault(tdir if m.group(1) == "0" else f"{tdir}.c{m.group(1)}", path)
+	if not runs:
+		raise SystemExit("compare needs --runs LABEL=DIR ... or --runs-dir DIR (a directory of T*/chain*)")
+	return dict(sorted(runs.items(), key=lambda kv: (label_T(kv[0]), kv[0])))
+
+
+def grid_scatter(show, y, name, color, path, ncols=6):
+	"""Sampled entropy of every chain against one reference, one small panel per chain."""
+	n = len(show.columns)
+	ncols = min(ncols, n)
+	nrows = -(-n // ncols)
+	fig, axes = plt.subplots(nrows, ncols, figsize=(2.6 * ncols, 2.5 * nrows), squeeze=False, sharex=True, sharey=True)
+	for ax in axes.ravel()[n:]:
+		ax.axis("off")
+	for ax, label in zip(axes.ravel(), show.columns):
+		ax.scatter(show[label], y, s=6, color=color, alpha=.5, lw=0)
+		ax.set_title(f"{label}: rho = {spearman(show[label], y):+.2f}", fontsize=8)
+	for ax in axes[:, 0]:
+		ax.set_ylabel(name, fontsize=8)
+	for ax in axes[-1]:
+		ax.set_xlabel("sampled entropy [nats]", fontsize=8)
+	fig.tight_layout()
+	fig.savefig(path, dpi=130)
+	plt.close(fig)
+
+
+def plot_by_T(sp, pr, ref_started, path):
+	"""Spearman of the sampled entropy with each reference against temperature, reference-started
+	chains only: raw (solid) and with solvent accessibility regressed out (dashed)."""
+	e = sp[(sp.quantity == "entropy") & sp.chain.isin(ref_started)].copy()
+	e["T"] = e.chain.map(label_T)
+	q = pr[pr.chain.isin(ref_started)].copy()
+	q["T"] = q.chain.map(label_T)
+	fig, ax = plt.subplots(figsize=(6.4, 4.2))
+	for name, c in (("family entropy", C_NAT), ("abundance mean", C_ABU), ("activity mean", C_ACT), ("orthologs entropy", "#9a9a9a")):
+		# points: every chain; lines: the mean over the chains at that temperature
+		ax.plot(e["T"], e[name], "o", color=c, ms=4)
+		ax.plot(q["T"], q[f"{name} | RSA"], "o", color=c, ms=3, alpha=.8)
+		ax.plot(e.groupby("T")[name].mean(), "-", color=c, lw=1.4, label=name)
+		ax.plot(q.groupby("T")[f"{name} | RSA"].mean(), "--", color=c, lw=1., alpha=.8)
+	ax.plot([], [], "k--", lw=1., label="dashed: burial (RSA) regressed out")
+	ax.axhline(0, color="k", lw=.5)
+	ax.set_xscale("log")
+	ax.set_xlabel("sampling temperature T")
+	ax.set_ylabel("Spearman with the sampled per-site entropy")
+	ax.legend(fontsize=8, frameon=False)
+	fig.tight_layout()
+	fig.savefig(path, dpi=140)
+	plt.close(fig)
+
+
+def cmd_compare(args):
+	ref, t, tier_summary = build_table(args)
+	os.makedirs(args.out_dir, exist_ok=True)
+	runs = discover_runs(args)
+	stats, ent, ref_started = {}, pd.DataFrame(index=t.site), []
 	print("chains (entropy over the last "
 		f"{1 - args.burn_in_frac:.0%} of the moves):")
 	for label, path in runs.items():
 		st, info = chain_site_stats(path, ref, args.burn_in_frac)
+		if args.reference_only and not info["start_is_reference"]:
+			print(f"  {label:6s} skipped: not started from the reference")
+			continue
+		if info["start_is_reference"]:
+			ref_started.append(label)
 		stats[label] = st
 		ent[label] = st.entropy.values
 		for c in ("entropy", "native_frac", "proposals", "accepted", "mean_dU"):
@@ -508,7 +627,9 @@ def cmd_compare(args):
 	print(fl.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
 	fl.to_csv(os.path.join(args.out_dir, "sampled_entropy_in_K_sets.tsv"), sep="\t", index=False, float_format="%.4f")
 
-	cold = args.cold or list(runs)[:1]
+	cold = [c for c in (args.cold or (ref_started or list(stats))[:1]) if c in ent.columns]
+	if not cold:
+		raise SystemExit(f"none of --cold {args.cold} is among the chains {list(ent.columns)}")
 	k_sampled = t.site[(ent[cold] < args.k_site_threshold).all(axis=1)].values
 	t["K_sampled"] = t.site.isin(k_sampled)
 	print(f"\nsampled K-sites (entropy < {args.k_site_threshold} at every one of {cold}): {len(k_sampled)}/{len(ref)}")
@@ -520,22 +641,241 @@ def cmd_compare(args):
 	show = ent[[c for c in ent.columns if c in (args.show or ent.columns)]]
 	plot_profile(t, tier_summary, os.path.join(args.out_dir, "pten_site_profile_sampled.png"), sampled=show)
 
-	# scatter: sampled entropy (one chain per column) against the three references
-	fig, axes = plt.subplots(3, len(show.columns), figsize=(3.1 * len(show.columns), 8.2), squeeze=False, sharey="row")
-	for j, label in enumerate(show.columns):
-		for i, (name, c) in enumerate((("family entropy", C_NAT), ("abundance mean", C_ABU), ("activity mean", C_ACT))):
-			ax = axes[i, j]
-			ax.scatter(show[label], refs[name], s=7, color=c, alpha=.55, lw=0)
-			ax.set_title(f"{label}: rho = {spearman(show[label], refs[name]):+.2f}", fontsize=9)
-			if j == 0:
-				ax.set_ylabel(name)
-			if i == 2:
-				ax.set_xlabel("sampled entropy [nats]")
-	fig.tight_layout()
-	fig.savefig(os.path.join(args.out_dir, "sampled_vs_references.png"), dpi=140)
-	plt.close(fig)
+	for name, c, tag in (("family entropy", C_NAT, "family"), ("abundance mean", C_ABU, "abundance"), ("activity mean", C_ACT, "activity")):
+		grid_scatter(show, refs[name], name, c, os.path.join(args.out_dir, f"sampled_vs_{tag}.png"))
+	if len(ref_started) > 1:
+		plot_by_T(sp, pr, ref_started, os.path.join(args.out_dir, "sampled_vs_references_by_T.png"))
 	print(f"\nOutputs in {args.out_dir}: pten_site_table_sampled.csv, sampled_vs_references_spearman.tsv, "
-		"sampled_vs_references_partial_rsa.tsv, sampled_entropy_in_K_sets.tsv, pten_site_profile_sampled.png, sampled_vs_references.png")
+		"sampled_vs_references_partial_rsa.tsv, sampled_entropy_in_K_sets.tsv, pten_site_profile_sampled.png, "
+		"sampled_vs_family.png, sampled_vs_abundance.png, sampled_vs_activity.png, sampled_vs_references_by_T.png")
+
+
+# ---------------------------------------------------------------- mutants --- #
+# The in-silico deep mutational scan: scan_single_mutants.py writes dU for all
+# 324 x 19 point mutants of the reference (dU = U(mutant), since U(reference) = 0
+# is the global minimum of a squared log-distance), and this reads that CSV.
+# It is the only comparison in this script that works VARIANT BY VARIANT rather
+# than site by site, because both scans measure single substitutions too.
+
+def load_variants(raw_dir, activity_lof=ACTIVITY_LOF):
+	"""One row per measured missense variant: UniProt position, wild-type and mutant residue,
+	the 2018 and 2021 abundance scores with the authors' classes, and Mighell's activity score."""
+	v = pd.read_csv(os.path.join(raw_dir, "PTEN_variant_data.tsv"), sep="\t", low_memory=False)
+	v = v[v["class"] == "missense"][["position", "start", "end", "score", "abundance_class"]].rename(
+		columns={"start": "wt_aa", "end": "mut_aa", "score": "abundance_2018", "abundance_class": "class_2018"})
+	c = pd.read_csv(os.path.join(raw_dir, "Composite_abundance_data.tsv"), sep="\t", low_memory=False)
+	c = c[c["class"] == "missense"][["position", "start", "end", "score_total", "abundance_class"]].rename(
+		columns={"start": "wt_aa", "end": "mut_aa", "score_total": "abundance_2021", "abundance_class": "class_2021"})
+	m = pd.read_csv(os.path.join(raw_dir, "Mighell_PTEN_phosphatase_data.csv"), encoding="utf-8-sig")
+	m = m[(m.Type == "missense") & (m.High_conf == True)].copy()           # noqa: E712  (NaN must fail)
+	code = m["Variant (one letter)"].str.extract(r"^([A-Z])(\d+)([A-Z])$")
+	m["wt_aa"], m["position"], m["mut_aa"] = code[0], code[1].astype(float), code[2]
+	m = m.dropna(subset=["position"])[["position", "wt_aa", "mut_aa", "Cum_score"]].rename(columns={"Cum_score": "activity"})
+	m["position"] = m.position.astype(int)
+	out = v.merge(c, on=["position", "wt_aa", "mut_aa"], how="outer").merge(m, on=["position", "wt_aa", "mut_aa"], how="outer")
+	# Both flags are left NaN where there is no measurement, so that an unmeasured
+	# variant is not silently counted as a negative in the AUCs below.
+	out["activity_is_lof"] = np.where(out.activity.notna(), out.activity < activity_lof, np.nan)
+	# "below the synonymous 5th percentile": the authors' own call, the same one
+	# the --abundance-k rule aggregates per site.
+	out["abundance_is_low"] = np.where(out.class_2018.notna(),
+		out.class_2018.isin(["low", "possibly_low"]), np.nan)
+	return out
+
+
+def auc(score, positive):
+	"""Area under the ROC curve of `score` for the binary label `positive`, as the
+	Mann-Whitney statistic: the probability that a random positive scores above a
+	random negative. 0.5 is chance, so |AUC - 0.5| is the useful quantity."""
+	score, positive = np.asarray(score, float), np.asarray(positive, bool)
+	ok = np.isfinite(score)
+	score, positive = score[ok], positive[ok]
+	if positive.sum() < 2 or (~positive).sum() < 2:
+		return np.nan
+	r = pd.Series(score).rank().values
+	n1, n0 = positive.sum(), (~positive).sum()
+	return float((r[positive].sum() - n1 * (n1 + 1) / 2) / (n1 * n0))
+
+
+def within_site_spearman(df, x, y, by="site"):
+	"""Spearman of x and y after each has been ranked WITHIN its site and centred.
+	Across all variants, a correlation can come entirely from the sites: a buried
+	site is expensive and its variants are all destabilising. This asks the sharper
+	question -- at a given site, does the model rank the 19 substitutions the way
+	the experiment does -- which no per-site statistic can answer."""
+	d = df[[by, x, y]].dropna()
+	g = d.groupby(by)
+	d = d[g[x].transform("size") >= 5]
+	if len(d) < 20:
+		return np.nan, 0
+	g = d.groupby(by)
+	cx = g[x].rank() - g[x].transform(lambda s: s.rank().mean())
+	cy = g[y].rank() - g[y].transform(lambda s: s.rank().mean())
+	return float(np.corrcoef(cx, cy)[0, 1]), int(d[by].nunique())
+
+
+def plot_mutants(t, mv, path_profile, path_sites, path_variants):
+	"""Three figures: the per-site cost along the sequence next to the two experiments,
+	the per-site scatters against every reference, and the variant-level scatters."""
+	plot_profile(t, None, path_profile, sampled=t[["dU_log10_mean"]].rename(
+		columns={"dU_log10_mean": "mutation cost\nmean log10 dU"}), extra_ylabel="{label}")
+
+	refs = [("PTEN-like family entropy [nats]", t.nat_family_entropy, C_NAT),
+		("abundance (VAMP-seq 2021, mean)", t.abundance2021_mean, C_ABU),
+		("activity (Mighell, mean)", t.activity_mean, C_ACT),
+		("RSA in 1D5R [%]", t.rsa, "#7a5195")]
+	fig, axes = plt.subplots(1, len(refs), figsize=(3.1 * len(refs), 3.1))
+	for ax, (name, y, col) in zip(axes, refs):
+		ax.scatter(t.dU_mean, y, s=7, color=col, alpha=.6, lw=0)
+		ax.set_xscale("log")
+		ax.set_xlabel("mean dU of the 19 mutants")
+		ax.set_ylabel(name, fontsize=8)
+		ax.set_title(f"rho(-dU, y) = {spearman(-t.dU_mean, y):+.2f}", fontsize=9)
+	fig.tight_layout()
+	fig.savefig(path_sites, dpi=130)
+	plt.close(fig)
+
+	panels = [("abundance_2021", "abundance (VAMP-seq 2021)", C_ABU, 1.),
+		("abundance_2018", "abundance (VAMP-seq 2018)", C_ABU, 1.),
+		("activity", "activity (Mighell)", C_ACT, ACTIVITY_LOF)]
+	fig, axes = plt.subplots(1, len(panels), figsize=(3.3 * len(panels), 3.3))
+	for ax, (col, name, c, line) in zip(axes, panels):
+		d = mv.dropna(subset=["dU", col])
+		ax.scatter(d.dU, d[col], s=5, color=c, alpha=.35, lw=0)
+		ax.set_xscale("log")
+		ax.axhline(line, color="k", lw=.5, ls=":")
+		ax.set_xlabel("dU of that exact variant")
+		ax.set_ylabel(name, fontsize=8)
+		w, ns = within_site_spearman(d, "dU", col)
+		ax.set_title(f"n = {len(d)}  rho = {spearman(-d.dU, d[col]):+.2f}\nwithin site {w:+.2f} ({ns} sites)", fontsize=9)
+	fig.tight_layout()
+	fig.savefig(path_variants, dpi=130)
+	plt.close(fig)
+
+
+def cmd_mutants(args):
+	ref, t, tier_summary = build_table(args)
+	os.makedirs(args.out_dir, exist_ok=True)
+	if not os.path.exists(args.mutants):
+		raise SystemExit(f"{args.mutants} does not exist. It is written by scan_single_mutants.py, which needs the GPU:\n"
+			f"    nohup python -u scan_single_mutants.py --out {args.mutants} > scan_single_mutants.log 2>&1 &")
+	m = pd.read_csv(args.mutants)
+	need = {"site", "ref_aa", "mut_aa", "dU"}
+	if not need <= set(m.columns):
+		raise SystemExit(f"{args.mutants} must have the columns {sorted(need)}, found {list(m.columns)}")
+
+	per_site = m.groupby("site").dU.size()
+	print(f"{len(m)} mutants over {m.site.nunique()}/{len(ref)} sites "
+		f"({per_site.min()}-{per_site.max()} per site; the scan writes 19)")
+	print(f"dU: min {m.dU.min():.4g}, median {m.dU.median():.4g}, max {m.dU.max():.4g}. "
+		f"U(reference) = 0 is the global minimum, so every dU must be > 0: "
+		f"{(m.dU <= 0).sum()} are not.")
+	if m.site.nunique() < len(ref):
+		print(f"  (incomplete scan: {len(ref) - m.site.nunique()} sites missing. Everything below uses what is there.)")
+
+	# Per-site summaries. dU spans orders of magnitude, so the mean of log10 dU is
+	# the better-behaved location statistic; the plain mean is kept because it is
+	# what a Boltzmann weight over the site's mutants would be dominated by.
+	m["log10_dU"] = np.log10(m.dU.clip(lower=1e-12))
+	g = m.groupby("site")
+	agg = pd.DataFrame({"dU_mean": g.dU.mean(), "dU_median": g.dU.median(), "dU_min": g.dU.min(),
+		"dU_max": g.dU.max(), "dU_log10_mean": g.log10_dU.mean(), "dU_n": g.dU.size()})
+	t = t.join(agg, on="site")
+	# The reference residue the scan mutated must be the one in the site table.
+	bad = t[(t.dU_n.notna()) & (t.ref_aa != g.ref_aa.first().reindex(t.site).values)]
+	if len(bad):
+		raise SystemExit(f"{args.mutants} disagrees with the reference at sites {list(bad.site)}: "
+			"it was scanned on a different sequence")
+
+	refs = {"orthologs entropy": t.nat_orthologs_entropy, "family entropy": t.nat_family_entropy,
+		"abundance mean": t.abundance2021_mean, "activity mean": t.activity_mean}
+	print("\n--- per site -------------------------------------------------------------")
+	print("Spearman against each reference. Every reference is 'higher = more tolerant' and dU is a COST,")
+	print("so the correlation is taken with -dU: a positive number means the sampler's energy agrees.")
+	rows = []
+	for name, col in (("-mean dU", -t.dU_mean), ("-median dU", -t.dU_median), ("-min dU", -t.dU_min),
+			("-mean log10 dU", -t.dU_log10_mean)):
+		rows.append({"quantity": name, **{k: spearman(col, v) for k, v in refs.items()},
+			"RSA": spearman(col, t.rsa)})
+	sp = pd.DataFrame(rows)
+	print(sp.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
+	n_eff = {k: int((np.isfinite(v) & t.dU_mean.notna()).sum()) for k, v in refs.items()}
+	print("  n: " + ", ".join(f"{k} {v}" for k, v in n_eff.items())
+		+ "; |rho| above about " + f"{1.96 / np.sqrt(min(n_eff.values()) - 1):.2f} is beyond chance at the 5% level")
+	print("\nWith burial regressed out (partial Spearman given RSA), the same question minus the fact that")
+	print("buried sites are both expensive to mutate and conserved:")
+	pr = pd.DataFrame([{"quantity": "-mean log10 dU",
+		**{f"{k} | RSA": partial_spearman(-t.dU_log10_mean, v, t.rsa) for k, v in refs.items()}}])
+	print(pr.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
+	sp.to_csv(os.path.join(args.out_dir, "mutants_vs_references_spearman.tsv"), sep="\t", index=False, float_format="%.4f")
+	pr.to_csv(os.path.join(args.out_dir, "mutants_vs_references_partial_rsa.tsv"), sep="\t", index=False, float_format="%.4f")
+
+	print("\nIs the cost raised inside each K-like set? mean log10 dU inside / outside, with p against")
+	print(f"circular shifts of the set along the sequence (smallest possible 1/L = {1 / len(ref):.3f}):")
+	rows = []
+	for col in ("K_natural", "K_abundance", "K_activity"):
+		x = t.dU_log10_mean.values
+		inside, outside = x[t[col].values], x[~t[col].values]
+		rows.append({"set": col, "n_in": int(t[col].sum()), "mean_in": np.nanmean(inside), "mean_out": np.nanmean(outside),
+			"ratio_of_dU": 10**(np.nanmean(inside) - np.nanmean(outside)), "shift_p": shift_p(x, t[col].values)})
+	ks = pd.DataFrame(rows)
+	print(ks.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
+	ks.to_csv(os.path.join(args.out_dir, "mutants_in_K_sets.tsv"), sep="\t", index=False, float_format="%.4f")
+
+	# A K-like set of our own, on the same footing as the other three: the sites
+	# the energy says cannot change. --mutant-k sets where the cut goes.
+	cut = t.dU_log10_mean.quantile(args.mutant_k)
+	t["K_mutant"] = t.dU_log10_mean >= cut
+	print(f"\nmutational K-sites (mean log10 dU in the top {1 - args.mutant_k:.0%}, i.e. >= {cut:.3f}): "
+		f"{int(t.K_mutant.sum())}/{int(t.dU_log10_mean.notna().sum())} scanned sites")
+	for col in ("K_natural", "K_abundance", "K_activity"):
+		k, exp, p = set_overlap(t.site[t.K_mutant], t.site[t[col]], len(ref))
+		print(f"  overlap with {col}: {k}/{int(t[col].sum())}  expected {exp:.1f}  P={p:.2g}")
+	print("  (size-matched: the same comparison with the mutational set cut to each other set's size,")
+	print("   which removes the dependence of the overlap on --mutant-k)")
+	order = t.dropna(subset=["dU_log10_mean"]).sort_values("dU_log10_mean", ascending=False)
+	for col in ("K_natural", "K_abundance", "K_activity"):
+		n = int(t[col].sum())
+		k, exp, p = set_overlap(order.site.head(n), t.site[t[col]], len(ref))
+		print(f"  top {n:3d} vs {col}: {k}/{n}  expected {exp:.1f}  P={p:.2g}")
+
+	print("\n--- per variant ----------------------------------------------------------")
+	print("Each in-silico mutant matched to the same substitution in the two experiments. This is the")
+	print("comparison the papers themselves make, and the one a per-site profile cannot: it asks whether")
+	print("the energy ranks the 19 substitutions at a site, not just which sites are expensive.")
+	var = load_variants(args.raw_dir, args.activity_lof)
+	mv = m.merge(t[["site", "uniprot_pos", "native"]], on="site")
+	mv = mv[mv.native].rename(columns={"uniprot_pos": "position", "ref_aa": "wt_aa"})
+	mv.position = mv.position.astype(int)
+	mv = mv.merge(var, on=["position", "wt_aa", "mut_aa"], how="left")
+	rows = []
+	for col, name in (("abundance_2021", "abundance 2021 (VAMP-seq composite)"),
+			("abundance_2018", "abundance 2018 (VAMP-seq)"), ("activity", "activity (Mighell high-confidence)")):
+		d = mv.dropna(subset=["dU", col])
+		w, ns = within_site_spearman(d, "dU", col)
+		rows.append({"experiment": name, "variants matched": len(d), "rho(-dU, score)": spearman(-d.dU, d[col]),
+			"rho within site": w, "sites": ns})
+	vs = pd.DataFrame(rows)
+	print(vs.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
+	print("\nAs a classifier of the authors' own variant calls (AUC of -dU; 0.5 is chance, and under 0.5 means")
+	print("the energy is anti-correlated with the call):")
+	for lab, flag in (("low or possibly low abundance (2018 classes)", "abundance_is_low"),
+			(f"loss of function in activity (score < {args.activity_lof})", "activity_is_lof")):
+		d = mv.dropna(subset=["dU"])
+		d = d[d[flag].notna()]
+		a = auc(-d.dU, d[flag])
+		print(f"  {lab}: AUC {a:.3f}  ({int(d[flag].sum())} positives of {len(d)})")
+
+	mv.to_csv(os.path.join(args.out_dir, "pten_mutants_variant_level.csv"), index=False, float_format="%.5f")
+	vs.to_csv(os.path.join(args.out_dir, "mutants_vs_experiments_variant_level.tsv"), sep="\t", index=False, float_format="%.4f")
+	t.to_csv(os.path.join(args.out_dir, "pten_site_table_mutants.csv"), index=False, float_format="%.4f")
+	plot_mutants(t, mv, os.path.join(args.out_dir, "pten_mutant_profile.png"),
+		os.path.join(args.out_dir, "mutants_vs_references.png"),
+		os.path.join(args.out_dir, "mutants_vs_experiments.png"))
+	print(f"\nOutputs in {args.out_dir}: pten_site_table_mutants.csv, pten_mutants_variant_level.csv, "
+		"mutants_vs_references_spearman.tsv, mutants_vs_references_partial_rsa.tsv, mutants_in_K_sets.tsv, "
+		"mutants_vs_experiments_variant_level.tsv, pten_mutant_profile.png, mutants_vs_references.png, "
+		"mutants_vs_experiments.png")
 
 
 # ----------------------------------------------------------------- family --- #
@@ -679,6 +1019,300 @@ def cmd_family(args):
 	print(f"\nOutputs in {args.out_dir}: pten_site_table_family.csv, pten_ptp_superfamily.png")
 
 
+# ------------------------------------------------------------------- loop --- #
+
+LOOP = (286, 309)       # UniProt numbering: the C2-domain loop deleted in the 1D5R construct
+
+
+def cmd_loop(args):
+	"""What the references say about the 286-309 loop, which the sampled construct does not have.
+
+	Natural side: the UniRef90 alignment of a full-length PTEN chain (PDB 7JVX chain A, same
+	pipeline as the construct's), cut into the same tiers over UniProt 7-353. Scans: both were
+	done on the full-length protein, so the loop sites have scores."""
+	ref, t, tier_summary = build_table(args)
+	path = os.path.join(args.raw_dir, "7jvx_A_uniref90_hits.a3m")
+	if not os.path.isfile(path):
+		raise SystemExit(f"{path} is missing: run `python pten_k_sites.py fetch` first")
+	with open(path) as f:
+		f.readline(); q = f.readline().strip()
+	names, seqs = read_a3m(path, len(q))
+	up = np.full(len(q), -1)            # UniProt position of each query column (the chain carries a linker in the tail)
+	for b in difflib.SequenceMatcher(None, q, PTEN_UNIPROT, autojunk=False).get_matching_blocks():
+		if b.size >= 8:
+			up[b.a:b.a + b.size] = np.arange(b.b, b.b + b.size) + 1
+	X = encode(seqs, len(q))
+	al = X != GAP
+	first = int(t.uniprot_pos[t.native].min()) - 1
+	core = (up >= first) & (up <= t.uniprot_pos.max())
+	upc = up[core]
+	in_loop, after = (upc >= LOOP[0]) & (upc <= LOOP[1]), upc > LOOP[1]
+	ident = ((X == X[0]) & al)[:, core].sum(1) / np.maximum(al[:, core].sum(1), 1)
+	cov = al[:, core].mean(1)
+	hits_c = int(tier_summary.sequences.max())
+	print(f"full-length query (7JVX chain A): {len(seqs) - 1} hits; tiers over UniProt {first}-{int(t.uniprot_pos.max())}, loop included")
+	print(f"  hits covering at least half of the loop {LOOP[0]}-{LOOP[1]}: {int((al[:, core][:, in_loop].mean(1) >= .5).sum())}")
+	print(f"  hits covering at least half of {LOOP[1] + 1}-{int(t.uniprot_pos.max())}: {int((al[:, core][:, after].mean(1) >= .5).sum())}")
+	rows = []
+	H_family = None
+	for tier, keep, theta in (("vertebrate", (cov >= args.min_coverage) & (ident >= args.vertebrate_identity), args.ortholog_weight_identity),
+			("orthologs", (cov >= args.min_coverage) & (ident >= args.ortholog_identity), args.ortholog_weight_identity),
+			("family", cov >= args.min_coverage, args.weight_identity)):
+		Xt = X[keep][:, core]
+		w = 1. / neighbour_counts(Xt, np.ones(len(Xt)), theta)
+		H, gap, _, _ = weighted_entropy(Xt, w, args.max_gap)
+		ts = tier_summary.set_index("tier")
+		rows.append({"tier": tier, "sequences": int(keep.sum()), "n_eff": w.sum(),
+			"construct_sequences": int(ts.sequences[tier]), "construct_n_eff": ts.n_eff[tier],
+			"loop_gap": gap[in_loop].mean(), "loop_entropy": np.nanmean(H[in_loop]),
+			"rest_entropy": np.nanmean(H[~in_loop]), "after_loop_gap": gap[after].mean()})
+		if tier == "family":
+			H_family = pd.Series(H, index=upc)
+	out = pd.DataFrame(rows)
+	print(out.to_string(index=False, float_format=lambda x: f"{x:.2f}"))
+	m = t[t.native & t.nat_family_entropy.notna()]
+	print(f"  family entropy, full-length query vs construct query: Spearman "
+		f"{spearman(H_family.reindex(m.uniprot_pos.values).values, m.nat_family_entropy.values):+.3f} over {len(m)} shared sites")
+	vamp, comp, act = load_scans(args.raw_dir, args.activity_lof, args.min_variants)
+	print(f"\nscans on the loop sites {LOOP[0]}-{LOOP[1]} against the construct's sites:")
+	on = t.uniprot_pos[t.native].values
+	for name, d in (("abundance 2018", vamp), ("abundance 2018+2021", comp), ("activity", act)):
+		lp = d[(d.index >= LOOP[0]) & (d.index <= LOOP[1])]
+		print(f"  {name:20s} loop: {int(lp['mean'].notna().sum())}/24 sites with a mean, {int(lp.n.sum())} variants, mean {lp['mean'].mean():+.2f}"
+			f"   construct: mean {d['mean'].reindex(on).mean():+.2f}")
+	lp = (vamp.index >= LOOP[0]) & (vamp.index <= LOOP[1])
+	print(f"  loop sites called 'intolerant' by the authors: {int((vamp.class_2018[lp] == 'intolerant').sum())}; "
+		f"loop sites meeting the activity rule: {int((act.frac_lof[(act.index >= LOOP[0]) & (act.index <= LOOP[1])] >= args.activity_k).sum())}")
+	os.makedirs(args.out_dir, exist_ok=True)
+	out.to_csv(os.path.join(args.out_dir, "loop_tiers.tsv"), sep="\t", index=False, float_format="%.3f")
+	print(f"\nOutput in {args.out_dir}: loop_tiers.tsv")
+
+
+# ------------------------------------------------------------------- pfam --- #
+
+INTERPRO = "https://www.ebi.ac.uk/interpro/api/"
+PTEN_ACC = "P60484"
+
+
+def http_get(url, retries=5):
+	"""GET with retries. InterPro answers 408 while it prepares a large file: wait and ask again."""
+	import time
+	import urllib.error
+	req = urllib.request.Request(url, headers={"User-Agent": "python-urllib", "Accept": "*/*"})
+	for attempt in range(retries):
+		try:
+			with urllib.request.urlopen(req, timeout=300) as r:
+				data = r.read()
+			return gzip.decompress(data) if data[:2] == b"\x1f\x8b" else data
+		except urllib.error.HTTPError as e:
+			if e.code in (408, 429, 500, 502, 503, 504) and attempt < retries - 1:
+				time.sleep(20 * (attempt + 1))
+				continue
+			raise SystemExit(f"{url}\n  answered HTTP {e.code}. Open it in a browser to check; a file saved by hand "
+				"can be given as --sto ACCESSION=PATH.")
+		except OSError as e:
+			if attempt < retries - 1:
+				time.sleep(10 * (attempt + 1))
+				continue
+			raise SystemExit(f"{url}\n  could not be reached ({e}). This step needs www.ebi.ac.uk, so run it on a machine "
+				"with ordinary internet access, not in the cloud container.")
+
+
+def pfam_entries_of_pten(raw_dir):
+	"""The Pfam families InterPro places on human PTEN: [(accession, name, [(start, end), ...]), ...]."""
+	import json
+	path = os.path.join(raw_dir, f"interpro_pfam_{PTEN_ACC}.json")
+	if not os.path.isfile(path):
+		with open(path, "wb") as f:
+			f.write(http_get(f"{INTERPRO}entry/pfam/protein/uniprot/{PTEN_ACC}"))
+	with open(path) as f:
+		doc = json.load(f)
+	out = []
+	for r in doc.get("results", []):
+		md = r.get("metadata", {})
+		frags = [(fr["start"], fr["end"]) for pr_ in r.get("proteins", []) for loc in pr_.get("entry_protein_locations") or []
+			for fr in loc.get("fragments", [])]
+		name = md.get("name")
+		out.append((md.get("accession"), name.get("name", "") if isinstance(name, dict) else str(name), sorted(frags)))
+	return sorted(out, key=lambda e: e[2][0] if e[2] else 0)
+
+
+def read_stockholm(text):
+	"""Stockholm -> {name: aligned sequence}; blocks of an interleaved file are joined."""
+	seqs = {}
+	for line in text.splitlines():
+		if not line or line[0] == "#" or line.startswith("//"):
+			continue
+		parts = line.split()
+		if len(parts) == 2:
+			seqs[parts[0]] = seqs.get(parts[0], "") + parts[1]
+	return seqs
+
+
+def ungap(s):
+	return re.sub("[^A-Za-z]", "", s).upper()
+
+
+def find_anchor(seqs):
+	"""The row that is human PTEN: by name, else by its residues being a stretch of PTEN's sequence."""
+	for name, s in seqs.items():
+		if name.upper().startswith(("PTEN_HUMAN", PTEN_ACC)) and ungap(s) in PTEN_UNIPROT:
+			return name
+	for name, s in seqs.items():
+		u = ungap(s)
+		if len(u) >= 30 and u in PTEN_UNIPROT:
+			return name
+	return None
+
+
+def hmmalign_with_pten(acc, seqs, raw_dir):
+	"""PTEN is not a row of this alignment: realign its sequences together with PTEN on the family's
+	profile HMM (hmmalign, from HMMER). Returns the new alignment and the name of the PTEN row."""
+	import shutil
+	import subprocess
+	import tempfile
+	if shutil.which("hmmalign") is None:
+		raise SystemExit(f"{acc}: human PTEN is not in this alignment, and placing it there needs HMMER's hmmalign.\n"
+			"  Install it (conda install -c bioconda hmmer, or apt install hmmer), or try --alignment uniprot.")
+	hmm = os.path.join(raw_dir, f"{acc}.hmm")
+	if not os.path.isfile(hmm):
+		with open(hmm, "wb") as f:
+			f.write(http_get(f"{INTERPRO}entry/pfam/{acc}/?annotation=hmm"))
+	with tempfile.TemporaryDirectory() as tmp:
+		fa = os.path.join(tmp, "all.fa")
+		with open(fa, "w") as f:
+			f.write(f">PTEN_HUMAN\n{PTEN_UNIPROT}\n")
+			for k, (name, s) in enumerate(seqs.items()):
+				f.write(f">s{k}\n{ungap(s)}\n")
+		res = subprocess.run(["hmmalign", "--trim", "--outformat", "Pfam", hmm, fa], capture_output=True, text=True)
+		if res.returncode != 0:
+			raise SystemExit(f"hmmalign failed for {acc}:\n{res.stderr[-800:]}")
+	return read_stockholm(res.stdout), "PTEN_HUMAN"
+
+
+def pfam_onto_reference(acc, seqs, anchor, t, args, rng):
+	"""Project a Pfam alignment on the reference sites through its PTEN row; weighted per-site entropy."""
+	L = len(t)
+	a = seqs[anchor]
+	start = PTEN_UNIPROT.find(ungap(a))
+	if start < 0:
+		raise SystemExit(f"{acc}: the anchor row {anchor} is not a stretch of PTEN's sequence")
+	site_of = dict(zip(t.uniprot_pos[t.native], t.site[t.native]))
+	cols, sites, pos = [], [], start
+	for c, ch in enumerate(a):
+		if ch.isalpha():
+			pos += 1                                  # UniProt position of this anchor residue
+			if pos in site_of:
+				cols.append(c); sites.append(site_of[pos])
+	cols = np.array(cols)
+	rows = [s for name, s in seqs.items() if len(s) == len(a)]
+	sub = ["".join(s[c] if s[c].isalpha() else "-" for c in cols).upper() for s in rows]
+	Xs = encode(sub, len(cols))
+	cov = (Xs != GAP).mean(1)
+	Xs = Xs[cov >= args.pfam_coverage]
+	n_all = len(Xs)
+	if n_all > args.max_seqs:                         # the one-hot products are quadratic in the number of rows
+		Xs = Xs[rng.choice(n_all, args.max_seqs, replace=False)]
+	a_row = encode(["".join(a[c] for c in cols).upper()], len(cols))[0]
+	ident = ((Xs == a_row) & (Xs != GAP)).sum(1) / np.maximum((Xs != GAP).sum(1), 1)
+	w = 1. / neighbour_counts(Xs, np.ones(len(Xs)), args.weight_identity)
+	H, gap, cons, cons_f = weighted_entropy(Xs, w, args.max_gap)
+	out = np.full(L, np.nan)
+	out[sites] = H
+	info = {"accession": acc, "rows_in_alignment": len(rows), f"rows_at_coverage_{args.pfam_coverage:g}": n_all,
+		"rows_used": len(Xs), "n_eff": w.sum(), "median_identity_to_PTEN": float(np.median(ident)),
+		"reference_sites": len(sites), "sites_with_entropy": int(np.isfinite(out).sum()),
+		"uniprot_from": int(t.uniprot_pos[sites].min()), "uniprot_to": int(t.uniprot_pos[sites].max()),
+		"mean_entropy_nats": float(np.nanmean(out)), f"sites_entropy_lt_{args.natural_k:g}": int((out < args.natural_k).sum())}
+	return out, info
+
+
+def cmd_pfam(args):
+	ref, t, tier_summary = build_table(args)
+	os.makedirs(args.raw_dir, exist_ok=True)
+	os.makedirs(args.out_dir, exist_ok=True)
+	rng = np.random.default_rng(0)
+	manual = dict(item.split("=", 1) for item in args.sto or [])
+	if args.accessions or manual:
+		entries = [(acc, "", []) for acc in dict.fromkeys((args.accessions or []) + list(manual))]
+	else:
+		entries = pfam_entries_of_pten(args.raw_dir)
+		print(f"Pfam families InterPro places on human PTEN ({PTEN_ACC}):")
+		for acc, name, frags in entries:
+			print(f"  {acc}  {name:28s} residues " + ", ".join(f"{a}-{b}" for a, b in frags))
+		if not entries:
+			raise SystemExit("InterPro returned no Pfam entry for PTEN; give them with --accessions.")
+	summary, used = [], []
+	for acc, name, frags in entries:
+		path = manual.get(acc) or os.path.join(args.raw_dir, f"{acc}_{args.alignment}.sto")
+		if not os.path.isfile(path):
+			print(f"\ndownloading the {args.alignment} alignment of {acc} ...")
+			with open(path, "wb") as f:
+				f.write(http_get(f"{INTERPRO}entry/pfam/{acc}/?annotation=alignment:{args.alignment}&download"))
+		opener = gzip.open if path.endswith(".gz") else open
+		with opener(path, "rt", errors="replace") as f:
+			seqs = read_stockholm(f.read())
+		if not seqs:
+			raise SystemExit(f"{path}: no sequences read; is it a Stockholm alignment?")
+		anchor = find_anchor(seqs)
+		how = "PTEN is a row of the alignment"
+		if anchor is None:
+			print(f"  {acc}: human PTEN is not among its {len(seqs)} rows; placing it with hmmalign")
+			seqs, anchor = hmmalign_with_pten(acc, seqs, args.raw_dir)
+			how = "PTEN placed on the family HMM with hmmalign (PTEN is not in this alignment: read the result with care)"
+		H, info = pfam_onto_reference(acc, seqs, anchor, t, args, rng)
+		t[f"pfam_{acc}_entropy"] = H
+		info["anchor"] = how
+		summary.append(info); used.append(acc)
+		print(f"\n{acc} {name}: {info['rows_in_alignment']} rows, {info['rows_used']} used, N_eff {info['n_eff']:.0f}, "
+			f"median identity to PTEN {info['median_identity_to_PTEN']:.2f}; {info['sites_with_entropy']} reference sites "
+			f"(UniProt {info['uniprot_from']}-{info['uniprot_to']}) get an entropy, mean {info['mean_entropy_nats']:.2f} nats. {how}.")
+		for label, col in (("PTEN-like family entropy", "nat_family_entropy"), ("phosphatase tier entropy", "nat_pdomain_entropy"),
+				("orthologs entropy", "nat_orthologs_entropy"), ("abundance mean", "abundance2021_mean"), ("activity mean", "activity_mean")):
+			ok = np.isfinite(H) & t[col].notna().values
+			if ok.sum() >= 10:
+				print(f"  Spearman with {label:26s} {spearman(H, t[col]):+.2f}  (n={int(ok.sum())})")
+		k = t.site[H < args.natural_k].values
+		for col in ("K_natural", "K_abundance", "K_activity"):
+			inside = t.site[t[col] & np.isfinite(H)].values
+			n_cmp = int(np.isfinite(H).sum())
+			kk, exp, pp = set_overlap(k, inside, n_cmp)
+			print(f"  sites below {args.natural_k} nats: {len(k)}; in {col}: {kk}/{len(inside)}  expected {exp:.1f}  P={pp:.2g}")
+		print("  conserved sites: " + " ".join(f"{a}{p_}" for a, p_ in zip(t.ref_aa[H < args.natural_k], t.uniprot_pos[H < args.natural_k])))
+	pd.DataFrame(summary).to_csv(os.path.join(args.out_dir, "pfam_summary.tsv"), sep="\t", index=False, float_format="%.3f")
+	t.to_csv(os.path.join(args.out_dir, "pten_site_table_pfam.csv"), index=False, float_format="%.4f")
+
+	rows = [("nat_family_entropy", "PTEN-like family\n(jackhmmer)", C_NAT), ("nat_pdomain_entropy", "phosphatase tier\n(jackhmmer)", C_NAT)]
+	rows += [(f"pfam_{acc}_entropy", f"Pfam {acc}", "k") for acc in used]
+	rows += [("abundance2021_mean", "abundance\n(VAMP-seq)", C_ABU), ("activity_mean", "activity\n(Mighell)", C_ACT)]
+	fig, axes = plt.subplots(len(rows), 1, figsize=(13, 1.5 * len(rows) + .8), sharex=True)
+	for ax, (col, lab, c) in zip(axes, rows):
+		shade_domains(ax, t)
+		ax.bar(t.site, t[col].fillna(0), width=1., color=c, lw=0)
+		ax.set_ylabel(lab + ("\n[nats]" if "entropy" in col else ""), fontsize=8)
+	ticks = [p_ for p_ in range(10, 354, 20) if (t.uniprot_pos == p_).any()]
+	axes[-1].set_xticks([int(t.site[t.uniprot_pos == p_].iloc[0]) for p_ in ticks], ticks, fontsize=8)
+	axes[-1].set_xlim(-1, len(t))
+	axes[-1].set_xlabel("UniProt position (shading: phosphatase domain, C2 domain)")
+	fig.align_ylabels(axes)
+	fig.subplots_adjust(hspace=.12, top=.98, bottom=.07, left=.09, right=.99)
+	fig.savefig(os.path.join(args.out_dir, "pten_pfam_profile.png"), dpi=150)
+	plt.close(fig)
+	print(f"\nOutputs in {args.out_dir}: pten_site_table_pfam.csv, pfam_summary.tsv, pten_pfam_profile.png")
+
+
+def threshold(text):
+	"""A fraction in [0, 1]; 'none', 'off' or 'no' mean no threshold (0)."""
+	if str(text).lower() in ("none", "off", "no"):
+		return 0.
+	v = float(text)
+	if v > 1:
+		v /= 100.           # 90 is read as 90%
+	if not 0. <= v <= 1.:
+		raise argparse.ArgumentTypeError(f"{text!r} is not a fraction between 0 and 1")
+	return v
+
+
 def main():
 	ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 	sub = ap.add_subparsers(dest="cmd", required=True)
@@ -691,15 +1325,38 @@ def main():
 		help="weighted gap fraction above which a site gets entropy NaN. 0.5 and not the 0.3 of ha_site_entropy.py: natural PTEN "
 			"has the 286-309 loop the construct lacks, so many local alignments stop there and the 310-353 columns sit at "
 			"31-48%% 'gaps' that are truncation, not deletion")
-	common.add_argument("--ortholog-identity", type=float, default=0.7, help="identity to PTEN above which a hit counts as an ortholog")
+	common.add_argument("--vertebrate-identity", type=threshold, default=0.9,
+		help="identity to PTEN a hit needs for the 'vertebrate' tier (default 0.9). 0 or 'none' removes the threshold")
+	common.add_argument("--ortholog-identity", type=threshold, default=0.7,
+		help="identity to PTEN a hit needs for the 'orthologs' tier (default 0.7). 0 or 'none' removes the threshold")
+	common.add_argument("--min-coverage", type=threshold, default=0.8,
+		help="share of the 324 reference columns a hit must cover for the vertebrate, orthologs and family tiers "
+			"(default 0.8, which demands both domains). 0 or 'none' keeps every hit")
+	common.add_argument("--pdomain-coverage", type=threshold, default=0.7,
+		help="share of the phosphatase-domain columns a hit must cover for the 'pdomain' tier (default 0.7)")
 	common.add_argument("--ortholog-weight-identity", type=float, default=0.95, help="redundancy threshold inside the ortholog tiers")
-	common.add_argument("--natural-k", type=float, default=0.5, help="family entropy [nats] below which a site is in the natural K-like set")
-	common.add_argument("--activity-k", type=float, default=0.5,
-		help=f"share of scored missense variants below {ACTIVITY_LOF} above which a site is in the activity K-like set")
+	common.add_argument("--natural-k", type=float, default=0.5,
+		help="entropy [nats] below which a site is in the natural K-like set (default 0.5)")
+	common.add_argument("--natural-tier", default="family", choices=["vertebrate", "orthologs", "family", "pdomain"],
+		help="the natural tier whose entropy defines the natural K-like set (default family)")
+	common.add_argument("--abundance-k", type=threshold, default=None,
+		help="abundance K-like set by a rule of our own: the share of a site's scored missense variants that are low or "
+			"possibly low (score under the 5th percentile of the synonymous variants) must reach this value. "
+			"Default: not set, and the set is the authors' own list of 'intolerant' positions")
+	common.add_argument("--activity-k", type=threshold, default=0.5,
+		help="share of a site's scored missense variants below --activity-lof needed for the activity K-like set (default 0.5)")
+	common.add_argument("--activity-lof", type=float, default=ACTIVITY_LOF,
+		help=f"activity score below which a variant counts as loss of function (default {ACTIVITY_LOF}, Matreyek 2021; "
+			"Mighell 2018 uses about -1 for 'not wild-type-like' and about -2.15 for 'truncation-like')")
+	common.add_argument("--min-variants", type=int, default=MIN_VARIANTS,
+		help=f"scored missense variants a site needs to get a mean or a fraction (default {MIN_VARIANTS})")
 	p = sub.add_parser("fetch", parents=[common]); p.add_argument("--force", action="store_true"); p.set_defaults(func=cmd_fetch)
 	p = sub.add_parser("build", parents=[common]); p.set_defaults(func=cmd_build)
 	p = sub.add_parser("compare", parents=[common])
-	p.add_argument("--runs", nargs="+", required=True, help="LABEL=RUN_DIR, a run dir holding start.txt and data.dat(.gz)")
+	p.add_argument("--runs", nargs="+", help="LABEL=RUN_DIR, a run dir holding start.txt and data.dat(.gz)")
+	p.add_argument("--runs-dir", help="take every T*/chain* under this directory (e.g. pten1d5r_study/equil): chain0 is "
+		"labelled T4, the others T4.c1, ...")
+	p.add_argument("--reference-only", action="store_true", help="leave out the chains that did not start from the reference")
 	p.add_argument("--burn-in-frac", type=float, default=0.5)
 	p.add_argument("--cold", nargs="+", help="labels whose entropy defines the sampled K-sites (default: the coldest)")
 	p.add_argument("--show", nargs="+", help="labels to draw (default: all)")
@@ -709,6 +1366,24 @@ def main():
 	p.add_argument("--min-prob", type=float, default=90., help="HHsearch probability a template needs")
 	p.add_argument("--bridge", default="2CM2_A", help="PF00102 member whose alignment is carried onto PTEN (PTP1B)")
 	p.set_defaults(func=cmd_family)
+	p = sub.add_parser("mutants", parents=[common])
+	p.add_argument("--mutants", default=os.path.join(MONTE_CARLO_DIR, "pten_natural", "pten_single_mutants.csv"),
+		help="the CSV written by scan_single_mutants.py (site, ref_aa, mut_aa, dU), which needs the GPU")
+	p.add_argument("--mutant-k", type=threshold, default=0.75,
+		help="quantile of the per-site mean log10 dU above which a site joins the mutational K-like set "
+			"(default 0.75, the most expensive quarter). 'none' puts every site in it")
+	p.set_defaults(func=cmd_mutants)
+	p = sub.add_parser("loop", parents=[common]); p.set_defaults(func=cmd_loop)
+	p = sub.add_parser("pfam", parents=[common])
+	p.add_argument("--accessions", nargs="+", help="Pfam accessions to use (default: the ones InterPro places on human PTEN)")
+	p.add_argument("--alignment", default="full", choices=["full", "seed", "uniprot", "rp15", "rp35", "rp55", "rp75"],
+		help="which Pfam alignment: seed (curated, tens to hundreds of rows), full (default, every match in Pfam's "
+			"reference set), uniprot (every match in UniProt, can be very large), rpNN (representative proteomes)")
+	p.add_argument("--sto", nargs="+", metavar="ACC=PATH", help="use a Stockholm file already on disk for this accession "
+		"(e.g. saved from the Alignment tab of the entry's InterPro page) instead of downloading")
+	p.add_argument("--pfam-coverage", type=threshold, default=0.7, help="share of PTEN's columns a row must cover (default 0.7)")
+	p.add_argument("--max-seqs", type=int, default=20000, help="rows above this are subsampled at random (seed 0)")
+	p.set_defaults(func=cmd_pfam)
 	args = ap.parse_args()
 	args.func(args)
 

@@ -1,5 +1,8 @@
 # PTEN K-sites: three references and the sampler
 
+The long version, with the two papers summarised, every figure explained, the thresholds and
+the Pfam step, is `pten_k_sites_explained.md` (PDF in the project files).
+
 Written 2026-11-12. Script `monte_carlo/pten_k_sites.py`, outputs and logs in
 `monte_carlo/pten_natural/`. Everything here ran in the cloud container; nothing needs the GPU.
 
@@ -13,7 +16,7 @@ keeps. Three independent references say which sites those are.
 | --- | --- | --- | --- |
 | natural | variation among natural homologs of the 1D5R chain | UniRef90 jackhmmer alignment from OpenProteinSet, 7989 hits | 280 to 305 |
 | abundance | does the variant still exist in the cell, about "does it fold" | VAMP-seq, Matreyek 2018 (PMID 29785012), 4112 missense; 5083 with the 2021 fill-in | 256 / 289 |
-| activity | does the variant still dephosphorylate PIP3 | Mighell 2018 (PMC5986715), 7244 high-confidence missense | 311 |
+| activity | does the variant still dephosphorylate PIP3 | Mighell 2018 (PMC5986715), 6564 high-confidence missense (7244 with stops and deletions) | 311 |
 
 The reference is UniProt 7-285 + 310-353 (the 286-309 loop is deleted in the crystal construct).
 Site 0 (Met for Glu7) and site 279 (a junction Val) are not native and carry no score.
@@ -41,6 +44,9 @@ tier (PTEN, TPTE/VSP, tensins, auxilin/GAK, all with both domains) is the usable
 
 Overlaps: natural with activity 24 where 8.4 are expected (P = 2e-10); abundance with activity 56
 against 32 (P = 2e-9); **natural with abundance 12 against 9.3 (P = 0.18), no better than chance.**
+(Added 2026-11-15: this one depends on the cut. With family entropy < 1.0 nats the natural set has 69
+sites and overlaps abundance 37 against 23.0, P = 7e-5. The tightest conserved sites are catalytic;
+the moderately conserved ones include what the fold needs. See section 4.4 of the long version.)
 Eleven sites are in all three: L23 D24 L25 Y27 V53 H61 C124 G129 S170 Y177 D252.
 
 The non-overlap is the important biology: R15, H123, R130 are among the most conserved residues
@@ -143,9 +149,13 @@ InterPro, which the cloud container cannot reach.
 ## What to do next
 
 1. **An in-silico mutational scan of U_am**: U(mutant) for all 324 x 19 single mutants of the
-   reference, about 6200 forward passes, minutes on the GPU. It is the direct counterpart of
+   reference, 6156 forward passes, well under an hour on the GPU. It is the direct counterpart of
    VAMP-seq, needs no equilibration, and separates "the energy is right" from "the chain has not
-   moved yet". Not written yet.
+   moved yet". Written 2026-11-15 and still to be run: `scan_single_mutants.py` does the scan
+   (resumable, batched) and `pten_k_sites.py mutants` compares it with the papers both per site
+   and, for the first time here, per variant — the same substitution in silico and in the
+   laboratory, including the within-site correlation that asks whether the energy ranks the 19
+   residues at a site and not merely which sites are expensive. Section 6 of the long version.
 2. Done 2026-11-13, see the update above.
 3. Keep abundance as the primary reference and report every correlation both raw and with RSA
    regressed out.
@@ -161,6 +171,9 @@ InterPro, which the cloud container cannot reach.
         T32=$R/T32/chain0 T64=$R/T64/chain0 \
         --cold T1 T2 --show T1 T2 T4 T8
     python pten_k_sites.py family
+    nohup python -u scan_single_mutants.py \
+        --out pten_natural/pten_single_mutants.csv > scan_single_mutants.log 2>&1 &   # GPU
+    python pten_k_sites.py mutants --mutants pten_natural/pten_single_mutants.csv
 
 Figures (png is git-ignored under monte_carlo, so copies are kept in `docs/figures/`):
 `pten_k_pten_site_profile_sampled.png`, `pten_k_sampled_vs_references.png`, `pten_k_pten_ptp_superfamily.png`.

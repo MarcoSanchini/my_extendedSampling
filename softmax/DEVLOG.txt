@@ -6714,3 +6714,82 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     Next: T=3 and T=4 to 180000 so the crossover band 3-6 is all at one depth,
     about 8.9 h (T=3 in equil, +120000 on two chains, 5.05 h; T=4 in equil_ref,
     +90000 on two chains, 3.8 h). T=2 needs far more than a night.
+
+2026-11-13 -- pten_k_sites.py: thresholds as options, compare every chain, a Pfam step
+    Asked by Marco; nothing below was run as a comparison, his machine does it.
+    Thresholds: --vertebrate-identity (0.9), --ortholog-identity (0.7),
+    --min-coverage (0.8), --pdomain-coverage (0.7); a fraction, a percentage or
+    "none". Without an identity threshold the vertebrate tier IS the family
+    tier (2716 seq); without coverage either, all 7990 hits count (N_eff 1325,
+    but only 255 sites keep an entropy). natural_tiers.tsv records the values.
+    flatness.tsv now carries the data behind each profile: sequences and N_eff
+    for the tiers, scored missense variants on the construct's sites for the
+    scans (3349 / 4079 / 5324).
+    compare --runs-dir DIR takes every T*/chain* (chain0 -> T4, others T4.c1),
+    --reference-only drops the random starts; scatter figures are now one file
+    per reference with a panel per chain, plus sampled_vs_references_by_T.png.
+    New subcommand pfam: asks InterPro which Pfam families lie on human PTEN
+    (P60484), downloads their alignments, projects them on the reference
+    through PTEN's own row (hmmalign on the family HMM when PTEN is not a
+    row), entropy and comparisons as for the tiers. Needs www.ebi.ac.uk, so
+    NOT run here: parsing and projection tested on a synthetic Stockholm file
+    only, the two API addresses are untested. --sto ACC=PATH takes a file
+    saved by hand.
+    Correction: Mighell's 7244 high-confidence variants include stops and
+    deletions; the high-confidence missense are 6564.
+    docs/pten_k_sites_explained.md: the long explanation (both papers, tiers,
+    figures, InterPro/Pfam, commands).
+
+2026-11-15 -- PTEN K-sites: Marco's questions on the doc; rule options; the loop
+    Options for the K-like sets: --natural-tier, --abundance-k (our rule in
+    place of the authors' list: share of a site's variants low or possibly
+    low), --activity-lof, --min-variants, besides --natural-k / --activity-k.
+    The authors' "intolerant" label is reproduced at 98% by ">= 5 variants and
+    >= 58% of them under the synonymous 5th percentile" (105 sites, 103 shared).
+    Sensitivity (build, one rule at a time): natural&activity and
+    abundance&activity stay strong under every rule tried. natural&abundance
+    DEPENDS ON THE CUT: 12 vs 9.3 (P 0.18) at entropy < 0.5 (28 sites), but
+    37 vs 23.0 (P 7e-5) at < 1.0 (69 sites). The tightest conserved sites are
+    the catalytic pocket; the moderately conserved ones include the fold's.
+    The earlier "no better than chance" was too strong as a general statement.
+    New subcommand loop (7JVX chain A alignment, full-length PTEN): 7612 hits
+    vs 7989; family tier 623 seq (N_eff 186) vs 2716 (506), because the
+    286-309 loop is PTEN-specific and breaks the relatives' alignments; 589
+    hits span the loop. Loop sites: abundance mean 0.94, activity -0.02, no
+    site in either K-like set, ortholog entropy 1.49 vs 0.24 elsewhere.
+    Recommendation given: keep the 324-aa construct as the sampled reference.
+    Mighell's conservation is ConSurf-DB grades (default settings), not an
+    ortholog alignment: closer to our family tier than to the 90% tier.
+
+2026-11-15 -- PTEN: in-silico single-mutant scan of U_am, written, not yet run
+    Asked by Marco: the snippet for all 324 x 19 mutants of the reference and
+    the comparison with the two papers.
+    New monte_carlo/scan_single_mutants.py (GPU). U is a squared log-distance
+    with U(ref) = 0 the global minimum, so for a mutant of the reference
+    dU = U(mutant): one forward pass per mutant, no subtraction, no reference
+    chain, no equilibration. 6156 passes. Candidate residues come from the
+    sampler's own _competition_indices, so the scan covers exactly what a move
+    could propose. Resumable: the CSV is flushed per site and a re-run skips
+    the complete sites (a half-finished site is redone, never duplicated).
+    --batch defaults to 19 (one site per pass) through bench_batch.py's batched
+    forward, halving itself on OOM; --batch 1 falls back to _exact_energy.
+    The log prints the U_am noise floor (two passes on the same sequence) as
+    the resolution limit, and --check compares the batched path with
+    _exact_energy at the first site.
+    New subcommand pten_k_sites.py mutants. Per site: mean / median / min dU
+    and mean log10 dU against the four tiers, abundance, activity and RSA, raw
+    and with RSA regressed out; cost inside/outside each K-like set with the
+    shift test; a fourth K-like set (top quarter of mean log10 dU) overlapped
+    with the other three, also size-matched so the overlap does not depend on
+    --mutant-k. PER VARIANT (new here): every in-silico mutant matched to the
+    SAME substitution in VAMP-seq 2018/2021 and Mighell (~4000 and ~5300 of
+    the 6156 have a measurement), with the pooled Spearman, the WITHIN-SITE
+    Spearman (both ranked among the variants at that site, then pooled: asks
+    whether the energy ranks the 19 residues at a site, which no per-site
+    profile can), and the AUC of -dU for the authors' own "low abundance" and
+    loss-of-function calls, unmeasured variants excluded rather than counted
+    as negatives. New load_variants(), auc(), within_site_spearman().
+    Tested end to end in the cloud on synthetic dU (correlations come out at
+    chance, as they must) and the resume bookkeeping separately; the scan
+    itself needs the card. Section 6 of docs/pten_k_sites_explained.md, with
+    the command lines in section 9 and what each outcome would mean in 6.5.
