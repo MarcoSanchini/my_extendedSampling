@@ -544,7 +544,10 @@ abundant. That is unexpected, because the energy contains no catalysis. Two expl
 are worth discussing with the supervisors. ESM3 was trained on natural sequences, so its
 attention map may encode family conservation directly, function included. Or the active
 site of PTEN is unusually well packed and RSA does not capture that. The single-mutant scan
-of `U_am` (section 6) is the experiment that separates them, and it is now written.
+of `U_am` (section 6) is the experiment that separates them. It has now been run, and 6.4b
+has the answer: the energy on its own does **not** prefer family conservation — with burial
+removed it keeps +0.12 with abundance and goes slightly negative on both natural tiers. So
+the preference measured here comes from the sampling, not from the energy.
 
 ## 5.4 The figures
 
@@ -695,6 +698,27 @@ nothing: 6,156 mutants at the measured rate is about ten minutes. Batching is st
 a quick survey, and a batched run now always checks itself at its first site and prints an
 explicit verdict rather than leaving the comparison to the reader.
 
+**What the bias actually cost, measured.** Both scans exist, so the two can be compared
+mutant by mutant. The batched run against the exact one, over all 6,156:
+
+| | |
+| --- | --- |
+| median difference | 0.55 (1.6% of the value) |
+| largest difference | 151 (22% of the value) |
+| mutants differing by more than one energy unit | 26.5% |
+| mutants whose rank *within their site* changed | 25.1% |
+| sites whose cheapest substitution changed identity | 9.0% |
+| Spearman between the two scans, all mutants | 0.99935 |
+| Spearman between them within a site, median | 0.995 |
+
+So the worry was the right one and the size of it was underestimated: the largest error is
+151, not 3, and a quarter of all mutants are reordered within their site. At site 0 the
+cheapest substitution was leucine in the batched run and valine in the exact one. And yet
+every aggregate in 6.4b is unchanged to the third decimal, because a rank correlation over
+thousands of variants does not notice local swaps of nearly equal values. Both facts belong
+in the record: the rerun was necessary — nothing above could have been known without it —
+and it changed no conclusion.
+
 **Why the existing benchmark did not catch this.** `code/tests/bench_batch.py` does check the
 batched energy against `_exact_energy`, and it passed. Its test is a *relative* one,
 `max |a − b| / max(|b|, 1) < 1e-2`, and it was run on `zero_polymer`, 566 residues, on
@@ -743,21 +767,61 @@ Roughly 4,000 and 5,300 of the 6,156 mutants have a measurement. Three numbers c
 
 ## 6.4 The figures it writes
 
-- `pten_mutant_profile.png`: Figure 1 of section 5.4 with one extra grey row, the per-site
-  mean `log10 dU` along the sequence. Read it against the rows above it: a trough in the
-  family entropy or a spike in activity should sit under a tall grey bar.
-- `mutants_vs_references.png`: four panels, one dot per site, mean `dU` on a logarithmic
-  axis against family entropy, abundance, activity and RSA, with the Spearman in each title.
-- `mutants_vs_experiments.png`: three panels, one dot per *variant*, `dU` against the two
-  abundance scores and the activity score, with both the pooled and the within-site
-  correlation in the title.
+**`mutants_vs_experiments.png`: one dot per variant, the comparison the papers make.**
 
-## 6.4b Provisional numbers, 15 November
+![](figures/pten_k_mutants_vs_experiments.png)
 
-**These come from the first full scan, which ran at `--batch 19` before the bias of 6.2b was
-known, so every `dU` in them carries up to about 3 units of kernel error on values whose
-minimum is 4.6. They are here to show the shape of the answer, not as results. The scan has
-to be redone at `--batch 1`.** The run took 2.7 minutes, 0.026 s per mutant.
+Horizontal: `dU` of that exact substitution, logarithmic. Vertical: the same substitution's
+measured score — abundance 2021, abundance 2018, activity. The dotted line is wild type
+(1 for abundance) or the loss-of-function cut (−1.11 for activity). The cloud falls to the
+right in all three: expensive in silico, damaging in the laboratory. Each title carries the
+pooled Spearman and the within-site one. Note the shape of the activity panel in particular,
+a dense band near 0 and a second population near −4: those are the folded-but-dead and the
+degraded variants, and `dU` separates them from wild type at AUC 0.72.
+
+**`mutants_vs_references.png`: one dot per site.**
+
+![](figures/pten_k_mutants_vs_references.png)
+
+Mean `dU` of a site's 19 mutants against family entropy, abundance, activity and RSA. The
+fourth panel is the confound: `+0.43` with burial, larger than with any of the three
+references, which is why every number in 6.4b is also given with RSA regressed out.
+
+**`pten_mutant_profile.png`: along the sequence.**
+
+![](figures/pten_k_mutant_profile.png)
+
+Figure 1 of section 5.4 with one extra grey row, the per-site mean `log10 dU`. Read it
+against the rows above, at the P loop (123 to 130), which is the deepest trough in family
+entropy and the tallest spike in activity. The grey row there is raised but uneven, and the
+unevenness is the informative part:
+
+| P-loop residue | rank by cost, of 324 | family entropy | mean activity |
+| --- | --- | --- | --- |
+| H123 | 64 | 0.24 | −3.02 |
+| C124, the catalytic cysteine | 50 | 0.26 | −3.64 |
+| K125 | **275** | 0.97 | −1.57 |
+| A126 | **258** | 1.00 | −2.64 |
+| G127 | 33 | 0.40 | −3.19 |
+| K128 | **242** | 0.55 | −2.16 |
+| G129 | 26 | 0.46 | −3.04 |
+| R130 | 59 | 0.45 | −3.36 |
+
+Five of the eight are in the top fifth of the protein by cost, including the catalytic
+cysteine and both glycines. The three it misses are the two lysines and the alanine — the
+residues whose job is chemical rather than structural, holding and orienting the phosphate.
+That is a sharp picture of what `U_am` is: where catalysis and packing happen to coincide it
+scores the site, and where a residue matters only for the chemistry it does not. The WPD
+(88–98) and TI (160–171) loops, which matter for catalysis without being tightly packed,
+come out *below* average cost altogether (1.36 and 1.40 against 1.53).
+
+## 6.4b Results, 15 November
+
+From the exact scan, `--batch 1`: 6,156 mutants in 4.5 minutes, 0.044 s each, no
+out-of-memory fallback, noise floor 0. `dU` runs from 4.81 to 2860, median 32.3, and none is
+negative, as the floor argument of 6.1 requires. The scan was first run at `--batch 19` and
+redone at the default after 6.2b; the numbers below are from the exact run, and 6.2b reports
+what the difference between the two turned out to be.
 
 Per site, Spearman of `−mean log10 dU` against each reference (n = 280 to 311):
 
@@ -797,27 +861,50 @@ themselves, and it separates the authors' own damaging calls at AUC 0.69 and 0.7
 a substitution-resolution object, not merely a site-resolution one, which is more than the
 per-site profiles of section 5 could have shown.
 
-Both findings rest on a biased scan and both need the `--batch 1` rerun before they are
-quoted anywhere.
+A caveat on the first of those two, because it is the one that will be argued about. `+0.12`
+sits exactly on the 5% threshold for this sample size, so the honest statement is not "the
+energy follows abundance" but "with burial removed, what is left of the energy's agreement
+is with abundance, and nothing is left for conservation". The strong claim is the *contrast*
+with section 5.3, where the same partial correlation favours family conservation at `+0.45`,
+and that contrast does not depend on where the abundance number falls relative to a
+threshold.
 
-## 6.5 What the result would mean
+The other asymmetry worth keeping in view: the energy and the natural alignment disagree
+most sharply where the protein does its job. The 28 most expensive sites hold 1 of the 28
+natural K-sites, and the natural K-sites are the catalytic pocket. The residue-level picture
+in 6.4 is sharper than that bare number: the energy scores the catalytic cysteine and the
+two P-loop glycines in the top fifth of the protein, and puts the two catalytic lysines in
+the bottom fifth, while the WPD and TI loops come out *cheaper* than average. It finds the
+pocket's packing and not its chemistry — which is what a foldability proxy should do, and
+exactly the reason section 2.3 gives for needing both experiments rather than either alone.
 
-The open question of section 5.3 is whether the sampler follows family conservation rather
-than abundance because ESM3's attention map encodes evolutionary conservation directly, or
-because the chains are not equilibrated and burial is doing the work. This scan cannot be
-blamed on equilibration. So:
+## 6.5 What the result means, and what to do next
 
-- if `-dU` correlates with the family entropy clearly better than with abundance *here too*,
-  and the gap survives the burial control, then the energy itself prefers conservation, and
-  `U_am` is a conservation proxy more than a foldability proxy. That is a result for the
-  thesis, not a problem, but it changes what `U_am` can be claimed to measure;
-- if instead the two come out level here while the sampled entropy favours conservation, the
-  difference is made by the sampling, not the energy, and the chains are the thing to fix;
-- the within-site correlation is the strictest test either way. Both scans are substitution
-  resolution, and a per-site energy that ranks sites well but residues at chance is a
-  weaker object than it looks.
+The question section 5.3 left open was whether the sampler follows family conservation
+rather than abundance because ESM3's attention map encodes evolutionary conservation
+directly, or because the chains are not equilibrated and burial is doing the work. The scan
+cannot be blamed on equilibration, and it came out on the second side: the energy's own
+residual agreement, burial removed, is with abundance (+0.12) and not with conservation
+(−0.07 family, −0.11 orthologs), while the chains at T = 8 give +0.45 for family against
++0.19 for abundance.
 
-Nothing in this section has been run: the numbers have to come from astaroth.
+That is a statement about the chains, and it has a mundane reading and an interesting one.
+The mundane one is that the chains are not equilibrated — 198 sites never accepted a move at
+T = 1 — so what the sampled entropy ranks is partly *reachability*, and nothing says
+reachability should track abundance. The interesting one is that the sampler's acceptance
+depends on the whole landscape around a site rather than on the 19 single mutants of the
+reference, so it could genuinely see something the one-mutant scan cannot. These make
+different predictions and one run tells them apart: the same scan started from an
+equilibrated sequence instead of from PTEN. If the energy's preference moves toward
+conservation there, the landscape explanation is right; if it does not, the difference is
+equilibration. It costs five minutes of GPU time, and it is the obvious next step.
+
+The second result needs no caveat. The within-site correlation, +0.32 to +0.35 against a
+pooled +0.35 to +0.37, says `U_am` ranks the 19 substitutions *at* a position about as well
+as it ranks positions. A per-site energy that ranked sites well but residues at chance would
+have been a much weaker object than it looks; this is not that. It is also the one number
+here that the per-site profiles of section 5 could never have produced, which is the
+argument for having built the scan at all.
 
 # 7. InterPro, Pfam, and the step to run locally
 
@@ -1014,6 +1101,7 @@ labels with `--show`.
 | `mutants_in_K_sets.tsv` | cost inside/outside each K-like set, with shift-test p values |
 | `mutants_vs_experiments_variant_level.tsv` | the pooled and within-site correlations per experiment |
 | `pten_mutant_profile.png`, `mutants_vs_references.png`, `mutants_vs_experiments.png` | the three figures of section 6.4 |
+| `mutants.log` | the printed tables of 6.4b |
 | `*.log` | the printed tables of each step |
 
 The `.png` files are ignored by git under `monte_carlo/`. To keep one in the repository copy
@@ -1044,14 +1132,19 @@ it to `softmax/docs/figures/` and add it with `git add -f`.
    Cell 1999) as I remember it, checked against what the Mighell preprint says about it.
 8. **The Pfam step is untested against the live InterPro service** (section 7.3).
 
-9. **The single-mutant scan of section 6 has been started on the card but its numbers are
-   not in this document yet.** The five-site check ran on 15 November and is reported in
-   6.2b: the exact path is bit-reproducible, the batched path is biased, and `--batch`
-   now defaults to 1 because of it. A first full scan was run at `--batch 19`, before
-   that was known, so its `dU` values carry the bias and it has to be redone at the
-   default. The comparison itself is tested end to end on synthetic `dU` values, which is
-   enough to know it does not crash and that the merge with the two papers finds the right
-   variants, but no real correlation from it appears here yet.
+9. **The single-mutant scan of section 6 has run, twice, and 6.4b is its exact output.**
+   What is *not* settled is the comparison with section 5: the energy's partial correlation
+   with abundance is +0.12 against a 5% threshold of 0.12, so the contrast with the chains
+   is the claim, not the individual number. A second reference — the same scan started from
+   an equilibrated sequence rather than from PTEN — would say whether the energy's
+   preference is a property of `U_am` or of this particular reference, and it costs five
+   minutes.
+10. **One sign convention in the comparison was wrong on its first run** (the within-site
+   correlation and the AUC were oriented against the pooled correlation, making agreement
+   look like inversion). It is fixed and verified against synthetic perfect-agreement and
+   perfect-disagreement cases, but it is the kind of error that produces a plausible,
+   publishable-looking wrong answer, so the orientation is now stated in the code, in the
+   printed output and here: everything is written so that **positive means agreement**.
 
 **What is left after this.** The scan answers whether the energy itself sides with abundance
 or with family conservation (section 6.5). Two things it does not answer, and both are
