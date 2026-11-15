@@ -149,9 +149,13 @@ InterPro, which the cloud container cannot reach.
 ## What to do next
 
 1. **An in-silico mutational scan of U_am**: U(mutant) for all 324 x 19 single mutants of the
-   reference, about 6200 forward passes, minutes on the GPU. It is the direct counterpart of
+   reference, 6156 forward passes, well under an hour on the GPU. It is the direct counterpart of
    VAMP-seq, needs no equilibration, and separates "the energy is right" from "the chain has not
-   moved yet". Not written yet.
+   moved yet". Written 2026-11-15 and still to be run: `scan_single_mutants.py` does the scan
+   (resumable, batched) and `pten_k_sites.py mutants` compares it with the papers both per site
+   and, for the first time here, per variant — the same substitution in silico and in the
+   laboratory, including the within-site correlation that asks whether the energy ranks the 19
+   residues at a site and not merely which sites are expensive. Section 6 of the long version.
 2. Done 2026-11-13, see the update above.
 3. Keep abundance as the primary reference and report every correlation both raw and with RSA
    regressed out.
@@ -167,6 +171,9 @@ InterPro, which the cloud container cannot reach.
         T32=$R/T32/chain0 T64=$R/T64/chain0 \
         --cold T1 T2 --show T1 T2 T4 T8
     python pten_k_sites.py family
+    nohup python -u scan_single_mutants.py \
+        --out pten_natural/pten_single_mutants.csv > scan_single_mutants.log 2>&1 &   # GPU
+    python pten_k_sites.py mutants --mutants pten_natural/pten_single_mutants.csv
 
 Figures (png is git-ignored under monte_carlo, so copies are kept in `docs/figures/`):
 `pten_k_pten_site_profile_sampled.png`, `pten_k_sampled_vs_references.png`, `pten_k_pten_ptp_superfamily.png`.

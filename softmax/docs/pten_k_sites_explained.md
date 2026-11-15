@@ -1,11 +1,13 @@
 ---
 title: PTEN K-sites, explained
-date: 2026-11-13
+date: 2026-11-15
 ---
 
 This is the long version of `pten_k_sites.md`. It explains what was compared, where every
-number comes from, how to read each figure, and what to run on the GPU machine. Script:
-`softmax/monte_carlo/pten_k_sites.py`. Outputs: `softmax/monte_carlo/pten_natural/`.
+number comes from, how to read each figure, and what to run on the GPU machine. Scripts:
+`softmax/monte_carlo/pten_k_sites.py` and, for the in-silico mutant scan of section 6,
+`softmax/monte_carlo/scan_single_mutants.py`. Outputs:
+`softmax/monte_carlo/pten_natural/`.
 
 # 1. The question
 
@@ -328,7 +330,7 @@ sequences have a gap there. This happens at the C-terminal end. Natural PTEN has
 309 loop that the construct lacks, so many alignments stop at the deletion and never reach
 310 to 353.
 
-The thresholds are options of the script; section 7 shows how to change or remove them.
+The thresholds are options of the script; section 8 shows how to change or remove them.
 
 ## 3.3 The flatness table, with the amount of data behind each row
 
@@ -542,7 +544,7 @@ abundant. That is unexpected, because the energy contains no catalysis. Two expl
 are worth discussing with the supervisors. ESM3 was trained on natural sequences, so its
 attention map may encode family conservation directly, function included. Or the active
 site of PTEN is unusually well packed and RSA does not capture that. The single-mutant scan
-of `U_am` (section 9) would help to separate them.
+of `U_am` (section 6) is the experiment that separates them, and it is now written.
 
 ## 5.4 The figures
 
@@ -597,9 +599,136 @@ second half of the domain. Middle panel: PTEN's own conservation (the pdomain ti
 panel: the conservation of the classical PTP family, carried onto the PTEN sites it reaches.
 The two agree at the P loop and little elsewhere.
 
-# 6. InterPro, Pfam, and the step to run locally
+# 6. The in-silico single-mutant scan
 
-## 6.1 What they are
+Everything in section 5 compares a *sampled* quantity with the references, and inherits the
+sampling's problems: chains that are not equilibrated, one chain's time average, a burn-in
+to choose. This section removes the sampler entirely. It evaluates the energy itself on
+every single mutant of the reference, which is exactly what the two papers did in the
+laboratory, and so gives the comparison that needs no equilibration at all.
+
+## 6.1 Why `dU` is just `U`, and why it is a cost
+
+The energy the project samples is
+
+    U(s) = lambda_am * sum over i<j of [ log A_ij(s) - log A_ij(ref) ]^2
+
+with `lambda_am = 1` and `lambda_structure_ce = 0` in every PTEN run, where `A` is ESM3's
+symmetrised attention map. That is a squared distance in log space, so two things hold for
+free:
+
+- `U(s) >= 0` for every sequence `s`;
+- `U(ref) = 0`, and the reference is therefore the global minimum.
+
+Hence for a mutant of the reference the energy difference is the energy itself:
+
+    dU = U(mutant) - U(ref) = U(mutant) >= 0
+
+No subtraction, no reference chain, no equilibration. One forward pass per mutant gives a
+number that is both the mutant's energy and its cost relative to PTEN. **Small `dU` means
+the model finds the substitution cheap** — tolerant — and large `dU` means expensive. The
+sign is therefore the opposite of the experimental scores, where a *high* VAMP-seq score
+means the protein is still abundant. Every correlation below is taken with `-dU`, so that a
+positive number means agreement, like everywhere else in this document.
+
+## 6.2 What the scan script does
+
+`scan_single_mutants.py` loads ESM3 once, computes the reference attention map once, then
+walks the 324 sites. At each site it builds the 19 sequences that differ from the reference
+only there, and computes `U` for them. The candidate residues are not hard-coded: they come
+from the sampler's own `_competition_indices`, the same rule a move uses, so the scan covers
+exactly the substitutions the sampler could ever propose and no others (the non-canonical
+codes `X, B, U, Z, O` are structurally absent from it). 324 x 19 = **6,156 forward passes**.
+
+Four things are worth knowing before you launch it.
+
+1. **It is resumable.** The CSV is appended and flushed after every site, and re-running the
+   same command skips the sites that are already complete in it (19 rows). A site that was
+   interrupted half-way is redone from scratch, so there are never duplicate rows. Kill it
+   and restart it freely.
+2. **It batches.** ESM3's own `predict_attention` asserts batch 1, so `--batch` uses the
+   batched forward from `code/tests/bench_batch.py`, which expands the default inputs by
+   hand and keeps the same bfloat16 autocast. The default is 19, one whole site per pass.
+   On an out-of-memory error the batch halves itself and carries on, so the default is safe
+   on the 24 GB card; `--batch 1` falls back to the sampler's own `_exact_energy` call,
+   one sequence at a time, and takes several hours instead of under one.
+3. **It prints its own resolution limit.** Two forward passes on the *same* sequence should
+   give exactly 0. Whatever they give instead is run-to-run numerical noise in the
+   bfloat16 attention, and it is the floor below which no `dU` means anything. The number is
+   printed at the top of the log. `--check` additionally recomputes the first site with
+   `_exact_energy` and prints the largest disagreement with the batched path.
+4. **It refuses to disagree with the reference.** `pten_k_sites.py mutants` checks that the
+   wild-type residue the scan mutated is the one in the site table, site by site, and stops
+   if any differs: a CSV produced on another sequence is useless here.
+
+## 6.3 What the comparison does
+
+`pten_k_sites.py mutants` reads the CSV and makes two comparisons.
+
+**Per site.** The 19 values at a site are summarised four ways: the mean `dU`, the median,
+the minimum (the cheapest escape the site has), and the mean of `log10 dU`. The last is the
+one to prefer: `dU` spans orders of magnitude, so a plain mean at a site is set by its worst
+substitution. Each summary is correlated (Spearman, with `-dU`) against the orthologs and
+family entropies, the abundance mean, the activity mean, and RSA; and then again with RSA
+regressed out, the same burial control as section 5.3. The script also reports whether the
+cost is raised inside each of the three K-like sets, with the same circular-shift test as
+before, and builds a **fourth K-like set of its own** — the sites whose mean `log10 dU` is
+in the top quarter — and overlaps it with the other three. Because that overlap depends on
+where the cut goes, the same overlap is also printed with the mutational set cut to each
+other set's exact size, which removes the dependence on `--mutant-k` completely.
+
+**Per variant.** This is the new thing, and the reason the scan is worth the GPU time. Every
+in-silico mutant is matched to *the same substitution* in the two experiments — same
+position, same wild-type residue, same mutant residue — so `dU` can be put directly against
+that variant's VAMP-seq score (2018 and the 2021 composite) and Mighell's activity score.
+Roughly 4,000 and 5,300 of the 6,156 mutants have a measurement. Three numbers come out:
+
+- the Spearman correlation of `-dU` with the score over all matched variants;
+- the same **within site**: both quantities are ranked among the variants *at that site*
+  and centred before being pooled. This asks the sharper question. A correlation over all
+  variants can come entirely from the sites — a buried site is expensive and all its
+  variants are destabilising — and no per-site profile can tell the difference. The
+  within-site number asks whether, at a given site, the energy ranks the 19 substitutions
+  the way the experiment does. If it is near zero while the pooled one is high, the energy
+  knows which *sites* matter and nothing about which *residue* belongs there;
+- the AUC of `-dU` as a classifier of the authors' own variant calls: "low or possibly low"
+  abundance, and activity below the loss-of-function cut. 0.5 is chance, and below 0.5 means
+  anti-correlated. Variants without a measurement are left out rather than counted as
+  negatives.
+
+## 6.4 The figures it writes
+
+- `pten_mutant_profile.png`: Figure 1 of section 5.4 with one extra grey row, the per-site
+  mean `log10 dU` along the sequence. Read it against the rows above it: a trough in the
+  family entropy or a spike in activity should sit under a tall grey bar.
+- `mutants_vs_references.png`: four panels, one dot per site, mean `dU` on a logarithmic
+  axis against family entropy, abundance, activity and RSA, with the Spearman in each title.
+- `mutants_vs_experiments.png`: three panels, one dot per *variant*, `dU` against the two
+  abundance scores and the activity score, with both the pooled and the within-site
+  correlation in the title.
+
+## 6.5 What the result would mean
+
+The open question of section 5.3 is whether the sampler follows family conservation rather
+than abundance because ESM3's attention map encodes evolutionary conservation directly, or
+because the chains are not equilibrated and burial is doing the work. This scan cannot be
+blamed on equilibration. So:
+
+- if `-dU` correlates with the family entropy clearly better than with abundance *here too*,
+  and the gap survives the burial control, then the energy itself prefers conservation, and
+  `U_am` is a conservation proxy more than a foldability proxy. That is a result for the
+  thesis, not a problem, but it changes what `U_am` can be claimed to measure;
+- if instead the two come out level here while the sampled entropy favours conservation, the
+  difference is made by the sampling, not the energy, and the chains are the thing to fix;
+- the within-site correlation is the strictest test either way. Both scans are substitution
+  resolution, and a per-site energy that ranks sites well but residues at chance is a
+  weaker object than it looks.
+
+Nothing in this section has been run: the numbers have to come from astaroth.
+
+# 7. InterPro, Pfam, and the step to run locally
+
+## 7.1 What they are
 
 **Pfam** is a catalogue of protein families. Each family (for example PF00102, the classical
 protein tyrosine phosphatase domain) is defined by a hand-curated *seed* alignment of
@@ -628,7 +757,7 @@ domain of about 240 residues; in the structure comparisons it aligns only to Uni
 phosphatase domain I do not want to state the accession from memory, so the script asks
 InterPro which Pfam families it places on human PTEN (UniProt P60484) and uses those.
 
-## 6.2 What the new `pfam` step does
+## 7.2 What the new `pfam` step does
 
 1. Asks InterPro for the Pfam families on P60484 and prints them with their residue ranges.
 2. Downloads the alignment of each (the full one by default) into `pten_natural/raw/`.
@@ -648,7 +777,7 @@ PF00102), the script places PTEN on the family's HMM with `hmmalign`, a program 
 package, and says so in the output. A result obtained that way for a family PTEN does not
 belong to should be read with care.
 
-## 6.3 Commands
+## 7.3 Commands
 
     cd softmax/monte_carlo
     python pten_k_sites.py fetch                  # if pten_natural/raw is not there yet
@@ -671,7 +800,7 @@ exercised. If a download fails the script prints the address it tried. In that c
 entry's page on the InterPro website, download the alignment from its Alignment tab, and
 pass the file with `--sto`.
 
-# 7. Changing or removing the thresholds
+# 8. Changing or removing the thresholds
 
 Three options decide which sequences enter the natural tiers. Each takes a fraction (0.9), a
 percentage (90) or the word `none`.
@@ -708,10 +837,10 @@ entropy (255 against 305). Dropping only the coverage threshold while keeping id
 To write the results of a trial somewhere else and keep the default outputs, add
 `--out-dir pten_natural/trial_name`.
 
-# 8. What to run, and what comes out
+# 9. What to run, and what comes out
 
-Nothing below needs the GPU. The comparison takes a few minutes, mostly replaying the long
-chains.
+Steps 1 to 5 need no GPU; the comparison takes a few minutes, mostly replaying the long
+chains. Step 6 is the only one that needs ESM3 and the card.
 
     cd softmax/monte_carlo
     git pull
@@ -734,6 +863,25 @@ chains.
 
     # 5. the Pfam version (needs internet)
     nohup python -u pten_k_sites.py pfam > pten_natural/pfam.log 2>&1 &
+
+    # 6. the in-silico single-mutant scan: 6,156 forward passes, THE GPU STEP.
+    #    Check it starts and prints sensible numbers for the first few sites,
+    #    then leave it. Under an hour at the default batch on astaroth.
+    nohup python -u scan_single_mutants.py \
+        --out pten_natural/pten_single_mutants.csv > scan_single_mutants.log 2>&1 &
+
+    # 6b. same thing, five sites only, to see it work before committing the card
+    python -u scan_single_mutants.py --sites 0 1 2 3 4 --check \
+        --out /tmp/scan_test.csv
+
+    # 7. the mutants against the papers and the natural alignments (no GPU)
+    python pten_k_sites.py mutants \
+        --mutants pten_natural/pten_single_mutants.csv > pten_natural/mutants.log 2>&1
+
+If the scan is interrupted, or the card is needed for something else, just run the same
+step 6 command again: it picks up at the first site it has not finished. Step 7 works on a
+partial CSV too — it says how many sites are missing and uses what is there — so the
+correlations can be looked at after a few hundred sites, before the scan ends.
 
 **Step 3 compares everything.** `--runs-dir` takes every `T*/chain*` directory under
 `pten1d5r_study/equil`. Chain 0 of a temperature is labelled `T4`, the others `T4.c1`. The
@@ -762,12 +910,19 @@ labels with `--show`.
 | `pten_site_table_family.csv`, `pten_ptp_superfamily.png` | the structure-alignment check and Figure 4 |
 | `pten_site_table_pfam.csv`, `pfam_summary.tsv`, `pten_pfam_profile.png` | the Pfam step |
 | `loop_tiers.tsv` | the tiers of the full-length alignment, with the entropy inside and outside the loop |
+| `pten_single_mutants.csv` | the scan itself: one row per mutant, `site, ref_aa, mut_aa, dU` (6,156 rows) |
+| `pten_site_table_mutants.csv` | the site table plus the per-site `dU` summaries and the mutational K-like set |
+| `pten_mutants_variant_level.csv` | one row per mutant with the matching VAMP-seq and activity scores |
+| `mutants_vs_references_spearman.tsv`, `mutants_vs_references_partial_rsa.tsv` | the per-site correlations of section 6.3, raw and with burial removed |
+| `mutants_in_K_sets.tsv` | cost inside/outside each K-like set, with shift-test p values |
+| `mutants_vs_experiments_variant_level.tsv` | the pooled and within-site correlations per experiment |
+| `pten_mutant_profile.png`, `mutants_vs_references.png`, `mutants_vs_experiments.png` | the three figures of section 6.4 |
 | `*.log` | the printed tables of each step |
 
 The `.png` files are ignored by git under `monte_carlo/`. To keep one in the repository copy
 it to `softmax/docs/figures/` and add it with `git add -f`.
 
-# 9. Cautions, and what is not verified
+# 10. Cautions, and what is not verified
 
 1. **The chains are not equilibrated.** At T = 1, 198 sites never accepted a move in
    220,000. The list of the sampler's K-sites will keep shrinking as chains get longer. The
@@ -790,9 +945,18 @@ it to `softmax/docs/figures/` and add it with `git add -f`.
    (section 4.1) is reconstructed from the data and reproduces their list at 98%, not 100%.
    The description of the catalytic pocket follows the 1D5R structure paper (Lee et al.,
    Cell 1999) as I remember it, checked against what the Mighell preprint says about it.
-8. **The Pfam step is untested against the live InterPro service** (section 6.3).
+8. **The Pfam step is untested against the live InterPro service** (section 7.3).
 
-**The next experiment**, still not written: compute `U_am` for all 324 x 19 single mutants
-of the reference, about 6,200 forward passes on the GPU. It is the direct counterpart of the
-two scans, needs no equilibration, and would show whether the energy itself, before any
-sampling, sides with abundance or with family conservation.
+9. **The single-mutant scan of section 6 is written but not run.** The script, the
+   comparison and the figures exist and the comparison is tested end to end on synthetic
+   `dU` values, which is enough to know it does not crash and that the merge with the two
+   papers finds the right variants; it is not enough to know the scan agrees with the
+   sampler numerically on the card. The `--check` run of step 6b settles that in two
+   minutes, and its output is worth pasting into the thread before the long run starts.
+
+**What is left after this.** The scan answers whether the energy itself sides with abundance
+or with family conservation (section 6.5). Two things it does not answer, and both are
+cheaper than they look now that the scan exists: whether the sampler's acceptance at a site
+is predicted by that site's cheapest mutant, which is a direct test of the proposal
+mechanism rather than of the energy; and whether a second reference — the same scan on the
+full-length 347-residue construct of section 1.1 — moves the loop's neighbours at all.

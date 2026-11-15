@@ -65,6 +65,7 @@ Usage:
         T2=pten1d5r_study/equil/T2/chain0 T4=pten1d5r_study/equil/T4/chain0 --cold T1 T2
     python pten_k_sites.py compare --runs-dir pten1d5r_study/equil --cold T1 T2    # every chain
     python pten_k_sites.py family
+    python pten_k_sites.py mutants                             # needs scan_single_mutants.py's CSV (GPU)
     python pten_k_sites.py pfam                                # local machine only
     python pten_k_sites.py build --vertebrate-identity 0.95    # or: none
 """
@@ -310,7 +311,7 @@ def shade_domains(ax, t):
 		ax.axvspan(s.min() - .5, s.max() + .5, color=col, zorder=0, lw=0)
 
 
-def plot_profile(t, tier_summary, path, sampled=None):
+def plot_profile(t, tier_summary, path, sampled=None, extra_ylabel="sampled {label}\nentropy [nats]"):
 	rows = [("nat_orthologs_entropy", "orthologs\nentropy [nats]", C_NAT),
 		("nat_family_entropy", "PTEN-like family\nentropy [nats]", C_NAT),
 		("abundance2021_mean", "abundance\n(VAMP-seq, mean)", C_ABU),
@@ -332,7 +333,7 @@ def plot_profile(t, tier_summary, path, sampled=None):
 		for ax, label in zip(axes[len(rows):], sampled.columns):
 			shade_domains(ax, t)
 			ax.bar(t.site, sampled[label], width=1., color=C_SAMP, lw=0)
-			ax.set_ylabel(f"sampled {label}\nentropy [nats]", fontsize=8)
+			ax.set_ylabel(extra_ylabel.format(label=label), fontsize=8)
 	ax = axes[-1]
 	shade_domains(ax, t)
 	for y, (col, c, lab) in enumerate((("K_natural", C_NAT, "natural"), ("K_abundance", C_ABU, "abundance"), ("K_activity", C_ACT, "activity"))):
@@ -647,6 +648,234 @@ def cmd_compare(args):
 	print(f"\nOutputs in {args.out_dir}: pten_site_table_sampled.csv, sampled_vs_references_spearman.tsv, "
 		"sampled_vs_references_partial_rsa.tsv, sampled_entropy_in_K_sets.tsv, pten_site_profile_sampled.png, "
 		"sampled_vs_family.png, sampled_vs_abundance.png, sampled_vs_activity.png, sampled_vs_references_by_T.png")
+
+
+# ---------------------------------------------------------------- mutants --- #
+# The in-silico deep mutational scan: scan_single_mutants.py writes dU for all
+# 324 x 19 point mutants of the reference (dU = U(mutant), since U(reference) = 0
+# is the global minimum of a squared log-distance), and this reads that CSV.
+# It is the only comparison in this script that works VARIANT BY VARIANT rather
+# than site by site, because both scans measure single substitutions too.
+
+def load_variants(raw_dir, activity_lof=ACTIVITY_LOF):
+	"""One row per measured missense variant: UniProt position, wild-type and mutant residue,
+	the 2018 and 2021 abundance scores with the authors' classes, and Mighell's activity score."""
+	v = pd.read_csv(os.path.join(raw_dir, "PTEN_variant_data.tsv"), sep="\t", low_memory=False)
+	v = v[v["class"] == "missense"][["position", "start", "end", "score", "abundance_class"]].rename(
+		columns={"start": "wt_aa", "end": "mut_aa", "score": "abundance_2018", "abundance_class": "class_2018"})
+	c = pd.read_csv(os.path.join(raw_dir, "Composite_abundance_data.tsv"), sep="\t", low_memory=False)
+	c = c[c["class"] == "missense"][["position", "start", "end", "score_total", "abundance_class"]].rename(
+		columns={"start": "wt_aa", "end": "mut_aa", "score_total": "abundance_2021", "abundance_class": "class_2021"})
+	m = pd.read_csv(os.path.join(raw_dir, "Mighell_PTEN_phosphatase_data.csv"), encoding="utf-8-sig")
+	m = m[(m.Type == "missense") & (m.High_conf == True)].copy()           # noqa: E712  (NaN must fail)
+	code = m["Variant (one letter)"].str.extract(r"^([A-Z])(\d+)([A-Z])$")
+	m["wt_aa"], m["position"], m["mut_aa"] = code[0], code[1].astype(float), code[2]
+	m = m.dropna(subset=["position"])[["position", "wt_aa", "mut_aa", "Cum_score"]].rename(columns={"Cum_score": "activity"})
+	m["position"] = m.position.astype(int)
+	out = v.merge(c, on=["position", "wt_aa", "mut_aa"], how="outer").merge(m, on=["position", "wt_aa", "mut_aa"], how="outer")
+	# Both flags are left NaN where there is no measurement, so that an unmeasured
+	# variant is not silently counted as a negative in the AUCs below.
+	out["activity_is_lof"] = np.where(out.activity.notna(), out.activity < activity_lof, np.nan)
+	# "below the synonymous 5th percentile": the authors' own call, the same one
+	# the --abundance-k rule aggregates per site.
+	out["abundance_is_low"] = np.where(out.class_2018.notna(),
+		out.class_2018.isin(["low", "possibly_low"]), np.nan)
+	return out
+
+
+def auc(score, positive):
+	"""Area under the ROC curve of `score` for the binary label `positive`, as the
+	Mann-Whitney statistic: the probability that a random positive scores above a
+	random negative. 0.5 is chance, so |AUC - 0.5| is the useful quantity."""
+	score, positive = np.asarray(score, float), np.asarray(positive, bool)
+	ok = np.isfinite(score)
+	score, positive = score[ok], positive[ok]
+	if positive.sum() < 2 or (~positive).sum() < 2:
+		return np.nan
+	r = pd.Series(score).rank().values
+	n1, n0 = positive.sum(), (~positive).sum()
+	return float((r[positive].sum() - n1 * (n1 + 1) / 2) / (n1 * n0))
+
+
+def within_site_spearman(df, x, y, by="site"):
+	"""Spearman of x and y after each has been ranked WITHIN its site and centred.
+	Across all variants, a correlation can come entirely from the sites: a buried
+	site is expensive and its variants are all destabilising. This asks the sharper
+	question -- at a given site, does the model rank the 19 substitutions the way
+	the experiment does -- which no per-site statistic can answer."""
+	d = df[[by, x, y]].dropna()
+	g = d.groupby(by)
+	d = d[g[x].transform("size") >= 5]
+	if len(d) < 20:
+		return np.nan, 0
+	g = d.groupby(by)
+	cx = g[x].rank() - g[x].transform(lambda s: s.rank().mean())
+	cy = g[y].rank() - g[y].transform(lambda s: s.rank().mean())
+	return float(np.corrcoef(cx, cy)[0, 1]), int(d[by].nunique())
+
+
+def plot_mutants(t, mv, path_profile, path_sites, path_variants):
+	"""Three figures: the per-site cost along the sequence next to the two experiments,
+	the per-site scatters against every reference, and the variant-level scatters."""
+	plot_profile(t, None, path_profile, sampled=t[["dU_log10_mean"]].rename(
+		columns={"dU_log10_mean": "mutation cost\nmean log10 dU"}), extra_ylabel="{label}")
+
+	refs = [("PTEN-like family entropy [nats]", t.nat_family_entropy, C_NAT),
+		("abundance (VAMP-seq 2021, mean)", t.abundance2021_mean, C_ABU),
+		("activity (Mighell, mean)", t.activity_mean, C_ACT),
+		("RSA in 1D5R [%]", t.rsa, "#7a5195")]
+	fig, axes = plt.subplots(1, len(refs), figsize=(3.1 * len(refs), 3.1))
+	for ax, (name, y, col) in zip(axes, refs):
+		ax.scatter(t.dU_mean, y, s=7, color=col, alpha=.6, lw=0)
+		ax.set_xscale("log")
+		ax.set_xlabel("mean dU of the 19 mutants")
+		ax.set_ylabel(name, fontsize=8)
+		ax.set_title(f"rho(-dU, y) = {spearman(-t.dU_mean, y):+.2f}", fontsize=9)
+	fig.tight_layout()
+	fig.savefig(path_sites, dpi=130)
+	plt.close(fig)
+
+	panels = [("abundance_2021", "abundance (VAMP-seq 2021)", C_ABU, 1.),
+		("abundance_2018", "abundance (VAMP-seq 2018)", C_ABU, 1.),
+		("activity", "activity (Mighell)", C_ACT, ACTIVITY_LOF)]
+	fig, axes = plt.subplots(1, len(panels), figsize=(3.3 * len(panels), 3.3))
+	for ax, (col, name, c, line) in zip(axes, panels):
+		d = mv.dropna(subset=["dU", col])
+		ax.scatter(d.dU, d[col], s=5, color=c, alpha=.35, lw=0)
+		ax.set_xscale("log")
+		ax.axhline(line, color="k", lw=.5, ls=":")
+		ax.set_xlabel("dU of that exact variant")
+		ax.set_ylabel(name, fontsize=8)
+		w, ns = within_site_spearman(d, "dU", col)
+		ax.set_title(f"n = {len(d)}  rho = {spearman(-d.dU, d[col]):+.2f}\nwithin site {w:+.2f} ({ns} sites)", fontsize=9)
+	fig.tight_layout()
+	fig.savefig(path_variants, dpi=130)
+	plt.close(fig)
+
+
+def cmd_mutants(args):
+	ref, t, tier_summary = build_table(args)
+	os.makedirs(args.out_dir, exist_ok=True)
+	if not os.path.exists(args.mutants):
+		raise SystemExit(f"{args.mutants} does not exist. It is written by scan_single_mutants.py, which needs the GPU:\n"
+			f"    nohup python -u scan_single_mutants.py --out {args.mutants} > scan_single_mutants.log 2>&1 &")
+	m = pd.read_csv(args.mutants)
+	need = {"site", "ref_aa", "mut_aa", "dU"}
+	if not need <= set(m.columns):
+		raise SystemExit(f"{args.mutants} must have the columns {sorted(need)}, found {list(m.columns)}")
+
+	per_site = m.groupby("site").dU.size()
+	print(f"{len(m)} mutants over {m.site.nunique()}/{len(ref)} sites "
+		f"({per_site.min()}-{per_site.max()} per site; the scan writes 19)")
+	print(f"dU: min {m.dU.min():.4g}, median {m.dU.median():.4g}, max {m.dU.max():.4g}. "
+		f"U(reference) = 0 is the global minimum, so every dU must be > 0: "
+		f"{(m.dU <= 0).sum()} are not.")
+	if m.site.nunique() < len(ref):
+		print(f"  (incomplete scan: {len(ref) - m.site.nunique()} sites missing. Everything below uses what is there.)")
+
+	# Per-site summaries. dU spans orders of magnitude, so the mean of log10 dU is
+	# the better-behaved location statistic; the plain mean is kept because it is
+	# what a Boltzmann weight over the site's mutants would be dominated by.
+	m["log10_dU"] = np.log10(m.dU.clip(lower=1e-12))
+	g = m.groupby("site")
+	agg = pd.DataFrame({"dU_mean": g.dU.mean(), "dU_median": g.dU.median(), "dU_min": g.dU.min(),
+		"dU_max": g.dU.max(), "dU_log10_mean": g.log10_dU.mean(), "dU_n": g.dU.size()})
+	t = t.join(agg, on="site")
+	# The reference residue the scan mutated must be the one in the site table.
+	bad = t[(t.dU_n.notna()) & (t.ref_aa != g.ref_aa.first().reindex(t.site).values)]
+	if len(bad):
+		raise SystemExit(f"{args.mutants} disagrees with the reference at sites {list(bad.site)}: "
+			"it was scanned on a different sequence")
+
+	refs = {"orthologs entropy": t.nat_orthologs_entropy, "family entropy": t.nat_family_entropy,
+		"abundance mean": t.abundance2021_mean, "activity mean": t.activity_mean}
+	print("\n--- per site -------------------------------------------------------------")
+	print("Spearman against each reference. Every reference is 'higher = more tolerant' and dU is a COST,")
+	print("so the correlation is taken with -dU: a positive number means the sampler's energy agrees.")
+	rows = []
+	for name, col in (("-mean dU", -t.dU_mean), ("-median dU", -t.dU_median), ("-min dU", -t.dU_min),
+			("-mean log10 dU", -t.dU_log10_mean)):
+		rows.append({"quantity": name, **{k: spearman(col, v) for k, v in refs.items()},
+			"RSA": spearman(col, t.rsa)})
+	sp = pd.DataFrame(rows)
+	print(sp.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
+	n_eff = {k: int((np.isfinite(v) & t.dU_mean.notna()).sum()) for k, v in refs.items()}
+	print("  n: " + ", ".join(f"{k} {v}" for k, v in n_eff.items())
+		+ "; |rho| above about " + f"{1.96 / np.sqrt(min(n_eff.values()) - 1):.2f} is beyond chance at the 5% level")
+	print("\nWith burial regressed out (partial Spearman given RSA), the same question minus the fact that")
+	print("buried sites are both expensive to mutate and conserved:")
+	pr = pd.DataFrame([{"quantity": "-mean log10 dU",
+		**{f"{k} | RSA": partial_spearman(-t.dU_log10_mean, v, t.rsa) for k, v in refs.items()}}])
+	print(pr.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
+	sp.to_csv(os.path.join(args.out_dir, "mutants_vs_references_spearman.tsv"), sep="\t", index=False, float_format="%.4f")
+	pr.to_csv(os.path.join(args.out_dir, "mutants_vs_references_partial_rsa.tsv"), sep="\t", index=False, float_format="%.4f")
+
+	print("\nIs the cost raised inside each K-like set? mean log10 dU inside / outside, with p against")
+	print(f"circular shifts of the set along the sequence (smallest possible 1/L = {1 / len(ref):.3f}):")
+	rows = []
+	for col in ("K_natural", "K_abundance", "K_activity"):
+		x = t.dU_log10_mean.values
+		inside, outside = x[t[col].values], x[~t[col].values]
+		rows.append({"set": col, "n_in": int(t[col].sum()), "mean_in": np.nanmean(inside), "mean_out": np.nanmean(outside),
+			"ratio_of_dU": 10**(np.nanmean(inside) - np.nanmean(outside)), "shift_p": shift_p(x, t[col].values)})
+	ks = pd.DataFrame(rows)
+	print(ks.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
+	ks.to_csv(os.path.join(args.out_dir, "mutants_in_K_sets.tsv"), sep="\t", index=False, float_format="%.4f")
+
+	# A K-like set of our own, on the same footing as the other three: the sites
+	# the energy says cannot change. --mutant-k sets where the cut goes.
+	cut = t.dU_log10_mean.quantile(args.mutant_k)
+	t["K_mutant"] = t.dU_log10_mean >= cut
+	print(f"\nmutational K-sites (mean log10 dU in the top {1 - args.mutant_k:.0%}, i.e. >= {cut:.3f}): "
+		f"{int(t.K_mutant.sum())}/{int(t.dU_log10_mean.notna().sum())} scanned sites")
+	for col in ("K_natural", "K_abundance", "K_activity"):
+		k, exp, p = set_overlap(t.site[t.K_mutant], t.site[t[col]], len(ref))
+		print(f"  overlap with {col}: {k}/{int(t[col].sum())}  expected {exp:.1f}  P={p:.2g}")
+	print("  (size-matched: the same comparison with the mutational set cut to each other set's size,")
+	print("   which removes the dependence of the overlap on --mutant-k)")
+	order = t.dropna(subset=["dU_log10_mean"]).sort_values("dU_log10_mean", ascending=False)
+	for col in ("K_natural", "K_abundance", "K_activity"):
+		n = int(t[col].sum())
+		k, exp, p = set_overlap(order.site.head(n), t.site[t[col]], len(ref))
+		print(f"  top {n:3d} vs {col}: {k}/{n}  expected {exp:.1f}  P={p:.2g}")
+
+	print("\n--- per variant ----------------------------------------------------------")
+	print("Each in-silico mutant matched to the same substitution in the two experiments. This is the")
+	print("comparison the papers themselves make, and the one a per-site profile cannot: it asks whether")
+	print("the energy ranks the 19 substitutions at a site, not just which sites are expensive.")
+	var = load_variants(args.raw_dir, args.activity_lof)
+	mv = m.merge(t[["site", "uniprot_pos", "native"]], on="site")
+	mv = mv[mv.native].rename(columns={"uniprot_pos": "position", "ref_aa": "wt_aa"})
+	mv.position = mv.position.astype(int)
+	mv = mv.merge(var, on=["position", "wt_aa", "mut_aa"], how="left")
+	rows = []
+	for col, name in (("abundance_2021", "abundance 2021 (VAMP-seq composite)"),
+			("abundance_2018", "abundance 2018 (VAMP-seq)"), ("activity", "activity (Mighell high-confidence)")):
+		d = mv.dropna(subset=["dU", col])
+		w, ns = within_site_spearman(d, "dU", col)
+		rows.append({"experiment": name, "variants matched": len(d), "rho(-dU, score)": spearman(-d.dU, d[col]),
+			"rho within site": w, "sites": ns})
+	vs = pd.DataFrame(rows)
+	print(vs.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
+	print("\nAs a classifier of the authors' own variant calls (AUC of -dU; 0.5 is chance, and under 0.5 means")
+	print("the energy is anti-correlated with the call):")
+	for lab, flag in (("low or possibly low abundance (2018 classes)", "abundance_is_low"),
+			(f"loss of function in activity (score < {args.activity_lof})", "activity_is_lof")):
+		d = mv.dropna(subset=["dU"])
+		d = d[d[flag].notna()]
+		a = auc(-d.dU, d[flag])
+		print(f"  {lab}: AUC {a:.3f}  ({int(d[flag].sum())} positives of {len(d)})")
+
+	mv.to_csv(os.path.join(args.out_dir, "pten_mutants_variant_level.csv"), index=False, float_format="%.5f")
+	vs.to_csv(os.path.join(args.out_dir, "mutants_vs_experiments_variant_level.tsv"), sep="\t", index=False, float_format="%.4f")
+	t.to_csv(os.path.join(args.out_dir, "pten_site_table_mutants.csv"), index=False, float_format="%.4f")
+	plot_mutants(t, mv, os.path.join(args.out_dir, "pten_mutant_profile.png"),
+		os.path.join(args.out_dir, "mutants_vs_references.png"),
+		os.path.join(args.out_dir, "mutants_vs_experiments.png"))
+	print(f"\nOutputs in {args.out_dir}: pten_site_table_mutants.csv, pten_mutants_variant_level.csv, "
+		"mutants_vs_references_spearman.tsv, mutants_vs_references_partial_rsa.tsv, mutants_in_K_sets.tsv, "
+		"mutants_vs_experiments_variant_level.tsv, pten_mutant_profile.png, mutants_vs_references.png, "
+		"mutants_vs_experiments.png")
 
 
 # ----------------------------------------------------------------- family --- #
@@ -1137,6 +1366,13 @@ def main():
 	p.add_argument("--min-prob", type=float, default=90., help="HHsearch probability a template needs")
 	p.add_argument("--bridge", default="2CM2_A", help="PF00102 member whose alignment is carried onto PTEN (PTP1B)")
 	p.set_defaults(func=cmd_family)
+	p = sub.add_parser("mutants", parents=[common])
+	p.add_argument("--mutants", default=os.path.join(MONTE_CARLO_DIR, "pten_natural", "pten_single_mutants.csv"),
+		help="the CSV written by scan_single_mutants.py (site, ref_aa, mut_aa, dU), which needs the GPU")
+	p.add_argument("--mutant-k", type=threshold, default=0.75,
+		help="quantile of the per-site mean log10 dU above which a site joins the mutational K-like set "
+			"(default 0.75, the most expensive quarter). 'none' puts every site in it")
+	p.set_defaults(func=cmd_mutants)
 	p = sub.add_parser("loop", parents=[common]); p.set_defaults(func=cmd_loop)
 	p = sub.add_parser("pfam", parents=[common])
 	p.add_argument("--accessions", nargs="+", help="Pfam accessions to use (default: the ones InterPro places on human PTEN)")
