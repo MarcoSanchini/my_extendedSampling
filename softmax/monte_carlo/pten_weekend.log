@@ -1,0 +1,61 @@
+nohup: ignoring input
+reference: pten_1d5r   run dir: /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 4 --n-sites 1 --moves 180000 --seed 100 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T4/chain0 --ref pten_1d5r --grad-mode one_pass --resume
+GPU free memory: 23837 MB   Running: 0 / 2 (soft cap)
+  PID 248401  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T4_chain0.log
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 4 --n-sites 1 --moves 180000 --seed 101 --start random --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T4/chain1 --ref pten_1d5r --grad-mode one_pass --resume
+GPU free memory: 23837 MB   Running: 1 / 2 (soft cap)
+  PID 248406  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T4_chain1.log
+All launched. Waiting...
+PID 248401 finished (exit 0).
+PID 248406 finished (exit 0).
+Phase equil finished. Analyse with:
+  python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_nsites.py equil /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study --equil-dir equil_ref
+reference: pten_1d5r   run dir: /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 3 --n-sites 1 --moves 180000 --seed 100 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil/T3/chain0 --ref pten_1d5r --grad-mode one_pass --resume
+GPU free memory: 23837 MB   Running: 0 / 2 (soft cap)
+  PID 249403  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_T3_chain0.log
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 3 --n-sites 1 --moves 180000 --seed 101 --start random --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil/T3/chain1 --ref pten_1d5r --grad-mode one_pass --resume
+GPU free memory: 23837 MB   Running: 1 / 2 (soft cap)
+  PID 249408  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_T3_chain1.log
+All launched. Waiting...
+PID 249403 finished (exit 0).
+PID 249408 finished (exit 0).
+Phase equil finished. Analyse with:
+  python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_nsites.py equil /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study --equil-dir equil
+reference: pten_1d5r   run dir: /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 8 --n-sites 1 --moves 150000 --seed 200 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T8/chain0 --ref pten_1d5r --grad-mode one_pass 
+GPU free memory: 23837 MB   Running: 0 / 2 (soft cap)
+  PID 250208  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T8_chain0.log
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 8 --n-sites 1 --moves 150000 --seed 201 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T8/chain1 --ref pten_1d5r --grad-mode one_pass 
+GPU free memory: 23837 MB   Running: 1 / 2 (soft cap)
+  PID 250213  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T8_chain1.log
+All launched. Waiting...
+PID 250208 finished (exit 0).
+PID 250213 finished (exit 0).
+Phase equil finished. Analyse with:
+  python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_nsites.py equil /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study --equil-dir equil_ref
+reference: pten_1d5r   run dir: /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 16 --n-sites 1 --moves 90000 --seed 200 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T16/chain0 --ref pten_1d5r --grad-mode one_pass 
+GPU free memory: 23837 MB   Running: 0 / 2 (soft cap)
+  PID 252192  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T16_chain0.log
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 16 --n-sites 1 --moves 90000 --seed 201 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T16/chain1 --ref pten_1d5r --grad-mode one_pass 
+GPU free memory: 23837 MB   Running: 1 / 2 (soft cap)
+  PID 252197  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T16_chain1.log
+All launched. Waiting...
+PID 252192 finished (exit 0).
+PID 252197 finished (exit 0).
+Phase equil finished. Analyse with:
+  python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_nsites.py equil /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study --equil-dir equil_ref
+reference: pten_1d5r   run dir: /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 2 --n-sites 1 --moves 650000 --seed 100 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T2/chain0 --ref pten_1d5r --grad-mode one_pass --resume
+GPU free memory: 23837 MB   Running: 0 / 2 (soft cap)
+  PID 253127  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T2_chain0.log
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 2 --n-sites 1 --moves 650000 --seed 101 --start random --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T2/chain1 --ref pten_1d5r --grad-mode one_pass --resume
+GPU free memory: 23837 MB   Running: 1 / 2 (soft cap)
+  PID 253132  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T2_chain1.log
+All launched. Waiting...
+PID 253127 finished (exit 143).
+PID 253132 finished (exit 143).
+Phase equil finished. Analyse with:
+  python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_nsites.py equil /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study --equil-dir equil_ref
