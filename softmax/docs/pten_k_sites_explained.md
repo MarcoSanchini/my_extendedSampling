@@ -646,20 +646,65 @@ Four things are worth knowing before you launch it.
    same command skips the sites that are already complete in it (19 rows). A site that was
    interrupted half-way is redone from scratch, so there are never duplicate rows. Kill it
    and restart it freely.
-2. **It batches.** ESM3's own `predict_attention` asserts batch 1, so `--batch` uses the
-   batched forward from `code/tests/bench_batch.py`, which expands the default inputs by
-   hand and keeps the same bfloat16 autocast. The default is 19, one whole site per pass.
-   On an out-of-memory error the batch halves itself and carries on, so the default is safe
-   on the 24 GB card; `--batch 1` falls back to the sampler's own `_exact_energy` call,
-   one sequence at a time, and takes several hours instead of under one.
+2. **Do not batch it.** `--batch` defaults to 1, which calls the sampler's own
+   `_exact_energy` one sequence at a time. Above 1 the script uses the batched forward from
+   `code/tests/bench_batch.py`, which expands ESM3's batch-1 inputs by hand and keeps the
+   same bfloat16 autocast — and that path was *measured* to disagree with `_exact_energy`,
+   see 6.2b below. The whole scan takes about ten minutes either way, so there is nothing to
+   buy by batching.
 3. **It prints its own resolution limit.** Two forward passes on the *same* sequence should
    give exactly 0. Whatever they give instead is run-to-run numerical noise in the
-   bfloat16 attention, and it is the floor below which no `dU` means anything. The number is
-   printed at the top of the log. `--check` additionally recomputes the first site with
-   `_exact_energy` and prints the largest disagreement with the batched path.
+   bfloat16 attention, and it is the floor below which no `dU` means anything. On astaroth
+   it is exactly 0: the single-sequence forward is bit-reproducible. `--check` additionally
+   recomputes the first site with `_exact_energy` and prints the largest disagreement with
+   the batched path, with a verdict; it is forced on whenever `--batch > 1`.
 4. **It refuses to disagree with the reference.** `pten_k_sites.py mutants` checks that the
    wild-type residue the scan mutated is the one in the site table, site by site, and stops
    if any differs: a CSV produced on another sequence is useless here.
+
+## 6.2b Measured on astaroth, 15 November: the batched path is biased
+
+The first `--check` run on the card gave this, and it is worth keeping in the document because
+it changed the default:
+
+| quantity | value |
+| --- | --- |
+| `U_am(ref, ref)` | 0 |
+| noise floor, two forward passes on the same sequence | 0 |
+| max \|batched − `_exact_energy`\| at site 0 | 3.09 |
+| the 19 mutants at site 0 | 24.5 to 84.5 |
+| time | 0.032 s per mutant |
+
+The first two lines are the good news, and they are stronger than expected: the
+single-sequence forward is **bit-reproducible**, so `U_am` has no run-to-run noise at all
+and there is no resolution limit to worry about. Every `dU` is a number that can be compared
+with any other.
+
+The third line is the problem. The batched forward is also deterministic, so a disagreement
+of 3.09 is not noise — it is a *bias*, a different reduction order in bfloat16 amplified by
+the logarithm (relative error passes straight through `d log x = dx/x`) and by the roughly
+53,000 pairs that get summed. Three energy units is 12% of the cheapest mutant at that site,
+and the cheapest mutant at site 1 is 6.1, so the bias is of the same order as the quantity.
+It is also larger than the gaps between neighbouring mutants at a site, which means it can
+**reorder them** — and the within-site correlation of section 6.3 is precisely a measurement
+of that ordering. A batched scan would have put a number on it that was partly an artefact of
+the kernel.
+
+Hence `--batch 1`, the exact path, for anything that goes next to the experiments. It costs
+nothing: 6,156 mutants at the measured rate is about ten minutes. Batching is still there for
+a quick survey, and a batched run now always checks itself at its first site and prints an
+explicit verdict rather than leaving the comparison to the reader.
+
+**Why the existing benchmark did not catch this.** `code/tests/bench_batch.py` does check the
+batched energy against `_exact_energy`, and it passed. Its test is a *relative* one,
+`max |a − b| / max(|b|, 1) < 1e-2`, and it was run on `zero_polymer`, 566 residues, on
+sequences that had drifted far from the reference, where `U` is in the thousands — `U_A` was
+2557. An absolute error of 3 is 0.1% there, comfortably inside the tolerance. Single mutants
+of the reference are the opposite regime: `U` is between 6 and 84, *because* `dU = U` and the
+reference is the minimum, and the same kernel error is 5 to 50%. The batched path was not
+wrong about what it was tested on; it was tested in the regime where the error does not
+matter. Worth remembering for any other use of `batched_U`: its tolerance is relative to `U`,
+and `U` near the reference is small.
 
 ## 6.3 What the comparison does
 
@@ -706,6 +751,54 @@ Roughly 4,000 and 5,300 of the 6,156 mutants have a measurement. Three numbers c
 - `mutants_vs_experiments.png`: three panels, one dot per *variant*, `dU` against the two
   abundance scores and the activity score, with both the pooled and the within-site
   correlation in the title.
+
+## 6.4b Provisional numbers, 15 November
+
+**These come from the first full scan, which ran at `--batch 19` before the bias of 6.2b was
+known, so every `dU` in them carries up to about 3 units of kernel error on values whose
+minimum is 4.6. They are here to show the shape of the answer, not as results. The scan has
+to be redone at `--batch 1`.** The run took 2.7 minutes, 0.026 s per mutant.
+
+Per site, Spearman of `−mean log10 dU` against each reference (n = 280 to 311):
+
+| reference | raw | with burial (RSA) regressed out |
+| --- | --- | --- |
+| orthologs entropy | +0.08 | −0.11 |
+| PTEN-like family entropy | +0.21 | −0.07 |
+| abundance (VAMP-seq 2021) | +0.31 | **+0.12** |
+| activity (Mighell) | +0.30 | +0.05 |
+| RSA itself | +0.43 | — |
+
+Per variant, each in-silico mutant against the same substitution in the laboratory:
+
+| experiment | variants | pooled rho | within site | AUC of `dU` for the damaging call |
+| --- | --- | --- | --- | --- |
+| abundance 2021 | 4,079 | +0.35 | **+0.32** | 0.686 |
+| abundance 2018 | 3,349 | +0.37 | **+0.34** | — |
+| activity (Mighell) | 5,324 | +0.37 | **+0.35** | 0.720 |
+
+Two things stand out, and they are the two the scan was built to settle.
+
+**The energy sides with abundance, not with conservation** — the opposite of what the
+*sampled* entropy does. Section 5.3 found that at T = 8, with burial removed, the chains
+follow family conservation (+0.45) far more than abundance (+0.19). The raw energy, with
+burial removed, does the reverse: abundance keeps +0.12, barely above the 5% threshold of
+0.12, while both natural tiers go slightly *negative*. So of the two explanations offered in
+6.5, this points at the second: the conservation preference is made by the sampling, not by
+`U_am` itself. The same thing shows in the size-matched overlaps — the 28 most expensive
+sites contain just 1 of the 28 natural K-sites, against 2.4 expected, while the 108 most
+expensive contain 46 of the 108 abundance K-sites against 36 expected (P = 0.009).
+
+**The within-site correlation is as strong as the pooled one.** This is the better news.
++0.32 to +0.35 within a site, against +0.35 to +0.37 pooled, means essentially none of the
+agreement is the trivial "buried sites are expensive and their variants are all bad". At a
+given position the energy ranks the 19 substitutions about as well as it ranks the positions
+themselves, and it separates the authors' own damaging calls at AUC 0.69 and 0.72. `U_am` is
+a substitution-resolution object, not merely a site-resolution one, which is more than the
+per-site profiles of section 5 could have shown.
+
+Both findings rest on a biased scan and both need the `--batch 1` rerun before they are
+quoted anywhere.
 
 ## 6.5 What the result would mean
 
@@ -845,7 +938,9 @@ chains. Step 6 is the only one that needs ESM3 and the card.
     cd softmax/monte_carlo
     git pull
 
-    # 1. raw data (20 MB, once)
+    # 1. raw data (20 MB, once per machine). REQUIRED, and not optional after a
+    #    fresh clone: pten_natural/raw/ is gitignored, because the VAMP-seq scores
+    #    are not ours to redistribute. Every other step needs it, mutants included.
     python pten_k_sites.py fetch
 
     # 2. the three references and the K-like sets
@@ -870,8 +965,10 @@ chains. Step 6 is the only one that needs ESM3 and the card.
     nohup python -u scan_single_mutants.py \
         --out pten_natural/pten_single_mutants.csv > scan_single_mutants.log 2>&1 &
 
-    # 6b. same thing, five sites only, to see it work before committing the card
-    python -u scan_single_mutants.py --sites 0 1 2 3 4 --check \
+    # 6b. same thing, five sites only, to see it work before committing the card.
+    #     --batch 19 --check is what measured the bias of section 6.2b; drop both
+    #     to time the exact path instead.
+    python -u scan_single_mutants.py --sites 0 1 2 3 4 --batch 19 --check \
         --out /tmp/scan_test.csv
 
     # 7. the mutants against the papers and the natural alignments (no GPU)
@@ -947,12 +1044,14 @@ it to `softmax/docs/figures/` and add it with `git add -f`.
    Cell 1999) as I remember it, checked against what the Mighell preprint says about it.
 8. **The Pfam step is untested against the live InterPro service** (section 7.3).
 
-9. **The single-mutant scan of section 6 is written but not run.** The script, the
-   comparison and the figures exist and the comparison is tested end to end on synthetic
-   `dU` values, which is enough to know it does not crash and that the merge with the two
-   papers finds the right variants; it is not enough to know the scan agrees with the
-   sampler numerically on the card. The `--check` run of step 6b settles that in two
-   minutes, and its output is worth pasting into the thread before the long run starts.
+9. **The single-mutant scan of section 6 has been started on the card but its numbers are
+   not in this document yet.** The five-site check ran on 15 November and is reported in
+   6.2b: the exact path is bit-reproducible, the batched path is biased, and `--batch`
+   now defaults to 1 because of it. A first full scan was run at `--batch 19`, before
+   that was known, so its `dU` values carry the bias and it has to be redone at the
+   default. The comparison itself is tested end to end on synthetic `dU` values, which is
+   enough to know it does not crash and that the merge with the two papers finds the right
+   variants, but no real correlation from it appears here yet.
 
 **What is left after this.** The scan answers whether the energy itself sides with abundance
 or with family conservation (section 6.5). Two things it does not answer, and both are
