@@ -21,10 +21,26 @@ expensive = "the model thinks this residue cannot change". The sign convention
 is therefore the OPPOSITE of the experimental scores (high VAMP-seq score =
 tolerated), so pten_k_sites.py mutants correlates -dU with them.
 
-Needs ESM3 and a GPU: 6156 forward passes. On astaroth (RTX 4500 Ada) one
-L=324 no-grad forward is ~0.1-0.2 s, so expect roughly 20-45 min at
---batch 19, a few hours at --batch 1. It is NOT runnable in the cloud
-session that wrote it (no torch there).
+Needs ESM3 and a GPU: 6156 forward passes. MEASURED on astaroth (RTX 4500
+Ada, 2026-11-15): 0.032 s per mutant batched, so the whole scan is about ten
+minutes either way. It is NOT runnable in the cloud session that wrote it (no
+torch there).
+
+MEASURED, 2026-11-15, and the reason --batch defaults to 1. Two forward
+passes on the same sequence agree to 0.000e+00, so the single-sequence path
+is bit-reproducible and U_am carries no run-to-run noise at all. The BATCHED
+forward, however, disagreed with the sampler's own _exact_energy by up to
+3.09 energy units at site 0, where the 19 mutants span 24.5 to 84.5. That is
+a deterministic bias of the batched kernel (different reduction order in
+bfloat16, amplified by log and by the ~53000 summed pairs), not noise, and it
+is large enough to reorder mutants that sit close together -- which is
+exactly what the within-site comparison in pten_k_sites.py mutants measures.
+bench_batch.py's own check passed because it is RELATIVE (1e-2 of U) and ran
+on zero_polymer where U is in the thousands; here U is 6 to 84, because
+dU = U and the reference is the minimum, so the same error is 5-50%.
+So: --batch 1 for anything that will be compared with the experiments.
+Batching stays available for a quick survey, and a batched run now always
+checks itself against _exact_energy at its first site and says so.
 
 The run is resumable and crash-safe: the CSV is appended site by site and
 flushed after each site, and re-running the same command skips every site
@@ -35,9 +51,10 @@ Usage (from softmax/monte_carlo):
     nohup python -u scan_single_mutants.py --out pten_natural/pten_single_mutants.csv \
         > scan_single_mutants.log 2>&1 &
 
-    # quick sanity run: 5 sites, and check the batched energy against the
-    # sampler's own _exact_energy on the first of them
-    python -u scan_single_mutants.py --sites 0 1 2 3 4 --check --out /tmp/scan_test.csv
+    # quick sanity run: 5 sites. --batch 19 --check compares the batched path
+    # with the sampler's own _exact_energy on the first of them
+    python -u scan_single_mutants.py --sites 0 1 2 3 4 --batch 19 --check \
+        --out /tmp/scan_test.csv
 
 Then compare with the papers and the natural alignments:
 
@@ -129,14 +146,17 @@ def main():
 	ap.add_argument("--ref", default="pten_1d5r", help="reference name in code/tests/references.py (default pten_1d5r)")
 	ap.add_argument("--out", default=os.path.join(os.path.dirname(os.path.abspath(__file__)),
 		"pten_natural", "pten_single_mutants.csv"))
-	ap.add_argument("--batch", type=int, default=19,
-		help="mutants per forward pass (default 19, one whole site). 1 reproduces the sampler's own call exactly; "
-			"on an out-of-memory error the batch is halved automatically")
+	ap.add_argument("--batch", type=int, default=1,
+		help="mutants per forward pass. The default 1 calls the sampler's own _exact_energy and is the only "
+			"path that reproduces the sampler's numbers exactly; see MEASURED, 2026-11-15 in this script's "
+			"docstring before raising it. Above 1 the batched forward is used and the batch halves itself on "
+			"an out-of-memory error")
 	ap.add_argument("--sites", type=int, nargs="+", help="only these 0-based sites (default: all of them)")
 	ap.add_argument("--device", default="cuda:0")
 	ap.add_argument("--check", action="store_true",
 		help="also compute the first scanned site with the sampler's _exact_energy, one sequence at a time, and print "
-			"the largest disagreement with the batched path")
+			"the largest disagreement with the batched path. Forced on whenever --batch > 1, since that is the "
+			"only warning that the batched numbers are not the sampler's")
 	ap.add_argument("--restart", action="store_true", help="ignore an existing --out and scan everything again")
 	args = ap.parse_args()
 
@@ -187,6 +207,11 @@ def main():
 		f.writelines(kept)
 
 	batch, t0, done = max(1, args.batch), time.perf_counter(), 0
+	check = args.check or batch > 1           # a batched run always checks itself at its first site
+	if batch > 1:
+		print(f"# WARNING: --batch {batch} uses the batched forward, which was MEASURED to disagree with the "
+			"sampler's own _exact_energy by up to 3 energy units on this reference (2026-11-15). The check at "
+			"the first site below says whether that still holds. --batch 1 is the exact path.", flush=True)
 	with open(args.out, "a") as out:
 		for s in todo:
 			cur = ref_seq[s]
@@ -215,16 +240,30 @@ def main():
 				out.write(f"{s},{cur},{vocab[j]},{u:.6f}\n")
 			out.flush()
 			done += 1
-			if args.check and done == 1:
+			if check and done == 1 and batch > 1:
 				ex = []
 				for seq in seqs:
 					e = ExtendedProtein(sequence=seq, requires_grad=False, device=device)
 					e.expand()
 					ex.append(sampler._exact_energy(e, PARS)[0])
-				d = np.abs(np.array(ex) - np.array(dU))
-				print(f"# check at site {s}: max |batched - _exact_energy| = {d.max():.3e} "
-					f"(dU range {min(dU):.3f} to {max(dU):.3f}; the noise floor above is the scale to judge it against)",
-					flush=True)
+				ex, got = np.array(ex), np.array(dU)
+				d = np.abs(ex - got)
+				rel = d / np.maximum(np.abs(ex), 1e-12)
+				spread = np.sort(ex)
+				gaps = np.diff(spread)
+				print(f"# check at site {s}, batched against the sampler's own _exact_energy:", flush=True)
+				print(f"#   max |difference| = {d.max():.3e}   max relative = {rel.max():.2%}   "
+					f"noise floor of the single path = {floor:.3e}", flush=True)
+				print(f"#   dU at this site: {ex.min():.3f} to {ex.max():.3f}, "
+					f"smallest gap between two neighbouring mutants {gaps.min():.3e}", flush=True)
+				if d.max() <= max(floor, 1e-6):
+					print("#   VERDICT: the batched path matches. Carry on.", flush=True)
+				else:
+					print(f"#   VERDICT: THE BATCHED PATH DOES NOT MATCH. The single-sequence path is "
+						f"reproducible to {floor:.1e}, so this is a bias of the batched forward, not noise. "
+						f"It is {d.max() / max(gaps.min(), 1e-12):.0f}x the smallest gap between two mutants at "
+						f"this site, so it can reorder them. Re-run with --batch 1 (the default) for any number "
+						f"that will be compared with the experiments.", flush=True)
 			if done % 10 == 0 or done == len(todo):
 				el = time.perf_counter() - t0
 				print(f"# {done}/{len(todo)} sites, {el / 60:.1f} min, "

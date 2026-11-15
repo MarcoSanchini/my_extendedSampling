@@ -6793,3 +6793,63 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     chance, as they must) and the resume bookkeeping separately; the scan
     itself needs the card. Section 6 of docs/pten_k_sites_explained.md, with
     the command lines in section 9 and what each outcome would mean in 6.5.
+
+2026-11-15 (second entry) -- the batched forward is BIASED: scan at --batch 1
+    First --check run of scan_single_mutants.py on astaroth, 5 sites:
+      U_am(ref,ref) = 0; noise floor (same sequence, two forward passes) = 0,
+      so the single-sequence path is BIT-REPRODUCIBLE and U_am has no
+      run-to-run noise at this length -- better than scan_U_am_landscape.py's
+      length-sensitivity comment feared.
+      max |batched - _exact_energy| at site 0 = 3.09, where the 19 mutants
+      span 24.5 to 84.5. Both paths are deterministic, so this is a BIAS of
+      the batched kernel (reduction order in bfloat16, amplified by log and by
+      the ~53000 summed pairs), not noise. 3 units is 12% of the cheapest
+      mutant at site 0 and half of the cheapest at site 1 (6.09), and it
+      exceeds the gaps between neighbouring mutants, so it can reorder them --
+      which is exactly what the within-site correlation measures.
+    Therefore --batch now DEFAULTS TO 1 (_exact_energy, the sampler's own
+    call). No cost: measured 0.032 s per mutant, so 6156 mutants is ~10 min
+    either way. Batching stays for a survey; a batched run now forces the
+    check at its first site and prints an explicit verdict.
+    WHY bench_batch.py (A) did not catch it: its check is
+    max |a-b| / max(|b|, 1) < 1e-2, a RELATIVE tolerance, run on zero_polymer
+    (L=566) where U of the test sequences is in the thousands (U_A = 2557), so
+    an absolute error of 3 is 0.1% and passes comfortably. Single mutants of a
+    reference are the opposite regime: U is 6 to 84 because dU = U, and there
+    the same kernel error is 5-50%. The batched path was never wrong about
+    what it was tested on; it was tested where the error does not matter.
+    Lesson for any future use of batched_U: its tolerance is relative to U,
+    and U near the reference is small.
+    Marco's first full scan ran at --batch 19 before this was known, so that
+    CSV carries the bias and is being redone at the default.
+    Also: read_a3m now says "run pten_k_sites.py fetch" instead of raising a
+    bare FileNotFoundError. pten_natural/raw/ is gitignored (VAMP-seq licence),
+    so fetch is required on every machine, which is what bit the first mutants
+    run on astaroth.
+
+    SIGN BUG FIXED BEFORE ANY NUMBER WAS QUOTED. cmd_mutants printed the pooled
+    correlation as spearman(-dU, score) but the within-site one as
+    within_site_spearman(dU, score), and the AUC as auc(-dU, is_damaging).
+    So the first run read "pooled +0.35, within site -0.33, AUC 0.31" and
+    looked like the energy inverting itself within a site, when all three were
+    the SAME agreement in opposite conventions. Now everything is oriented so
+    that + is agreement (minus_dU column; AUC takes dU against the damaging
+    label, so > 0.5 is agreement), the docstring of within_site_spearman says
+    so, and both conventions are verified on synthetic perfect-agreement and
+    perfect-disagreement frames (+1, -1, AUC 1.0).
+
+    PROVISIONAL RESULTS from Marco's batch-19 scan (biased, to be redone):
+      per site, -mean log10 dU, raw / RSA out:
+        orthologs +0.08 / -0.11, family +0.21 / -0.07,
+        abundance +0.31 / +0.12, activity +0.30 / +0.05, RSA itself +0.43.
+      per variant: pooled +0.35/+0.37/+0.37, WITHIN SITE +0.32/+0.34/+0.35,
+        AUC(dU, damaging) 0.686 abundance / 0.720 activity.
+    Reading: (1) the ENERGY sides with abundance while the SAMPLED entropy
+    sides with family conservation (5.3: +0.45 family vs +0.19 abundance at
+    T=8, RSA out). So the conservation preference comes from the sampling, not
+    from U_am -- the second branch of 6.5. The size-matched overlaps agree: the
+    28 most expensive sites hold 1 of the 28 natural K-sites (2.4 expected),
+    the 108 most expensive hold 46 of the 108 abundance K-sites (36, P 0.009).
+    (2) within-site ~= pooled, so almost none of the agreement is burial: U_am
+    ranks the 19 substitutions AT a site, not just the sites. Both need the
+    --batch 1 rerun.

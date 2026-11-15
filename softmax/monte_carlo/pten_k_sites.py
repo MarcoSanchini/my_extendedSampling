@@ -164,6 +164,13 @@ def reference_map():
 def read_a3m(path, L):
 	"""a3m -> names and sequences on the query's columns (insertions, lowercase, dropped)."""
 	names, seqs = [], []
+	# raw/ is gitignored on purpose (the VAMP-seq scores are not ours to
+	# redistribute), so it is missing on every fresh clone and `fetch` is a
+	# required first step rather than an optional one. Say that instead of
+	# letting a bare FileNotFoundError come out of the reader.
+	if not os.path.exists(path):
+		raise SystemExit(f"{path} is missing.\nThe raw data is gitignored and has to be downloaded on each machine:\n"
+			f"    python pten_k_sites.py fetch\n(about 20 MB from raw.githubusercontent.com and the OpenFold S3 bucket)")
 	opener = gzip.open if path.endswith(".gz") else open
 	with opener(path, "rt") as f:
 		for line in f:
@@ -699,6 +706,9 @@ def auc(score, positive):
 
 def within_site_spearman(df, x, y, by="site"):
 	"""Spearman of x and y after each has been ranked WITHIN its site and centred.
+	NOTE ON SIGN: pass the same orientation as everywhere else, i.e. -dU and not dU,
+	so that a POSITIVE value means agreement. Getting this wrong once made the
+	within-site result look like the exact opposite of the pooled one.
 	Across all variants, a correlation can come entirely from the sites: a buried
 	site is expensive and its variants are all destabilising. This asks the sharper
 	question -- at a given site, does the model rank the 19 substitutions the way
@@ -740,13 +750,13 @@ def plot_mutants(t, mv, path_profile, path_sites, path_variants):
 		("activity", "activity (Mighell)", C_ACT, ACTIVITY_LOF)]
 	fig, axes = plt.subplots(1, len(panels), figsize=(3.3 * len(panels), 3.3))
 	for ax, (col, name, c, line) in zip(axes, panels):
-		d = mv.dropna(subset=["dU", col])
+		d = mv.dropna(subset=["dU", col]).assign(minus_dU=lambda f: -f.dU)
 		ax.scatter(d.dU, d[col], s=5, color=c, alpha=.35, lw=0)
 		ax.set_xscale("log")
 		ax.axhline(line, color="k", lw=.5, ls=":")
 		ax.set_xlabel("dU of that exact variant")
 		ax.set_ylabel(name, fontsize=8)
-		w, ns = within_site_spearman(d, "dU", col)
+		w, ns = within_site_spearman(d, "minus_dU", col)
 		ax.set_title(f"n = {len(d)}  rho = {spearman(-d.dU, d[col]):+.2f}\nwithin site {w:+.2f} ({ns} sites)", fontsize=9)
 	fig.tight_layout()
 	fig.savefig(path_variants, dpi=130)
@@ -849,21 +859,23 @@ def cmd_mutants(args):
 	mv.position = mv.position.astype(int)
 	mv = mv.merge(var, on=["position", "wt_aa", "mut_aa"], how="left")
 	rows = []
+	mv["minus_dU"] = -mv.dU               # one orientation for every number below: + is agreement
 	for col, name in (("abundance_2021", "abundance 2021 (VAMP-seq composite)"),
 			("abundance_2018", "abundance 2018 (VAMP-seq)"), ("activity", "activity (Mighell high-confidence)")):
 		d = mv.dropna(subset=["dU", col])
-		w, ns = within_site_spearman(d, "dU", col)
+		w, ns = within_site_spearman(d, "minus_dU", col)
 		rows.append({"experiment": name, "variants matched": len(d), "rho(-dU, score)": spearman(-d.dU, d[col]),
 			"rho within site": w, "sites": ns})
 	vs = pd.DataFrame(rows)
 	print(vs.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
-	print("\nAs a classifier of the authors' own variant calls (AUC of -dU; 0.5 is chance, and under 0.5 means")
-	print("the energy is anti-correlated with the call):")
+	print("\nAs a classifier of the authors' own variant calls. The label is the DAMAGING outcome and the score")
+	print("is dU itself, so above 0.5 means the energy calls the damaging variants the expensive ones, which is")
+	print("the agreement direction; 0.5 is chance:")
 	for lab, flag in (("low or possibly low abundance (2018 classes)", "abundance_is_low"),
 			(f"loss of function in activity (score < {args.activity_lof})", "activity_is_lof")):
 		d = mv.dropna(subset=["dU"])
 		d = d[d[flag].notna()]
-		a = auc(-d.dU, d[flag])
+		a = auc(d.dU, d[flag])
 		print(f"  {lab}: AUC {a:.3f}  ({int(d[flag].sum())} positives of {len(d)})")
 
 	mv.to_csv(os.path.join(args.out_dir, "pten_mutants_variant_level.csv"), index=False, float_format="%.5f")
