@@ -29,7 +29,7 @@
 
 \title{PTEN as the sampling reference: cost and equilibration metrics}
 \author{Marco Sanchini \\ \small\texttt{my\_extendedSampling} / \texttt{softmax}}
-\date{2026--11--12}
+\date{2026--11--12, decode benchmark added 2026--11--16}
 
 \begin{document}
 \maketitle
@@ -251,10 +251,83 @@ the pair-sum structure of $\Uam$ predicts: the energy per mutation scales
 roughly like $L^2$ and $(324/566)^2 = 0.33$, so PTEN's crossover should sit a
 few times lower, and it does.
 
+\section{Structure prediction: cost and precision against the number of steps}
+\label{sec:decode}
+
+The supervisor's question: can a contact-map energy as in Zambon et al.\ 2024
+be computed at every move, or only on a subsample of the finished $\Uam$
+chains? \file{bench\_decode.py} (2026--11--16, chains paused, GPU otherwise
+idle) times ESM3 on PTEN and on 15 snapshots from the second half of the
+$T=2,3,5,8,16$ chains ($\Hd$ 74--261), and scores each against the crystal.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lrrrrrrrr}
+\toprule
+ & & \multicolumn{4}{c}{PTEN} & \multicolumn{3}{c}{sampled sequences (median)} \\
+\cmidrule(lr){3-6}\cmidrule(lr){7-9}
+method & s & P@L & pLDDT & RMSD [\AA] & $E_{\mathrm{xtal}}$ & P@L & $E_{\mathrm{ref}}$ & $|\Delta E_{128}|$ \\
+\midrule
+attention ($\Uam$), forward       & 0.045 & 0.725 & --- & --- & --- & 0.731 & --- & --- \\
+attention, forward + backward     & 0.109 & & & & & & & \\
+decode, 2 steps   & 0.132 & 0.981 & 88.8 & 1.98 & 0.114 & 0.972 & 0.064 & 0.018 \\
+decode, 4 steps   & 0.228 & 0.981 & 89.4 & 2.09 & 0.116 & 0.972 & 0.060 & 0.011 \\
+decode, 16 steps  & 0.806 & 0.963 & 91.4 & 2.20 & 0.118 & 0.972 & 0.072 & 0.007 \\
+decode, 32 steps  & 1.576 & 0.972 & 93.8 & 2.07 & 0.112 & 0.966 & 0.065 & 0.011 \\
+decode, 128 steps & 6.183 & 0.969 & 93.2 & 1.95 & 0.105 & 0.969 & 0.072 & 0 \\
+\midrule
+random sequence, 128 steps & & & & & & 0.063 & 0.794 & \\
+\bottomrule
+\end{tabular}
+\caption{Seconds per sequence (median over 18 sequences; a decode is
+\texttt{generate()} plus the 0.033\,s structure decoder). P@L: top-$L$
+long-range ($|i-j|\ge 6$) contact precision against 1D5R, pairs ranked by
+attention weight or by predicted CA distance. $E$ is the normalised
+contact-map difference of Zambon et al.\ with CA contacts within 8\,\AA:
+$E_{\mathrm{xtal}}$ to the crystal, $E_{\mathrm{ref}}$ to PTEN's own prediction
+at the same number of steps (the energy a sampler would use), and
+$|\Delta E_{128}|$ its difference from the 128-step value. Decoding is at
+temperature 0 and deterministic (repeat-to-repeat $E = 0$). Source:
+\file{monte\_carlo/decode\_bench\_pten.log}.}
+\end{table}
+
+\noindent
+Four readings.
+\begin{enumerate}
+\item \textbf{Cost is linear in steps}: 0.048\,s per step plus 0.033\,s, so a
+      2-step decode costs $1.2\times$ a one-pass $\Uam$ move (0.132 against
+      0.109--0.112\,s) and a 32-step decode $14\times$.
+\item \textbf{Two steps are as accurate as 128} on every crystal measure
+      (P@L 0.98, RMSD 2.0\,\AA, $E_{\mathrm{xtal}}$ 0.11), and their energy
+      differs from the 128-step one by a median 0.018. More steps raise
+      pLDDT, not the structure. They also raise it on random sequences
+      (32 at 2 steps, 74 at 128), so pLDDT discriminates better at few steps.
+\item \textbf{The $\Uam$ ensembles keep the PTEN fold} up to $T=16$, where 78\,\%
+      of the sequence is mutated: P@L 0.94--0.98 and $E_{\mathrm{ref}}$
+      0.03--0.11, against 0.77--0.83 for random sequences.
+      $E_{\mathrm{ref}}$ rises with $T$ (0.04 at $T=2$, 0.09 at $T=16$) and
+      Spearman$(E_{\mathrm{ref}},\Uam) = 0.84$--$0.95$ over the snapshots, but
+      that correlation is mostly across temperatures: within one $T$ the three
+      snapshots span 0.001--0.03, no more than the 2-vs-128-step error.
+\item \textbf{The attention map alone already holds contacts}: P@L 0.73 for
+      $\Uam$'s map, $11\times$ the random floor, the same on PTEN and on
+      sampled sequences.
+\end{enumerate}
+\noindent
+So both options are affordable. A subsample costs nothing (100 snapshots per
+temperature at 2 steps is 13\,s). An in-loop contact-map energy at 2 steps
+costs about the same as the current move, but it cannot be differentiated, so
+it would replace the gradient-informed proposal with plain Metropolis; and
+whether a 2-step $E$ resolves a \emph{single} mutation (rather than returning
+$\Delta E = 0$ for most of them) is not measured yet.
+
 \section{Caveats}
 
 \begin{enumerate}
-\item \textbf{$t_{\mathrm{eq}}$ is reached at no temperature} in this ladder,
+\item (Superseded on 2026--11--16, see \file{DEVLOG}: with longer chains
+      $t_{\mathrm{eq}}$ is reached at $T=2,3,5,6,8,16$; $T=4$ is the slowest.)
+      \textbf{$t_{\mathrm{eq}}$ is reached at no temperature} in this ladder,
       by the criterion in \file{analyze\_nsites.py} ($\hat{R} < 1.1$ on both
       $U$ and $\Hd$ from $t_{\mathrm{eq}}$ to the end). The plateaus above are
       one-sided: they say the reference-started chain has stopped moving, not

@@ -6936,3 +6936,36 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
       220000 moves, <Hd> 19, acc 0.011) is the only point below.
     NEXT (Marco to decide): a T=1.5 and T=1 equil_ref pair to look for the C
       peak, and T=4 resumed to ~400000.
+
+2026-11-16 (second entry) -- ESM3 structure prediction: cost and precision vs steps
+    Supervisor's question: contact-map energy (Zambon et al 2024) at every move,
+    or on a subsample of finished U_am chains? bench_decode.py (PR #53), chains
+    paused, GPU otherwise idle; PTEN + 2 random + 15 snapshots of T=2,3,5,8,16.
+    Output monte_carlo/decode_bench_pten.log, decode_bench/pten_decodes.csv.
+
+    method          s/seq   PTEN: P@L pLDDT RMSD  E_xtal | samples: P@L E_ref |dE128|
+    attention fwd   0.045         0.725                  |          0.731
+    attention f+b   0.109
+    2 steps         0.132         0.981 88.8 1.98 0.114  |          0.972 0.064 0.018
+    4 steps         0.228         0.981 89.4 2.09 0.116  |          0.972 0.060 0.011
+    16 steps        0.806         0.963 91.4 2.20 0.118  |          0.972 0.072 0.007
+    32 steps        1.576         0.972 93.8 2.07 0.112  |          0.966 0.065 0.011
+    128 steps       6.183         0.969 93.2 1.95 0.105  |          0.969 0.072 0
+    random, 128                                          |          0.063 0.794
+    (P@L top-L long-range |i-j|>=6 contact precision vs 1D5R; E with CA < 8 A.)
+
+    COST is linear: 0.048 s/step + 0.033 s decoder. A 2-step decode is 1.2x a
+      one-pass move; 32 steps is 14x.
+    TWO STEPS ARE AS GOOD AS 128 on every crystal measure; dE median 0.018.
+      Steps raise pLDDT only, also on random sequences (32 -> 74), so pLDDT
+      separates better at few steps.
+    THE U_am ENSEMBLES KEEP THE FOLD up to T=16 (Hd 254, 78% mutated): P@L
+      0.94-0.98, E_ref 0.03-0.11 vs 0.77-0.83 random. Spearman(E_ref, U_am)
+      0.84-0.95, but mostly across T; within T the spread is 0.001-0.03.
+    ATTENTION MAP ALONE: P@L 0.73, 11x the random floor.
+    VERDICT: both affordable. Subsampling is ~free (100 snapshots/T in 13 s).
+      In-loop E at 2 steps costs about one current move but is not
+      differentiable (plain Metropolis), and whether it resolves single
+      mutations (dE = 0 for most?) is unmeasured: next test is a single-mutant
+      scan of E at 2 steps (6156 decodes, ~14 min).
+    Table also in docs/pten_metrics.tex section 7.
