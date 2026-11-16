@@ -4,7 +4,13 @@ function of the number of generation steps -- the numbers needed to decide
 whether a contact-map energy (Zambon et al 2024) can be evaluated at every
 Monte Carlo move, or only on a subsample of a finished U_am chain.
 
-For every sequence and every --steps value it records
+Rows: "attention" is the U_am path the sampler uses (one ESM3 forward pass to
+the last attention map, no structure), then one row per --steps value.
+For every sequence and method it records
+
+  P@L     top-L long-range (|i-j| >= 6) contact precision against the crystal:
+          attention pairs ranked by attention weight, decodes by CA distance
+  t_fwd_bwd (attention only) forward + backward, the core of a one-pass move
 
   t_gen   wall time of model.generate() (the iterative unmasking, one ESM3
           forward pass per step), CUDA-synchronised
@@ -40,6 +46,7 @@ Usage, on the GPU machine from softmax/monte_carlo:
     nohup python -u bench_decode.py --ref pten_1d5r \\
         --exp structure_compare/1D5R.pdb \\
         --pair-csv structure_compare/pten_1d5r_vs_1D5R_per_residue.csv \\
+        --steps 2 4 16 32 128 \\
         --chains pten1d5r_study/equil_ref/T2/chain0 pten1d5r_study/equil/T3/chain0 \\
                  pten1d5r_study/equil/T5/chain0 pten1d5r_study/equil_ref/T8/chain0 \\
                  pten1d5r_study/equil_ref/T16/chain0 \\
@@ -126,13 +133,14 @@ def main():
 	ap.add_argument("--ref", default="pten_1d5r")
 	ap.add_argument("--exp", default=None, help="crystal .pdb (needs --pair-csv)")
 	ap.add_argument("--pair-csv", default=None, help="*_per_residue.csv from compare_structures.py")
-	ap.add_argument("--steps", type=int, nargs="+", default=[1, 2, 4, 8, 16, 32, 64, 128])
+	ap.add_argument("--steps", type=int, nargs="+", default=[2, 4, 16, 32, 128])
 	ap.add_argument("--repeats", type=int, default=3, help="timed decodes of the reference per step count")
 	ap.add_argument("--chains", nargs="*", default=[], help="run directories to take snapshots from")
 	ap.add_argument("--per-chain", type=int, default=3)
 	ap.add_argument("--random", type=int, default=2, help="random sequences of the reference's length")
 	ap.add_argument("--no-samples", action="store_true", help="reference only: a quick re-timing")
 	ap.add_argument("--ca-cutoff", type=float, default=8.0)
+	ap.add_argument("--min-sep", type=int, default=6, help="|i-j| for long-range contact precision")
 	ap.add_argument("--seed", type=int, default=0)
 	ap.add_argument("--out", required=True, help="output prefix; writes PREFIX_decodes.csv")
 	args = ap.parse_args()
@@ -186,38 +194,85 @@ def main():
 		pl = pl * 100 if np.nanmax(pl) <= 1 else pl
 		return ca, float(np.nanmean(pl)), t1 - t0, t2 - t1
 
+	from utils.energies import compute_U_am
+
+	def attention(seq, grad):
+		"""U_am of seq and its symmetrised attention map, timed: a forward pass alone (the cost
+		of scoring one proposal) or forward + backward (the cost of a gradient-informed move)."""
+		ep = ExtendedProtein(sequence=seq, requires_grad=False, device=device)
+		sync(); t0 = time.perf_counter()
+		if grad:
+			probs = ep.get_probs().clone().requires_grad_(True)   # gradient w.r.t. the input, as in a move
+			am = model.predict_attention(sequence_probs=probs)
+			U = compute_U_am(am, ref_am)
+			U.backward()
+		else:
+			with torch.no_grad():
+				am = model.predict_attention(sequence_probs=ep.get_probs())
+				U = compute_U_am(am, ref_am)
+		sync()
+		return am.detach().float().cpu().numpy(), float(U), time.perf_counter() - t0
+
+	with torch.no_grad():
+		ref_am = model.predict_attention(sequence_probs=ExtendedProtein(
+			sequence=ref, requires_grad=False, device=device).get_probs())
 	predict(ref, min(args.steps))                    # warm-up: kernels, allocator, lazy loads
+	attention(ref, True)
 	if device.type == "cuda":
 		torch.cuda.reset_peak_memory_stats()
 
+	long_range = np.abs(np.arange(L)[:, None] - np.arange(L)[None, :]) >= args.min_sep
+	def precision(score):
+		"""Share of the top-L scoring pairs (|i-j| >= --min-sep, both residues in the crystal)
+		that are crystal contacts: the usual top-L long-range contact precision."""
+		if xtal is None:
+			return float("nan")
+		ok = np.triu(long_range & paired[:, None] & paired[None, :])
+		iu = np.flatnonzero(ok)
+		top = iu[np.argsort(-score.ravel()[iu])[:L]]
+		xt = map_x | map_x.T
+		return float(xt.ravel()[top].mean())
+
+	methods = ["attention"] + [f"{n} steps" for n in args.steps]
 	ref_map, rows = {}, []
 	for label, seq, U, Hd in seqs:
-		for n in args.steps:
-			reps = args.repeats if label == "reference" else 1
-			res = [predict(seq, n) for _ in range(reps)]
-			ca, pl = res[0][0], res[0][1]
-			cmap = contact_map(ca, args.ca_cutoff)
-			if label == "reference":
-				ref_map[n] = cmap
-			row = {
-				"label": label, "U_am": U, "Hd": Hd, "steps": n,
-				"t_gen": float(np.median([r[2] for r in res])), "t_dec": float(np.median([r[3] for r in res])),
-				"plddt": pl,
-				"rep_E_max": max(energy(cmap, contact_map(r[0], args.ca_cutoff)) for r in res),
-				"E_ref": energy(cmap, ref_map[n]),
-				"rmsd_xtal": float("nan"), "E_xtal": float("nan"),
-			}
-			if xtal is not None:
-				row["rmsd_xtal"] = kabsch_rmsd(ca[paired], xtal[paired])
-				pm = paired[:, None] & paired[None, :]
-				row["E_xtal"] = energy(cmap & pm, map_x)
+		reps = args.repeats if label == "reference" else 1
+		for meth in methods:
+			row = {"label": label, "method": meth, "U_am": U, "Hd": Hd, "t": np.nan, "t_gen": np.nan,
+				"t_dec": np.nan, "t_fwd_bwd": np.nan, "U_calc": np.nan, "plddt": np.nan, "precision": np.nan,
+				"rmsd_xtal": np.nan, "E_xtal": np.nan, "E_ref": np.nan, "rep_E_max": np.nan}
+			if meth == "attention":
+				res = [attention(seq, False) for _ in range(reps)]
+				row["t"] = row["t_gen"] = float(np.median([r[2] for r in res]))
+				row["t_fwd_bwd"] = float(np.median([attention(seq, True)[2] for _ in range(reps)]))
+				row["U_calc"] = res[0][1]
+				row["precision"] = precision(res[0][0])
+			else:
+				n = int(meth.split()[0])
+				res = [predict(seq, n) for _ in range(reps)]
+				ca, pl = res[0][0], res[0][1]
+				cmap = contact_map(ca, args.ca_cutoff)
+				if label == "reference":
+					ref_map[n] = cmap
+				row.update({
+					"t_gen": float(np.median([r[2] for r in res])), "t_dec": float(np.median([r[3] for r in res])),
+					"plddt": pl, "E_ref": energy(cmap, ref_map[n]),
+					"rep_E_max": max(energy(cmap, contact_map(r[0], args.ca_cutoff)) for r in res),
+				})
+				row["t"] = row["t_gen"] + row["t_dec"]
+				if xtal is not None:
+					d = np.linalg.norm(ca[:, None] - ca[None, :], axis=-1)
+					row["precision"] = precision(-d)
+					row["rmsd_xtal"] = kabsch_rmsd(ca[paired], xtal[paired])
+					pm = paired[:, None] & paired[None, :]
+					row["E_xtal"] = energy(cmap & pm, map_x)
 			rows.append(row)
-			print(f"{label:42s} steps {n:4d}  gen {row['t_gen']:6.2f}s  dec {row['t_dec']:5.2f}s  "
-				f"pLDDT {pl:5.1f}  RMSD {row['rmsd_xtal']:6.2f}  E_xtal {row['E_xtal']:.3f}  "
-				f"E_ref {row['E_ref']:.3f}  U_am {U:8.1f}  Hd {Hd}", flush=True)
+			print(f"{label:42s} {meth:10s} t {row['t']:6.3f}s  P@L {row['precision']:.3f}  pLDDT {row['plddt']:5.1f}  "
+				f"RMSD {row['rmsd_xtal']:6.2f}  E_xtal {row['E_xtal']:.3f}  E_ref {row['E_ref']:.3f}  "
+				f"U_am {U:8.1f} (recomputed {row['U_calc']:8.1f})  Hd {Hd}", flush=True)
 
-	top = max(args.steps)
-	E_top = {r["label"]: r["E_ref"] for r in rows if r["steps"] == top}
+	top = f"{max(args.steps)} steps"
+	E_top = {r["label"]: r["E_ref"] for r in rows if r["method"] == top}
 	for r in rows:
 		r["dE_top"] = abs(r["E_ref"] - E_top[r["label"]])
 	os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
@@ -226,26 +281,30 @@ def main():
 		w.writeheader()
 		w.writerows(rows)
 
-	def spearmanr(a, b):
+	def spearman(a, b):
 		r = lambda v: np.argsort(np.argsort(v))
-		return (np.corrcoef(r(a), r(b))[0, 1],)
-	print(f"\n# summary per step count ({len(seqs)} sequences; times are medians over all of them)")
-	print(f"# dE_{top} = |E_ref(n) - E_ref({top})| over sampled sequences; rho = Spearman(E_ref, U_am) over chain snapshots")
-	print("steps\tt_gen\tt_dec\tt_total\tref_pLDDT\tref_RMSD\tref_E_xtal\tsamp_pLDDT\tsamp_E_ref\tdE_top_med\tdE_top_max\trho_E_U\trep_E_max")
-	for n in args.steps:
-		R = [r for r in rows if r["steps"] == n]
+		return float(np.corrcoef(r(a), r(b))[0, 1])
+	print(f"\n# summary ({len(seqs)} sequences; times are medians over all of them, in seconds)")
+	print("# t = scoring one sequence (attention: forward only; decode: generate + decoder); t_fwd_bwd = one-pass move")
+	print("# P@L = top-L long-range contact precision vs the crystal; samp_* = medians over chain snapshots")
+	print(f"# dE = |E_ref(n) - E_ref({top})| over snapshots; rho = Spearman(E_ref or recomputed U_am, U_am from data.dat)")
+	print("method\tt\tt_gen\tt_dec\tt_fwd_bwd\tref_P@L\tref_pLDDT\tref_RMSD\tref_E_xtal\tsamp_P@L\tsamp_pLDDT\tsamp_E_ref\tdE_med\tdE_max\trho\trep_E_max")
+	for meth in methods:
+		R = [r for r in rows if r["method"] == meth]
 		ref_r = next(r for r in R if r["label"] == "reference")
-		S = [r for r in R if r["label"] not in ("reference",) and not r["label"].startswith("random")]
-		tg, td = np.median([r["t_gen"] for r in R]), np.median([r["t_dec"] for r in R])
-		rho = spearmanr([r["E_ref"] for r in S], [r["U_am"] for r in S])[0] if len(S) > 2 else float("nan")
-		f = lambda key, fn=np.median: fn([r[key] for r in S]) if S else float("nan")
-		print(f"{n}\t{tg:.2f}\t{td:.2f}\t{tg + td:.2f}\t{ref_r['plddt']:.1f}\t{ref_r['rmsd_xtal']:.2f}\t"
-			f"{ref_r['E_xtal']:.3f}\t{f('plddt'):.1f}\t{f('E_ref'):.3f}\t{f('dE_top'):.3f}\t{f('dE_top', np.max):.3f}\t"
-			f"{rho:.2f}\t{max(r['rep_E_max'] for r in R):.3f}")
-	rnd = [r for r in rows if r["label"].startswith("random") and r["steps"] == top]
+		S = [r for r in R if r["label"] != "reference" and not r["label"].startswith("random")]
+		med = lambda key, rr=R: float(np.nanmedian([r[key] for r in rr])) if rr else np.nan
+		key = "U_calc" if meth == "attention" else "E_ref"
+		rho = spearman([r[key] for r in S], [r["U_am"] for r in S]) if len(S) > 2 else np.nan
+		dmax = float(np.nanmax([r["dE_top"] for r in S])) if S and meth != "attention" else np.nan
+		print(f"{meth}\t{med('t'):.3f}\t{med('t_gen'):.3f}\t{med('t_dec'):.3f}\t{med('t_fwd_bwd'):.3f}\t"
+			f"{ref_r['precision']:.3f}\t{ref_r['plddt']:.1f}\t{ref_r['rmsd_xtal']:.2f}\t{ref_r['E_xtal']:.3f}\t"
+			f"{med('precision', S):.3f}\t{med('plddt', S):.1f}\t{med('E_ref', S):.3f}\t{med('dE_top', S):.3f}\t"
+			f"{dmax:.3f}\t{rho:.2f}\t{np.nanmax([r['rep_E_max'] for r in R]) if meth != 'attention' else np.nan:.3f}")
+	rnd = [r for r in rows if r["label"].startswith("random") and r["method"] == top]
 	if rnd:
-		print(f"# random sequences at {top} steps: E_ref {np.mean([r['E_ref'] for r in rnd]):.3f}, "
-			f"pLDDT {np.mean([r['plddt'] for r in rnd]):.1f} (the ceiling of E)")
+		print(f"# random sequences at {top}: E_ref {np.mean([r['E_ref'] for r in rnd]):.3f}, "
+			f"pLDDT {np.mean([r['plddt'] for r in rnd]):.1f}, P@L {np.mean([r['precision'] for r in rnd]):.3f} (the floor)")
 	if device.type == "cuda":
 		print(f"# peak GPU memory allocated by this process: {torch.cuda.max_memory_allocated() / 2**20:.0f} MB")
 	print(f"Saved -> {args.out}_decodes.csv")
