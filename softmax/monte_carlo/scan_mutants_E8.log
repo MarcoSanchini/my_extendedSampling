@@ -1,0 +1,73 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 40189.32it/s]
+# pten_1d5r, L=324, 8 steps: reference pLDDT 90.5, 904 contacts; same sequence twice differs in 0 contacts (must be 0)
+# 20 sites requested, 0 already in pten_natural/pten_mutants_E8.csv, 20 to do (380 decodes)
+# 10/20 sites, 1.4 min, 0.427 s per mutant, 1.4 min left; site 153 T: E min 0.0205 median 0.0277 max 0.0398, zeros 0/19
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/scan_mutants_E.py", line 212, in <module>
+    main()
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/scan_mutants_E.py", line 195, in main
+    ca, pl, dt = predict(ref[:s] + a + ref[s + 1:])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/scan_mutants_E.py", line 158, in predict
+    out = model.generate(input=ESMProteinTensor(sequence=ep.tokens), config=cfg)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 480, in generate
+    proteins = self.batch_generate([input], [config])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 506, in batch_generate
+    return iterative_sampling_tokens(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/generation.py", line 415, in iterative_sampling_tokens
+    forward_out = _batch_forward(client, batched_tokens)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/utils/generation.py", line 543, in _batch_forward
+    return client.logits(
+           ^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 627, in logits
+    output = self.forward(
+             ^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 472, in forward
+    x, embedding, _ = self.transformer(
+                      ^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 92, in forward
+    x = block(x, sequence_id, affine, affine_mask, chain_id)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 152, in forward
+    r1 = self.attn(x, sequence_id)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/attention.py", line 62, in forward
+    query_BLD, key_BLD = self._apply_rotary(query_BLD, key_BLD)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/attention.py", line 50, in _apply_rotary
+    q, k = self.rotary(q, k)
+           ^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/anaconda3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/rotary.py", line 219, in forward
+    apply_rotary_emb_torch(
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/rotary.py", line 59, in apply_rotary_emb_torch
+    return torch.cat(
+           ^^^^^^^^^^
+KeyboardInterrupt
