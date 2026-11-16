@@ -1415,7 +1415,117 @@ labels with `--show`.
 The `.png` files are ignored by git under `monte_carlo/`. To keep one in the repository copy
 it to `softmax/docs/figures/` and add it with `git add -f`.
 
-# 10. Cautions, and what is not verified
+# 10. Databases: what exists, what this container can reach, what we already hold
+
+Written 16 November, after probing about forty hosts from the cloud container with `curl`.
+Every "blocked" below is a measured 403 from the network policy on the CONNECT, not a guess;
+every "reachable" was a 200.
+
+## 10.1 The short version
+
+The single most useful finding is that **we do not need a new download to compare against
+tumour variants.** `PTEN_variant_data.tsv`, which `pten_k_sites.py fetch` already pulls,
+carries a 2018 snapshot of COSMIC, ClinVar and gnomAD per variant, on exactly the
+position / wild-type / mutant key the scan uses. See 10.4.
+
+## 10.2 Natural sequences
+
+| source | what it gives for PTEN | from this container |
+| --- | --- | --- |
+| **OpenProteinSet** (`openfold.s3.amazonaws.com`) | precomputed UniRef90, BFD and MGnify alignments per PDB chain; `pdb/1d5r_A/`, `7jvx_A`, `2cm2_A`. This is where all four tiers of section 3 come from | **reachable**, and already used |
+| **gnomAD v4.1** (`gcp-public-data--gnomad` on GCS, `gnomad-public-us-east-1` on S3) | human *population* germline variants with allele counts and frequencies, plus the constraint tables | **reachable** (verified by listing both buckets) |
+| 1000 Genomes (`1000genomes` on S3) | older population panel, superseded by gnomAD | reachable, not worth using |
+| UniProt / UniRef (`rest.uniprot.org`, `ftp.uniprot.org`) | the canonical P60484 record, isoforms, UniRef50/90/100 clusters | blocked |
+| Ensembl Compara (`rest.ensembl.org`) | one-to-one orthologs across the vertebrates with gene trees — the principled version of our "vertebrate" tier | blocked |
+| OrthoDB, eggNOG | curated orthologous groups at a chosen taxonomic level, with alignments | blocked |
+| InterPro / Pfam | domain families and their alignments. Section 7 already covers this and already says it has to run on your machine | blocked |
+| MaveDB, ProteinGym | the two PTEN experiments in standard form, and ProteinGym's baseline scores for ESM-1v, EVE and the rest — the natural yardstick for `U_am` | blocked (ProteinGym's GitHub README is reachable, its data archives are not) |
+
+So in the cloud the sequence side is OpenProteinSet or nothing, which is what we have been
+doing. Anything else — a cleaner ortholog set from Ensembl, Pfam alignments, the ProteinGym
+baselines — has to be fetched on astaroth.
+
+## 10.3 Tumour and clinical variants
+
+| source | what it gives | from this container |
+| --- | --- | --- |
+| **COSMIC** v102 (`cancer.sanger.ac.uk`) | the reference somatic catalogue; the Cancer Mutation Census gives per-variant tumour counts | blocked, *and* it needs a registered login, so it is a browser download on your machine either way |
+| **cBioPortal** (`www.cbioportal.org`, datahub) | per-study somatic mutation tables, TCGA and MSK-IMPACT among them, with a clean REST API | blocked. Its datahub is a GitHub repository, but the data files are git-lfs pointers and the lfs endpoint is blocked too |
+| **GDC / TCGA** (`api.gdc.cancer.gov`) | the masked somatic MAFs behind TCGA | API blocked. The AWS mirror `tcga-2-open.s3.amazonaws.com` *is* reachable, but its keys are GDC file UUIDs, so without the manifest from the blocked API there is no way to find a file |
+| AACR GENIE (Synapse) | ~200k clinical sequencing samples, the largest panel set | blocked, and needs an account |
+| ICGC/ARGO, IntOGen, cancerhotspots.org, CIViC, OncoKB | aggregated somatic calls, driver and hotspot calls, clinical annotation | all blocked |
+| **ClinVar** (NCBI FTP) | germline clinical classifications, the ClinGen PTEN expert panel's among them | blocked |
+| LOVD PTEN, ClinGen VCEP (`erepo.clinicalgenome.org`) | the PTEN locus-specific germline databases, Cowden and PHTS variants | blocked |
+
+Every genuine tumour database is blocked here, so a fresh pull is a job for astaroth. That
+turns out to matter less than it looks.
+
+## 10.4 What is already in the files we download
+
+`PTEN_variant_data.tsv` is not only abundance scores. One row per variant, 7,639 missense
+among them, and the columns include:
+
+- `cosmic_count`, the number of times that exact amino-acid change was seen in COSMIC as of
+  2018: 1,723 occurrences spread over 533 of the missense variants;
+- the same split by tissue — `cancer_brain_count`, `cancer_uterine_count`,
+  `cancer_breast_count`, `cancer_colorectal_count`, `cancer_nsclc_count`,
+  `cancer_endometrial_count`, `cancer_melanoma_count` — each with a matching
+  `*_cancer_expected` column, the authors' mutational-signature expectation, so an
+  observed-over-expected enrichment is computable without re-deriving the signatures;
+- `gnomad_allele_count`, `gnomad_allele_number`, `gnomad_allele_freq`: the germline
+  population side;
+- `clinvar_pathog`, `clinvar_likely_pathog`, `clinvar_uncertain`, `clinvar_benign` and the
+  review status;
+- `snv`, whether the change is reachable by a single nucleotide substitution — which turns
+  out to be the column that makes the tumour comparison work at all;
+- fifteen predictor calls: SIFT, PolyPhen-2 (HDIV and HVAR), CADD, PROVEAN, FATHMM, SNAP2,
+  MutationAssessor, MutationTaster, LRT, MetaSVM, MetaLR, M-CAP, PTENpred, and
+  `predictor_fraction_deleterious`. So `U_am` can be put against the standard predictors on
+  the same 6,118 variants, with no new download at all;
+- `ddg`, `evolutionary_coupling_avg`, `AA1_psic`, and the structural columns of section 5.3.
+
+The per-position file `PTEN_positional_data.tsv` carries the site-level `cosmic_count` as
+well, next to `rsa`.
+
+## 10.5 A first look, since the data was already on disk
+
+Matching the exact scan to these columns gives 6,118 variants. This is not yet in the
+script; the numbers were computed by hand on 16 November and are a preview, not a result.
+
+**Raw, the comparison fails.** AUC of `dU` for "seen in COSMIC at least twice" is 0.513,
+pooled rho +0.02. Nothing.
+
+**The reason is the genetic code, not the energy.** COSMIC can only contain substitutions a
+tumour can reach, and 532 of the 533 COSMIC-observed variants are single-nucleotide changes,
+while the scan enumerates all 19 substitutions per site. Only 1,906 of the 6,118 are
+SNV-reachable, so "COSMIC versus not" is mostly "reachable by one base change versus not".
+Restricted to those 1,906:
+
+| contrast | n | AUC of `dU` |
+| --- | --- | --- |
+| seen in COSMIC at least once vs never | 532 vs 1,374 | 0.588 |
+| at least twice vs never | 243 | 0.613 |
+| at least five times vs never | 65 | 0.642 |
+| present in gnomAD vs absent | 49 | 0.366, i.e. 0.634 the other way round |
+| ClinVar pathogenic or likely pathogenic vs the rest (all 6,118) | 81 | 0.602 |
+| **COSMIC-recurrent vs present in gnomAD** | 236 vs 49 | **0.729** |
+
+The last row is the sharpest contrast in this whole document: somatic variants that recur in
+tumours against variants that healthy people carry. 0.729 is above the 0.686 the energy
+manages on abundance and level with the 0.720 on activity, and it needed no new experiment.
+It rests on 49 negatives, so it is a hint, not a measurement.
+
+Per site the COSMIC counts add nothing: rho −0.10 raw, and burial explains it (RSA against
+site COSMIC count −0.40). The recurrent sites are the buried ones. R130, the CpG hotspot with
+355 occurrences, ranks only 59th of 324 by cost; G129 ranks 26th and G132 48th.
+
+**What would make this a result rather than a preview**: a `tumour` subcommand that does the
+matching with the `snv` restriction built in, reports observed over expected per tissue
+instead of raw counts, and puts `U_am` beside the fifteen predictors on the same rows. Half a
+day, no GPU, and it can run in the cloud because the data is already downloaded. Say the word
+and I will write it.
+
+# 11. Cautions, and what is not verified
 
 1. **The chains are not equilibrated.** At T = 1, 198 sites never accepted a move in
    220,000. The list of the sampler's K-sites will keep shrinking as chains get longer. The

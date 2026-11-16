@@ -6921,3 +6921,20 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
          largely cancel (median difference 0.55), aligned signs do not (max
          151).
     Written up as section 6.2a of docs/pten_k_sites_explained.md.
+
+2026-11-16  PTEN databases: reachability probe, and what is already on disk
+    Probed ~40 database hosts from the cloud container. Reachable: OpenProteinSet
+    (already used), gnomAD v4.1 (both the GCS and the S3 public bucket), 1000genomes,
+    raw.githubusercontent.com, api.github.com, tcga-2-open on S3 (but UUID-keyed, so
+    useless without the blocked GDC manifest). Blocked: UniProt, Ensembl, OrthoDB,
+    eggNOG, InterPro, NCBI/ClinVar, RCSB, AlphaFold, COSMIC, cBioPortal and its
+    datahub (git-lfs), GDC API, Synapse/GENIE, ICGC, IntOGen, cancerhotspots, CIViC,
+    OncoKB, MaveDB, ProteinGym archives, LOVD, Zenodo, figshare, OSF, ColabFold.
+    The useful finding is that PTEN_variant_data.tsv, which `fetch` already downloads,
+    carries a 2018 COSMIC/ClinVar/gnomAD snapshot per variant plus 15 predictor calls
+    and an `snv` flag, on the same key as the scan. First look, by hand: raw AUC of dU
+    for COSMIC-recurrent is 0.513 (nothing), because 532 of 533 COSMIC variants are
+    single-nucleotide-reachable while the scan enumerates all 19; restricted to the
+    1,906 SNV-reachable variants it is 0.588/0.613/0.642 at counts >=1/2/5, gnomAD
+    0.366, ClinVar P/LP 0.602, and COSMIC-recurrent vs gnomAD-observed 0.729 on
+    236 vs 49. Per site COSMIC is just burial (RSA vs count -0.40). Doc section 10.
