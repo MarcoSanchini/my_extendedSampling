@@ -7041,3 +7041,20 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     class column: load_variants gained abundance2021_is_low from class_2021. The
     2021 row had been showing the 2018 classes' 0.686; its own classes give 0.689.
     Doc: AUC defined in 6.3, 6.4b table fixed, new section 6.6a.
+
+2026-11-16  PTEN: E does not converge in the number of decoding steps
+    Marco added E3, E4, E8 (interrupted at 373 of 380) and E32 on the same 20 sites.
+    On the 373 mutants all five share, NO pair of step counts agrees above +0.30 and
+    E4 vs E32 is -0.002: E2/E3/E4/E8/E32 correlate +0.264, +0.300, +0.122, +0.115
+    with E2 and +0.518, +0.331, +0.377, +0.138, +0.146 with U_am. Per site every one
+    agrees with U_am at +0.67..+0.74, so each scan carries real signal; the
+    step-count difference is simply bigger. Measured: median |E_n - E2| is 0.5x the
+    E2 interquartile range at 3 and 4 steps, 1.2x at 8, 1.6x at 32 -- changing the
+    step count moves E further than the mutations do. Mean rank of all five vs U_am
+    +0.528 against +0.518 for the best single, so it is not zero-mean noise.
+    Scale: IQR/median is 1.23 for U_am and 0.30 for E2. E is a normalised count of
+    flips in ~900 BINARY contacts and the median mutant flips 36 at 0.45 A RMSD, so
+    only pairs within a fraction of an A of the 8 A cutoff can move it, and which
+    those are depends on the decoding trajectory. Next test proposed: smooth
+    (sigmoid) contact instead of the hard cutoff, which separates "the threshold is
+    the problem" from "the decode is the problem". Doc section 6.6c.

@@ -1343,7 +1343,77 @@ response, the agreement between them bounds how much of each is effect: about a 
 essentially none for RMSD and pLDDT. RMSD and pLDDT used directly as costs are accordingly
 weaker still than E against the experiments (pooled +0.13 and +0.10 for abundance at 2
 steps). What E does carry is largely shared with `U_am`, as section 6.6a shows, and the
-step-count agreement above is the reason that sharing falls apart at 32 steps.
+step-count agreement above is the reason that sharing falls apart at 32 steps. Section 6.6c
+turns this two-point check into a sweep over five step counts, which is where the size of the
+effect becomes clear.
+
+## 6.6c The step-count sweep: E does not converge in the number of decoding steps
+
+Marco ran the same 20 sites at 3, 4, 8 and 32 steps as well (16 November; the 8-step run was
+interrupted at 373 of 380 mutants). That turns the two-point check of 6.6b into a sweep, and
+it says something stronger than "32 steps is no better". On the 373 mutants all five scans
+share:
+
+| Spearman | E2 | E3 | E4 | E8 | E32 |
+| --- | --- | --- | --- | --- | --- |
+| **E2** | 1 | +0.264 | +0.300 | +0.122 | +0.115 |
+| **E3** | +0.264 | 1 | +0.174 | +0.090 | +0.074 |
+| **E4** | +0.300 | +0.174 | 1 | +0.016 | −0.002 |
+| **E8** | +0.122 | +0.090 | +0.016 | 1 | +0.055 |
+| **E32** | +0.115 | +0.074 | −0.002 | +0.055 | 1 |
+| against `U_am` | **+0.518** | +0.331 | +0.377 | +0.138 | +0.146 |
+
+No pair of step counts agrees above +0.30, and 4 against 32 is zero. There is no sign of a
+limit: the number of decoding steps is not a nuisance parameter that converges, it selects a
+different per-mutant energy each time. Meanwhile every one of them correlates with `U_am`
+(+0.14 to +0.52), and per site they all correlate with it strongly (+0.67 to +0.74). So each
+scan does carry real signal about the mutation; what differs between them is larger than
+that signal.
+
+That is the thing to measure directly. The median |E_n − E2| against the spread of E2 across
+mutants (its interquartile range, 0.0060):
+
+| | E3 | E4 | E8 | E32 |
+| --- | --- | --- | --- | --- |
+| median shift from E2, in E2 interquartile ranges | 0.5× | 0.5× | 1.2× | **1.6×** |
+
+**Changing the number of decoding steps moves E further than the mutations do.** With the
+per-mutant spread smaller than the step-count shift, the correlations above are the most one
+could expect, and nothing is wrong with the scans.
+
+Averaging does not rescue it. Taking the mean rank of all five step counts gives +0.528
+against `U_am`, against +0.518 for the single best — so this is not zero-mean noise that more
+decodes would cancel, but five different systematic functionals. Against the experiments the
+mean rank is +0.10 for abundance and +0.17 for activity, no better than E2 alone.
+
+**Scale, which is the root of it.** For `U_am` the interquartile spread across these mutants
+is 1.23 times the median; for E at 2 steps it is 0.30. `U_am` is a sum of 52,326 squared
+differences of continuous log-attention values, so a substitution moves it smoothly and by a
+lot. E is a normalised count of flips in about 900 *binary* contacts, and the median mutant
+flips 36 of them while moving the structure by 0.45 Å. A mutation can only change E through
+pairs that happen to lie within a fraction of an Å of the 8 Å cutoff — and which pairs those
+are is a property of the decoding trajectory, hence of the step count.
+
+**Why the attention energy should be expected to win here, rather than this being an
+anomaly.** The decoder returns the most likely structure for a sequence, and for a point
+mutant that is essentially always the wild-type fold; the decode projects the mutation away.
+This is the documented behaviour of structure predictors generally: predicted structures are
+nearly invariant to single substitutions and their confidence metrics are poor predictors of
+stability effects, which is why deep-mutational-scan prediction is done with
+sequence-likelihood models rather than with structure predictors. (Background, not measured
+here.) The attention map sits on the sequence side of that divide. It also matters what the
+experiments measure: abundance is a folding free energy, which no single predicted structure
+expresses, while activity is chemistry at a site the contact map barely resolves.
+
+**What would test the threshold explanation.** Replace the hard 8 Å cutoff by a smooth
+contact — a sigmoid of the distance — so that a pair at 7.9 Å and one at 8.1 Å stop counting
+as a whole contact gained or lost. The CA distances already exist inside
+`bench_decode.contact_map` before the threshold is applied. If a soft E agrees across step
+counts far better than +0.1 to +0.3, the threshold was the problem and a soft E may be usable
+in the loop; if it does not, the decode itself is the problem and no reweighting will fix it.
+That is one change to `scan_mutants_E.py` and about 15 minutes on astaroth for the 20-site
+subset at two step counts. It departs from the paper's definition of E, which is a reason to
+report it as a diagnostic rather than as the energy.
 
 **What it means for the sampler.** Two things, one for each use of E.
 
@@ -1357,13 +1427,9 @@ step-count agreement above is the reason that sharing falls apart at 32 steps.
    sequence's fold with, where the differences are large (many mutations, not one) and the
    jitter of a few tens of contacts is small against them. Nothing here argues against that.
 
-If E is to be tried in the loop anyway, the jitter suggests a fix that keeps the paper's
-spirit: replace the hard 8 Å cutoff by a smooth contact (a sigmoid of the distance) so that
-a pair at 7.9 Å and one at 8.1 Å no longer count as a full contact gained or lost. The CA
-distances are already computed inside `bench_decode.contact_map` before the threshold is
-applied, so it is a few lines in `scan_mutants_E.py` plus 15 minutes of astaroth. It is a
-departure from the paper's definition, though, and worth doing only if E in the loop is
-still wanted after these numbers.
+If E is to be tried in the loop anyway, the smooth-contact diagnostic at the end of 6.6c is
+the thing to run first: it decides whether the hard 8 Å threshold is what is costing E its
+per-mutant resolution, or whether the decode itself is.
 
 # 7. InterPro, Pfam, and the step to run locally
 
