@@ -1,0 +1,131 @@
+nohup: ignoring input
+pten_1d5r: 324 residues; 18 sequences x steps [2, 4, 16, 32, 128]; crystal paired at 307 residues
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 34833.78it/s]
+/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/bench_decode.py:214: UserWarning: Converting a tensor with requires_grad=True to a scalar may lead to unexpected behavior.
+Consider using tensor.detach() first. (Triggered internally at /pytorch/torch/csrc/autograd/generated/python_variable_methods.cpp:838.)
+  return am.detach().float().cpu().numpy(), float(U), time.perf_counter() - t0
+reference                                  attention  t  0.045s  P@L 0.725  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am      0.0 (recomputed      0.0)  Hd 0
+reference                                  2 steps    t  0.133s  P@L 0.981  pLDDT  88.8  RMSD   1.98  E_xtal 0.114  E_ref 0.000  U_am      0.0 (recomputed      nan)  Hd 0
+reference                                  4 steps    t  0.228s  P@L 0.981  pLDDT  89.4  RMSD   2.09  E_xtal 0.116  E_ref 0.000  U_am      0.0 (recomputed      nan)  Hd 0
+reference                                  16 steps   t  0.808s  P@L 0.963  pLDDT  91.4  RMSD   2.20  E_xtal 0.118  E_ref 0.000  U_am      0.0 (recomputed      nan)  Hd 0
+reference                                  32 steps   t  1.570s  P@L 0.972  pLDDT  93.8  RMSD   2.07  E_xtal 0.112  E_ref 0.000  U_am      0.0 (recomputed      nan)  Hd 0
+reference                                  128 steps  t  6.190s  P@L 0.969  pLDDT  93.2  RMSD   1.95  E_xtal 0.105  E_ref 0.000  U_am      0.0 (recomputed      nan)  Hd 0
+random0                                    attention  t  0.045s  P@L 0.074  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am      nan (recomputed  74772.6)  Hd 307
+random0                                    2 steps    t  0.133s  P@L 0.025  pLDDT  33.7  RMSD  27.06  E_xtal 0.830  E_ref 0.820  U_am      nan (recomputed      nan)  Hd 307
+random0                                    4 steps    t  0.228s  P@L 0.028  pLDDT  45.6  RMSD  31.87  E_xtal 0.842  E_ref 0.843  U_am      nan (recomputed      nan)  Hd 307
+random0                                    16 steps   t  0.807s  P@L 0.015  pLDDT  53.2  RMSD  30.56  E_xtal 0.834  E_ref 0.841  U_am      nan (recomputed      nan)  Hd 307
+random0                                    32 steps   t  1.569s  P@L 0.046  pLDDT  59.3  RMSD  32.15  E_xtal 0.843  E_ref 0.832  U_am      nan (recomputed      nan)  Hd 307
+random0                                    128 steps  t  6.148s  P@L 0.034  pLDDT  72.7  RMSD  37.35  E_xtal 0.858  E_ref 0.861  U_am      nan (recomputed      nan)  Hd 307
+random1                                    attention  t  0.045s  P@L 0.074  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am      nan (recomputed  74089.9)  Hd 310
+random1                                    2 steps    t  0.131s  P@L 0.012  pLDDT  31.8  RMSD  21.35  E_xtal 0.775  E_ref 0.766  U_am      nan (recomputed      nan)  Hd 310
+random1                                    4 steps    t  0.226s  P@L 0.031  pLDDT  37.2  RMSD  21.75  E_xtal 0.775  E_ref 0.771  U_am      nan (recomputed      nan)  Hd 310
+random1                                    16 steps   t  0.805s  P@L 0.028  pLDDT  59.3  RMSD  60.78  E_xtal 0.797  E_ref 0.788  U_am      nan (recomputed      nan)  Hd 310
+random1                                    32 steps   t  1.576s  P@L 0.080  pLDDT  59.1  RMSD  52.75  E_xtal 0.733  E_ref 0.742  U_am      nan (recomputed      nan)  Hd 310
+random1                                    128 steps  t  6.175s  P@L 0.093  pLDDT  75.7  RMSD  75.68  E_xtal 0.718  E_ref 0.727  U_am      nan (recomputed      nan)  Hd 310
+pten1d5r_study/equil_ref/T2/chain0@325000  attention  t  0.045s  P@L 0.738  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am    295.8 (recomputed    295.8)  Hd 74
+pten1d5r_study/equil_ref/T2/chain0@325000  2 steps    t  0.131s  P@L 0.978  pLDDT  88.1  RMSD   2.01  E_xtal 0.127  E_ref 0.041  U_am    295.8 (recomputed      nan)  Hd 74
+pten1d5r_study/equil_ref/T2/chain0@325000  4 steps    t  0.227s  P@L 0.975  pLDDT  87.6  RMSD   2.04  E_xtal 0.119  E_ref 0.041  U_am    295.8 (recomputed      nan)  Hd 74
+pten1d5r_study/equil_ref/T2/chain0@325000  16 steps   t  0.803s  P@L 0.975  pLDDT  93.1  RMSD   1.93  E_xtal 0.116  E_ref 0.044  U_am    295.8 (recomputed      nan)  Hd 74
+pten1d5r_study/equil_ref/T2/chain0@325000  32 steps   t  1.572s  P@L 0.972  pLDDT  92.5  RMSD   2.06  E_xtal 0.121  E_ref 0.040  U_am    295.8 (recomputed      nan)  Hd 74
+pten1d5r_study/equil_ref/T2/chain0@325000  128 steps  t  6.221s  P@L 0.972  pLDDT  93.0  RMSD   2.07  E_xtal 0.123  E_ref 0.051  U_am    295.8 (recomputed      nan)  Hd 74
+pten1d5r_study/equil_ref/T2/chain0@488000  attention  t  0.045s  P@L 0.731  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am    359.0 (recomputed    359.0)  Hd 86
+pten1d5r_study/equil_ref/T2/chain0@488000  2 steps    t  0.131s  P@L 0.972  pLDDT  88.2  RMSD   2.03  E_xtal 0.115  E_ref 0.036  U_am    359.0 (recomputed      nan)  Hd 86
+pten1d5r_study/equil_ref/T2/chain0@488000  4 steps    t  0.232s  P@L 0.975  pLDDT  88.9  RMSD   1.95  E_xtal 0.112  E_ref 0.036  U_am    359.0 (recomputed      nan)  Hd 86
+pten1d5r_study/equil_ref/T2/chain0@488000  16 steps   t  0.814s  P@L 0.972  pLDDT  92.0  RMSD   2.00  E_xtal 0.117  E_ref 0.040  U_am    359.0 (recomputed      nan)  Hd 86
+pten1d5r_study/equil_ref/T2/chain0@488000  32 steps   t  1.594s  P@L 0.972  pLDDT  91.2  RMSD   2.03  E_xtal 0.112  E_ref 0.049  U_am    359.0 (recomputed      nan)  Hd 86
+pten1d5r_study/equil_ref/T2/chain0@488000  128 steps  t  6.234s  P@L 0.972  pLDDT  92.6  RMSD   1.98  E_xtal 0.116  E_ref 0.068  U_am    359.0 (recomputed      nan)  Hd 86
+pten1d5r_study/equil_ref/T2/chain0@650000  attention  t  0.046s  P@L 0.728  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am    294.1 (recomputed    294.1)  Hd 76
+pten1d5r_study/equil_ref/T2/chain0@650000  2 steps    t  0.134s  P@L 0.978  pLDDT  86.3  RMSD   1.99  E_xtal 0.116  E_ref 0.034  U_am    294.1 (recomputed      nan)  Hd 76
+pten1d5r_study/equil_ref/T2/chain0@650000  4 steps    t  0.232s  P@L 0.972  pLDDT  87.9  RMSD   2.03  E_xtal 0.114  E_ref 0.051  U_am    294.1 (recomputed      nan)  Hd 76
+pten1d5r_study/equil_ref/T2/chain0@650000  16 steps   t  0.814s  P@L 0.972  pLDDT  91.3  RMSD   2.05  E_xtal 0.109  E_ref 0.030  U_am    294.1 (recomputed      nan)  Hd 76
+pten1d5r_study/equil_ref/T2/chain0@650000  32 steps   t  1.589s  P@L 0.966  pLDDT  91.2  RMSD   2.11  E_xtal 0.119  E_ref 0.045  U_am    294.1 (recomputed      nan)  Hd 76
+pten1d5r_study/equil_ref/T2/chain0@650000  128 steps  t  6.205s  P@L 0.960  pLDDT  93.2  RMSD   2.06  E_xtal 0.117  E_ref 0.047  U_am    294.1 (recomputed      nan)  Hd 76
+pten1d5r_study/equil/T3/chain0@90000       attention  t  0.045s  P@L 0.716  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am    735.2 (recomputed    735.2)  Hd 133
+pten1d5r_study/equil/T3/chain0@90000       2 steps    t  0.132s  P@L 0.975  pLDDT  86.8  RMSD   2.02  E_xtal 0.117  E_ref 0.044  U_am    735.2 (recomputed      nan)  Hd 133
+pten1d5r_study/equil/T3/chain0@90000       4 steps    t  0.231s  P@L 0.972  pLDDT  87.5  RMSD   1.94  E_xtal 0.117  E_ref 0.051  U_am    735.2 (recomputed      nan)  Hd 133
+pten1d5r_study/equil/T3/chain0@90000       16 steps   t  0.811s  P@L 0.963  pLDDT  90.5  RMSD   2.02  E_xtal 0.115  E_ref 0.053  U_am    735.2 (recomputed      nan)  Hd 133
+pten1d5r_study/equil/T3/chain0@90000       32 steps   t  1.584s  P@L 0.966  pLDDT  91.2  RMSD   2.14  E_xtal 0.116  E_ref 0.057  U_am    735.2 (recomputed      nan)  Hd 133
+pten1d5r_study/equil/T3/chain0@90000       128 steps  t  6.210s  P@L 0.969  pLDDT  92.8  RMSD   2.12  E_xtal 0.116  E_ref 0.063  U_am    735.2 (recomputed      nan)  Hd 133
+pten1d5r_study/equil/T3/chain0@135000      attention  t  0.045s  P@L 0.716  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am    630.2 (recomputed    630.2)  Hd 124
+pten1d5r_study/equil/T3/chain0@135000      2 steps    t  0.131s  P@L 0.978  pLDDT  88.1  RMSD   1.98  E_xtal 0.112  E_ref 0.042  U_am    630.2 (recomputed      nan)  Hd 124
+pten1d5r_study/equil/T3/chain0@135000      4 steps    t  0.228s  P@L 0.975  pLDDT  88.2  RMSD   2.02  E_xtal 0.115  E_ref 0.052  U_am    630.2 (recomputed      nan)  Hd 124
+pten1d5r_study/equil/T3/chain0@135000      16 steps   t  0.804s  P@L 0.972  pLDDT  92.2  RMSD   2.03  E_xtal 0.115  E_ref 0.039  U_am    630.2 (recomputed      nan)  Hd 124
+pten1d5r_study/equil/T3/chain0@135000      32 steps   t  1.590s  P@L 0.963  pLDDT  91.5  RMSD   2.15  E_xtal 0.124  E_ref 0.053  U_am    630.2 (recomputed      nan)  Hd 124
+pten1d5r_study/equil/T3/chain0@135000      128 steps  t  6.216s  P@L 0.972  pLDDT  93.4  RMSD   2.08  E_xtal 0.119  E_ref 0.069  U_am    630.2 (recomputed      nan)  Hd 124
+pten1d5r_study/equil/T3/chain0@180000      attention  t  0.045s  P@L 0.728  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am    622.9 (recomputed    622.9)  Hd 129
+pten1d5r_study/equil/T3/chain0@180000      2 steps    t  0.132s  P@L 0.966  pLDDT  88.2  RMSD   2.09  E_xtal 0.118  E_ref 0.043  U_am    622.9 (recomputed      nan)  Hd 129
+pten1d5r_study/equil/T3/chain0@180000      4 steps    t  0.227s  P@L 0.975  pLDDT  87.0  RMSD   2.03  E_xtal 0.116  E_ref 0.047  U_am    622.9 (recomputed      nan)  Hd 129
+pten1d5r_study/equil/T3/chain0@180000      16 steps   t  0.803s  P@L 0.963  pLDDT  88.4  RMSD   2.08  E_xtal 0.124  E_ref 0.062  U_am    622.9 (recomputed      nan)  Hd 129
+pten1d5r_study/equil/T3/chain0@180000      32 steps   t  1.582s  P@L 0.969  pLDDT  91.7  RMSD   2.09  E_xtal 0.122  E_ref 0.061  U_am    622.9 (recomputed      nan)  Hd 129
+pten1d5r_study/equil/T3/chain0@180000      128 steps  t  6.209s  P@L 0.969  pLDDT  91.5  RMSD   2.11  E_xtal 0.126  E_ref 0.064  U_am    622.9 (recomputed      nan)  Hd 129
+pten1d5r_study/equil/T5/chain0@90000       attention  t  0.045s  P@L 0.719  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am   1274.0 (recomputed   1274.0)  Hd 187
+pten1d5r_study/equil/T5/chain0@90000       2 steps    t  0.136s  P@L 0.969  pLDDT  85.0  RMSD   2.29  E_xtal 0.124  E_ref 0.065  U_am   1274.0 (recomputed      nan)  Hd 187
+pten1d5r_study/equil/T5/chain0@90000       4 steps    t  0.229s  P@L 0.972  pLDDT  87.8  RMSD   2.04  E_xtal 0.124  E_ref 0.060  U_am   1274.0 (recomputed      nan)  Hd 187
+pten1d5r_study/equil/T5/chain0@90000       16 steps   t  0.806s  P@L 0.957  pLDDT  91.7  RMSD   2.23  E_xtal 0.137  E_ref 0.071  U_am   1274.0 (recomputed      nan)  Hd 187
+pten1d5r_study/equil/T5/chain0@90000       32 steps   t  1.568s  P@L 0.963  pLDDT  93.0  RMSD   2.24  E_xtal 0.131  E_ref 0.069  U_am   1274.0 (recomputed      nan)  Hd 187
+pten1d5r_study/equil/T5/chain0@90000       128 steps  t  6.170s  P@L 0.966  pLDDT  95.2  RMSD   2.20  E_xtal 0.141  E_ref 0.081  U_am   1274.0 (recomputed      nan)  Hd 187
+pten1d5r_study/equil/T5/chain0@135000      attention  t  0.045s  P@L 0.738  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am   1206.5 (recomputed   1206.5)  Hd 185
+pten1d5r_study/equil/T5/chain0@135000      2 steps    t  0.134s  P@L 0.969  pLDDT  85.9  RMSD   2.13  E_xtal 0.128  E_ref 0.065  U_am   1206.5 (recomputed      nan)  Hd 185
+pten1d5r_study/equil/T5/chain0@135000      4 steps    t  0.231s  P@L 0.975  pLDDT  86.4  RMSD   1.96  E_xtal 0.122  E_ref 0.074  U_am   1206.5 (recomputed      nan)  Hd 185
+pten1d5r_study/equil/T5/chain0@135000      16 steps   t  0.806s  P@L 0.972  pLDDT  89.1  RMSD   1.99  E_xtal 0.127  E_ref 0.074  U_am   1206.5 (recomputed      nan)  Hd 185
+pten1d5r_study/equil/T5/chain0@135000      32 steps   t  1.572s  P@L 0.975  pLDDT  90.8  RMSD   1.98  E_xtal 0.125  E_ref 0.060  U_am   1206.5 (recomputed      nan)  Hd 185
+pten1d5r_study/equil/T5/chain0@135000      128 steps  t  6.223s  P@L 0.972  pLDDT  91.4  RMSD   2.03  E_xtal 0.126  E_ref 0.071  U_am   1206.5 (recomputed      nan)  Hd 185
+pten1d5r_study/equil/T5/chain0@180000      attention  t  0.046s  P@L 0.750  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am   1342.1 (recomputed   1342.1)  Hd 187
+pten1d5r_study/equil/T5/chain0@180000      2 steps    t  0.135s  P@L 0.975  pLDDT  86.5  RMSD   1.96  E_xtal 0.122  E_ref 0.064  U_am   1342.1 (recomputed      nan)  Hd 187
+pten1d5r_study/equil/T5/chain0@180000      4 steps    t  0.230s  P@L 0.975  pLDDT  85.4  RMSD   2.00  E_xtal 0.123  E_ref 0.070  U_am   1342.1 (recomputed      nan)  Hd 187
+pten1d5r_study/equil/T5/chain0@180000      16 steps   t  0.800s  P@L 0.969  pLDDT  89.2  RMSD   2.06  E_xtal 0.123  E_ref 0.076  U_am   1342.1 (recomputed      nan)  Hd 187
+pten1d5r_study/equil/T5/chain0@180000      32 steps   t  1.585s  P@L 0.969  pLDDT  91.0  RMSD   2.08  E_xtal 0.127  E_ref 0.065  U_am   1342.1 (recomputed      nan)  Hd 187
+pten1d5r_study/equil/T5/chain0@180000      128 steps  t  6.148s  P@L 0.972  pLDDT  90.5  RMSD   1.99  E_xtal 0.126  E_ref 0.081  U_am   1342.1 (recomputed      nan)  Hd 187
+pten1d5r_study/equil_ref/T8/chain0@75000   attention  t  0.045s  P@L 0.713  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am   1791.5 (recomputed   1791.5)  Hd 230
+pten1d5r_study/equil_ref/T8/chain0@75000   2 steps    t  0.131s  P@L 0.969  pLDDT  86.2  RMSD   2.13  E_xtal 0.130  E_ref 0.064  U_am   1791.5 (recomputed      nan)  Hd 230
+pten1d5r_study/equil_ref/T8/chain0@75000   4 steps    t  0.227s  P@L 0.963  pLDDT  85.7  RMSD   2.47  E_xtal 0.147  E_ref 0.085  U_am   1791.5 (recomputed      nan)  Hd 230
+pten1d5r_study/equil_ref/T8/chain0@75000   16 steps   t  0.809s  P@L 0.972  pLDDT  90.3  RMSD   2.55  E_xtal 0.144  E_ref 0.089  U_am   1791.5 (recomputed      nan)  Hd 230
+pten1d5r_study/equil_ref/T8/chain0@75000   32 steps   t  1.580s  P@L 0.972  pLDDT  91.4  RMSD   2.42  E_xtal 0.141  E_ref 0.079  U_am   1791.5 (recomputed      nan)  Hd 230
+pten1d5r_study/equil_ref/T8/chain0@75000   128 steps  t  6.159s  P@L 0.969  pLDDT  92.9  RMSD   2.35  E_xtal 0.143  E_ref 0.090  U_am   1791.5 (recomputed      nan)  Hd 230
+pten1d5r_study/equil_ref/T8/chain0@112000  attention  t  0.045s  P@L 0.735  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am   1909.7 (recomputed   1909.7)  Hd 222
+pten1d5r_study/equil_ref/T8/chain0@112000  2 steps    t  0.131s  P@L 0.978  pLDDT  85.0  RMSD   2.30  E_xtal 0.138  E_ref 0.069  U_am   1909.7 (recomputed      nan)  Hd 222
+pten1d5r_study/equil_ref/T8/chain0@112000  4 steps    t  0.226s  P@L 0.969  pLDDT  85.4  RMSD   2.30  E_xtal 0.134  E_ref 0.063  U_am   1909.7 (recomputed      nan)  Hd 222
+pten1d5r_study/equil_ref/T8/chain0@112000  16 steps   t  0.798s  P@L 0.972  pLDDT  88.7  RMSD   2.20  E_xtal 0.133  E_ref 0.072  U_am   1909.7 (recomputed      nan)  Hd 222
+pten1d5r_study/equil_ref/T8/chain0@112000  32 steps   t  1.576s  P@L 0.957  pLDDT  89.5  RMSD   2.28  E_xtal 0.137  E_ref 0.076  U_am   1909.7 (recomputed      nan)  Hd 222
+pten1d5r_study/equil_ref/T8/chain0@112000  128 steps  t  6.185s  P@L 0.969  pLDDT  91.2  RMSD   2.20  E_xtal 0.130  E_ref 0.072  U_am   1909.7 (recomputed      nan)  Hd 222
+pten1d5r_study/equil_ref/T8/chain0@150000  attention  t  0.046s  P@L 0.731  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am   1904.0 (recomputed   1904.0)  Hd 213
+pten1d5r_study/equil_ref/T8/chain0@150000  2 steps    t  0.132s  P@L 0.972  pLDDT  84.5  RMSD   2.66  E_xtal 0.130  E_ref 0.071  U_am   1904.0 (recomputed      nan)  Hd 213
+pten1d5r_study/equil_ref/T8/chain0@150000  4 steps    t  0.228s  P@L 0.969  pLDDT  84.3  RMSD   3.39  E_xtal 0.130  E_ref 0.056  U_am   1904.0 (recomputed      nan)  Hd 213
+pten1d5r_study/equil_ref/T8/chain0@150000  16 steps   t  0.805s  P@L 0.966  pLDDT  88.3  RMSD   2.23  E_xtal 0.139  E_ref 0.086  U_am   1904.0 (recomputed      nan)  Hd 213
+pten1d5r_study/equil_ref/T8/chain0@150000  32 steps   t  1.574s  P@L 0.938  pLDDT  89.9  RMSD   3.22  E_xtal 0.151  E_ref 0.099  U_am   1904.0 (recomputed      nan)  Hd 213
+pten1d5r_study/equil_ref/T8/chain0@150000  128 steps  t  6.182s  P@L 0.938  pLDDT  90.5  RMSD   2.45  E_xtal 0.154  E_ref 0.110  U_am   1904.0 (recomputed      nan)  Hd 213
+pten1d5r_study/equil_ref/T16/chain0@45000  attention  t  0.045s  P@L 0.731  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am   3012.5 (recomputed   3012.5)  Hd 261
+pten1d5r_study/equil_ref/T16/chain0@45000  2 steps    t  0.131s  P@L 0.954  pLDDT  83.7  RMSD   2.14  E_xtal 0.160  E_ref 0.102  U_am   3012.5 (recomputed      nan)  Hd 261
+pten1d5r_study/equil_ref/T16/chain0@45000  4 steps    t  0.227s  P@L 0.957  pLDDT  83.0  RMSD   2.14  E_xtal 0.151  E_ref 0.094  U_am   3012.5 (recomputed      nan)  Hd 261
+pten1d5r_study/equil_ref/T16/chain0@45000  16 steps   t  0.800s  P@L 0.963  pLDDT  86.6  RMSD   2.17  E_xtal 0.145  E_ref 0.105  U_am   3012.5 (recomputed      nan)  Hd 261
+pten1d5r_study/equil_ref/T16/chain0@45000  32 steps   t  1.572s  P@L 0.948  pLDDT  86.5  RMSD   2.31  E_xtal 0.156  E_ref 0.109  U_am   3012.5 (recomputed      nan)  Hd 261
+pten1d5r_study/equil_ref/T16/chain0@45000  128 steps  t  6.172s  P@L 0.969  pLDDT  88.5  RMSD   2.14  E_xtal 0.145  E_ref 0.099  U_am   3012.5 (recomputed      nan)  Hd 261
+pten1d5r_study/equil_ref/T16/chain0@68000  attention  t  0.045s  P@L 0.713  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am   2880.1 (recomputed   2880.1)  Hd 241
+pten1d5r_study/equil_ref/T16/chain0@68000  2 steps    t  0.135s  P@L 0.975  pLDDT  83.0  RMSD   2.07  E_xtal 0.132  E_ref 0.073  U_am   2880.1 (recomputed      nan)  Hd 241
+pten1d5r_study/equil_ref/T16/chain0@68000  4 steps    t  0.229s  P@L 0.969  pLDDT  82.4  RMSD   2.34  E_xtal 0.148  E_ref 0.086  U_am   2880.1 (recomputed      nan)  Hd 241
+pten1d5r_study/equil_ref/T16/chain0@68000  16 steps   t  0.817s  P@L 0.966  pLDDT  88.3  RMSD   2.35  E_xtal 0.151  E_ref 0.102  U_am   2880.1 (recomputed      nan)  Hd 241
+pten1d5r_study/equil_ref/T16/chain0@68000  32 steps   t  1.576s  P@L 0.963  pLDDT  88.5  RMSD   2.10  E_xtal 0.141  E_ref 0.095  U_am   2880.1 (recomputed      nan)  Hd 241
+pten1d5r_study/equil_ref/T16/chain0@68000  128 steps  t  6.150s  P@L 0.963  pLDDT  90.2  RMSD   2.21  E_xtal 0.135  E_ref 0.095  U_am   2880.1 (recomputed      nan)  Hd 241
+pten1d5r_study/equil_ref/T16/chain0@90000  attention  t  0.045s  P@L 0.731  pLDDT   nan  RMSD    nan  E_xtal nan  E_ref nan  U_am   3073.5 (recomputed   3073.5)  Hd 254
+pten1d5r_study/equil_ref/T16/chain0@90000  2 steps    t  0.132s  P@L 0.966  pLDDT  84.1  RMSD   2.35  E_xtal 0.138  E_ref 0.088  U_am   3073.5 (recomputed      nan)  Hd 254
+pten1d5r_study/equil_ref/T16/chain0@90000  4 steps    t  0.229s  P@L 0.975  pLDDT  83.3  RMSD   2.06  E_xtal 0.139  E_ref 0.083  U_am   3073.5 (recomputed      nan)  Hd 254
+pten1d5r_study/equil_ref/T16/chain0@90000  16 steps   t  0.801s  P@L 0.975  pLDDT  87.2  RMSD   2.38  E_xtal 0.140  E_ref 0.096  U_am   3073.5 (recomputed      nan)  Hd 254
+pten1d5r_study/equil_ref/T16/chain0@90000  32 steps   t  1.568s  P@L 0.975  pLDDT  87.4  RMSD   2.29  E_xtal 0.136  E_ref 0.100  U_am   3073.5 (recomputed      nan)  Hd 254
+pten1d5r_study/equil_ref/T16/chain0@90000  128 steps  t  6.181s  P@L 0.975  pLDDT  89.2  RMSD   2.40  E_xtal 0.137  E_ref 0.106  U_am   3073.5 (recomputed      nan)  Hd 254
+
+# summary (18 sequences; times are medians over all of them, in seconds)
+# t = scoring one sequence (attention: forward only; decode: generate + decoder); t_fwd_bwd = one-pass move
+# P@L = top-L long-range contact precision vs the crystal; samp_* = medians over chain snapshots
+# dE = |E_ref(n) - E_ref(128 steps)| over snapshots; rho = Spearman(E_ref or recomputed U_am, U_am from data.dat)
+method	t	t_gen	t_dec	t_fwd_bwd	ref_P@L	ref_pLDDT	ref_RMSD	ref_E_xtal	samp_P@L	samp_pLDDT	samp_E_ref	dE_med	dE_max	rho	rep_E_max
+/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/bench_decode.py:296: RuntimeWarning: All-NaN slice encountered
+  med = lambda key, rr=R: float(np.nanmedian([r[key] for r in rr])) if rr else np.nan
+attention	0.045	0.045	nan	0.109	0.725	nan	nan	nan	0.731	nan	nan	nan	nan	1.00	nan
+2 steps	0.132	0.099	0.033	nan	0.981	88.8	1.98	0.114	0.972	86.2	0.064	0.018	0.039	0.95	0.000
+4 steps	0.228	0.195	0.033	nan	0.981	89.4	2.09	0.116	0.972	86.4	0.060	0.011	0.053	0.84	0.000
+16 steps	0.806	0.773	0.033	nan	0.963	91.4	2.20	0.118	0.972	89.2	0.072	0.007	0.030	0.91	0.000
+32 steps	1.576	1.542	0.033	nan	0.972	93.8	2.07	0.112	0.966	91.2	0.065	0.011	0.019	0.95	0.000
+128 steps	6.183	6.149	0.033	nan	0.969	93.2	1.95	0.105	0.969	91.5	0.072	0.000	0.000	0.90	0.000
+# random sequences at 128 steps: E_ref 0.794, pLDDT 74.2, P@L 0.063 (the floor)
+# peak GPU memory allocated by this process: 6742 MB
+Saved -> decode_bench/pten_decodes.csv
