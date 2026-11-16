@@ -528,15 +528,83 @@ and T = 2) there are 104. They contain 16 of the 28 natural sites (9.0 expected)
 
 ## 5.3 The burial control
 
-A residue buried in the core is hard to mutate for any reason, and all the references know
-it: relative solvent accessibility (RSA, the exposed fraction of the side chain in the
-crystal, from the VAMP-seq table) correlates +0.65 with abundance, +0.64 with activity and
-+0.53 with family entropy. It also correlates +0.54 to +0.58 with the sampled entropy at
-T = 4 and 8. So part of any agreement is just "both know which sites are buried".
+### What RSA is
 
-The columns "burial removed" are partial correlations: RSA is regressed out of both ranks
-and the residuals are correlated. What remains is agreement that burial cannot explain. At
-T = 8 it is +0.45 for the family entropy, +0.41 for activity and +0.19 for abundance.
+**Relative solvent accessibility.** Take a residue in the folded structure and measure the
+area of its surface that a water-sized sphere can still touch — its solvent-accessible
+surface area. On its own that number means little, because a tryptophan is bigger than a
+glycine, so it is divided by the area the *same* residue type would expose with nothing
+packed around it (the standard reference is that residue in an extended Gly-X-Gly
+tripeptide). The ratio is the relative solvent accessibility, and it is comparable across
+residue types: **0 means completely buried in the core, 100% means as exposed as it could
+possibly be.** Values slightly above 100 occur for very exposed residues in unusual
+backbone conformations, which is why ours reach 108.
+
+Ours is the `rsa` column of the VAMP-seq positional table, computed by Matreyek et al. on
+the 1D5R crystal. It exists for the 277 of our 324 sites that are resolved in that crystal.
+Median 18.7%, with 85 sites under 5% (genuinely core) and 56 above 50% (surface).
+
+### Why it has to be controlled for
+
+Burial drives everything at once. A buried side chain is packed against its neighbours, so
+almost any substitution disturbs the packing and destabilises the protein; and evolution
+conserves those positions for the same reason. Measured on our table:
+
+| | buried (RSA < 10%, 103 sites) | exposed (RSA > 40%, 77 sites) |
+| --- | --- | --- |
+| mean `log10 dU` | 1.70 | 1.40 |
+| mean abundance score | 0.50 | 0.83 |
+| mean family entropy | 1.17 | 2.05 |
+
+Every column separates. So burial is a **common cause**: it independently raises the
+energy's cost, lowers the experimental abundance and lowers the natural entropy. Two
+quantities that both track burial will correlate with each other even if neither knows
+anything else. And that is the whole worry, because RSA can be computed from the crystal
+structure in milliseconds with no model at all — if the energy's agreement with the
+experiments were to vanish once burial is removed, then 6,156 ESM3 forward passes would be
+an expensive way of rediscovering which residues are in the core.
+
+### The "RSA itself" row, and what regressing it out does
+
+The row labelled **RSA itself** is the plain Spearman of each quantity with RSA: how much
+each one is simply measuring burial. On the site table:
+
+| quantity | Spearman with RSA |
+| --- | --- |
+| abundance (VAMP-seq 2021) | +0.65 |
+| activity (Mighell) | +0.64 |
+| family entropy | +0.53 |
+| orthologs entropy | +0.40 |
+| `−mean log10 dU` (section 6) | **+0.43** |
+| sampled entropy, T = 4 and 8 | +0.54 to +0.58 |
+
+Read the fifth row against the ones above it: the energy agrees with burial (+0.43) *more
+strongly than it agrees with any of the three biological references* (+0.31 for abundance is
+its best). That is the fact that makes the control necessary rather than decorative.
+
+**Regressing it out** means taking a partial correlation. Concretely, in
+`partial_spearman`: rank all three quantities; fit a straight line predicting rank(x) from
+rank(RSA) and keep the residual, i.e. the part of x's ordering that burial does not account
+for; do the same for y; then correlate the two residuals. In words, it answers *among sites
+that are equally buried, do the two still agree?* What survives is agreement burial cannot
+explain.
+
+One honest caveat on the direction of the error. Partialling out RSA removes everything that
+burial can account for, including any genuine signal that happens to travel with burial —
+and some of what the energy legitimately knows about packing *is* burial. So the partial
+correlations are a deliberately conservative floor, not an unbiased estimate: the truth lies
+somewhere between the raw and the partial column.
+
+A related point worth noticing, because it is the quiet strength of section 6.3's
+within-site statistic: **RSA is a property of a position, so it is constant within a site.**
+It therefore cannot contribute anything to a within-site ranking, and the within-site
+correlation needs no burial control at all — it has already conditioned on burial
+completely, along with every other per-site property, measured or not.
+
+### At T = 8
+
+What remains after burial is removed is +0.45 for the family entropy, +0.41 for activity
+and +0.19 for abundance.
 
 **Reading.** The sampler is not flat, and the signal grows with longer chains. But once
 burial is set aside it follows what the family conserves more than what keeps the protein
@@ -923,7 +991,10 @@ negative, as the floor argument of 6.1 requires. The scan was first run at `--ba
 redone at the default after 6.2b; the numbers below are from the exact run, and 6.2b reports
 what the difference between the two turned out to be.
 
-Per site, Spearman of `−mean log10 dU` against each reference (n = 280 to 311):
+Per site, Spearman of `−mean log10 dU` against each reference (n = 280 to 311). Both columns
+and the last row are defined in section 5.3: the second column is the partial correlation
+given RSA, "among sites that are equally buried, do the two still agree?", and the last row
+is how much the energy is simply measuring burial.
 
 | reference | raw | with burial (RSA) regressed out |
 | --- | --- | --- |
@@ -931,7 +1002,11 @@ Per site, Spearman of `−mean log10 dU` against each reference (n = 280 to 311)
 | PTEN-like family entropy | +0.21 | −0.07 |
 | abundance (VAMP-seq 2021) | +0.31 | **+0.12** |
 | activity (Mighell) | +0.30 | +0.05 |
-| RSA itself | +0.43 | — |
+| RSA itself | **+0.43** | — |
+
+The last row is the one to read first: the energy tracks burial more closely than it tracks
+any of the three biological references. Most of what the raw column shows is the core of the
+protein being expensive, which the crystal structure already says for free.
 
 Per variant, each in-silico mutant against the same substitution in the laboratory:
 
