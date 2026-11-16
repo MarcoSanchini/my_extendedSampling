@@ -802,18 +802,68 @@ position, same wild-type residue, same mutant residue — so `dU` can be put dir
 that variant's VAMP-seq score (2018 and the 2021 composite) and Mighell's activity score.
 Roughly 4,000 and 5,300 of the 6,156 mutants have a measurement. Three numbers come out:
 
-- the Spearman correlation of `-dU` with the score over all matched variants;
-- the same **within site**: both quantities are ranked among the variants *at that site*
-  and centred before being pooled. This asks the sharper question. A correlation over all
-  variants can come entirely from the sites — a buried site is expensive and all its
-  variants are destabilising — and no per-site profile can tell the difference. The
-  within-site number asks whether, at a given site, the energy ranks the 19 substitutions
-  the way the experiment does. If it is near zero while the pooled one is high, the energy
-  knows which *sites* matter and nothing about which *residue* belongs there;
-- the AUC of `-dU` as a classifier of the authors' own variant calls: "low or possibly low"
-  abundance, and activity below the loss-of-function cut. 0.5 is chance, and below 0.5 means
-  anti-correlated. Variants without a measurement are left out rather than counted as
-  negatives.
+- the **pooled** Spearman correlation of `−dU` with the score, over all matched variants;
+- the same **within site**;
+- the **AUC** of `dU` as a classifier of the authors' own variant calls: "low or possibly
+  low" abundance, and activity below the loss-of-function cut. The label is the *damaging*
+  outcome and the score is `dU` itself, so above 0.5 means the energy calls the damaging
+  variants the expensive ones, which is the agreement direction. 0.5 is chance. Variants
+  without a measurement are left out rather than counted as negatives.
+
+### The two correlations, defined
+
+**Spearman's rho** is the ordinary (Pearson) correlation computed on *ranks* instead of
+values: replace every `dU` by its position in the sorted list of `dU`s, every score by its
+position in the sorted list of scores, and correlate those. It therefore measures only
+whether the two orderings agree, which is what we want here — `dU` runs from 4.8 to 2860
+while an abundance score sits between about 0 and 1.5, and no linear relation between such
+quantities would mean anything. +1 is identical ordering, 0 none, −1 reversed. Everything
+is written with `−dU` so that **positive means agreement**: cheap in silico, abundant in the
+laboratory.
+
+**Pooled** means all the matched variants are ranked together in one list of about 4,000,
+ignoring which position each belongs to. It answers: across the whole protein, are the
+expensive substitutions the damaging ones?
+
+**Within site** means each variant is ranked only among the variants measured *at its own
+position* — 5 to 19 of them, median 14, since not every substitution was assayed — then each
+site's mean rank is subtracted, so every site is centred on zero, and all the centred ranks
+are pooled into a single correlation. The centring removes everything that is constant
+within a site, above all that site's overall level of cost and of damage. What is left can
+only come from the ordering *inside* positions. In statistical terms it is the "within" or
+fixed-effects estimator: the rank analogue of a partial correlation conditioned on site
+identity.
+
+That is the sharper question, and it is sharper in a specific way. A pooled correlation can
+be large with *no* within-site information at all — a buried position is expensive and all
+of its substitutions are damaging, an exposed one is cheap and all of its are tolerated, and
+that alone produces agreement. No per-site profile, including every figure in section 5, can
+tell the two apart. If the within-site number were near zero while the pooled one was high,
+`U_am` would know which *positions* matter and nothing about which *residue* belongs in
+them.
+
+Three related numbers, for the 2021 abundance data, so the relationship is clear:
+
+| | |
+| --- | --- |
+| pooled Spearman | +0.345 |
+| within site (pooled centred ranks, what the table reports) | +0.325 |
+| mean of the 289 individual per-site Spearmans | +0.309 |
+| median of them | +0.373 |
+| share of sites with a positive one | 82%, range −0.80 to +0.92 |
+
+The reported figure weights each site by how many variants it has, which is why it is close
+to, but not exactly, the average of the per-site correlations. The point of the table is that
+all three agree: this is not an artefact of one way of pooling.
+
+A worked example, N334 (site 304), 18 measured variants, per-site rho +0.37. Ranked by `dU`,
+cheapest first: S, T, G, Q, A, C, L, K, M, Y, V, D, R, I, E, W, F, P. At the cheap end the
+abundance scores are 0.80 (S), 0.50 (T), 0.83 (G); at the expensive end 0.41 (W), 0.66 (F),
+0.44 (P), proline being the most expensive of all at `dU` 94.8 against a median of 40. So
+the ends do line up — the energy puts proline and tryptophan at the bottom of this position
+and so does the experiment — but threonine is cheap in silico and poorly abundant in the
+laboratory, and several in the middle are out of order. That is what +0.37 looks like, and
+it is worth seeing once: these correlations are real and loose, not tight.
 
 ## 6.4 The figures it writes
 
@@ -825,7 +875,7 @@ Horizontal: `dU` of that exact substitution, logarithmic. Vertical: the same sub
 measured score — abundance 2021, abundance 2018, activity. The dotted line is wild type
 (1 for abundance) or the loss-of-function cut (−1.11 for activity). The cloud falls to the
 right in all three: expensive in silico, damaging in the laboratory. Each title carries the
-pooled Spearman and the within-site one. Note the shape of the activity panel in particular,
+pooled Spearman and the within-site one, both defined at the end of 6.3. Note the shape of the activity panel in particular,
 a dense band near 0 and a second population near −4: those are the folded-but-dead and the
 degraded variants, and `dU` separates them from wild type at AUC 0.72.
 
