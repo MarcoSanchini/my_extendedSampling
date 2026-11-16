@@ -1,0 +1,50 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 22033.12it/s]
+# pten_1d5r, L=324, 2 steps: reference pLDDT 88.8, 903 contacts; same sequence twice differs in 0 contacts (must be 0)
+# 324 sites requested, 0 already in pten_natural/pten_mutants_E2.csv, 324 to do (6156 decodes)
+# 10/324 sites, 0.5 min, 0.143 s per mutant, 14.2 min left; site 9 Y: E min 0.0144 median 0.0204 max 0.0221, zeros 0/19
+# 20/324 sites, 0.9 min, 0.142 s per mutant, 13.7 min left; site 19 T: E min 0.0160 median 0.0193 max 0.0287, zeros 0/19
+# 30/324 sites, 1.3 min, 0.142 s per mutant, 13.2 min left; site 29 G: E min 0.0133 median 0.0193 max 0.0275, zeros 0/19
+# 40/324 sites, 1.8 min, 0.141 s per mutant, 12.7 min left; site 39 Y: E min 0.0149 median 0.0177 max 0.0211, zeros 0/19
+# 50/324 sites, 2.2 min, 0.141 s per mutant, 12.2 min left; site 49 F: E min 0.0133 median 0.0204 max 0.0265, zeros 0/19
+# 60/324 sites, 2.7 min, 0.141 s per mutant, 11.7 min left; site 59 K: E min 0.0149 median 0.0182 max 0.0254, zeros 0/19
+# 70/324 sites, 3.1 min, 0.140 s per mutant, 11.3 min left; site 69 Y: E min 0.0133 median 0.0199 max 0.0232, zeros 0/19
+# 80/324 sites, 3.6 min, 0.140 s per mutant, 10.8 min left; site 79 A: E min 0.0166 median 0.0199 max 0.0237, zeros 0/19
+# 90/324 sites, 4.0 min, 0.140 s per mutant, 10.4 min left; site 89 P: E min 0.0166 median 0.0205 max 0.0281, zeros 0/19
+# 100/324 sites, 4.4 min, 0.140 s per mutant, 9.9 min left; site 99 E: E min 0.0122 median 0.0182 max 0.0244, zeros 0/19
+# 110/324 sites, 4.9 min, 0.140 s per mutant, 9.5 min left; site 109 D: E min 0.0127 median 0.0193 max 0.0233, zeros 0/19
+# 120/324 sites, 5.3 min, 0.140 s per mutant, 9.0 min left; site 119 A: E min 0.0133 median 0.0176 max 0.0216, zeros 0/19
+# 130/324 sites, 5.8 min, 0.140 s per mutant, 8.6 min left; site 129 C: E min 0.0150 median 0.0215 max 0.0303, zeros 0/19
+# 140/324 sites, 6.2 min, 0.140 s per mutant, 8.1 min left; site 139 L: E min 0.0172 median 0.0210 max 0.0254, zeros 0/19
+# 150/324 sites, 6.6 min, 0.140 s per mutant, 7.7 min left; site 149 G: E min 0.0166 median 0.0243 max 0.0277, zeros 0/19
+# 160/324 sites, 7.1 min, 0.140 s per mutant, 7.2 min left; site 159 V: E min 0.0182 median 0.0233 max 0.0292, zeros 0/19
+# 170/324 sites, 7.5 min, 0.140 s per mutant, 6.8 min left; site 169 Y: E min 0.0138 median 0.0203 max 0.0260, zeros 0/19
+# 180/324 sites, 8.0 min, 0.139 s per mutant, 6.4 min left; site 179 L: E min 0.0160 median 0.0227 max 0.0322, zeros 0/19
+# 190/324 sites, 8.4 min, 0.139 s per mutant, 5.9 min left; site 189 H: E min 0.0155 median 0.0228 max 0.0308, zeros 0/19
+# 200/324 sites, 8.8 min, 0.139 s per mutant, 5.5 min left; site 199 F: E min 0.0143 median 0.0220 max 0.0259, zeros 0/19
+# 210/324 sites, 9.3 min, 0.139 s per mutant, 5.0 min left; site 209 V: E min 0.0160 median 0.0221 max 0.0479, zeros 0/19
+# 220/324 sites, 9.7 min, 0.139 s per mutant, 4.6 min left; site 219 S: E min 0.0155 median 0.0210 max 0.0321, zeros 0/19
+# 230/324 sites, 10.1 min, 0.139 s per mutant, 4.1 min left; site 229 D: E min 0.0182 median 0.0220 max 0.0303, zeros 0/19
+# 240/324 sites, 10.6 min, 0.139 s per mutant, 3.7 min left; site 239 P: E min 0.0160 median 0.0221 max 0.0307, zeros 0/19
+# 250/324 sites, 11.0 min, 0.139 s per mutant, 3.3 min left; site 249 E: E min 0.0154 median 0.0204 max 0.0272, zeros 0/19
+# 260/324 sites, 11.5 min, 0.139 s per mutant, 2.8 min left; site 259 K: E min 0.0144 median 0.0177 max 0.0271, zeros 0/19
+# 270/324 sites, 11.9 min, 0.139 s per mutant, 2.4 min left; site 269 N: E min 0.0160 median 0.0270 max 0.0304, zeros 0/19
+# 280/324 sites, 12.3 min, 0.139 s per mutant, 1.9 min left; site 279 V: E min 0.0127 median 0.0209 max 0.0261, zeros 0/19
+# 290/324 sites, 12.8 min, 0.139 s per mutant, 1.5 min left; site 289 T: E min 0.0155 median 0.0205 max 0.0315, zeros 0/19
+# 300/324 sites, 13.2 min, 0.139 s per mutant, 1.1 min left; site 299 N: E min 0.0177 median 0.0221 max 0.0297, zeros 0/19
+# 310/324 sites, 13.7 min, 0.139 s per mutant, 0.6 min left; site 309 P: E min 0.0166 median 0.0232 max 0.0302, zeros 0/19
+# 320/324 sites, 14.1 min, 0.139 s per mutant, 0.2 min left; site 319 K: E min 0.0160 median 0.0217 max 0.0259, zeros 0/19
+# 324/324 sites, 14.3 min, 0.139 s per mutant, 0.0 min left; site 323 E: E min 0.0139 median 0.0182 max 0.0264, zeros 0/19
+
+# SUMMARY of pten_natural/pten_mutants_E2.csv: 6156 mutants over 324 sites
+# time per mutant: median 0.133 s
+# E = 0 (identical contact map to the reference): 0.0% of mutants; n_diff <= 2: 0.0%
+# E quantiles 10/25/50/75/90/max: 0.0160 0.0182 0.0204 0.0232 0.0264 0.0955
+# n_diff quantiles 10/25/50/75/90/max: 29 33 37 42 48 174
+# RMSD to the reference's prediction: median 0.45 A, 90% 0.58, max 1.83; pLDDT median 88.3, min 83.1
+# sites where EVERY mutant has E = 0: 0 of 324; where none does: 324
+# joined with /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten_natural/pten_single_mutants.csv: 6156 mutants
+#   Spearman(E, dU_am) pooled: 0.466
+#   within site (sites where E takes >2 values, n=324): median 0.324, mean 0.303
+#   per site, mean E vs mean log10 dU: 0.681
+#   dU_am where E > 0: median 32.3 (n=6156)
+# against pten_natural/pten_mutants_E32.csv on 380 shared mutants: Spearman(E) 0.108, median |dE| 0.0098, E = 0 in both 0.0%, in this only 0.0%, in the other only 0.0%

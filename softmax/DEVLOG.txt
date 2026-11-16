@@ -6938,3 +6938,75 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     1,906 SNV-reachable variants it is 0.588/0.613/0.642 at counts >=1/2/5, gnomAD
     0.366, ClinVar P/LP 0.602, and COSMIC-recurrent vs gnomAD-observed 0.729 on
     236 vs 49. Per site COSMIC is just burial (RSA vs count -0.40). Doc section 10.
+2026-11-16 -- PTEN weekend run: T=2, 3, 8, 16 equilibrated; T=4 is not
+    Run 2026-11-14/16 (42 h), all two reference-started chains differing only
+    by seed: equil_ref T=2 to 650000, T=4 to 180000, T=8 150000 and T=16 90000
+    (fresh, SEED_BASE=200); equil T=3 to 180000. Output pushed as
+    monte_carlo/pten_equil.txt and pten_equil_ref.txt (--every 20000).
+
+    T    dir        moves   t_eq      <U>     <Hd>   Var(U)/T^2  acc
+    2    equil_ref  650000  440000    302.6   75.9   359.8       0.048
+    3    equil      180000  180000*   680.8   132.7  239.5       0.093
+    4    equil_ref  180000  -         ~1040   ~169   -           0.127
+    5    equil      180000  100000    1297.8  189.4  302.8       0.154
+    6    equil      180000  80000     1573.4  205.4  204.3       0.177
+    8    equil_ref  150000  120000    1855.9  219.3  137.9       0.214
+    16   equil_ref  90000   60000     2948.7  251.6  93.1        0.293
+
+    T=2 CONVERGED, which the 2026-11-14 entry did not expect: R-hat 1.00-1.02 on
+      both coordinates from 460000 to 650000 after a slow excursion
+      (Rhat_U 1.2 at 260000-400000). A trapped-looking chain (acc 0.048)
+      still equilibrates in ~0.5 M moves at 324 aa.
+    T=3: t_eq is marked * (only the last grid point qualifies) because
+      Rhat_Hd was 1.104 at 160000; R-hat <= 1.08 everywhere else from
+      100000. Treat as equilibrated from 100000, borderline formally.
+    T=4: NOT equilibrated, and the provisional t_eq 90000* of 2026-11-14 is
+      WITHDRAWN. Rhat_Hd climbs 1.03 -> 1.28 between 80000 and 160000 while
+      both chains sit at <U> 1024 / 1057, <Hd> 166 / 172: they are close
+      but drift apart slowly. The slowest T in the ladder sits between two
+      that converge in 100000 moves.
+    CHECK THAT THE SAMPLING IS BOLTZMANN: in equilibrium Var(U)/T^2 =
+      d<U>/dT. Finite differences of <U>: 378 (T 2-3), 308 (3-5), 276 (5-6),
+      141 (6-8), 137 (8-16); fluctuations: 360, 239, 303, 204, 138, 93. Same
+      size and same trend everywhere, within the ~30% scatter expected from
+      two chains. Independent evidence that these are equilibrium averages.
+    HEAT CAPACITY: no peak between 2 and 16. C ~ 360 at T=2 and falls
+      steadily, so if there is a maximum it lies at T < 3 -- below the
+      Hd-melting range 3-5 quoted on 2026-11-12. Hd melts gradually (76 at
+      T=2, 133 at T=3, 252 at T=16) with no sharp step. T=1 (one ref chain,
+      220000 moves, <Hd> 19, acc 0.011) is the only point below.
+    NEXT (Marco to decide): a T=1.5 and T=1 equil_ref pair to look for the C
+      peak, and T=4 resumed to ~400000.
+
+2026-11-16 (second entry) -- ESM3 structure prediction: cost and precision vs steps
+    Supervisor's question: contact-map energy (Zambon et al 2024) at every move,
+    or on a subsample of finished U_am chains? bench_decode.py (PR #53), chains
+    paused, GPU otherwise idle; PTEN + 2 random + 15 snapshots of T=2,3,5,8,16.
+    Output monte_carlo/decode_bench_pten.log, decode_bench/pten_decodes.csv.
+
+    method          s/seq   PTEN: P@L pLDDT RMSD  E_xtal | samples: P@L E_ref |dE128|
+    attention fwd   0.045         0.725                  |          0.731
+    attention f+b   0.109
+    2 steps         0.132         0.981 88.8 1.98 0.114  |          0.972 0.064 0.018
+    4 steps         0.228         0.981 89.4 2.09 0.116  |          0.972 0.060 0.011
+    16 steps        0.806         0.963 91.4 2.20 0.118  |          0.972 0.072 0.007
+    32 steps        1.576         0.972 93.8 2.07 0.112  |          0.966 0.065 0.011
+    128 steps       6.183         0.969 93.2 1.95 0.105  |          0.969 0.072 0
+    random, 128                                          |          0.063 0.794
+    (P@L top-L long-range |i-j|>=6 contact precision vs 1D5R; E with CA < 8 A.)
+
+    COST is linear: 0.048 s/step + 0.033 s decoder. A 2-step decode is 1.2x a
+      one-pass move; 32 steps is 14x.
+    TWO STEPS ARE AS GOOD AS 128 on every crystal measure; dE median 0.018.
+      Steps raise pLDDT only, also on random sequences (32 -> 74), so pLDDT
+      separates better at few steps.
+    THE U_am ENSEMBLES KEEP THE FOLD up to T=16 (Hd 254, 78% mutated): P@L
+      0.94-0.98, E_ref 0.03-0.11 vs 0.77-0.83 random. Spearman(E_ref, U_am)
+      0.84-0.95, but mostly across T; within T the spread is 0.001-0.03.
+    ATTENTION MAP ALONE: P@L 0.73, 11x the random floor.
+    VERDICT: both affordable. Subsampling is ~free (100 snapshots/T in 13 s).
+      In-loop E at 2 steps costs about one current move but is not
+      differentiable (plain Metropolis), and whether it resolves single
+      mutations (dE = 0 for most?) is unmeasured: next test is a single-mutant
+      scan of E at 2 steps (6156 decodes, ~14 min).
+    Table also in docs/pten_metrics.tex section 7.
