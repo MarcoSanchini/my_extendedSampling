@@ -143,9 +143,22 @@ wt-like. The 1,138 is the number quoted in the abstract.
 position, which carries the authors' own call of 115 positions as mutationally "intolerant"
 and 41 as "enhanced". In that table the intolerant positions have a mean score between 0.13
 and 0.72. We also use the 2021 follow-up (Matreyek et al., Genome Medicine 13:165), which
-filled in missing variants and brings PTEN to 5,083 scored missense variants. The scores are
-the copyright of the University of Washington, free for academic non-commercial use, which is
-why the raw files are downloaded by the script and not stored in the repository.
+filled in missing variants and brings PTEN to 5,083 scored missense variants.
+
+**The 2021 set is a superset of the 2018 set, not a second set beside it.** Checked on the
+two files: all 4,112 variants scored in 2018 are scored in 2021 as well, and 971 are new, so
+5,083 is the total and not an addition — 66% of the 7,639 possible missense variants, up from
+54%. The new ones are spread over 230 of the 403 positions rather than filling in a region.
+The overlapping 4,112 are also *re-scored*: the file keeps the 2018 value unchanged in
+`score_orig`, but `score_total` pools it with the new replicates, so the shared variants move
+a little, median absolute change 0.04 and up to 0.68, Spearman 0.94 between the old and new
+value. That is why the 2018 and 2021 columns in the tables below differ at all, and why they
+are reported separately rather than averaged: they are the same experiment seen with 5.8 and
+with 7.9 replicates per variant on average.
+
+The scores are the copyright of the University of Washington, free for academic
+non-commercial use, which is why the raw files are downloaded by the script and not stored in
+the repository.
 
 ## 2.2 Mighell et al. 2018: lipid phosphatase activity
 
