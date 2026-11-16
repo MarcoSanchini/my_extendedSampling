@@ -7010,3 +7010,21 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
       mutations (dE = 0 for most?) is unmeasured: next test is a single-mutant
       scan of E at 2 steps (6156 decodes, ~14 min).
     Table also in docs/pten_metrics.tex section 7.
+
+2026-11-16  PTEN: the contact-map energy E (Zambon et al) against both experiments
+    Marco ran scan_mutants_E.py on astaroth: all 6156 mutants at 2 steps, the 20
+    sites 0,17,...,323 at 32 steps (380 mutants). pten_k_sites.py mutants gained
+    --energy-column (E for these scans), --tag (suffix on every output so U_am's are
+    not overwritten) and --same-mutants-as (like-for-like subsets).
+    Per variant, 2 steps vs U_am: pooled +0.172/+0.200/+0.112 (abundance 2021/2018,
+    activity) against +0.345/+0.372/+0.365; within site +0.10/+0.12/+0.11 against
+    +0.33/+0.34/+0.35; AUC 0.605/0.566 against 0.686/0.720. Site bootstrap
+    U_am - E2: +0.12..+0.22 abundance, +0.21..+0.30 activity. On the 380 mutants of
+    the 32-step scan: U_am +0.40/+0.45/+0.37, E2 +0.13/+0.20/+0.04, E32
+    +0.10/+0.19/+0.13; E32 - E2 CI spans zero. Per site E2 keeps abundance beyond
+    burial (+0.14, U_am +0.12) and loses activity (-0.15) and family (-0.29).
+    Mechanism: no mutant leaves the 2-step map unchanged (median 37 of ~900
+    contacts flip at 0.45 A RMSD), decoding is deterministic, and per-mutant
+    agreement between 2 and 32 steps is 0.108 for E, 0.020 for RMSD, 0.042 for
+    pLDDT: the decoded response to a single mutation is mostly decoder-specific.
+    Doc section 6.6.

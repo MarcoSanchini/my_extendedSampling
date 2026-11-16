@@ -1214,6 +1214,106 @@ have been a much weaker object than it looks; this is not that. It is also the o
 here that the per-site profiles of section 5 could never have produced, which is the
 argument for having built the scan at all.
 
+## 6.6 The contact-map energy of Zambon et al., at 2 and 32 steps (16 November)
+
+**What was scanned.** `scan_mutants_E.py` (PR #54) decodes each mutant with ESM3's structure
+track and compares its contact map with the reference's, the way the paper defines the
+energy:
+
+    E = sum_ij |D_ij(mut) − D_ij(ref)| / sum_ij (D_ij(mut) + D_ij(ref)),   |i − j| > 2
+
+with `D` the CA contact map at 8 Å, both maps decoded at the same number of steps, so
+`E(reference) = 0` exactly. Run on astaroth: all 6,156 mutants at **2 steps** (14 minutes,
+0.13 s each), and the 20 sites `0, 17, 34, …, 323` at **32 steps** (380 mutants, 1.1 s each;
+the whole scan would take about two hours). The same comparison as for `U_am` then runs
+unchanged, because `pten_k_sites.py mutants` now takes the energy column as an option:
+
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E2.csv  --energy-column E --tag E2
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E32.csv --energy-column E --tag E32
+    # like for like: the other two energies on exactly the 380 mutants of the 32-step scan
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E2.csv  --energy-column E --tag E2_on32 \
+        --same-mutants-as pten_natural/pten_mutants_E32.csv
+    python pten_k_sites.py mutants --same-mutants-as pten_natural/pten_mutants_E32.csv --tag Uam_on32
+
+Every output file carries the tag, so nothing of the `U_am` analysis is overwritten.
+
+**Per variant, all 6,156 mutants (E at 2 steps against `U_am`):**
+
+| experiment | variants | `U_am` pooled | E2 pooled | `U_am` within site | E2 within site | AUC `U_am` | AUC E2 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| abundance 2021 | 4,079 | +0.345 | +0.172 | +0.325 | +0.101 | — | — |
+| abundance 2018 | 3,349 | +0.372 | +0.200 | +0.342 | +0.118 | 0.686 | 0.605 |
+| activity | 5,324 | +0.365 | +0.112 | +0.346 | +0.105 | 0.720 | 0.566 |
+
+The contact-map energy agrees with both experiments, in the right direction and beyond
+chance, but at a half to a third of `U_am`'s strength, pooled and within site alike. The gap
+is not noise: a site-level bootstrap puts `U_am − E2` at +0.12 to +0.22 for abundance and
++0.21 to +0.30 for activity (95%).
+
+**Like for like on the 380 mutants of the 32-step scan:**
+
+| experiment | variants | `U_am` | E2 | E32 |
+| --- | --- | --- | --- | --- |
+| abundance 2021, pooled | 236 | +0.402 | +0.127 | +0.103 |
+| abundance 2018, pooled | 211 | +0.451 | +0.196 | +0.190 |
+| activity, pooled | 320 | +0.366 | +0.041 | +0.132 |
+| AUC, low abundance | 211 | 0.720 | 0.601 | 0.610 |
+| AUC, activity loss of function | 320 | 0.730 | 0.526 | 0.541 |
+
+Sixteen times the decoding steps buys nothing measurable: `E32 − E2` has a 95% bootstrap
+interval of −0.21 to +0.18 for abundance and −0.09 to +0.30 for activity, while `U_am − E32`
+is +0.12 to +0.45 and +0.02 to +0.42. These rest on 19 sites, so they are wide, but they
+point the same way as the full 2-step scan.
+
+**Per site, 2 steps.** `−mean log10 E` against abundance +0.25 raw and **+0.14 with burial
+regressed out**, which is as much as `U_am` keeps (+0.12). Against everything else it keeps
+nothing or turns negative once burial is out: activity −0.15, family −0.29, orthologs
+−0.06. The top 108 sites by E hold 46 of the 108 abundance K-sites (P 0.009), exactly what
+`U_am` managed, and no more of the activity or natural ones than chance. So at the level of
+sites the contact-map energy is a pure *fold* signal — which is what a contact map should be —
+and it loses the active site entirely, where `U_am` at least found the P loop's packing.
+
+**Why E is weak per variant: the decoded response to one mutation is mostly not
+reproducible.** Every one of the 6,156 mutants changes the 2-step contact map; none leaves
+it unchanged, and the median mutant gains or loses 37 of about 900 contacts while moving the
+structure by only 0.45 Å RMSD. The decoder is deterministic — the same sequence twice
+differs in 0 contacts — so this is not sampling noise. It is sensitivity: a 0.45 Å shift
+anywhere moves pairs that sit near the 8 Å cutoff across it. The test is to decode the same
+mutants at two step counts and ask whether they agree:
+
+| per-mutant agreement, 2 vs 32 steps, 380 mutants | Spearman | median within a site |
+| --- | --- | --- |
+| E | 0.108 | 0.120 |
+| CA RMSD to the reference's prediction | 0.020 | 0.004 |
+| pLDDT | 0.042 | −0.032 |
+
+If both step counts measured the same effect of the mutation plus their own idiosyncratic
+response, the agreement between them bounds how much of each is effect: about a tenth for E,
+essentially none for RMSD and pLDDT. RMSD and pLDDT used directly as costs are accordingly
+weaker still than E against the experiments (pooled +0.13 and +0.10 for abundance at 2
+steps). What E does carry is shared with `U_am` — Spearman 0.47 between them per mutant,
+0.68 per site — which is unsurprising, since both are read off the same network.
+
+**What it means for the sampler.** Two things, one for each use of E.
+
+1. *As an energy inside the Monte Carlo loop.* It is affordable at 2 steps (0.13 s, about
+   one `U_am` move), and it is not flat: no mutant has `dE = 0`, which was the worry
+   `scan_mutants_E.py` was written to settle. But most of what it assigns to a single
+   mutation is a property of the decoder rather than of the mutation, so a chain on E would
+   be driven largely by that jitter. On this evidence `U_am` is the better energy for the
+   K-site question by a factor of two to three, and E at more steps is not better.
+2. *As the observable the paper reports.* E is still the right thing to *measure* a sampled
+   sequence's fold with, where the differences are large (many mutations, not one) and the
+   jitter of a few tens of contacts is small against them. Nothing here argues against that.
+
+If E is to be tried in the loop anyway, the jitter suggests a fix that keeps the paper's
+spirit: replace the hard 8 Å cutoff by a smooth contact (a sigmoid of the distance) so that
+a pair at 7.9 Å and one at 8.1 Å no longer count as a full contact gained or lost. The CA
+distances are already computed inside `bench_decode.contact_map` before the threshold is
+applied, so it is a few lines in `scan_mutants_E.py` plus 15 minutes of astaroth. It is a
+departure from the paper's definition, though, and worth doing only if E in the loop is
+still wanted after these numbers.
+
 # 7. InterPro, Pfam, and the step to run locally
 
 ## 7.1 What they are

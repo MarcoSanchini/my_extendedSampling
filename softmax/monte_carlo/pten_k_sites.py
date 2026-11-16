@@ -770,9 +770,27 @@ def cmd_mutants(args):
 		raise SystemExit(f"{args.mutants} does not exist. It is written by scan_single_mutants.py, which needs the GPU:\n"
 			f"    nohup python -u scan_single_mutants.py --out {args.mutants} > scan_single_mutants.log 2>&1 &")
 	m = pd.read_csv(args.mutants)
-	need = {"site", "ref_aa", "mut_aa", "dU"}
+	# Any per-mutant cost can go through the same comparison: U_am's dU (the default),
+	# or the contact-map E written by scan_mutants_E.py (--energy-column E). Inside
+	# this function the chosen column is called dU throughout, and every output file
+	# carries --tag so that two energies never overwrite each other.
+	need = {"site", "ref_aa", "mut_aa", args.energy_column}
 	if not need <= set(m.columns):
 		raise SystemExit(f"{args.mutants} must have the columns {sorted(need)}, found {list(m.columns)}")
+	if args.energy_column != "dU":
+		m = m.drop(columns=[c for c in ("dU",) if c in m.columns]).rename(columns={args.energy_column: "dU"})
+		print(f"energy: column {args.energy_column!r} of {args.mutants}, called dU below")
+	if args.same_mutants_as:
+		other = pd.read_csv(args.same_mutants_as)[["site", "ref_aa", "mut_aa"]]
+		n0 = len(m)
+		m = m.merge(other, on=["site", "ref_aa", "mut_aa"])
+		print(f"restricted to the {len(m)} of {n0} mutants also in {args.same_mutants_as} "
+			"(like-for-like comparison of two scans)")
+	tag = f"_{args.tag}" if args.tag else ""
+
+	def out(name):
+		stem, ext = os.path.splitext(name)
+		return os.path.join(args.out_dir, f"{stem}{tag}{ext}")
 
 	per_site = m.groupby("site").dU.size()
 	print(f"{len(m)} mutants over {m.site.nunique()}/{len(ref)} sites "
@@ -817,8 +835,8 @@ def cmd_mutants(args):
 	pr = pd.DataFrame([{"quantity": "-mean log10 dU",
 		**{f"{k} | RSA": partial_spearman(-t.dU_log10_mean, v, t.rsa) for k, v in refs.items()}}])
 	print(pr.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
-	sp.to_csv(os.path.join(args.out_dir, "mutants_vs_references_spearman.tsv"), sep="\t", index=False, float_format="%.4f")
-	pr.to_csv(os.path.join(args.out_dir, "mutants_vs_references_partial_rsa.tsv"), sep="\t", index=False, float_format="%.4f")
+	sp.to_csv(out("mutants_vs_references_spearman.tsv"), sep="\t", index=False, float_format="%.4f")
+	pr.to_csv(out("mutants_vs_references_partial_rsa.tsv"), sep="\t", index=False, float_format="%.4f")
 
 	print("\nIs the cost raised inside each K-like set? mean log10 dU inside / outside, with p against")
 	print(f"circular shifts of the set along the sequence (smallest possible 1/L = {1 / len(ref):.3f}):")
@@ -830,7 +848,7 @@ def cmd_mutants(args):
 			"ratio_of_dU": 10**(np.nanmean(inside) - np.nanmean(outside)), "shift_p": shift_p(x, t[col].values)})
 	ks = pd.DataFrame(rows)
 	print(ks.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
-	ks.to_csv(os.path.join(args.out_dir, "mutants_in_K_sets.tsv"), sep="\t", index=False, float_format="%.4f")
+	ks.to_csv(out("mutants_in_K_sets.tsv"), sep="\t", index=False, float_format="%.4f")
 
 	# A K-like set of our own, on the same footing as the other three: the sites
 	# the energy says cannot change. --mutant-k sets where the cut goes.
@@ -878,16 +896,16 @@ def cmd_mutants(args):
 		a = auc(d.dU, d[flag])
 		print(f"  {lab}: AUC {a:.3f}  ({int(d[flag].sum())} positives of {len(d)})")
 
-	mv.to_csv(os.path.join(args.out_dir, "pten_mutants_variant_level.csv"), index=False, float_format="%.5f")
-	vs.to_csv(os.path.join(args.out_dir, "mutants_vs_experiments_variant_level.tsv"), sep="\t", index=False, float_format="%.4f")
-	t.to_csv(os.path.join(args.out_dir, "pten_site_table_mutants.csv"), index=False, float_format="%.4f")
-	plot_mutants(t, mv, os.path.join(args.out_dir, "pten_mutant_profile.png"),
-		os.path.join(args.out_dir, "mutants_vs_references.png"),
-		os.path.join(args.out_dir, "mutants_vs_experiments.png"))
-	print(f"\nOutputs in {args.out_dir}: pten_site_table_mutants.csv, pten_mutants_variant_level.csv, "
-		"mutants_vs_references_spearman.tsv, mutants_vs_references_partial_rsa.tsv, mutants_in_K_sets.tsv, "
-		"mutants_vs_experiments_variant_level.tsv, pten_mutant_profile.png, mutants_vs_references.png, "
-		"mutants_vs_experiments.png")
+	mv.to_csv(out("pten_mutants_variant_level.csv"), index=False, float_format="%.5f")
+	vs.to_csv(out("mutants_vs_experiments_variant_level.tsv"), sep="\t", index=False, float_format="%.4f")
+	t.to_csv(out("pten_site_table_mutants.csv"), index=False, float_format="%.4f")
+	plot_mutants(t, mv, out("pten_mutant_profile.png"),
+		out("mutants_vs_references.png"),
+		out("mutants_vs_experiments.png"))
+	print(f"\nOutputs in {args.out_dir}, each name ending in {tag or '(no tag)'}: pten_site_table_mutants, "
+		"pten_mutants_variant_level, mutants_vs_references_spearman, mutants_vs_references_partial_rsa, "
+		"mutants_in_K_sets, mutants_vs_experiments_variant_level, pten_mutant_profile.png, "
+		"mutants_vs_references.png, mutants_vs_experiments.png")
 
 
 # ----------------------------------------------------------------- family --- #
@@ -1384,6 +1402,14 @@ def main():
 	p.add_argument("--mutant-k", type=threshold, default=0.75,
 		help="quantile of the per-site mean log10 dU above which a site joins the mutational K-like set "
 			"(default 0.75, the most expensive quarter). 'none' puts every site in it")
+	p.add_argument("--energy-column", default="dU",
+		help="which column of --mutants is the cost: dU for scan_single_mutants.py (U_am, the default), "
+			"E for scan_mutants_E.py (the contact-map energy of Zambon et al)")
+	p.add_argument("--tag", default="",
+		help="appended to every output file name, e.g. E2, so that two energies do not overwrite each other")
+	p.add_argument("--same-mutants-as", default=None,
+		help="another scan's CSV: keep only the mutants it also contains, for a like-for-like comparison "
+			"(e.g. U_am or E2 on the 380 mutants of the 32-step E scan)")
 	p.set_defaults(func=cmd_mutants)
 	p = sub.add_parser("loop", parents=[common]); p.set_defaults(func=cmd_loop)
 	p = sub.add_parser("pfam", parents=[common])
