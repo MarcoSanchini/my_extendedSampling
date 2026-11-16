@@ -322,8 +322,55 @@ itself included). N_eff is the sum of the weights. X is 80% for the family and p
 tiers, the usual choice in the coevolution literature, and 95% for the two ortholog tiers,
 because at 80% nearly all orthologs would fall in one cluster and N_eff would be about 1.
 
-**Entropy.** For each site, the Shannon entropy of the weighted amino acid frequencies, in
-nats: 0 when one residue is always there, ln 20 = 3.0 when all twenty are equally likely.
+**What is in the family and pdomain tiers.** The two broad tiers are not abstractions, so it
+is worth naming what is actually in them. Counting the descriptions in the alignment:
+
+- **family** (2,716 sequences, coverage ≥ 0.8 of the 324 columns, no identity threshold).
+  Requiring 80% coverage of a construct that *is* the phosphatase domain plus the C2 domain
+  means a hit must have both, so this tier is the proteins built like PTEN. Counted by name:
+  **1,597 tensins** (tensin-1, -2 and -3, which carry the same phosphatase + C2 pair), 658
+  entries named as PTEN itself across the eukaryotes, 121 TPTE / voltage-sensing
+  phosphatases, 364 hypothetical or uncharacterised, and a scattering of the rest. Median
+  identity to human PTEN 33%.
+
+  **That composition is worth holding on to.** "Family conservation", the profile the sampled
+  entropy follows most closely in section 5.3, is in the majority *tensin* variation, not
+  PTEN variation. Tensins are focal-adhesion proteins whose phosphatase domain is
+  catalytically dead or near-dead. So the tier measures what this fold needs in order to be
+  a fold, across proteins that mostly do not do PTEN's chemistry — which, read that way, is
+  less at odds with the abundance result of 6.4b than "conservation versus stability" makes
+  it sound.
+- **pdomain** (6,002 sequences, covering ≥ 0.7 of the phosphatase domain's columns, nothing
+  asked of C2). This drops the requirement of a C2 domain and keeps anything whose
+  *catalytic* domain aligns. The 3,286 extra entries are 1,080 hypothetical or
+  uncharacterised, 550 more PTEN-named, 536 **cyclin-G-associated kinase** (GAK), 501 more
+  tensins and 125 auxilins. It is the superfamily seen from PTEN's own catalytic domain.
+  Because the C2 columns of these sequences are mostly gaps, the entropy is defined only on
+  the 172 phosphatase-domain sites — which is why `family`, not `pdomain`, is the default
+  natural tier: it is the only broad one that covers the whole construct.
+
+The four tiers are strictly nested: vertebrate ⊂ orthologs ⊂ family ⊂ pdomain (checked —
+no sequence is in family but outside pdomain). Each step down adds more distant relatives
+and so more variety, which is exactly what the entropy column records.
+
+**Entropy, and what a nat is.** For each site, the Shannon entropy of the weighted amino acid
+frequencies, `H = −Σ p log p` over the 20 amino acids (gaps are not a 21st letter; they are
+counted separately and a site is discarded if more than half of the weighted sequences are
+gapped). The **nat** is the unit you get by using the natural logarithm in that formula
+instead of log base 2, which would give bits: 1 nat = 1/ln 2 ≈ 1.44 bits. Nothing else
+changes.
+
+The scale this puts us on, which is the useful thing to remember:
+
+| entropy | meaning |
+| --- | --- |
+| 0 | one amino acid, always — the site never varies |
+| 0.69 = ln 2 | two residues, equally often |
+| 1.61 = ln 5 | five residues equally often, or a handful with one dominating |
+| 2.996 = ln 20 | all twenty equally likely, i.e. no constraint at all |
+
+So the family tier's median of 1.76 nats is "about six residues' worth of choice at a typical
+site", and the vertebrate tier's 0.01 is "a typical site never changes at all".
 
 **Sites without an entropy.** A site gets no value when more than half of the weighted
 sequences have a gap there. This happens at the C-terminal end. Natural PTEN has the 286 to
@@ -333,6 +380,10 @@ sequences have a gap there. This happens at the C-terminal end. Natural PTEN has
 The thresholds are options of the script; section 8 shows how to change or remove them.
 
 ## 3.3 The flatness table, with the amount of data behind each row
+
+Entropies are in **nats** (natural logarithm; 1 nat = 1.44 bits). The scale runs from 0, one
+amino acid always, to ln 20 = 3.0, all twenty equally likely — see the end of 3.2, which also
+says what the family and pdomain tiers contain.
 
 | profile | data behind it | sites | mean | median | 10th to 90th percentile |
 | --- | --- | --- | --- | --- | --- |
