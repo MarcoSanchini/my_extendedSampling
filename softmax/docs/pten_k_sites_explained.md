@@ -372,6 +372,25 @@ The scale this puts us on, which is the useful thing to remember:
 So the family tier's median of 1.76 nats is "about six residues' worth of choice at a typical
 site", and the vertebrate tier's 0.01 is "a typical site never changes at all".
 
+**There is only one human sequence in any of this.** Counted in the alignment: of the 92
+sequences in the vertebrate tier, 4 are human, and they are the same gene — UniProt P60484
+(the reference itself) plus three TrEMBL entries for it, F6KCZ3, A0A386NCS8 and F6KD02. Over
+the 324 construct columns F6KCZ3 differs from the reference at one position, A0A386NCS8 at
+one, F6KD02 only where it has unknown residues, and all four differ at the same four
+C-terminal columns, which is the construct's own junction and not biology. The family tier
+has 25 human rows, but 21 of those are paralogs: tensins, TPTE, TPTE2, GAK, auxilin, at 31
+to 43% identity.
+
+This is by construction, and it is worth keeping in mind when reading the word "natural" in
+this document. The alignment comes from UniRef90, which clusters at 90% identity, so every
+human allele collapses into one cluster representative; human population variation cannot
+appear in it even in principle. And there would be little to find: PTEN is effectively
+monomorphic in people, and its missense variants are individually rare and largely
+pathogenic, which is why there is a VAMP-seq experiment at all. So "natural conservation"
+here means *across species*, never across humans. The experiments are the only within-human
+reference in the comparison, and they are within-human only in the sense that the variants
+were built in a human cell line.
+
 **Sites without an entropy.** A site gets no value when more than half of the weighted
 sequences have a gap there. This happens at the C-terminal end. Natural PTEN has the 286 to
 309 loop that the construct lacks, so many alignments stop at the deletion and never reach
@@ -928,6 +947,27 @@ Roughly 4,000 and 5,300 of the 6,156 mutants have a measurement. Three numbers c
   outcome and the score is `dU` itself, so above 0.5 means the energy calls the damaging
   variants the expensive ones, which is the agreement direction. 0.5 is chance. Variants
   without a measurement are left out rather than counted as negatives.
+
+**Both correlations use the papers' continuous scores, not their four classes.** Worth
+being explicit, because each paper publishes both. The rank correlations take
+`PTEN_variant_data.tsv`'s `score` (2018), `Composite_abundance_data.tsv`'s `score_total`
+(2021) and Mighell's `Cum_score`: real numbers, 4,112 / 5,083 / 7,260 scored missense
+variants, and in each file essentially every value is distinct (4,112 distinct values in
+4,112 rows for 2018; 7,230 in 7,260 for Mighell). So Spearman ranks about four thousand
+distinct levels, not four.
+
+The four-way class — `wt-like`, `possibly_wt-like`, `possibly_low`, `low` — enters in
+exactly two places, both of them flagged as such in the tables:
+
+- the **AUC**, which has to have a binary label: "damaging" is `low` or `possibly_low` for
+  abundance, and `Cum_score` below `--activity-lof` for activity. This is the one binned
+  number in section 6.4b;
+- the **K-set rules** of section 4, which count what share of a site's variants fall under
+  the authors' synonymous 5th percentile.
+
+Binning throws away information, so if the two ever disagree, trust the rank correlation.
+The AUC is reported because it is the number the papers' own readers would recognise, and
+because it is the only form in which "does it find the damaging ones?" has a yes/no answer.
 
 ### The two correlations, defined
 
