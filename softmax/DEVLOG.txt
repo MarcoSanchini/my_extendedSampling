@@ -7028,8 +7028,9 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
 2026-11-16 (fourth entry) -- the schedule control: E's per-mutant value is
     decode flicker
     (Run the same evening; the control proposed in the third entry.) The same
-    20 sites (seq 0 17 323) at 3, 4 and 8 steps, next to the 2- and 32-step scans. The 8-step run was interrupted at 19 of 20 sites;
-    everything below uses the 19 sites all five schedules share.
+    20 sites (seq 0 17 323) at 3, 4 and 8 steps, next to the 2- and 32-step
+    scans. The 8-step run was interrupted at 19 of 20 sites; everything below
+    uses the 19 sites all five schedules share.
 
     Spearman(E_a, E_b) on the shared mutants, per mutant | over site means:
             2            3            4            8           32
