@@ -687,6 +687,11 @@ def load_variants(raw_dir, activity_lof=ACTIVITY_LOF):
 	# the --abundance-k rule aggregates per site.
 	out["abundance_is_low"] = np.where(out.class_2018.notna(),
 		out.class_2018.isin(["low", "possibly_low"]), np.nan)
+	# The same call on the 2021 composite, so that each experiment's AUC is taken
+	# against its OWN class column. The 2021 file writes "unknown" where the 2018
+	# one leaves the class empty.
+	out["abundance2021_is_low"] = np.where(out.class_2021.notna() & (out.class_2021 != "unknown"),
+		out.class_2021.isin(["low", "possibly_low"]), np.nan)
 	return out
 
 
@@ -867,6 +872,33 @@ def cmd_mutants(args):
 		k, exp, p = set_overlap(order.site.head(n), t.site[t[col]], len(ref))
 		print(f"  top {n:3d} vs {col}: {k}/{n}  expected {exp:.1f}  P={p:.2g}")
 
+	if args.versus:
+		# How much do two energies for the same mutants agree with EACH OTHER? Without this,
+		# a weak agreement with the experiments cannot be told apart from the two energies
+		# measuring different things: U_am (attention) and E (contact map) are both read off
+		# ESM3, so this is the ceiling on how similarly they can behave downstream.
+		o = pd.read_csv(args.versus)
+		if args.versus_column not in o.columns:
+			raise SystemExit(f"{args.versus} has no column {args.versus_column!r}, found {list(o.columns)}")
+		o = o[["site", "ref_aa", "mut_aa", args.versus_column]].rename(columns={args.versus_column: "other"})
+		j = m.merge(o, on=["site", "ref_aa", "mut_aa"])
+		print(f"\n--- against the other energy ---------------------------------------------")
+		print(f"{args.energy_column} of {os.path.basename(args.mutants)} vs {args.versus_column} of "
+			f"{os.path.basename(args.versus)}, on the {len(j)} mutants both scans contain.")
+		print("Both are costs, so a POSITIVE correlation means they rank mutants the same way.")
+		j["minus_dU"], j["minus_other"] = -j.dU, -j.other
+		w, ns = within_site_spearman(j, "minus_dU", "minus_other")
+		per = j.groupby("site").agg(a=("dU", lambda x: np.log10(x.clip(lower=1e-12)).mean()),
+			b=("other", lambda x: np.log10(x.clip(lower=1e-12)).mean()))
+		print(f"  pooled over all mutants: {spearman(j.dU, j.other):+.3f}")
+		print(f"  within site (centred ranks, {ns} sites): {w:+.3f}")
+		print(f"  per site, on the mean of log10: {spearman(per.a, per.b):+.3f}")
+		pd.DataFrame([{"a": f"{args.energy_column}:{os.path.basename(args.mutants)}",
+			"b": f"{args.versus_column}:{os.path.basename(args.versus)}", "mutants": len(j),
+			"pooled": spearman(j.dU, j.other), "within_site": w, "sites": ns,
+			"per_site": spearman(per.a, per.b)}]).to_csv(out("energy_vs_energy.tsv"), sep="\t",
+			index=False, float_format="%.4f")
+
 	print("\n--- per variant ----------------------------------------------------------")
 	print("Each in-silico mutant matched to the same substitution in the two experiments. This is the")
 	print("comparison the papers themselves make, and the one a per-site profile cannot: it asks whether")
@@ -878,23 +910,31 @@ def cmd_mutants(args):
 	mv = mv.merge(var, on=["position", "wt_aa", "mut_aa"], how="left")
 	rows = []
 	mv["minus_dU"] = -mv.dU               # one orientation for every number below: + is agreement
-	for col, name in (("abundance_2021", "abundance 2021 (VAMP-seq composite)"),
-			("abundance_2018", "abundance 2018 (VAMP-seq)"), ("activity", "activity (Mighell high-confidence)")):
+	# Each experiment carries its own damaging call, so the AUC of each row is taken
+	# against that experiment's own label and lands in the same table as its rho.
+	for col, name, flag, call in (
+			("abundance_2021", "abundance 2021 (VAMP-seq composite)", "abundance2021_is_low", "low or possibly low (2021 classes)"),
+			("abundance_2018", "abundance 2018 (VAMP-seq)", "abundance_is_low", "low or possibly low (2018 classes)"),
+			("activity", "activity (Mighell high-confidence)", "activity_is_lof", f"score < {args.activity_lof}")):
 		d = mv.dropna(subset=["dU", col])
 		w, ns = within_site_spearman(d, "minus_dU", col)
+		# The label is the DAMAGING outcome and the score is dU itself, so above 0.5 means
+		# the energy calls the damaging variants the expensive ones: the agreement direction.
+		lab = mv.dropna(subset=["dU"])
+		lab = lab[lab[flag].notna()]
 		rows.append({"experiment": name, "variants matched": len(d), "rho(-dU, score)": spearman(-d.dU, d[col]),
-			"rho within site": w, "sites": ns})
+			"rho within site": w, "sites": ns, "damaging call": call,
+			"AUC(dU, damaging)": auc(lab.dU, lab[flag]), "positives": int(lab[flag].sum()), "labelled": len(lab)})
 	vs = pd.DataFrame(rows)
-	print(vs.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
-	print("\nAs a classifier of the authors' own variant calls. The label is the DAMAGING outcome and the score")
-	print("is dU itself, so above 0.5 means the energy calls the damaging variants the expensive ones, which is")
-	print("the agreement direction; 0.5 is chance:")
-	for lab, flag in (("low or possibly low abundance (2018 classes)", "abundance_is_low"),
-			(f"loss of function in activity (score < {args.activity_lof})", "activity_is_lof")):
-		d = mv.dropna(subset=["dU"])
-		d = d[d[flag].notna()]
-		a = auc(d.dU, d[flag])
-		print(f"  {lab}: AUC {a:.3f}  ({int(d[flag].sum())} positives of {len(d)})")
+	print(vs.drop(columns=["damaging call"]).to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
+	print("\nThe last three columns are the energy used as a CLASSIFIER of the authors' own variant calls,")
+	print("one call per experiment. AUC is the area under the ROC curve, equivalently the probability that")
+	print("a randomly chosen damaging variant has a higher dU than a randomly chosen tolerated one. The label")
+	print("is the DAMAGING outcome and the score is dU itself, so above 0.5 is the agreement direction and")
+	print("0.5 is chance. Variants with no measurement are left out rather than counted as tolerated:")
+	for r in rows:
+		print(f"  {r['experiment']}: damaging = {r['damaging call']}, "
+			f"{r['positives']} of {r['labelled']} labelled variants")
 
 	mv.to_csv(out("pten_mutants_variant_level.csv"), index=False, float_format="%.5f")
 	vs.to_csv(out("mutants_vs_experiments_variant_level.tsv"), sep="\t", index=False, float_format="%.4f")
@@ -1407,6 +1447,11 @@ def main():
 			"E for scan_mutants_E.py (the contact-map energy of Zambon et al)")
 	p.add_argument("--tag", default="",
 		help="appended to every output file name, e.g. E2, so that two energies do not overwrite each other")
+	p.add_argument("--versus", default=None,
+		help="another scan's CSV: also report how much the two energies agree with each other, "
+			"pooled, within site and per site (e.g. the contact-map E against U_am)")
+	p.add_argument("--versus-column", default="dU",
+		help="which column of --versus is its cost (default dU; use E for a scan_mutants_E.py file)")
 	p.add_argument("--same-mutants-as", default=None,
 		help="another scan's CSV: keep only the mutants it also contains, for a like-for-like comparison "
 			"(e.g. U_am or E2 on the 380 mutants of the 32-step E scan)")

@@ -7028,3 +7028,16 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     agreement between 2 and 32 steps is 0.108 for E, 0.020 for RMSD, 0.042 for
     pLDDT: the decoded response to a single mutation is mostly decoder-specific.
     Doc section 6.6.
+
+2026-11-16  PTEN: energy-vs-energy agreement, and the AUC in the output file
+    pten_k_sites.py mutants gained --versus/--versus-column (how much two energies
+    agree with each other: pooled, within site, per site, written to
+    energy_vs_energy*.tsv). E vs U_am: 2 steps +0.466 pooled / +0.303 within site /
+    +0.676 per site on all 6156; on the 380 mutants of the 32-step scan +0.524 /
+    +0.282 / +0.749, while E32 vs U_am is only +0.141 / +0.169 / +0.150. More
+    decoding steps move E away from U_am, not toward it.
+    The AUC is now a column of mutants_vs_experiments_variant_level*.tsv instead of
+    being printed only to the log, and each experiment is scored against its OWN
+    class column: load_variants gained abundance2021_is_low from class_2021. The
+    2021 row had been showing the 2018 classes' 0.686; its own classes give 0.689.
+    Doc: AUC defined in 6.3, 6.4b table fixed, new section 6.6a.

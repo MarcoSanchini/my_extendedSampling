@@ -955,11 +955,29 @@ Roughly 4,000 and 5,300 of the 6,156 mutants have a measurement. Three numbers c
 
 - the **pooled** Spearman correlation of `−dU` with the score, over all matched variants;
 - the same **within site**;
-- the **AUC** of `dU` as a classifier of the authors' own variant calls: "low or possibly
-  low" abundance, and activity below the loss-of-function cut. The label is the *damaging*
-  outcome and the score is `dU` itself, so above 0.5 means the energy calls the damaging
-  variants the expensive ones, which is the agreement direction. 0.5 is chance. Variants
-  without a measurement are left out rather than counted as negatives.
+- the **AUC** of `dU` as a classifier of the authors' own variant calls.
+
+**What the AUC is**, since it sits in the same table as the correlations and is a different
+kind of number. Take one damaging variant and one tolerated variant at random; the AUC is the
+probability that the damaging one has the higher `dU`. It is the area under the ROC curve,
+and it equals the Mann-Whitney U statistic divided by the number of pairs, which is how
+`auc()` computes it. 0.5 is chance, 1.0 is a perfect separation, and below 0.5 means the
+energy is systematically calling the damaging variants the *cheap* ones. Two things define
+it: the label and the score.
+
+- The **label** is the *damaging* outcome, taken from each experiment's own class column:
+  `low` or `possibly_low` in that file's `abundance_class` for the two VAMP-seq sets, and
+  `Cum_score` below `--activity-lof` for Mighell. Each row of the table uses its own
+  experiment's call, so the 2021 row is not judged by the 2018 file's classes. Variants with
+  no measurement are left out rather than counted as tolerated.
+- The **score** is `dU` itself, not `−dU`. A cost should be *high* for a damaging variant, so
+  above 0.5 is the agreement direction here, while for the correlations agreement is a
+  positive rho on `−dU`. Mixing those two orientations is the mistake recorded in section 11.
+
+Unlike a correlation the AUC ignores how large `dU` is and how bad the variant is; it only
+asks about ordering across the two classes. That makes it robust to the long tail of `dU` and
+blind to everything inside a class, which is why both are reported. `positives` and
+`labelled` in the output file give the class sizes it rests on.
 
 **Both correlations use the papers' continuous scores, not their four classes.** Worth
 being explicit, because each paper publishes both. The rank correlations take
@@ -1119,11 +1137,15 @@ protein being expensive, which the crystal structure already says for free.
 
 Per variant, each in-silico mutant against the same substitution in the laboratory:
 
-| experiment | variants | pooled rho | within site | AUC of `dU` for the damaging call |
-| --- | --- | --- | --- | --- |
-| abundance 2021 | 4,079 | +0.35 | **+0.32** | 0.686 |
-| abundance 2018 | 3,349 | +0.37 | **+0.34** | — |
-| activity (Mighell) | 5,324 | +0.37 | **+0.35** | 0.720 |
+| experiment | variants | pooled rho | within site | AUC of `dU` | positives / labelled |
+| --- | --- | --- | --- | --- | --- |
+| abundance 2021 | 4,079 | +0.35 | **+0.32** | 0.689 | 1,710 / 3,523 |
+| abundance 2018 | 3,349 | +0.37 | **+0.34** | 0.686 | 1,647 / 3,349 |
+| activity (Mighell) | 5,324 | +0.37 | **+0.35** | 0.720 | 1,732 / 5,324 |
+
+(Before 16 November the AUC column held one number per *label* rather than per experiment,
+so the 0.686 of the 2018 classes was printed on the 2021 row. The 2021 classes give 0.689,
+and nothing else changes.)
 
 **"raw" and "pooled" are the same statistic.** Both words mean the plain Spearman
 correlation with nothing partialled out, computed over everything at once; neither is a
@@ -1234,6 +1256,9 @@ unchanged, because `pten_k_sites.py mutants` now takes the energy column as an o
     python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E2.csv  --energy-column E --tag E2_on32 \
         --same-mutants-as pten_natural/pten_mutants_E32.csv
     python pten_k_sites.py mutants --same-mutants-as pten_natural/pten_mutants_E32.csv --tag Uam_on32
+    # and how much the two energies agree with EACH OTHER (section 6.6a), added to any of the above
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E2.csv --energy-column E --tag E2 \
+        --versus pten_natural/pten_single_mutants.csv --versus-column dU
 
 Every output file carries the tag, so nothing of the `U_am` analysis is overwritten.
 
@@ -1241,7 +1266,7 @@ Every output file carries the tag, so nothing of the `U_am` analysis is overwrit
 
 | experiment | variants | `U_am` pooled | E2 pooled | `U_am` within site | E2 within site | AUC `U_am` | AUC E2 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| abundance 2021 | 4,079 | +0.345 | +0.172 | +0.325 | +0.101 | — | — |
+| abundance 2021 | 4,079 | +0.345 | +0.172 | +0.325 | +0.101 | 0.689 | 0.596 |
 | abundance 2018 | 3,349 | +0.372 | +0.200 | +0.342 | +0.118 | 0.686 | 0.605 |
 | activity | 5,324 | +0.365 | +0.112 | +0.346 | +0.105 | 0.720 | 0.566 |
 
@@ -1273,8 +1298,34 @@ nothing or turns negative once burial is out: activity −0.15, family −0.29, 
 sites the contact-map energy is a pure *fold* signal — which is what a contact map should be —
 and it loses the active site entirely, where `U_am` at least found the P loop's packing.
 
-**Why E is weak per variant: the decoded response to one mutation is mostly not
-reproducible.** Every one of the 6,156 mutants changes the 2-step contact map; none leaves
+## 6.6a How much do the two energies agree with each other?
+
+Both are read off the same network, so this is the ceiling on how similarly they can behave
+anywhere downstream. `--versus` reports it, and writes `energy_vs_energy*.tsv`:
+
+| E against `U_am` | mutants | pooled | within site | per site |
+| --- | --- | --- | --- | --- |
+| 2 steps, all | 6,156 | +0.466 | +0.303 | +0.676 |
+| 2 steps, on the 380 | 380 | +0.524 | +0.282 | +0.749 |
+| 32 steps | 380 | +0.141 | +0.169 | +0.150 |
+
+The per-site column is the correlation of the two per-site means of `log10`, so it is
+comparable to the per-site numbers elsewhere in this document; `scan_mutants_E.py`'s own
+summary prints a slightly different version of it (mean E against mean log10 `dU`, +0.681 and
++0.212), which is the same quantity read on a different scale.
+
+Three things to take from it. **Per site they largely agree** (+0.68): both say the core is
+expensive, which is the part of either energy that the crystal structure would also give.
+**Per mutant they agree much less** (+0.47 pooled, +0.30 within a site), so the two energies
+genuinely rank substitutions at a position differently — they are not two measurements of one
+thing. And **the 32-step E agrees with `U_am` far *worse* than the 2-step E does** on exactly
+the same 380 mutants, +0.14 against +0.52. More decoding steps do not converge the contact
+energy toward the attention energy; they move it away, which is what the reproducibility
+numbers below say should happen.
+
+## 6.6b Why E is weak per variant: the decoded response is mostly not reproducible
+
+Every one of the 6,156 mutants changes the 2-step contact map; none leaves
 it unchanged, and the median mutant gains or loses 37 of about 900 contacts while moving the
 structure by only 0.45 Å RMSD. The decoder is deterministic — the same sequence twice
 differs in 0 contacts — so this is not sampling noise. It is sensitivity: a 0.45 Å shift
@@ -1291,8 +1342,8 @@ If both step counts measured the same effect of the mutation plus their own idio
 response, the agreement between them bounds how much of each is effect: about a tenth for E,
 essentially none for RMSD and pLDDT. RMSD and pLDDT used directly as costs are accordingly
 weaker still than E against the experiments (pooled +0.13 and +0.10 for abundance at 2
-steps). What E does carry is shared with `U_am` — Spearman 0.47 between them per mutant,
-0.68 per site — which is unsurprising, since both are read off the same network.
+steps). What E does carry is largely shared with `U_am`, as section 6.6a shows, and the
+step-count agreement above is the reason that sharing falls apart at 32 steps.
 
 **What it means for the sampler.** Two things, one for each use of E.
 
@@ -1507,7 +1558,8 @@ labels with `--show`.
 | `pten_mutants_variant_level.csv` | one row per mutant with the matching VAMP-seq and activity scores |
 | `mutants_vs_references_spearman.tsv`, `mutants_vs_references_partial_rsa.tsv` | the per-site correlations of section 6.3, raw and with burial removed |
 | `mutants_in_K_sets.tsv` | cost inside/outside each K-like set, with shift-test p values |
-| `mutants_vs_experiments_variant_level.tsv` | the pooled and within-site correlations per experiment |
+| `mutants_vs_experiments_variant_level.tsv` | per experiment: the pooled and within-site correlations, and the AUC with its damaging call and class sizes |
+| `energy_vs_energy.tsv` | with `--versus`, how much the two energies agree with each other (section 6.6a) |
 | `pten_mutant_profile.png`, `mutants_vs_references.png`, `mutants_vs_experiments.png` | the three figures of section 6.4 |
 | `mutants.log` | the printed tables of 6.4b |
 | `*.log` | the printed tables of each step |
