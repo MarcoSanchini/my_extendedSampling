@@ -1,0 +1,4 @@
+set	n_in	mean_in	mean_out	ratio_of_dU	shift_p
+K_natural	28	-1.6888	-1.6859	0.9935	0.8549
+K_abundance	108	-1.6723	-1.6931	1.0492	0.0031
+K_activity	97	-1.6875	-1.6856	0.9956	0.9290

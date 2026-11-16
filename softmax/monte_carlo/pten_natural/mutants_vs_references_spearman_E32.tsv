@@ -1,0 +1,5 @@
+quantity	orthologs entropy	family entropy	abundance mean	activity mean	RSA
+-mean dU	0.6070	0.4262	0.1814	0.4778	0.2941
+-median dU	0.4098	0.1085	-0.1387	0.1436	0.1472
+-min dU	0.5923	0.1198	0.0441	0.1002	0.1447
+-mean log10 dU	0.6085	0.3643	0.1348	0.3953	0.2623
