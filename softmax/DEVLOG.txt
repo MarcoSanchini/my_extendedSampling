@@ -7024,9 +7024,10 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     Marco's own proposal, worth keeping either way: one full forward at B
     yields U_am, its gradient AND the step-1 structure logits, so a 1-step E
     would cost ~0.14 s/move instead of 0.24; needs generate()'s loop opened up.
-2026-11-17 note -- the schedule control: E's per-mutant value is decode flicker
-    (Run 2026-11-16 evening. The control proposed in the third entry of
-    2026-11-16.) The same 20 sites (seq 0 17 323) at 3, 4 and 8 steps, next to
+
+2026-11-16 (fourth entry) -- the schedule control: E's per-mutant value is
+    decode flicker
+    (Run the same evening. The control proposed in the third entry.) The same 20 sites (seq 0 17 323) at 3, 4 and 8 steps, next to
     the 2- and 32-step scans. The 8-step run was interrupted at 19 of 20 sites;
     everything below uses the 19 sites all five schedules share.
 
