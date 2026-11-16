@@ -51,6 +51,17 @@ softmax/monte_carlo/zero_polymer*/**/data.dat
 softmax/monte_carlo/zero_polymer*/**/*.pt
 softmax/monte_carlo/zero_polymer*/**/*.npy
 
+# PTEN sampling (pten1d5r_study/): data.dat goes local-only and is pushed as
+# data.dat.gz instead, like the zero_polymer low-T chains. Unlike the rules
+# above this one also UNTRACKS files that were already committed (via
+# `git rm --cached` on the machine that holds them), because the next resume
+# would not fit: these files grow ~170 bytes per move, so a 600000-move chain
+# is ~107 MB, over GitHub's 100 MB hard limit, and ~36 MB gzipped (3.0x).
+# analyze_nsites.py and pten_k_sites.py both read data.dat.gz when data.dat is
+# absent. After every resume, `gzip -kf` again before pushing, or the pushed
+# .gz is stale (analyze_nsites.py prints a NOTE when it sees that).
+softmax/monte_carlo/pten1d5r_study/**/data.dat
+
 # Plots (plot_run.py, plot_structural_metrics.py, identify_k_sites.py) are
 # generated locally from data.dat/eprot checkpoints -- local-only for the
 # same reason eprot/ itself is: regeneratable from data already gitignored,
