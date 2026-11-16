@@ -51,6 +51,7 @@ import re
 import sys
 import glob
 import argparse
+import gzip
 
 import numpy as np
 
@@ -68,11 +69,30 @@ E_FOLD = 1. - np.exp(-1.)
 
 # ---------------------------------------------------------------- reading --- #
 
+def data_file(run):
+	"""The trajectory file of a run: data.dat if present, else data.dat.gz.
+
+	Long runs are pushed compressed (a 600000-move PTEN chain is ~107 MB
+	plain, over GitHub's 100 MB limit, and ~36 MB gzipped), so a clone may
+	hold only the .gz. Where both exist -- on the machine that ran the chain,
+	after `gzip -k` -- the plain file is the live one and wins; if it is newer
+	than the .gz, the .gz is stale and must be re-gzipped before pushing,
+	which is said once here rather than discovered after a push.
+	Returns None when the run has neither.
+	"""
+	plain, packed = f"{run}/data.dat", f"{run}/data.dat.gz"
+	if os.path.isfile(plain):
+		if os.path.isfile(packed) and os.path.getmtime(plain) > os.path.getmtime(packed):
+			print(f"NOTE: {packed} is older than data.dat; re-run `gzip -kf` on it before pushing")
+		return plain
+	return packed if os.path.isfile(packed) else None
+
+
 def read_data(path):
-	"""data.dat as a dict of columns, one entry per move. A move logged twice
-	(possible around a restart) keeps its last row."""
+	"""data.dat (or data.dat.gz) as a dict of columns, one entry per move. A
+	move logged twice (possible around a restart) keeps its last row."""
 	rows, keys = {}, None
-	with open(path) as f:
+	with (gzip.open(path, "rt") if path.endswith(".gz") else open(path)) as f:
 		for line in f:
 			if line.startswith("#") or not line.strip():
 				continue
@@ -155,7 +175,7 @@ def reconstruct(d, start, stride, ref=None):
 
 
 def load_run(run, stride, ref):
-	d = read_data(f"{run}/data.dat")
+	d = read_data(data_file(run))
 	d["run"] = run
 	d["snaps"], d["snap_moves"], d["bad"] = reconstruct(d, read_start(run), stride, ref)
 	d["wall"] = read_wall(run)
@@ -260,7 +280,7 @@ def analyze_equil(args, ref):
 	tag = args.equil_dir.replace("/", "_")
 	for Tdir in sorted(glob.glob(f"{args.run_dir}/{args.equil_dir}/T*"), key=T_of):
 		T = T_of(Tdir)
-		runs = [load_run(r, args.stride, ref) for r in sorted(glob.glob(f"{Tdir}/chain*")) if os.path.isfile(f"{r}/data.dat")]
+		runs = [load_run(r, args.stride, ref) for r in sorted(glob.glob(f"{Tdir}/chain*")) if os.path.isfile(f"{r}/data.dat") or os.path.isfile(f"{r}/data.dat.gz")]
 		if len(runs) < 2:
 			print(f"T={T}: fewer than 2 chains with data, skipped")
 			continue
@@ -369,7 +389,7 @@ def analyze_scan(args, ref):
 		byN = {}
 		for Ndir in glob.glob(f"{Tdir}/N*"):
 			N = int(os.path.basename(Ndir)[1:])
-			runs = [load_run(r, args.stride, ref) for r in sorted(glob.glob(f"{Ndir}/chain*")) if os.path.isfile(f"{r}/data.dat")]
+			runs = [load_run(r, args.stride, ref) for r in sorted(glob.glob(f"{Ndir}/chain*")) if os.path.isfile(f"{r}/data.dat") or os.path.isfile(f"{r}/data.dat.gz")]
 			for r in runs:
 				r["chain"] = os.path.basename(r["run"])
 				keep = r["move"] > args.burn
