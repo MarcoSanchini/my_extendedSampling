@@ -6896,3 +6896,28 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
       conservation there, the sampler sees the landscape around a site rather
       than the reference's 19 mutants; if it does not, the difference in
       reading 1 is just equilibration (198 sites never accepted at T=1).
+
+2026-11-16 -- where the batched/single discrepancy comes from (Marco asked)
+    Checked that batching is mathematically a no-op in this path, so the
+    difference is purely floating point:
+      - _last_attention asserts batch 1; bench_batch.py's batched version
+        expands the SAME default tokens from 1 row to B identical rows and
+        calls encoder.custom_forward + transformer.last_attention directly.
+      - clean_and_symm is per-sample (slices BOS/EOS, averages with the
+        transpose). Nothing is summed or normalised across the batch, so no
+        sequence can influence another.
+    Mechanism, three compounding steps:
+      1. autocast runs the matmuls in bfloat16: 8 mantissa bits vs float32's
+         24, i.e. steps 65536x coarser, ~0.39% relative precision.
+      2. FP addition is not associative and a GPU matmul's reduction order is
+         chosen from the SHAPE of the operands. B=1 and B=19 select different
+         kernels/tilings, hence different summation orders, hence different
+         rounding. This is why "noise floor 0" and "batched disagrees" are
+         both true: determinism is PER SHAPE, not absolute.
+      3. U_am amplifies. Attention entries ~1/326 ~ 0.003 and the energy takes
+         their log, which passes relative error straight through (d log x =
+         dx/x): 0.39% on an entry -> ~0.0039 absolute on log(am). 52326 pairs
+         (upper triangle of 324x324) are then squared and summed; random signs
+         largely cancel (median difference 0.55), aligned signs do not (max
+         151).
+    Written up as section 6.2a of docs/pten_k_sites_explained.md.

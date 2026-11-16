@@ -653,7 +653,7 @@ Four things are worth knowing before you launch it.
    `_exact_energy` one sequence at a time. Above 1 the script uses the batched forward from
    `code/tests/bench_batch.py`, which expands ESM3's batch-1 inputs by hand and keeps the
    same bfloat16 autocast — and that path was *measured* to disagree with `_exact_energy`,
-   see 6.2b below. The whole scan takes about ten minutes either way, so there is nothing to
+   see 6.2a and 6.2b below. The whole scan takes about ten minutes either way, so there is nothing to
    buy by batching.
 3. **It prints its own resolution limit.** Two forward passes on the *same* sequence should
    give exactly 0. Whatever they give instead is run-to-run numerical noise in the
@@ -664,6 +664,56 @@ Four things are worth knowing before you launch it.
 4. **It refuses to disagree with the reference.** `pten_k_sites.py mutants` checks that the
    wild-type residue the scan mutated is the one in the site table, site by site, and stops
    if any differs: a CSV produced on another sequence is useless here.
+
+## 6.2a What batching is, and where the discrepancy comes from
+
+**Batching.** A forward pass sends one sequence through the network and gets one attention map
+back. The GPU does that with thousands of threads, and at 324 residues there is not enough
+work to keep them busy: the benchmark of 29 October measured the card about 41% idle during a
+single-sequence pass. Batching stacks `B` sequences into one tensor and runs them through
+together, so every matrix multiplication is `B` times bigger and the card is used properly.
+The sequences never interact — it is `B` independent calculations sharing one trip through the
+network. `--batch 19` means one site's 19 mutants per pass.
+
+**It is mathematically a no-op here, and that was checked.** ESM3's own `_last_attention`
+refuses a batch (`"Attention can be computed only for single sequences"`), so the batched path
+in `code/tests/bench_batch.py` builds it by hand: it takes the same default tokens, expands
+them from 1 row to `B` identical rows, and calls the encoder and the transformer stack
+directly. The only post-processing, `clean_and_symm`, slices off the BOS and EOS positions and
+averages the map with its transpose — per sequence, with nothing summed or normalised across
+the batch. So no sequence can influence another, and the discrepancy is not the model seeing
+them differently. It is arithmetic.
+
+**Where the arithmetic goes.** Three things compound.
+
+1. *The forward pass runs in bfloat16.* Under `torch.autocast` the matrix multiplications use
+   bfloat16, which keeps 8 bits of mantissa against float32's 24 — its steps are 65,536 times
+   coarser, a relative precision of about 0.39%. That is the error on every intermediate
+   quantity, before anything accumulates.
+2. *Floating-point addition is not associative, and the order depends on the shape.* `(a+b)+c`
+   and `a+(b+c)` differ once rounding is involved. A GPU matrix multiplication computes each
+   output entry as a sum of many products, split across threads and tiles and added back in an
+   order the library chooses — and it chooses from the *shape* of the operands. Going from one
+   sequence to nineteen changes every shape, so a different kernel runs, the partial sums are
+   added in a different order, and the rounding lands differently. This is the step worth
+   taking slowly, because it explains what looks like a contradiction in 6.2b: the same
+   sequence run twice at the same batch size agrees **bit for bit** (noise floor 0), while the
+   same sequence at two different batch sizes does not. Determinism in floating point is per
+   shape, not absolute.
+   In float32, summing the same 2,000 numbers forwards and then backwards already differs in
+   the seventh digit. Here it is bfloat16, 65,536 times coarser, through 48 transformer blocks.
+3. *`U_am` amplifies what is left.* The attention entries are small — a row of 326 positions
+   sums to 1, so a typical entry is about 0.003 — and the energy takes their logarithm.
+   Logarithms pass relative error straight through (`d log x = dx/x`), so bfloat16's 0.39% on
+   an entry becomes about 0.0039 in absolute terms on `log am`. Then 52,326 pairs (the upper
+   triangle of 324 × 324) are squared and summed. If those small errors point in random
+   directions they largely cancel, which is the median difference of 0.55 measured in 6.2b; if
+   they line up they do not, which is the maximum of 151.
+
+**Why it had never mattered.** All of the above is equally true of every run this project has
+done. It only became visible here because `dU = U` near the reference, so the quantity being
+compared is 6 to 84 rather than the thousands that `U` reaches for a drifted sequence — see the
+note on `bench_batch.py`'s tolerance at the end of 6.2b.
 
 ## 6.2b Measured on astaroth, 15 November: the batched path is biased
 
