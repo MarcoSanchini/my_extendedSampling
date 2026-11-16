@@ -1,0 +1,19 @@
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 28313.80it/s]
+# pten_1d5r, L=324, 3 steps: reference pLDDT 88.5, 907 contacts; same sequence twice differs in 0 contacts (must be 0)
+# 20 sites requested, 0 already in pten_natural/pten_mutants_E3.csv, 20 to do (380 decodes)
+# 10/20 sites, 0.6 min, 0.183 s per mutant, 0.6 min left; site 153 T: E min 0.0153 median 0.0225 max 0.0296, zeros 0/19
+# 20/20 sites, 1.2 min, 0.182 s per mutant, 0.0 min left; site 323 E: E min 0.0121 median 0.0175 max 0.0274, zeros 0/19
+
+# SUMMARY of pten_natural/pten_mutants_E3.csv: 380 mutants over 20 sites
+# time per mutant: median 0.177 s
+# E = 0 (identical contact map to the reference): 0.0% of mutants; n_diff <= 2: 0.0%
+# E quantiles 10/25/50/75/90/max: 0.0160 0.0176 0.0198 0.0225 0.0247 0.0381
+# n_diff quantiles 10/25/50/75/90/max: 29 32 36 41 45 69
+# RMSD to the reference's prediction: median 0.44 A, 90% 0.57, max 1.02; pLDDT median 88.7, min 87.4
+# sites where EVERY mutant has E = 0: 0 of 20; where none does: 20
+# joined with /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten_natural/pten_single_mutants.csv: 380 mutants
+#   Spearman(E, dU_am) pooled: 0.335
+#   within site (sites where E takes >2 values, n=20): median 0.188, mean 0.197
+#   per site, mean E vs mean log10 dU: 0.714
+#   dU_am where E > 0: median 26.7 (n=380)
+# against pten_natural/pten_mutants_E2.csv on 380 shared mutants: Spearman(E) 0.265, median |dE| 0.0027, E = 0 in both 0.0%, in this only 0.0%, in the other only 0.0%
