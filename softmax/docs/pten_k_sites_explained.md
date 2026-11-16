@@ -961,6 +961,11 @@ tell the two apart. If the within-site number were near zero while the pooled on
 `U_am` would know which *positions* matter and nothing about which *residue* belongs in
 them.
 
+A note on wording, since the same statistic carries two names in this document: the
+per-site table of 6.4b calls its uncontrolled column "raw" and the per-variant table calls
+its uncontrolled column "pooled". Both are the plain Spearman with nothing partialled out;
+the end of 6.4b lays the two tables side by side.
+
 Three related numbers, for the 2021 abundance data, so the relationship is clear:
 
 | | |
@@ -1066,6 +1071,30 @@ Per variant, each in-silico mutant against the same substitution in the laborato
 | abundance 2021 | 4,079 | +0.35 | **+0.32** | 0.686 |
 | abundance 2018 | 3,349 | +0.37 | **+0.34** | — |
 | activity (Mighell) | 5,324 | +0.37 | **+0.35** | 0.720 |
+
+**"raw" and "pooled" are the same statistic.** Both words mean the plain Spearman
+correlation with nothing partialled out, computed over everything at once; neither is a
+different kind of correlation from the other. They differ only in what one observation *is*,
+and in which controlled column sits next to them:
+
+| | one observation is | plain column | controlled column | what the control removes |
+| --- | --- | --- | --- | --- |
+| per site (first table) | a position, 1 of ~290 | **raw** | RSA regressed out | burial, one per-site property |
+| per variant (second table) | a substitution, 1 of ~4,000 | **pooled** | within site | site identity, i.e. every per-site property at once |
+
+So "raw" is the per-site table's uncontrolled column and "pooled" is the per-variant table's
+uncontrolled column. If the per-site table had been written with the per-variant table's
+headings its first column would say "pooled", and vice versa; the two names are an accident
+of having written the tables months apart, not a distinction.
+
+One consequence is worth stating. Regressing out RSA controls for a *single* per-site
+property, chosen by hand, so a per-site correlation that survives it can still be explained
+by some other per-site property nobody regressed out. Centring within a site controls for
+site identity, which is every per-site property simultaneously — burial, secondary
+structure, domain, distance to the active site, how many variants were measured there. That
+is why the within-site column needs no burial control of its own, and why +0.32 within a
+site is a stronger statement than +0.12 per site with RSA removed, even though it is a
+weaker-looking comparison to set up.
 
 Two things stand out, and they are the two the scan was built to settle.
 
