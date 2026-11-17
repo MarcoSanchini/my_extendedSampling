@@ -7058,3 +7058,27 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     those are depends on the decoding trajectory. Next test proposed: smooth
     (sigmoid) contact instead of the hard cutoff, which separates "the threshold is
     the problem" from "the decode is the problem". Doc section 6.6c.
+
+2026-11-17  PTEN: soft-contact diagnostic, and the literature behind "sequence beats
+            structure" for point mutations
+    scan_mutants_E.py --soft-widths (default 0.5 1 2 A) computes E with the 8 A step
+    replaced by a sigmoid of the CA distance, from the SAME decode as the hard E, so
+    it costs no GPU. Width -> 0 reproduces the hard E exactly and the script checks
+    that on random coordinates before touching the GPU; the soft noise floor for the
+    reference decoded twice is printed too. summary() now prints every energy column
+    side by side, including, for --compare, the median step-count shift as a share of
+    each column's own IQR (1.6 for the hard E at 32 steps is the figure to beat).
+    Doc 6.6e; commands as step 8b of section 9.
+    Doc 6.6d collects the references Marco asked for: zero-shot sequence-likelihood
+    predictors (Hopf 2017, Riesselman 2018, Frazer 2021 EVE, Meier 2021 ESM-1v) and
+    ProteinGym (Notin 2023, NeurIPS D&B) whose Table 2 gives corrected-average
+    Spearman 0.39-0.46 for the leading unsupervised models over 217 DMS assays --
+    the band U_am's +0.345/+0.372/+0.365 sits in. Structure side: Buel & Walters
+    2022 NSMB 29:1-2 (AF2 insensitive to disruptive missense: 0.1-0.6 A RMSD, pLDDT
+    95 vs 94), Pak 2023 PLoS ONE 18:e0282689 (dpLDDT vs ddG r = 0.17 at the site,
+    0.00 whole-protein, 976 mutations), and the counterpoint PRL 131:218401 (2023),
+    which finds single-mutation signal on average via structural strain, not pLDDT.
+    Doc 6.6f states what the negative result does and does not undermine: it kills
+    the generate()-based contact energy as a per-mutant quantity, not U_am, whose
+    experiment numbers are unchanged; U_structure_ce (differentiable, same forward
+    pass, lambda = 0 today) is the untested in-loop structural term.

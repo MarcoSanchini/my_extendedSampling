@@ -1427,9 +1427,178 @@ report it as a diagnostic rather than as the energy.
    sequence's fold with, where the differences are large (many mutations, not one) and the
    jitter of a few tens of contacts is small against them. Nothing here argues against that.
 
-If E is to be tried in the loop anyway, the smooth-contact diagnostic at the end of 6.6c is
-the thing to run first: it decides whether the hard 8 Å threshold is what is costing E its
-per-mutant resolution, or whether the decode itself is.
+If E is to be tried in the loop anyway, the soft-contact diagnostic of 6.6e is the thing to
+run first: it decides whether the hard 8 Å threshold is what is costing E its per-mutant
+resolution, or whether the decode itself is.
+
+## 6.6d Why a sequence-side energy should be expected to win, with references
+
+Marco asked for the literature behind the claim in 6.6c, which is fair: it is the one part
+of that section that is not our own measurement. The claim has two halves.
+
+**Half one: predicting mutation effects from sequence likelihood works, and is the standard
+way it is done.** A family of models is trained to put a probability on amino-acid sequences
+— from an alignment of one family, or from all known proteins at once — and the predicted
+effect of a mutation is simply how much less likely the mutant is than the wild type,
+`log p(mutant) − log p(wild type)`. Nothing is trained on mutation data, which is why these
+are called *zero-shot* or *unsupervised* predictors. The line runs through
+
+- Hopf et al., *Mutation effects predicted from sequence co-variation*, Nature Biotechnology
+  **35**, 128–135 (2017) — pairwise couplings fitted to one family's alignment;
+- Riesselman, Ingraham & Marks, *Deep generative models of genetic variation capture the
+  effects of mutations*, Nature Methods **15**, 816–822 (2018) — DeepSequence, a VAE on an
+  alignment;
+- Frazer et al., *Disease variant prediction with deep generative models of evolutionary
+  data*, Nature **599**, 91–95 (2021) — EVE, the clinical-classification version;
+- Meier et al., *Language models enable zero-shot prediction of the effects of mutations on
+  protein function*, NeurIPS 2021 — ESM-1v, the same idea with a protein language model and
+  no per-family alignment.
+
+How well does that work? The benchmark is **ProteinGym** (Notin et al., *ProteinGym:
+Large-Scale Benchmarks for Protein Fitness Prediction and Design*, NeurIPS 2023, Datasets
+and Benchmarks track), 217 deep-mutational-scan assays. Its Table 2 gives the corrected
+average Spearman of the leading unsupervised models: TranceptEVE 0.456, GEMME 0.455, EVE
+0.439, VESPA 0.436, MSA Transformer 0.434, Tranception 0.434, ESM-1v 0.407, ESM-2 15B 0.401,
+ESM-1b 0.394. **So the state of the art on this task sits around 0.4 to 0.46, averaged over
+assays.** Section 6.4b's `U_am` numbers — +0.345, +0.372, +0.365 on the three PTEN
+experiments — are therefore in the same range as published variant-effect predictors, which
+is worth knowing before concluding anything about whether the energy works. Two honest
+caveats: per-assay values scatter widely around those averages, so a single protein proves
+little either way; and ProteinGym contains PTEN assays with every baseline already scored on
+them, which is the fair comparison and is one download away (section 10.2).
+
+**Half two: a predicted structure is the wrong place to look for the effect of a point
+mutation.** This is well documented, and specifically for the quantity we care about:
+
+- Buel & Walters, *Can AlphaFold2 predict the impact of missense mutations on structure?*,
+  Nature Structural & Molecular Biology **29**, 1–2 (2022). Three cases where a known
+  structure-disrupting substitution changes the prediction almost not at all: average Cα
+  RMSD 0.1 Å and 0.3 Å for the hHR23a UBA domains with L198A, 0.6 Å for BRCA1 BRCT with
+  A1708E, and pLDDT 95 against 94 between wild type and mutant. Their conclusion is that
+  AlphaFold2 is "largely unable to predict when a point mutation causes defective protein
+  folding". Note how close 0.1 to 0.6 Å is to the 0.45 Å median we measure for PTEN.
+- Pak et al., *Using AlphaFold to predict the impact of single mutations on protein stability
+  and function*, PLoS ONE **18**(3), e0282689 (2023). 976 mutations in 90 proteins: the
+  change in pLDDT at the mutated residue correlates with experimental ΔΔG at Pearson 0.17,
+  and the change in whole-protein pLDDT at 0.00. On 447 GFP mutants against measured
+  fluorescence, 0.14 and 0.16. Their conclusion is that the confidence metrics cannot
+  estimate the effect of a mutation on stability or function.
+- The honest counterpoint: *AlphaFold2 can predict single-mutation effects*, Physical Review
+  Letters **131**, 218401 (2023), argues that the predictions do carry single-mutation
+  information **on average** across thousands of pairs, through local structural strain
+  rather than through confidence scores. That is a statement about ensembles, not about
+  ranking one protein's substitutions, and it is the strain field rather than a contact map
+  that carries it. It is the strongest argument that something is there to be extracted,
+  and it is also a different observable from E.
+
+Both halves point the same way, and the reason is not a defect of any particular model. A
+structure predictor answers "what is the most likely fold for this sequence", and the most
+likely fold for a point mutant is the wild-type fold; the answer is nearly invariant by
+design. The experiments we compare against measure something else: VAMP-seq abundance is
+dominated by folding stability, a free-energy difference that no single predicted structure
+expresses, and Mighell's activity is catalytic chemistry. A sequence-likelihood object is
+closer to those because evolutionary frequency already integrates stability and function
+over the whole family.
+
+Where does `U_am` sit? It is read off the attention map of a sequence model, not off a
+decoded structure, so it is on the sequence side of this divide — but it is not a likelihood
+either. It measures how far the attention map moves, which is why its relation to the
+contact map matters at all: attention maps are known to encode contacts (Rao et al.,
+*Transformer protein language models are unsupervised structure learners*, ICLR 2021). So
+`U_am` is better thought of as a *structure-sensitive sequence* readout, which is exactly
+where our measurements put it: 6.6a finds it agrees with the contact-map energy at +0.68 per
+site, and 6.4b finds it beats it per variant by a factor of two to three.
+
+**Two caveats of our own, so the comparison is not read as more than it is.** First, these
+references are about AlphaFold2 and ours is ESM3's structure track; the mechanism argued here
+(the prediction returns the most likely fold) is shared, but the specific numbers are not
+transferable. Second, the papers above were verified against the sources on 17 November
+2026 for title, venue and the numbers quoted; the four papers in half one were cited from
+memory for volume and page, so check those against the journals before they go in the
+thesis.
+
+## 6.6e The soft-contact diagnostic, and what it would settle
+
+`scan_mutants_E.py --soft-widths` (17 November) replaces the hard 8 Å step with a sigmoid of
+the Cα distance,
+
+    c_ij = 1 / (1 + exp((d_ij − 8 Å) / w)),    |i − j| > 2
+
+and computes E from it with the paper's formula unchanged — `|D_ij(mut) − D_ij(ref)|` summed
+over pairs and normalised the same way, which for the hard map is exactly the XOR the code
+already used. A pair at the cutoff counts one half, one width closer 0.73, one width further
+0.27. As `w → 0` the soft energy becomes the hard one exactly, and the script verifies that
+limit on random coordinates before it touches the GPU, so a mistake in the softening cannot
+be mistaken for a result. The widths 0.5, 1 and 2 Å are all computed from the *same* decode
+alongside the hard E, so the whole thing costs no extra GPU time and the columns are paired
+mutant by mutant.
+
+What it decides. Section 6.6c measured that the step count moves E further than the mutations
+do, and proposed two explanations: the threshold, or the decode. They differ in what the
+softening does.
+
+- If the **threshold** is the problem, the 0.45 Å shift that a mutant produces is being
+  amplified into tens of discrete contact flips by pairs sitting near 8 Å. Smoothing lets
+  those pairs contribute in proportion to how far they actually moved, so the step-count
+  agreement should rise with the width, and the wider columns should also agree better with
+  `U_am` and with the experiments. Then a soft E is a candidate for the loop.
+- If the **decode** is the problem — the trajectory genuinely puts the loops somewhere else
+  at a different step count — then smoothing changes nothing material, because the distances
+  themselves differ. The step-count agreement stays near 0.1 to 0.3 at every width. Then no
+  reweighting of distances rescues E, and the route out is a predictor without a decoding
+  schedule at all, ESMFold being the obvious one and the one Zambon et al. use.
+
+The run is the same 20 sites at 2, 8 and 32 steps, about 25 minutes on astaroth, with the
+commands in section 9. The number to read is the "agreement between the two" block, in
+particular the last line, which gives the median step-count shift as a share of each
+column's own interquartile range: 1.6 for the hard E at 32 steps is the figure to beat, and
+anything still above about 1 means the step count still moves E more than the mutations do.
+
+One thing the soft version is not: it is a departure from the paper's definition of E, so it
+belongs in the thesis as a diagnostic of why the hard E behaves as it does, not as a
+redefinition of the paper's energy.
+
+## 6.6f What this negative result does and does not undermine
+
+Worth stating plainly, because the last two days have produced one clear negative result and
+it is easy to let it spread further than it reaches.
+
+**What is undermined.** One specific object: the contact-map energy *computed through ESM3's
+`generate()`* as a per-mutant quantity. Sections 6.6b and 6.6c show it is dominated by the
+decoding schedule, so it cannot be the energy of a Monte Carlo move as it stands. That is a
+real finding and it closes a route that was open on Friday.
+
+**What is not.** The sampler in this thesis does not use that energy. It uses `U_am`, the
+attention-map distance, and `U_am` is what the scan actually tested against two independent
+experiments: +0.345 to +0.372 pooled, +0.325 to +0.346 within a site, AUC 0.686 to 0.720.
+Those numbers did not move. If anything the comparison strengthened them, because the
+contact-map energy was the natural rival and came out at a half to a third of the strength on
+the same 6,156 mutants, and because the ProteinGym averages in 6.6d put `U_am` in the range
+of published variant-effect predictors rather than below it.
+
+**What was never claimed and still is not.** That `U_am` is a free energy, that low `U_am`
+implies the sequence folds, or that the sampler is equilibrated. The first two are the open
+interpretation question recorded in `structure_comparison.tex`; the third is caution 1 of
+section 11 and is a property of the runs, not of the energy.
+
+**Where the premises are genuinely worth re-examining**, as opposed to abandoning:
+
+1. *E as the paper's observable.* Unaffected and still the right thing to measure a sampled
+   sequence with, where sequences differ by many mutations and the schedule jitter of a few
+   tens of contacts is small against the signal. The negative result is about single
+   mutations.
+2. *The schedule itself.* ESM3's structure track is a generative decoder with a number of
+   steps; ESMFold is one deterministic forward pass and is what Zambon et al. use. If a
+   structural energy is wanted in the loop, that is the comparison to make, and the
+   measurements now argue for it rather than merely permitting it.
+3. *`U_structure_ce`.* Already in `energies.py`, already differentiable, already from the
+   same forward pass as `U_am`, and switched off (`lambda_structure_ce = 0`). It is the
+   in-loop structural term that does not need `generate()` at all. Nothing here has tested
+   it, which makes it the obvious thing to test next if the structural side matters.
+
+A negative result that took 25 minutes of GPU time and killed one candidate energy is a
+cheap outcome, not a broken project. The thing to avoid is the opposite error: having built a
+chain on E and discovered this afterwards.
 
 # 7. InterPro, Pfam, and the step to run locally
 
@@ -1586,6 +1755,38 @@ chains. Step 6 is the only one that needs ESM3 and the card.
     # 7. the mutants against the papers and the natural alignments (no GPU)
     python pten_k_sites.py mutants \
         --mutants pten_natural/pten_single_mutants.csv > pten_natural/mutants.log 2>&1
+
+    # 8. the contact-map energy of the same mutants, GPU. 2 steps for all 324 sites is
+    #    14 min; more steps only on the 20-site subset (section 6.6).
+    nohup python -u scan_mutants_E.py --num-steps 2 \
+        --out pten_natural/pten_mutants_E2.csv > scan_mutants_E2.log 2>&1 &
+    for st in 3 4 8 32; do
+        python -u scan_mutants_E.py --num-steps $st --sites $(seq 0 17 323) \
+            --out pten_natural/pten_mutants_E$st.csv \
+            --compare pten_natural/pten_mutants_E2.csv > scan_mutants_E$st.log 2>&1
+    done
+
+    # 8b. THE SOFT-CONTACT DIAGNOSTIC of section 6.6e, GPU, about 25 min in total.
+    #     Hard and soft E (widths 0.5, 1, 2 A) come from the same decode, so the only
+    #     cost is the decodes themselves. Each run is compared with the 2-step one;
+    #     read the "agreement between the two" block of the summary.
+    for st in 2 8 32; do
+        python -u scan_mutants_E.py --num-steps $st --sites $(seq 0 17 323) \
+            --out pten_natural/pten_mutants_soft_E$st.csv \
+            --compare pten_natural/pten_mutants_soft_E2.csv > scan_mutants_soft_E$st.log 2>&1
+    done
+    # the summary again, without re-decoding anything:
+    python scan_mutants_E.py --summary-only --out pten_natural/pten_mutants_soft_E32.csv \
+        --compare pten_natural/pten_mutants_soft_E2.csv
+
+    # 9. either energy against the experiments, and the two against each other (no GPU).
+    #    --energy-column picks the cost, --tag keeps the outputs apart, --versus adds
+    #    the energy-vs-energy block of 6.6a.
+    python pten_k_sites.py mutants --tag Uam
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E2.csv \
+        --energy-column E --tag E2 --versus pten_natural/pten_single_mutants.csv
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_soft_E2.csv \
+        --energy-column E_w1 --tag soft_E2_w1 --versus pten_natural/pten_single_mutants.csv
 
 If the scan is interrupted, or the card is needed for something else, just run the same
 step 6 command again: it picks up at the first site it has not finished. Step 7 works on a
