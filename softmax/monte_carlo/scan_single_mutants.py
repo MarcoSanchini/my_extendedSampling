@@ -91,6 +91,7 @@ from references import get_reference
 PARS = {"T": 1.0, "M": 1.0, "T_sftm": 0.1, "lambda_am": 1.0,
 	"lambda_structure_ce": 0.0, "lambda_S": 0.0, "eps": 1.0e-9, "n_quad": 40}
 COLUMNS = "site,ref_aa,mut_aa,dU\n"
+CE_COLUMNS = "site,ref_aa,mut_aa,dU,U_ce,dU_ce\n"
 
 
 def batched_U(model, probs, ref_am):
@@ -121,7 +122,7 @@ def probs_of(seqs, device):
 	return torch.stack(out)
 
 
-def done_sites(path, n_expected):
+def done_sites(path, n_expected, header=COLUMNS):
 	"""Sites already complete in an existing CSV, and whether it is well formed.
 	A site is complete when it has all n_expected rows, so a run killed in the
 	middle of a site simply redoes that site (its partial rows are dropped)."""
@@ -130,8 +131,8 @@ def done_sites(path, n_expected):
 	keep, counts = [], {}
 	with open(path) as f:
 		head = f.readline()
-		if head != COLUMNS:
-			raise SystemExit(f"{path} does not start with {COLUMNS.strip()!r}; move it aside or pass another --out")
+		if head != header:
+			raise SystemExit(f"{path} does not start with {header.strip()!r}; move it aside or pass another --out")
 		for line in f:
 			s = line.split(",", 1)[0]
 			if s.isdigit():
@@ -158,6 +159,12 @@ def main():
 			"the largest disagreement with the batched path. Forced on whenever --batch > 1, since that is the "
 			"only warning that the batched numbers are not the sampler's")
 	ap.add_argument("--restart", action="store_true", help="ignore an existing --out and scan everything again")
+	ap.add_argument("--structure-ce", action="store_true",
+		help="also compute U_structure_ce for every mutant (lambda_structure_ce = 1): the cross-entropy of the "
+			"predicted structure-token distribution against the reference's own structure tokens. This is the "
+			"OTHER structural energy in energies.py, it needs no generate() and no decoding schedule, and it "
+			"costs one extra forward through the structure head per mutant. Writes U_ce and dU_ce as well. "
+			"Incompatible with --batch > 1, which only knows the attention path.")
 	args = ap.parse_args()
 
 	ref_name, ref_seq = get_reference(args.ref)
@@ -187,6 +194,38 @@ def main():
 	print(f"# U_am(ref, ref) = {compute_U_am(ref_am, ref_am).item():.3e}   "
 		f"noise floor (same sequence twice) = {floor:.3e}", flush=True)
 
+	# U_structure_ce, when asked for. Two things make it unlike U_am and both are
+	# traps worth stating in the output rather than in a comment:
+	#   1. The target is the reference's OWN argmax structure tokens, exactly as
+	#      rate_sampler._setup builds it, so this scan must build it the same way
+	#      (the scan assembles the sampler by hand and never calls _setup).
+	#   2. It is a cross-entropy, so U_ce(reference) is NOT zero and is not a
+	#      global minimum either. dU = U only holds for U_am; here dU_ce has to be
+	#      a difference, and it can come out NEGATIVE for a mutant the structure
+	#      head likes better than the reference. Nothing downstream may assume
+	#      dU_ce > 0.
+	header = CE_COLUMNS if args.structure_ce else COLUMNS
+	U_ce_ref = float("nan")
+	if args.structure_ce:
+		if args.batch > 1:
+			raise SystemExit("--structure-ce needs --batch 1: the batched forward only computes the attention map.")
+		PARS["lambda_structure_ce"] = 1.0
+		with torch.no_grad():
+			ref_logits = sampler.model.predict_structure_logits(sequence_probs=sampler.ref_eprot.get_probs())
+			sampler.ref_structure_tokens = ref_logits.argmax(dim=-1)[1:-1]      # drop BOS/EOS, as _setup does
+		e0 = ExtendedProtein(sequence=ref_seq, requires_grad=False, device=device)
+		e0.expand()
+		sampler._exact_energy(e0, PARS)
+		U_ce_ref = e0.U_structure_ce.item()
+		again_ce = ExtendedProtein(sequence=ref_seq, requires_grad=False, device=device)
+		again_ce.expand()
+		sampler._exact_energy(again_ce, PARS)
+		print(f"# U_structure_ce(reference) = {U_ce_ref:.6f}, and NOT 0: it is the cross-entropy of the "
+			f"reference's structure logits against their own argmax, so dU_ce = U_ce - {U_ce_ref:.6f} "
+			f"and may be negative.", flush=True)
+		print(f"# U_ce noise floor (same sequence twice) = "
+			f"{abs(again_ce.U_structure_ce.item() - U_ce_ref):.3e}", flush=True)
+
 	# 19 candidates per site: the 20 canonical residues minus the site's own.
 	# _competition_indices is the sampler's own eligibility rule, so the scan
 	# covers exactly the substitutions a move could ever propose (X, B, U, Z, O
@@ -195,7 +234,7 @@ def main():
 	sites = args.sites if args.sites is not None else list(range(L))
 	if args.restart and os.path.exists(args.out):
 		os.remove(args.out)
-	have, kept = done_sites(args.out, n_per_site)
+	have, kept = done_sites(args.out, n_per_site, header)
 	todo = [s for s in sites if s not in have]
 	print(f"# {n_per_site} mutants per site, {len(sites)} sites requested, "
 		f"{len(have & set(sites))} already in {args.out}, {len(todo)} to do "
@@ -203,7 +242,7 @@ def main():
 
 	os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
 	with open(args.out, "w") as f:               # rewritten without the rows of any partial site
-		f.write(COLUMNS)
+		f.write(header)
 		f.writelines(kept)
 
 	batch, t0, done = max(1, args.batch), time.perf_counter(), 0
@@ -217,7 +256,7 @@ def main():
 			cur = ref_seq[s]
 			cand_idx = sampler._competition_indices(vocab.index(cur)).tolist()
 			seqs = [ref_seq[:s] + vocab[j] + ref_seq[s + 1:] for j in cand_idx]
-			dU = []
+			dU, ce = [], []
 			i = 0
 			while i < len(seqs):
 				chunk = seqs[i:i + batch]
@@ -225,7 +264,12 @@ def main():
 					if batch == 1:
 						e = ExtendedProtein(sequence=chunk[0], requires_grad=False, device=device)
 						e.expand()
-						dU.append(sampler._exact_energy(e, PARS)[0])
+						# With lambda_structure_ce = 1 the first return value is the SUM of the two
+						# energies, so U_am is taken from the second and the CE from the eprot.
+						U_tot, U_am_one, e = sampler._exact_energy(e, PARS)
+						dU.append(U_am_one if args.structure_ce else U_tot)
+						if args.structure_ce:
+							ce.append(e.U_structure_ce.item())
 					else:
 						dU += batched_U(sampler.model, probs_of(chunk, device), ref_am).float().tolist()
 				except torch.cuda.OutOfMemoryError:
@@ -236,8 +280,12 @@ def main():
 					print(f"# out of memory, batch -> {batch}", flush=True)
 					continue
 				i += len(chunk)
-			for j, u in zip(cand_idx, dU):
-				out.write(f"{s},{cur},{vocab[j]},{u:.6f}\n")
+			if args.structure_ce:
+				for j, u, c in zip(cand_idx, dU, ce):
+					out.write(f"{s},{cur},{vocab[j]},{u:.6f},{c:.6f},{c - U_ce_ref:+.6f}\n")
+			else:
+				for j, u in zip(cand_idx, dU):
+					out.write(f"{s},{cur},{vocab[j]},{u:.6f}\n")
 			out.flush()
 			done += 1
 			if check and done == 1 and batch > 1:

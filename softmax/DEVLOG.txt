@@ -7082,3 +7082,19 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     the generate()-based contact energy as a per-mutant quantity, not U_am, whose
     experiment numbers are unchanged; U_structure_ce (differentiable, same forward
     pass, lambda = 0 today) is the untested in-loop structural term.
+
+2026-11-17  PTEN: U_structure_ce as a per-mutant energy, and one runner for both scans
+    scan_single_mutants.py --structure-ce sets lambda_structure_ce = 1, builds
+    ref_structure_tokens the way rate_sampler._setup does (argmax of the reference's
+    own structure logits; the scan assembles the sampler by hand and never calls
+    _setup), and writes U_ce and dU_ce next to dU. TRAP, the mirror image of the
+    dU = U identity: U_ce is a CROSS-ENTROPY, so U_ce(reference) is not 0 and is not
+    a minimum, dU_ce must really be subtracted, and it CAN BE NEGATIVE. The script
+    prints U_ce(reference) and its own noise floor; pten_k_sites.py mutants now
+    detects a non-positive energy and uses the plain per-site mean instead of the
+    mean of log10 (and says so) rather than clipping negatives into a log.
+    --structure-ce refuses --batch > 1, which only knows the attention path.
+    New run_soft_and_ce.sh runs the soft-contact diagnostic at 2/8/32 steps and then
+    the CE scan, one GPU process at a time, set -e, nvidia-smi between steps, 5-site
+    CE trial first (resumable, so not wasted), correlations at the end. Doc 6.6g,
+    commands as steps 8c and 8d of section 9.

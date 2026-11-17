@@ -800,16 +800,25 @@ def cmd_mutants(args):
 	per_site = m.groupby("site").dU.size()
 	print(f"{len(m)} mutants over {m.site.nunique()}/{len(ref)} sites "
 		f"({per_site.min()}-{per_site.max()} per site; the scan writes 19)")
+	# U_am has U(reference) = 0 as its global minimum, so dU > 0 always and the mean of
+	# log10 is the right per-site location statistic. A cross-entropy (dU_ce) has neither
+	# property: its reference value is not 0 and a mutant can score below the reference.
+	# So the aggregate falls back to the plain mean whenever anything is non-positive,
+	# and says so, rather than clipping negatives into a log.
+	positive = bool((m.dU > 0).all())
 	print(f"dU: min {m.dU.min():.4g}, median {m.dU.median():.4g}, max {m.dU.max():.4g}. "
-		f"U(reference) = 0 is the global minimum, so every dU must be > 0: "
-		f"{(m.dU <= 0).sum()} are not.")
+		+ (f"U(reference) = 0 is the global minimum, so every dU must be > 0: {(m.dU <= 0).sum()} are not."
+			if positive else
+			f"{int((m.dU <= 0).sum())} of {len(m)} are <= 0, which is expected for a cross-entropy "
+			"difference: the per-site statistic below is the PLAIN mean, not the mean of log10."))
+	loc = "mean log10 dU" if positive else "mean dU"
 	if m.site.nunique() < len(ref):
 		print(f"  (incomplete scan: {len(ref) - m.site.nunique()} sites missing. Everything below uses what is there.)")
 
 	# Per-site summaries. dU spans orders of magnitude, so the mean of log10 dU is
 	# the better-behaved location statistic; the plain mean is kept because it is
 	# what a Boltzmann weight over the site's mutants would be dominated by.
-	m["log10_dU"] = np.log10(m.dU.clip(lower=1e-12))
+	m["log10_dU"] = np.log10(m.dU.clip(lower=1e-12)) if positive else m.dU
 	g = m.groupby("site")
 	agg = pd.DataFrame({"dU_mean": g.dU.mean(), "dU_median": g.dU.median(), "dU_min": g.dU.min(),
 		"dU_max": g.dU.max(), "dU_log10_mean": g.log10_dU.mean(), "dU_n": g.dU.size()})
@@ -826,8 +835,10 @@ def cmd_mutants(args):
 	print("Spearman against each reference. Every reference is 'higher = more tolerant' and dU is a COST,")
 	print("so the correlation is taken with -dU: a positive number means the sampler's energy agrees.")
 	rows = []
-	for name, col in (("-mean dU", -t.dU_mean), ("-median dU", -t.dU_median), ("-min dU", -t.dU_min),
-			("-mean log10 dU", -t.dU_log10_mean)):
+	quantities = [("-mean dU", -t.dU_mean), ("-median dU", -t.dU_median), ("-min dU", -t.dU_min)]
+	if positive:          # otherwise the location statistic IS the plain mean, already the first row
+		quantities.append((f"-{loc}", -t.dU_log10_mean))
+	for name, col in quantities:
 		rows.append({"quantity": name, **{k: spearman(col, v) for k, v in refs.items()},
 			"RSA": spearman(col, t.rsa)})
 	sp = pd.DataFrame(rows)
@@ -837,20 +848,21 @@ def cmd_mutants(args):
 		+ "; |rho| above about " + f"{1.96 / np.sqrt(min(n_eff.values()) - 1):.2f} is beyond chance at the 5% level")
 	print("\nWith burial regressed out (partial Spearman given RSA), the same question minus the fact that")
 	print("buried sites are both expensive to mutate and conserved:")
-	pr = pd.DataFrame([{"quantity": "-mean log10 dU",
+	pr = pd.DataFrame([{"quantity": f"-{loc}",
 		**{f"{k} | RSA": partial_spearman(-t.dU_log10_mean, v, t.rsa) for k, v in refs.items()}}])
 	print(pr.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
 	sp.to_csv(out("mutants_vs_references_spearman.tsv"), sep="\t", index=False, float_format="%.4f")
 	pr.to_csv(out("mutants_vs_references_partial_rsa.tsv"), sep="\t", index=False, float_format="%.4f")
 
-	print("\nIs the cost raised inside each K-like set? mean log10 dU inside / outside, with p against")
+	print(f"\nIs the cost raised inside each K-like set? {loc} inside / outside, with p against")
 	print(f"circular shifts of the set along the sequence (smallest possible 1/L = {1 / len(ref):.3f}):")
 	rows = []
 	for col in ("K_natural", "K_abundance", "K_activity"):
 		x = t.dU_log10_mean.values
 		inside, outside = x[t[col].values], x[~t[col].values]
 		rows.append({"set": col, "n_in": int(t[col].sum()), "mean_in": np.nanmean(inside), "mean_out": np.nanmean(outside),
-			"ratio_of_dU": 10**(np.nanmean(inside) - np.nanmean(outside)), "shift_p": shift_p(x, t[col].values)})
+			"ratio_of_dU": 10**(np.nanmean(inside) - np.nanmean(outside)) if positive else np.nan,
+			"shift_p": shift_p(x, t[col].values)})
 	ks = pd.DataFrame(rows)
 	print(ks.to_string(index=False, float_format=lambda x: f"{x:.3f}"))
 	ks.to_csv(out("mutants_in_K_sets.tsv"), sep="\t", index=False, float_format="%.4f")
@@ -859,7 +871,7 @@ def cmd_mutants(args):
 	# the energy says cannot change. --mutant-k sets where the cut goes.
 	cut = t.dU_log10_mean.quantile(args.mutant_k)
 	t["K_mutant"] = t.dU_log10_mean >= cut
-	print(f"\nmutational K-sites (mean log10 dU in the top {1 - args.mutant_k:.0%}, i.e. >= {cut:.3f}): "
+	print(f"\nmutational K-sites ({loc} in the top {1 - args.mutant_k:.0%}, i.e. >= {cut:.3f}): "
 		f"{int(t.K_mutant.sum())}/{int(t.dU_log10_mean.notna().sum())} scanned sites")
 	for col in ("K_natural", "K_abundance", "K_activity"):
 		k, exp, p = set_overlap(t.site[t.K_mutant], t.site[t[col]], len(ref))

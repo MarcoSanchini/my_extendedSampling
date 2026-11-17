@@ -1593,12 +1593,60 @@ section 11 and is a property of the runs, not of the energy.
    measurements now argue for it rather than merely permitting it.
 3. *`U_structure_ce`.* Already in `energies.py`, already differentiable, already from the
    same forward pass as `U_am`, and switched off (`lambda_structure_ce = 0`). It is the
-   in-loop structural term that does not need `generate()` at all. Nothing here has tested
-   it, which makes it the obvious thing to test next if the structural side matters.
+   in-loop structural term that does not need `generate()` at all. Section 6.6g describes it
+   and the scan that tests it, which Marco asked for on 17 November.
 
 A negative result that took 25 minutes of GPU time and killed one candidate energy is a
 cheap outcome, not a broken project. The thing to avoid is the opposite error: having built a
 chain on E and discovered this afterwards.
+
+## 6.6g `U_structure_ce`, the structural energy that needs no decoding schedule
+
+Everything in 6.6b to 6.6e is about an energy read off a *generated* structure. There is a
+second structural energy already in the code and it is not of that kind
+(`code/utils/energies.py:compute_U_structure_ce`):
+
+    U_ce(s) = cross_entropy( structure_logits(s), structure_tokens(reference) )
+
+`predict_structure_logits` gives, for each position, a distribution over ESM3's 4,096
+structure tokens, and the energy is the mean negative log probability of the *reference's*
+token at that position. The reference's tokens are its own argmax, which is how
+`rate_sampler._setup` builds the target. Three properties follow, and they are the reason
+this is worth a scan of its own:
+
+- **No `generate()`, so no schedule.** One forward pass through the structure head. The
+  entire non-convergence of 6.6c cannot arise here; there is nothing to converge in.
+- **No threshold.** It is a continuous function of logits, so the 8 Å discontinuity that
+  6.6e is built to diagnose is absent as well.
+- **Differentiable, and from the same forward as `U_am`.** It is already wired into
+  `_grad_pass_sites` and `_energy_and_grad`, with `lambda_structure_ce` defaulting to 0, so
+  it could go into the loop today at the cost of one extra head.
+
+**The trap, and it is the mirror image of the `dU = U` identity of 6.1.** `U_am` is a
+squared distance with `U_am(reference) = 0` as its global minimum, so for a single mutant
+`dU` *is* `U`. A cross-entropy has neither property: `U_ce(reference)` is the entropy of the
+reference's own structure prediction, which is some positive number, and nothing says a
+mutant cannot score *below* it — the structure head may well be more certain about a mutant
+than about the wild type. So here `dU_ce = U_ce(mutant) − U_ce(reference)` must actually be
+subtracted, and it can be negative. `scan_single_mutants.py --structure-ce` prints
+`U_ce(reference)` and its own noise floor for exactly this reason, and writes `U_ce` and
+`dU_ce` as separate columns. On the analysis side, `pten_k_sites.py mutants` now detects a
+non-positive energy and falls back to the plain mean per site instead of the mean of
+`log10`, saying so in its output, rather than clipping negatives into a logarithm.
+
+What to expect, stated in advance so the result is not read backwards afterwards. If `U_ce`
+agrees with the experiments at the level of `U_am` or better, the structural side of the
+energy is worth switching on and the only thing wrong with the contact-map route was
+`generate()`. If it agrees at the level of the contact-map energy, then what fails is
+*structure* as a readout of a point mutation, exactly as 6.6d's literature would predict,
+and the fact that `U_am` works is about it being a sequence-side object rather than about it
+being a distance between maps. Both outcomes are informative, which is the mark of a
+diagnostic worth running.
+
+Cost: one extra forward through the structure head per mutant on top of the 0.044 s the
+attention pass takes, so expect something in the region of a quarter of an hour for all
+6,156, against 4.5 minutes for `U_am` alone. The script runs 5 sites first and prints the
+measured rate, and it resumes, so the trial is not wasted.
 
 # 7. InterPro, Pfam, and the step to run locally
 
@@ -1779,6 +1827,19 @@ chains. Step 6 is the only one that needs ESM3 and the card.
     python scan_mutants_E.py --summary-only --out pten_natural/pten_mutants_soft_E32.csv \
         --compare pten_natural/pten_mutants_soft_E2.csv
 
+    # 8c. 8b and the U_structure_ce scan of 6.6g in one go, strictly one GPU process at a
+    #     time, with nvidia-smi between the steps and the correlations at the end:
+    nohup ./run_soft_and_ce.sh > run_soft_and_ce.log 2>&1 &
+    #     (env: STEPS, SITES, CE_SITES, SKIP_CE=1. It refuses to start without the U_am scan.)
+
+    # 8d. U_structure_ce on its own: the cross-entropy against the reference's structure
+    #     tokens, one forward through the structure head per mutant, no generate().
+    #     dU_ce is a DIFFERENCE and may be negative; see 6.6g.
+    python -u scan_single_mutants.py --structure-ce --sites 0 1 2 3 4 \
+        --out pten_natural/pten_mutants_ce.csv            # trial, prints the rate
+    nohup python -u scan_single_mutants.py --structure-ce \
+        --out pten_natural/pten_mutants_ce.csv > scan_mutants_ce.log 2>&1 &
+
     # 9. either energy against the experiments, and the two against each other (no GPU).
     #    --energy-column picks the cost, --tag keeps the outputs apart, --versus adds
     #    the energy-vs-energy block of 6.6a.
@@ -1787,6 +1848,8 @@ chains. Step 6 is the only one that needs ESM3 and the card.
         --energy-column E --tag E2 --versus pten_natural/pten_single_mutants.csv
     python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_soft_E2.csv \
         --energy-column E_w1 --tag soft_E2_w1 --versus pten_natural/pten_single_mutants.csv
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_ce.csv \
+        --energy-column dU_ce --tag ce --versus pten_natural/pten_single_mutants.csv
 
 If the scan is interrupted, or the card is needed for something else, just run the same
 step 6 command again: it picks up at the first site it has not finished. Step 7 works on a
