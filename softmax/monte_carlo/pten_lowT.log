@@ -1,0 +1,9 @@
+nohup: ignoring input
+reference: pten_1d5r   run dir: /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 1.5 --n-sites 1 --moves 300000 --seed 200 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T1.5/chain0 --ref pten_1d5r --grad-mode one_pass 
+GPU free memory: 23587 MB   Running: 0 / 2 (soft cap)
+  PID 268737  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T1.5_chain0.log
+python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py --T 1.5 --n-sites 1 --moves 300000 --seed 201 --start reference --out /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/equil_ref/T1.5/chain1 --ref pten_1d5r --grad-mode one_pass 
+GPU free memory: 23587 MB   Running: 1 / 2 (soft cap)
+  PID 268742  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T1.5_chain1.log
+All launched. Waiting...
