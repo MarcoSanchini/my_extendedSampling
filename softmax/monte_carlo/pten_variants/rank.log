@@ -1,0 +1,100 @@
+== 1269 variants, 1093 found in the scans (the rest lie outside the construct)
+   (/home/user/repo/softmax/monte_carlo/pten_natural/raw/PTEN_variant_data.tsv not found: the 15 predictors are left out)
+
+== AUC (higher score = damaging), SNV-reachable variants only (the fair comparison)
+score                                                    U_am                 E2               U_ce     U_am site mean       E2 site mean     U_ce site mean    -abundance_2021          -activity AlphaMissense (cBioPortal only)
+contrast                                                                                                                                                                                                                          
+tumour (any) vs population-only             0.670 [0.62,0.72]  0.519 [0.46,0.57]  0.710 [0.66,0.76]  0.560 [0.50,0.62]  0.498 [0.44,0.55]  0.698 [0.65,0.75]  0.700 [0.64,0.75]  0.792 [0.75,0.83]                             NaN
+tumour recurrent vs gnomAD AC>=2            0.709 [0.60,0.80]  0.503 [0.40,0.61]  0.773 [0.68,0.85]  0.564 [0.45,0.69]  0.498 [0.40,0.61]  0.759 [0.66,0.85]  0.678 [0.56,0.79]  0.855 [0.77,0.92]                             NaN
+tumour non-hypermutated vs population-only  0.684 [0.63,0.74]  0.523 [0.46,0.59]  0.724 [0.67,0.78]  0.579 [0.52,0.64]  0.495 [0.43,0.55]  0.719 [0.66,0.77]  0.715 [0.65,0.78]  0.830 [0.78,0.87]                             NaN
+tumour recurrent vs tumour singleton        0.525 [0.45,0.60]  0.537 [0.46,0.61]  0.579 [0.50,0.66]  0.495 [0.41,0.57]  0.517 [0.44,0.59]  0.549 [0.47,0.62]  0.386 [0.29,0.47]  0.613 [0.53,0.69]               0.675 [0.60,0.75]
+ClinVar P/LP vs gnomAD (not P/LP)           0.705 [0.65,0.76]  0.541 [0.49,0.60]  0.751 [0.70,0.80]  0.552 [0.49,0.61]  0.434 [0.38,0.49]  0.718 [0.66,0.77]  0.767 [0.71,0.82]  0.897 [0.86,0.93]               0.767 [0.59,0.91]
+ClinVar P/LP vs ClinVar VUS                 0.682 [0.65,0.72]  0.543 [0.50,0.58]  0.704 [0.67,0.74]  0.555 [0.51,0.59]  0.457 [0.41,0.50]  0.658 [0.62,0.70]  0.674 [0.62,0.72]  0.861 [0.83,0.89]               0.796 [0.72,0.86]
+ClinVar PHTS vs autism/macrocephaly         0.504 [0.37,0.66]  0.571 [0.37,0.76]  0.499 [0.36,0.65]  0.493 [0.30,0.68]  0.553 [0.36,0.73]  0.510 [0.32,0.68]  0.408 [0.22,0.61]  0.558 [0.47,0.65]                             NaN
+consensus damaging vs consensus tolerated   0.707 [0.61,0.80]  0.504 [0.41,0.60]  0.768 [0.69,0.84]  0.556 [0.45,0.66]  0.426 [0.33,0.52]  0.741 [0.65,0.82]  0.804 [0.74,0.86]  0.901 [0.85,0.94]                             NaN
+observed anywhere vs never observed         0.512 [0.49,0.54]  0.497 [0.47,0.52]  0.560 [0.54,0.59]                NaN                NaN                NaN  0.534 [0.50,0.57]  0.632 [0.61,0.66]                             NaN
+   n (pos/neg): tumour (any) vs population-only: 249/150; tumour recurrent vs gnomAD AC>=2: 71/45; tumour non-hypermutated vs population-only: 190/150; tumour recurrent vs tumour singleton: 71/178; ClinVar P/LP vs gnomAD (not P/LP): 244/150; ClinVar P/LP vs ClinVar VUS: 244/612; ClinVar PHTS vs autism/macrocephaly: 653/12; consensus damaging vs consensus tolerated: 270/45; observed anywhere vs never observed: 1063/812
+
+== AUC (higher score = damaging), all variants (genetic code NOT controlled)
+score                                                    U_am                 E2               U_ce     U_am site mean       E2 site mean     U_ce site mean    -abundance_2021          -activity AlphaMissense (cBioPortal only)
+contrast                                                                                                                                                                                                                          
+tumour (any) vs population-only             0.669 [0.61,0.72]  0.517 [0.46,0.57]  0.710 [0.66,0.76]  0.556 [0.50,0.62]  0.495 [0.43,0.55]  0.699 [0.65,0.75]  0.700 [0.64,0.76]  0.794 [0.74,0.84]                             NaN
+tumour recurrent vs gnomAD AC>=2            0.698 [0.59,0.79]  0.486 [0.39,0.59]  0.770 [0.68,0.85]  0.543 [0.42,0.67]  0.481 [0.37,0.58]  0.754 [0.66,0.84]  0.673 [0.56,0.78]  0.855 [0.78,0.92]                             NaN
+tumour non-hypermutated vs population-only  0.683 [0.62,0.74]  0.521 [0.46,0.58]  0.724 [0.67,0.78]  0.575 [0.52,0.64]  0.494 [0.44,0.55]  0.719 [0.67,0.77]  0.715 [0.65,0.78]  0.831 [0.79,0.87]                             NaN
+tumour recurrent vs tumour singleton        0.522 [0.45,0.60]  0.525 [0.45,0.59]  0.579 [0.50,0.66]  0.484 [0.41,0.56]  0.501 [0.42,0.58]  0.541 [0.46,0.61]  0.386 [0.29,0.48]  0.605 [0.53,0.69]               0.680 [0.61,0.75]
+ClinVar P/LP vs gnomAD (not P/LP)           0.705 [0.65,0.76]  0.539 [0.48,0.60]  0.752 [0.70,0.80]  0.549 [0.48,0.61]  0.434 [0.38,0.49]  0.721 [0.67,0.77]  0.768 [0.71,0.82]  0.897 [0.86,0.93]               0.767 [0.59,0.91]
+ClinVar P/LP vs ClinVar VUS                 0.677 [0.64,0.72]  0.539 [0.50,0.58]  0.701 [0.66,0.74]  0.554 [0.52,0.60]  0.456 [0.42,0.50]  0.656 [0.62,0.69]  0.675 [0.63,0.72]  0.861 [0.83,0.89]               0.795 [0.72,0.86]
+ClinVar PHTS vs autism/macrocephaly         0.509 [0.36,0.66]  0.573 [0.39,0.75]  0.504 [0.38,0.65]  0.495 [0.30,0.70]  0.555 [0.36,0.74]  0.511 [0.31,0.69]  0.410 [0.23,0.61]  0.560 [0.47,0.65]                             NaN
+consensus damaging vs consensus tolerated   0.699 [0.60,0.78]  0.495 [0.41,0.59]  0.763 [0.69,0.83]  0.539 [0.43,0.65]  0.422 [0.33,0.52]  0.742 [0.65,0.82]  0.802 [0.74,0.86]  0.901 [0.85,0.94]                             NaN
+observed anywhere vs never observed         0.408 [0.39,0.43]  0.467 [0.45,0.49]  0.456 [0.44,0.48]                NaN                NaN                NaN  0.483 [0.46,0.51]  0.521 [0.50,0.54]                             NaN
+   n (pos/neg): tumour (any) vs population-only: 254/152; tumour recurrent vs gnomAD AC>=2: 73/47; tumour non-hypermutated vs population-only: 194/152; tumour recurrent vs tumour singleton: 73/181; ClinVar P/LP vs gnomAD (not P/LP): 248/152; ClinVar P/LP vs ClinVar VUS: 248/635; ClinVar PHTS vs autism/macrocephaly: 669/12; consensus damaging vs consensus tolerated: 276/47; observed anywhere vs never observed: 1093/5025
+
+== median percentile among all 6156 single mutants (100 = most expensive), SNV-reachable variants
+             category    n  U_am pct  E2 pct  U_ce pct  U_am pct among SNV  E2 pct among SNV  U_ce pct among SNV
+             cbio_all  249      52.1    47.8      58.6                64.4              53.1                67.5
+       cbio_recurrent   71      52.1    52.7      69.4                64.4              58.0                76.6
+       cbio_singleton  178      51.2    47.0      55.9                63.6              52.3                64.8
+        cbio_nonhyper  190      53.1    48.7      61.1                65.3              54.1                69.7
+     cbio_endometrial  126      48.8    50.6      65.7                61.4              55.8                73.6
+    cbio_glioblastoma   57      58.6    52.0      65.2                69.8              57.1                73.0
+      cbio_second_hit  121      56.1    47.8      58.6                67.6              53.1                67.5
+          clinvar_all  973      38.9    45.8      43.8                51.1              51.0                53.8
+          clinvar_PLP  244      57.9    48.3      67.7                69.2              53.6                75.2
+          clinvar_VUS  612      28.6    44.2      34.9                41.2              49.3                44.5
+  clinvar_conflicting  113      42.4    47.8      53.6                55.0              53.1                62.8
+       clinvar_expert  113      57.5    42.7      66.4                68.9              47.5                74.2
+         clinvar_PHTS  679      41.8    47.2      45.3                54.3              52.3                55.4
+       clinvar_autism   38      37.3    50.1      46.2                49.9              55.3                56.2
+           gnomad_all  174      27.5    44.6      29.2                40.0              49.8                38.4
+     gnomad_singleton  121      28.7    40.5      32.2                41.3              44.9                41.4
+           gnomad_ac2   53      23.9    53.6      27.9                35.8              59.0                37.0
+           merged_all 1063      38.4    45.0      43.7                50.8              50.3                53.7
+          tumour_only  225      52.1    47.8      58.6                64.4              53.1                67.4
+      population_only  150      25.6    45.4      27.4                37.6              50.7                36.5
+tumour_and_population   24      46.5    42.4      64.0                58.5              47.1                72.2
+   consensus_damaging  270      57.3    47.8      66.6                68.6              53.1                74.4
+  consensus_tolerated   45      13.8    50.6      24.2                22.2              55.8                32.7
+
+   top 15 by U_am among tumour variants:
+variant  cbio_patients clinvar_class  gnomad_ac  U_am  U_am_pct     E2  E2_pct   U_ce  U_ce_pct  abundance_2021  activity
+  P281S              1           VUS          2   529      99.1 0.0276    93.2 0.0635      88.6           0.912     0.035
+  F215S              1           NaN          0   487        99 0.0294    96.1 0.0992        97           0.418     -1.62
+  M198K              1          P/LP          0   485      98.9 0.0326    98.6 0.0571      84.8             NaN     -3.97
+  R335P              1           VUS          0   364      98.4 0.0267    91.3 0.0886      95.7             NaN       NaN
+  V217G              1   conflicting          0   320      98.1  0.032    98.2 0.0722      91.9           0.306     -3.08
+  F195S              1          P/LP          0   232      96.9 0.0336    98.8 0.0615      87.6           0.254     -2.32
+  L325R              2   conflicting          0   220      96.6  0.026    88.8 0.0958      96.7           0.214     -4.82
+  H272P              1          P/LP          0   219      96.6  0.028      94 0.0813      94.1           0.412     -3.66
+  G230E              1           VUS          0   214      96.4 0.0215    59.2 0.0645        89               1    -0.175
+  F241S              1          P/LP          0   199        96 0.0243    80.7 0.0404      66.4           0.214      -2.4
+  P204L              2   conflicting          0   172      94.9 0.0286    94.8 0.0842      94.8            0.39     -1.15
+  R130P              3          P/LP          0   149      93.7 0.0205    50.6 0.0799        94           0.951     -3.15
+  V255G              1          P/LP          0   144      93.4 0.0263    89.6 0.0585      85.9            0.36     -1.09
+  G129V              3          P/LP          0   138        93 0.0248      84 0.0598      86.8            0.49     -4.19
+  G129E              5          P/LP          0   136      92.9  0.016    8.16 0.0374      60.8           0.638     -5.41
+
+   the R130 hotspot and other recurrent tumour variants, energy percentiles:
+variant  cbio_patients  U_am_pct  E2_pct  U_ce_pct  U_am_rank_in_site  abundance_2021  activity
+  R130Q             54      58.6    59.9        44                  5            1.42     -2.04
+  R130G             43      71.6      77      87.8                  9            1.12     -2.14
+  R173C             13      83.4    77.9      86.9                 16           0.163     -1.26
+  R142W             11      30.9    88.3      61.4                 14           0.591     0.454
+  G132D              8      76.5    83.2      92.7                  3             NaN     -3.36
+  C136R              8      81.4    91.8      86.5                 19           0.144     -4.79
+  R130L              7      80.5      79      86.2                 11             1.2      -3.1
+  R173H              7      32.7    38.6      16.9                  2           0.256     -1.34
+  F341V              7      55.8    93.7      68.1                  6           0.807     0.181
+   D92E              6      23.7    27.7      67.7                  2            1.06     -5.02
+  P246L              6        62    95.5      70.4                 10           0.335     -1.62
+  G129E              5      92.9    8.16      60.8                 13           0.638     -5.41
+   R14M              5        27    2.46      11.9                  6            1.15     0.448
+   G36R              5      65.4    3.44      88.6                  6           0.662     -2.69
+
+== within-site AUC: only pairs at the same site, one variant in each class (SNV-reachable)
+   tumour vs population-only            U_am 0.596  E2 0.471  U_ce 0.519  -abundance_2021 0.500  -activity 0.583   (36 pairs at 26 sites, for -activity)
+   ClinVar P/LP vs VUS                  U_am 0.708  E2 0.543  U_ce 0.682  -abundance_2021 0.709  -activity 0.684   (225 pairs at 74 sites, for -activity)
+   tumour vs never observed             U_am 0.579  E2 0.493  U_ce 0.594  -abundance_2021 0.560  -activity 0.615   (265 pairs at 95 sites, for -activity)
+   ClinVar P/LP vs never observed       U_am 0.659  E2 0.545  U_ce 0.655  -abundance_2021 0.691  -activity 0.738   (233 pairs at 77 sites, for -activity)
+   population-only vs never observed    U_am 0.389  E2 0.463  U_ce 0.418  -abundance_2021 0.383  -activity 0.437   (286 pairs at 97 sites, for -activity)
+
+== compound tumour sequences: /home/user/repo/softmax/monte_carlo/pten_variants/compound_scores.csv not found yet (run `score` on astaroth, then `rank` again)

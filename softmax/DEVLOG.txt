@@ -7474,3 +7474,26 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     position, both one forward pass, agreeing +0.693 pooled (was +0.672). Scale caution
     unchanged: median dU_ce 0.032 vs dU_am 32, so lambda_structure_ce ~ 1e3.
     Doc 6.6j; 6.6i now points at it and step 8e of section 9 is marked done.
+
+2026-11-18 (seventh entry)  PTEN missense variants from cBioPortal, ClinVar and gnomAD
+    New monte_carlo/pten_variants.py (clean / merge / profiles / rank, CPU; score, GPU),
+    outputs in monte_carlo/pten_variants/, reading in docs/pten_variants.md. Inputs: the
+    three files Marco pushed to databases/ (cbce85c); no database was contacted.
+    THREE TRAPS in the raw files, all handled and logged: ClinVar's header is one field
+    short (index_col=False); PTEN-L numbering (ClinVar "M174L, M1L", and 232 of gnomAD's
+    469 missense rows on ENST00000693560 = canonical 5' UTR, whence "C65S AF 0.994");
+    KLLN rows. After cleaning 1269 distinct canonical missense changes: cBioPortal 263,
+    ClinVar 1164, gnomAD 235, all three 22; 1093 inside the construct.
+    SNV reachability rebuilt from the files' own c. notation (1065/1212 CDS bases, 362/403
+    codons resolved with the protein's help); all 1951 observed SNVs come out reachable.
+    K-SETS: tumour and ClinVar P/LP variants are 3-4.5x enriched in K_natural, 2.2-2.8x in
+    K_activity, only 1.3-1.5x in K_abundance, and 2.2-3.4x in the sampler's K-sites (10%
+    least variable at T4/T8, burn-in 0.8). Density of consensus-damaging variants vs
+    activity -0.64, family -0.62, abundance -0.27 -> -0.01 given RSA. gnomAD ~uniform.
+    RANKING (existing scans, lookup): U_am AUC 0.67-0.71, U_ce 0.70-0.77, E2 0.50-0.54
+    (chance), abundance 0.67-0.80, activity 0.79-0.90. U_am's site mean drops to 0.55-0.58
+    while U_ce's stays 0.66-0.76: same split as on VAMP-seq (U_am = substitution, U_ce =
+    site). Within site, P/LP vs VUS: U_am 0.708 = abundance 0.709. Tumour hotspots are
+    stable but dead (recurrent vs singleton abundance AUC 0.386; R130Q abundance 1.42,
+    U_am 59th pct): fold energies cannot rank them.
+    PENDING on astaroth: `score` (75 compound tumour sequences + 50-mutant E2 repeat).
