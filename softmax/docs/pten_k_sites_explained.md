@@ -1878,15 +1878,15 @@ Nothing downstream complains about that — Spearman simply fills with ties — 
 had to be looked for. It bites the within-site number hardest, because that statistic asks
 the energy to order 19 substitutions at one position, and the median site offers only **4**
 distinct values, with 108 of 324 sites offering 3 or fewer. So `U_ce`'s substitution-level
-deficit against `U_am` is partly, and possibly mostly, an artefact of its own output dtype,
-and every `U_ce` number in the two tables above is a **lower bound**.
+deficit against `U_am` might be an artefact of its own output dtype rather than a property of
+the energy, and every `U_ce` number in the two tables above is a **lower bound**. Section 6.6j
+settles which, because the scan was re-run on the fixed code.
 
 The fix is one `.float()` in `utils/energies.py:compute_U_structure_ce`, which costs one
 `[L, 4096]` softmax in fp32, keeps the autograd graph the sampler's gradient needs, and is in
 place as of 18 November; `scan_single_mutants.py` now also prints the distinct-value count and
 the largest tie at the end of a `--structure-ce` scan, and warns when the step is large
-compared with the spread, so this cannot recur silently. The 9-minute scan wants re-running on
-the fixed code before any of the `U_ce` figures go in the thesis.
+compared with the spread, so this cannot recur silently.
 
 **Why this matters beyond the scan.** Unlike E, `U_structure_ce` is usable in the loop as it
 stands: one forward pass, no `generate()`, no schedule, no threshold, differentiable, and
@@ -1900,6 +1900,75 @@ nothing whatever to a Metropolis decision. Making the two terms comparable needs
 `lambda_structure_ce` of order 10³, and at that point the quantisation above is no longer a
 cosmetic concern about correlations but the dominant artefact in the acceptance — another
 reason the `.float()` has to land before the term is switched on.
+
+## 6.6j The float32 re-run: the site signal was never the problem, and the substitution deficit is real
+
+Marco re-ran the scan on the fixed code (18 November, `scan_mutants_ce_fp32.log`, 8.8 minutes,
+0.085 s per mutant). The resolution check 6.6i added reports what it was built to report:
+
+    # dU_ce resolution: 5831 distinct values over 6156 mutants, largest tie 0.0%,
+    #                   smallest gap 1.000e-06, IQR 2.445e-02
+
+5,831 distinct values against the bfloat16 run's 26, no tie larger than a rounding of 0.0%,
+and no warning. `U_structure_ce(reference)` moves from 2.390625 to 2.397402 — the bfloat16
+value was that number rounded to the nearest 1/64, as it had to be. Two of the 6,156 mutants
+now have a *negative* `dU_ce`, the smallest −0.0035, so the trap 6.6g warned about does fire,
+but only just: the reference is still effectively the minimum, and the two exceptions sit
+inside what a fp32 cross-entropy of this size can resolve.
+
+Both scans are kept, the old one as `pten_mutants_ce_bf16.csv`, so the comparison below is on
+identical mutants.
+
+| | bfloat16 (26 values) | float32 (5,831 values) | `U_am`, same mutants |
+|---|---|---|---|
+| abundance 2021, pooled | +0.374 | **+0.387** | +0.345 |
+| abundance 2018, pooled | +0.395 | **+0.408** | +0.372 |
+| activity, pooled | +0.443 | **+0.456** | +0.365 |
+| abundance 2021, within site | +0.255 | +0.255 | **+0.325** |
+| abundance 2018, within site | +0.272 | +0.269 | **+0.342** |
+| activity, within site | +0.283 | +0.287 | **+0.346** |
+| AUC, abundance 2021 | 0.683 | **0.700** | 0.689 |
+| AUC, abundance 2018 | 0.685 | **0.701** | 0.686 |
+| AUC, activity | 0.755 | **0.772** | 0.720 |
+| family entropy, per site | +0.438 | +0.442 | +0.164 |
+| activity mean, per site | +0.549 | +0.552 | +0.261 |
+| activity mean, per site, given RSA | +0.264 | +0.264 | +0.006 |
+
+Three things fall out, and one of them corrects 6.6i.
+
+**The per-site signal was never damaged.** Every site-level number moves by less than 0.01,
+and the partial correlations given RSA are identical to three decimals. A site's figure is the
+mean over its 19 mutants, and averaging nineteen values quantised to 1/64 recovers most of the
+resolution the individual values lost. So the striking part of 6.6i — that `U_ce` reads the
+site two to three times better than `U_am` and survives conditioning on burial where `U_am`
+does not — was never in question, and was not an artefact.
+
+**Pooled agreement and AUC improved, by enough to matter.** Each AUC gains about 0.017, which
+puts `U_ce` ahead of `U_am` on all three experiments rather than level on two of them, and the
+pooled correlations gain 0.013 each. That is the resolution being handed back where ties were
+costing it: a pooled ranking of 6,156 variants with only 26 available values wastes most of
+its discriminating power.
+
+**But the within-site deficit is real, and 6.6i guessed wrong about it.** 6.6i suggested the
+substitution-level gap against `U_am` might be mostly the output dtype. It is not: within
+site, `U_ce` goes +0.255 → +0.255, +0.272 → +0.269, +0.283 → +0.287, which is no movement at
+all, against `U_am`'s +0.325/+0.342/+0.346. Giving the energy 5,831 values instead of 26
+bought nothing here. So `U_structure_ce` genuinely has less substitution resolution than
+`U_am`, and the reason is in what it measures: a structure-token cross-entropy asks how much
+the predicted local geometry is disturbed, and two different substitutions at one position
+that disturb the fold to a similar degree earn a similar penalty whatever the chemistry of the
+residues involved. The attention map is a sequence-side object and carries residue identity
+into the comparison. This is the same line section 6.6d draws between structure predictors and
+sequence-likelihood models, now visible *within* one model's two heads.
+
+**So the complementarity of 6.6i stands and is sharper.** `U_ce` is the better site-level
+readout and the better classifier of whether a variant is damaging; `U_am` is the better
+ranker of the nineteen substitutions at a position. Both are one forward pass. The two agree
+at +0.693 pooled and +0.662 within site, slightly up from +0.672 and +0.637, as both being
+measured more finely would predict. Nothing in 6.6i's argument for trying
+`lambda_am · U_am + lambda_structure_ce · U_structure_ce` changes, except that the scale
+caution now has a cleaner number: the median `dU_ce` is 0.032 against `dU_am`'s 32, so a
+`lambda_structure_ce` of order 10³ is what makes the two terms comparable.
 
 # 7. InterPro, Pfam, and the step to run locally
 
@@ -2093,7 +2162,8 @@ chains. Step 6 is the only one that needs ESM3 and the card.
     nohup python -u scan_single_mutants.py --structure-ce \
         --out pten_natural/pten_mutants_ce.csv > scan_mutants_ce.log 2>&1 &
 
-    # 8e. RE-RUN of 8d on the float32 cross-entropy (18 November). The first scan came out
+    # 8e. DONE 18 November, results in 6.6j. Re-run of 8d on the float32 cross-entropy. The
+    #      first scan came out
     #      quantised to 26 distinct values because cross_entropy on bfloat16 logits returns
     #      a bfloat16 scalar; see 6.6i. Delete the old file first -- the scan RESUMES, so it
     #      would keep the quantised rows -- and keep the old one for the comparison:
