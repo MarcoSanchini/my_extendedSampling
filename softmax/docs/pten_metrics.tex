@@ -29,7 +29,7 @@
 
 \title{PTEN as the sampling reference: cost and equilibration metrics}
 \author{Marco Sanchini \\ \small\texttt{my\_extendedSampling} / \texttt{softmax}}
-\date{2026--11--12, decode benchmark added 2026--11--16}
+\date{2026--11--12; decode benchmark 2026--11--16; equilibrated ladder 2026--11--18}
 
 \begin{document}
 \maketitle
@@ -251,6 +251,54 @@ the pair-sum structure of $\Uam$ predicts: the energy per mutation scales
 roughly like $L^2$ and $(324/566)^2 = 0.33$, so PTEN's crossover should sit a
 few times lower, and it does.
 
+
+\subsection{The equilibrated ladder and the heat-capacity peak (2026--11--18)}
+
+Every temperature of the ladder now has a $t_{\mathrm{eq}}$, measured on pairs
+of reference-started chains (\texttt{STARTS="reference reference"}).
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{rrrrrrr}
+\toprule
+$T$ & moves & $t_{\mathrm{eq}}$ & $\langle U\rangle$ & $\langle \Hd\rangle$ & acc. & $C = \mathrm{Var}(U)/T^2$ \\
+\midrule
+1    & 300\,000 & 180\,000 &   53.0 &  19.1 & 0.011 & $124 \pm 11$ \\
+1.5  & 300\,000 & 140\,000 &  158.5 &  47.5 & 0.028 & $133 \pm 6$ \\
+2    & 650\,000 & 440\,000 &  302.6 &  75.9 & 0.048 & $360 \pm 77$ \\
+3    & 180\,000 & 100\,000$^{*}$ &  679.6 & 132.7 & 0.093 & $241 \pm 13$ \\
+4    & 400\,000 & 220\,000 &  999.6 & 167.2 & 0.127 & $253 \pm 56$ \\
+5    & 180\,000 & 100\,000 & 1297.8 & 189.4 & 0.154 & $297 \pm 1$ \\
+6    & 180\,000 &  80\,000 & 1573.4 & 205.4 & 0.177 & $200 \pm 46$ \\
+8    & 150\,000 & 120\,000 & 1855.9 & 219.3 & 0.214 & $138 \pm 4$ \\
+16   &  90\,000 &  60\,000 & 2948.7 & 251.6 & 0.293 & $93 \pm 10$ \\
+\bottomrule
+\end{tabular}
+\caption{Two chains per temperature, differing only by proposal seed. The
+$\pm$ is half the difference between the two chains, not a standard error.
+$^{*}$ at $T=3$ only the last grid point formally qualifies; it is
+equilibrated from $10^5$ in practice.}
+\end{table}
+
+\noindent
+In equilibrium $\mathrm{Var}(U)/T^2 = \mathrm{d}\langle U\rangle/\mathrm{d}T$,
+so the table can be checked against its own finite differences. These, at the
+midpoint of each interval, are 211 (1.25), 288 (1.75), \textbf{377 (2.5)}, 320
+(3.5), 298 (4.5), 276 (5.5), 141 (7) and 137 (12): a \textbf{maximum at
+$T \approx 2.5$}, not a shoulder, inside the $T \approx 3$--5 melting range
+above. The two estimators agree where the fluctuation one is precise (360
+against 377 at $T=2$), but it is noisy per chain --- at $T=2$ the two chains
+give 436 and 283 --- so the derivative is the better estimator at this number
+of chains. An earlier reading of this ladder (DEVLOG 2026--11--16) found $C$
+falling monotonically from $T=2$ and concluded the peak lay below $T=3$; that
+was an artefact of the ladder stopping at $T=2$, and $T=1$ and $T=1.5$ now show
+the rise into the peak from below.
+
+At $T=1$ acceptance is 0.011, about 3100 accepted moves in $3\times10^5$, so
+the effective sample is small and both chains start at the reference: $\hat{R}$
+says they agree, not that the native basin was crossed.
+
 \section{Structure prediction: cost and precision against the number of steps}
 \label{sec:decode}
 
@@ -325,8 +373,9 @@ $\Delta E = 0$ for most of them) is not measured yet.
 \section{Caveats}
 
 \begin{enumerate}
-\item (Superseded on 2026--11--16, see \file{DEVLOG}: with longer chains
-      $t_{\mathrm{eq}}$ is reached at $T=2,3,5,6,8,16$; $T=4$ is the slowest.)
+\item (Superseded: with longer chains every temperature of the ladder
+      reaches $t_{\mathrm{eq}}$, including $T=4$ at 220\,000; see the
+      subsection above.)
       \textbf{$t_{\mathrm{eq}}$ is reached at no temperature} in this ladder,
       by the criterion in \file{analyze\_nsites.py} ($\hat{R} < 1.1$ on both
       $U$ and $\Hd$ from $t_{\mathrm{eq}}$ to the end). The plateaus above are
