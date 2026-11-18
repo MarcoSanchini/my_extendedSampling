@@ -7306,3 +7306,35 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     median dU_ce 0.031 against dU_am 32, so at T ~ 2.5 a lambda of 1 contributes
     nothing to acceptance; comparable means lambda ~ 1e3, at which point the
     quantisation would dominate the acceptance, not just the correlations.
+
+2026-11-18 (second entry)  PTEN doc: re-quoted from the post-t_eq tables
+    Acting on the other thread's measurement (its own entry is in PR #58): `compare`
+    keeps the last --burn-in-frac of each chain, default 0.5, which is NOT t_eq, and
+    the equilibrated ladder's t_eq as a fraction of chain length exceeds 0.5 at seven
+    of nine temperatures (0.60, 0.47, 0.68, 0.56, 0.55, 0.56, 0.44, 0.80, 0.67 at
+    T = 1, 1.5, 2, 3, 4, 5, 6, 8, 16). Verified the replacement numbers directly from
+    pten_natural/sampled_vs_references_spearman.tsv, _partial_rsa.tsv,
+    sampled_entropy_in_K_sets.tsv and sampled_entropy_vs_natural.log (commit 038c410,
+    --burn-in-frac 0.8 --reference-only on equil_ref, both chains).
+    DIRECTION HOLDS, MAGNITUDE DOES NOT. With burial removed, family conservation
+    still beats abundance at every T >= 2 in both chains, and -mean_dU still prefers
+    abundance (T=8: family +0.31/+0.31 vs abundance +0.39/+0.40). But the headline
+    pair at T=8 falls from "+0.45 family against +0.19 abundance", a factor of 2.4,
+    to +0.27/+0.29 against +0.18/+0.16, a factor of 1.5-1.8.
+    Doc changes: 5.1 gains the rule that the window must clear t_eq and that the 0.5
+    default does not; 5.2's two tables are REPLACED by the equil_ref pass at T = 1,
+    1.5, 2, 4, 8, 16 with both chains in every cell, plus the window-vs-burn-in
+    control (T=4, every window after t_eq, loses only 0.013 when shrunk sixfold,
+    while T=8 loses 0.104 to the 45000 pre-t_eq moves; T=2 still wants a LONG window,
+    +0.160 at 210000 kept vs +0.111 at 29900); 5.3, 6.4b (twice) and 6.5 re-quote the
+    pair. T = 3, 5 and 6 are in `equil`, not `equil_ref`, so they were not in this
+    pass and are absent from 5.2.
+    ALSO CORRECTED, because it was the reason the old numbers were doubted: caution 1
+    of section 11 used to read "the chains are not equilibrated". The ladder IS
+    equilibrated now, so the remaining low-T caveat is REACHABILITY, not convergence:
+    at T=1, 188 and 184 of 324 sites never accept a move even in the post-t_eq window,
+    because acceptance is 0.011. Section 6's intro and 6.5's framing of the open
+    question were carrying the same stale claim and were fixed with it. Caution 3
+    softened from "about half of the agreement is burial" to "most": entropy vs RSA
+    alone is +0.46 to +0.54 at T = 4-16 against +0.45 to +0.50 for the raw family
+    correlation.

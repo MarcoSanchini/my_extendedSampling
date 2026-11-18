@@ -560,9 +560,16 @@ section 5.2, and for quoting set overlaps together with the rule that produced t
 A chain is a sequence that changes one residue at a time. `data.dat` records every proposed
 move and whether it was accepted, and `start.txt` the starting sequence. Replaying the
 accepted moves reconstructs the sequence at every step. For each site the script counts how
-many steps it spent on each amino acid, over the second half of the chain (the first half is
-discarded as burn-in), and takes the Shannon entropy of those frequencies. A site that never
-changed has entropy 0. The reconstruction is checked: the Hamming distance to the reference
+many steps it spent on each amino acid, over a trailing window of the chain, and takes the
+Shannon entropy of those frequencies. A site that never changed has entropy 0.
+
+**The window has to clear t_eq, and the default does not.** `--burn-in-frac` sets how much
+of the chain is discarded, and its default of 0.5 — the last half — is a convention, not a
+measurement. The equilibrated ladder gives a t_eq at every temperature, and as a fraction of
+chain length it exceeds 0.5 at seven of the nine, up to 0.80 at T = 8. So every entropy in
+this document is measured with `--burn-in-frac 0.8`, which clears t_eq everywhere;
+section 5.2 says what that changed. Quoting a sampled entropy without naming the burn-in is
+quoting an unspecified mixture of equilibrium and approach to it. The reconstruction is checked: the Hamming distance to the reference
 at the end matches the `Hd_to_ref` column of `data.dat`.
 
 Two other per-site quantities come out of the same replay:
@@ -574,30 +581,61 @@ Two other per-site quantities come out of the same replay:
 
 ## 5.2 The numbers
 
-Chains started from the reference, 220,000 moves at T = 1, 2, 4, 8 (run of 2026-11-13).
+**These numbers were re-measured on 18 November and they moved.** The figures first quoted
+here came from the run of 2026-11-13 with `--burn-in-frac 0.5`, the default, which keeps the
+last half of each chain. Half a chain is not the same thing as "after equilibration", and
+once the ladder was equilibrated at every temperature the measured t_eq turned out to be a
+*larger* fraction than 0.5 at seven of the nine temperatures: 0.60, 0.47, 0.68, 0.56, 0.55,
+0.56, 0.44, 0.80, 0.67 at T = 1, 1.5, 2, 3, 4, 5, 6, 8, 16. So the old averages contained
+pre-equilibration moves. `--burn-in-frac 0.8` clears t_eq everywhere, and everything below
+is measured that way, on the `equil_ref` chains, both replicas, each started from the
+reference. The contrast this section is about survives; its size does not — see the reading
+after the tables.
+
+The chains: 300,001 moves at T = 1 and 1.5, 650,001 at T = 2, 400,001 at T = 4, 150,001 at
+T = 8, 90,001 at T = 16, with the last 20% of each kept. T = 3, 5 and 6 live in `equil`
+rather than `equil_ref` and were not in this pass, so they are absent below.
+
 Spearman rank correlation between the sampled entropy and each reference: +1 means the two
 rank the sites identically, 0 means no relation. With about 300 sites, values beyond 0.12
 are outside chance at the 5% level. All references are oriented so that higher means more
-tolerant, so a positive correlation is agreement.
+tolerant, so a positive correlation is agreement. Each cell gives the two independent
+chains, which is the honest error bar here.
 
 | T | sites at entropy 0 | family | abundance | activity | family, burial removed | abundance, burial removed | activity, burial removed |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 220 | +0.15 | +0.19 | +0.19 | +0.01 | +0.11 | +0.07 |
-| 2 | 100 | +0.37 | +0.31 | +0.38 | +0.15 | +0.09 | +0.19 |
-| 4 | 25 | +0.52 | +0.41 | +0.53 | +0.31 | +0.15 | +0.32 |
-| 8 | 9 | +0.61 | +0.46 | +0.61 | +0.45 | +0.19 | +0.41 |
+| 1 | 241 / 236 | +0.09 / +0.15 | +0.23 / +0.24 | +0.19 / +0.21 | −0.04 / +0.01 | +0.16 / +0.11 | +0.08 / +0.09 |
+| 1.5 | 170 / 175 | +0.21 / +0.29 | +0.27 / +0.25 | +0.28 / +0.30 | +0.04 / +0.10 | +0.12 / +0.08 | +0.11 / +0.13 |
+| 2 | 93 / 85 | +0.32 / +0.35 | +0.26 / +0.28 | +0.34 / +0.35 | +0.14 / +0.14 | +0.07 / +0.09 | +0.15 / +0.18 |
+| 4 | 36 / 29 | +0.48 / +0.49 | +0.40 / +0.39 | +0.49 / +0.52 | +0.28 / +0.27 | +0.15 / +0.12 | +0.28 / +0.31 |
+| 8 | 13 / 15 | +0.48 / +0.50 | +0.43 / +0.39 | +0.51 / +0.48 | +0.27 / +0.29 | +0.18 / +0.16 | +0.27 / +0.23 |
+| 16 | 8 / 10 | +0.46 / +0.45 | +0.40 / +0.39 | +0.49 / +0.48 | +0.27 / +0.24 | +0.19 / +0.13 | +0.29 / +0.23 |
 
 Mean sampled entropy inside each K-like set divided by the mean outside it:
 
 | T | natural | abundance | activity |
 | --- | --- | --- | --- |
-| 1 | 0.23 | 0.34 | 0.46 |
-| 2 | 0.29 | 0.45 | 0.39 |
-| 4 | 0.41 | 0.63 | 0.53 |
-| 8 | 0.51 | 0.76 | 0.64 |
+| 1 | 0.28 / 0.22 | 0.22 / 0.27 | 0.31 / 0.42 |
+| 1.5 | 0.31 / 0.17 | 0.36 / 0.39 | 0.39 / 0.35 |
+| 2 | 0.35 / 0.26 | 0.47 / 0.47 | 0.43 / 0.42 |
+| 4 | 0.41 / 0.44 | 0.63 / 0.65 | 0.52 / 0.54 |
+| 8 | 0.53 / 0.52 | 0.72 / 0.74 | 0.65 / 0.65 |
+| 16 | 0.69 / 0.60 | 0.80 / 0.78 | 0.69 / 0.68 |
 
 A ratio of 1 would be the flat case: the sampler varying those sites as much as any other.
 Every ratio is well below 1.
+
+**What the burn-in correction cost, and what it did not.** The direction is unchanged: with
+burial removed, family conservation beats abundance at every T ≥ 2, in both chains, and the
+energy's own `-mean_dU` still prefers abundance (at T = 8, +0.31/+0.31 family against
++0.39/+0.40 abundance). What shrank is the margin. The headline pair at T = 8 was
+"+0.45 family against +0.19 abundance", a factor of 2.4; it is now +0.27/+0.29 against
++0.18/+0.16, a factor of 1.5 to 1.8. The loss is specifically the burn-in and not merely a
+shorter window, which was checked directly: at T = 4, where every window lies after t_eq,
+shrinking the kept part sixfold (180,000 moves down to 30,000) costs only 0.013, while at
+T = 8 dropping the 45,000 pre-t_eq moves costs 0.104. At T = 2 the window length does still
+matter (+0.160 at 210,000 moves kept against +0.111 at 29,900), so at low temperature a long
+window is needed as well as a late one.
 
 **The significance test.** Neighbouring sites resemble each other (a buried strand, an
 exposed loop), so shuffling sites at random would exaggerate the significance. Instead the
@@ -686,8 +724,8 @@ completely, along with every other per-site property, measured or not.
 
 ### At T = 8
 
-What remains after burial is removed is +0.45 for the family entropy, +0.41 for activity
-and +0.19 for abundance.
+What remains after burial is removed is +0.27/+0.29 for the family entropy, +0.27/+0.23 for
+activity and +0.18/+0.16 for abundance, the two numbers being the two independent chains.
 
 **Reading.** The sampler is not flat, and the signal grows with longer chains. But once
 burial is set aside it follows what the family conserves more than what keeps the protein
@@ -756,8 +794,8 @@ The two agree at the P loop and little elsewhere.
 # 6. The in-silico single-mutant scan
 
 Everything in section 5 compares a *sampled* quantity with the references, and inherits the
-sampling's problems: chains that are not equilibrated, one chain's time average, a burn-in
-to choose. This section removes the sampler entirely. It evaluates the energy itself on
+sampling's problems: a time average over one chain, a burn-in to choose — and, until the
+ladder was equilibrated on 18 November and the burn-in set past t_eq, convergence itself. This section removes the sampler entirely. It evaluates the energy itself on
 every single mutant of the reference, which is exactly what the two papers did in the
 laboratory, and so gives the comparison that needs no equilibration at all.
 
@@ -1175,7 +1213,7 @@ Two things stand out, and they are the two the scan was built to settle.
 
 **The energy sides with abundance, not with conservation** — the opposite of what the
 *sampled* entropy does. Section 5.3 found that at T = 8, with burial removed, the chains
-follow family conservation (+0.45) far more than abundance (+0.19). The raw energy, with
+follow family conservation (+0.27/+0.29) more than abundance (+0.18/+0.16). The raw energy, with
 burial removed, does the reverse: abundance keeps +0.12, barely above the 5% threshold of
 0.12, while both natural tiers go slightly *negative*. So of the two explanations offered in
 6.5, this points at the second: the conservation preference is made by the sampling, not by
@@ -1195,7 +1233,8 @@ A caveat on the first of those two, because it is the one that will be argued ab
 sits exactly on the 5% threshold for this sample size, so the honest statement is not "the
 energy follows abundance" but "with burial removed, what is left of the energy's agreement
 is with abundance, and nothing is left for conservation". The strong claim is the *contrast*
-with section 5.3, where the same partial correlation favours family conservation at `+0.45`,
+with section 5.3, where the same partial correlation favours family conservation at `+0.27`
+to `+0.29` against `+0.16` to `+0.18` for abundance,
 and that contrast does not depend on where the abundance number falls relative to a
 threshold.
 
@@ -1212,16 +1251,24 @@ exactly the reason section 2.3 gives for needing both experiments rather than ei
 
 The question section 5.3 left open was whether the sampler follows family conservation
 rather than abundance because ESM3's attention map encodes evolutionary conservation
-directly, or because the chains are not equilibrated and burial is doing the work. The scan
+directly, or because burial is doing the work in chains that had not converged. Half of that
+alternative is now closed from the sampling side as well: the chains *have* converged, and
+re-measuring after t_eq cut the margin by about a third without reversing it (section 5.2). The scan
 cannot be blamed on equilibration, and it came out on the second side: the energy's own
 residual agreement, burial removed, is with abundance (+0.12) and not with conservation
-(−0.07 family, −0.11 orthologs), while the chains at T = 8 give +0.45 for family against
-+0.19 for abundance.
+(−0.07 family, −0.11 orthologs), while the chains at T = 8 give +0.27/+0.29 for family
+against +0.18/+0.16 for abundance.
 
 That is a statement about the chains, and it has a mundane reading and an interesting one.
-The mundane one is that the chains are not equilibrated — 198 sites never accepted a move at
-T = 1 — so what the sampled entropy ranks is partly *reachability*, and nothing says
-reachability should track abundance. The interesting one is that the sampler's acceptance
+The mundane one is *reachability*: at T = 1, 188 and 184 sites of 324 never accepted a move
+even in the post-t_eq window, so what the sampled entropy ranks there is partly which sites
+the chain ever reached, and nothing says reachability should track abundance. Note what this
+reading no longer is, as of the 18 November re-measurement: it is not non-equilibration. The
+ladder is equilibrated at every temperature and the averages above are taken after t_eq, so
+"the chains have not converged" is excluded as an explanation. A chain can be equilibrated
+and still leave a site untouched if moves there are essentially never accepted, which is
+what T = 1's acceptance of 0.011 means, and that is a statement about the landscape rather
+than about the run length. The interesting one is that the sampler's acceptance
 depends on the whole landscape around a site rather than on the 19 single mutants of the
 reference, so it could genuinely see something the one-mutant scan cannot. These make
 different predictions and one run tells them apart: the same scan started from an
@@ -2174,13 +2221,21 @@ and I will write it.
 
 # 11. Cautions, and what is not verified
 
-1. **The chains are not equilibrated.** At T = 1, 198 sites never accepted a move in
-   220,000. The list of the sampler's K-sites will keep shrinking as chains get longer. The
-   correlations at T = 4 and 8 are the ones to quote.
+1. **The chains are equilibrated, but low T is still reachability-limited.** This caution
+   used to read "the chains are not equilibrated"; as of 18 November the ladder has a
+   measured t_eq at every temperature and every average quoted here is taken after it
+   (`--burn-in-frac 0.8`, section 5.2). What remains is that at T = 1 some 185 of 324 sites
+   never accept a move even in the post-t_eq window, because acceptance there is 0.011, so
+   the sampled entropy at low T ranks reachability as much as tolerance. The correlations at
+   T = 4, 8 and 16 are the ones to quote. Note also that the earlier `--burn-in-frac 0.5`
+   default kept pre-t_eq moves at seven of nine temperatures and inflated the
+   conservation-over-abundance margin by about a third.
 2. **One chain's time average underestimates the entropy of the ensemble.** Compare ratios
    and ranks, not absolute entropies.
-3. **About half of the agreement is burial**, and the remainder favours family conservation
-   over abundance (section 5.3).
+3. **Most of the agreement is burial**, and the remainder favours family conservation over
+   abundance, by a factor of 1.5 to 1.8 rather than the 2.4 first quoted (section 5.3).
+   Entropy against RSA alone is +0.46 to +0.54 at T = 4 to 16, against +0.45 to +0.50 for
+   the raw family correlation, which is why the partial column is the one to argue from.
 4. **The orthologs are few.** 92 sequences, N_eff 22. "Flat" for that tier partly means
    "little data".
 5. **The set rules are choices**, and one conclusion depends on them: see section 4.4.
