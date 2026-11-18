@@ -7307,7 +7307,7 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     nothing to acceptance; comparable means lambda ~ 1e3, at which point the
     quantisation would dominate the acceptance, not just the correlations.
 
-2026-11-18 (second entry) -- the sampled entropies were NOT measured after
+2026-11-18 (third entry) -- the sampled entropies were NOT measured after
     equilibration, and the T=8 headline number was inflated by it
     `analyze_nsites.py` averages over (t_eq, end], but `pten_k_sites.py
     compare` keeps the last `--burn-in-frac` of each chain, default 0.5, which
@@ -7354,3 +7354,87 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     10.1 and 11 from the 0.8 tables, and say in section 7 that the entropies
     are measured after t_eq. T3, T5 and T6 live in `equil`, not `equil_ref`,
     so they are absent from this re-run and need their own pass.
+
+2026-11-18 (fourth entry)  PTEN doc: re-quoted from the post-t_eq tables
+    Acting on the other thread's measurement (its own entry is in PR #58): `compare`
+    keeps the last --burn-in-frac of each chain, default 0.5, which is NOT t_eq, and
+    the equilibrated ladder's t_eq as a fraction of chain length exceeds 0.5 at seven
+    of nine temperatures (0.60, 0.47, 0.68, 0.56, 0.55, 0.56, 0.44, 0.80, 0.67 at
+    T = 1, 1.5, 2, 3, 4, 5, 6, 8, 16). Verified the replacement numbers directly from
+    pten_natural/sampled_vs_references_spearman.tsv, _partial_rsa.tsv,
+    sampled_entropy_in_K_sets.tsv and sampled_entropy_vs_natural.log (commit 038c410,
+    --burn-in-frac 0.8 --reference-only on equil_ref, both chains).
+    DIRECTION HOLDS, MAGNITUDE DOES NOT. With burial removed, family conservation
+    still beats abundance at every T >= 2 in both chains, and -mean_dU still prefers
+    abundance (T=8: family +0.31/+0.31 vs abundance +0.39/+0.40). But the headline
+    pair at T=8 falls from "+0.45 family against +0.19 abundance", a factor of 2.4,
+    to +0.27/+0.29 against +0.18/+0.16, a factor of 1.5-1.8.
+    Doc changes: 5.1 gains the rule that the window must clear t_eq and that the 0.5
+    default does not; 5.2's two tables are REPLACED by the equil_ref pass at T = 1,
+    1.5, 2, 4, 8, 16 with both chains in every cell, plus the window-vs-burn-in
+    control (T=4, every window after t_eq, loses only 0.013 when shrunk sixfold,
+    while T=8 loses 0.104 to the 45000 pre-t_eq moves; T=2 still wants a LONG window,
+    +0.160 at 210000 kept vs +0.111 at 29900); 5.3, 6.4b (twice) and 6.5 re-quote the
+    pair. T = 3, 5 and 6 are in `equil`, not `equil_ref`, so they were not in this
+    pass and are absent from 5.2.
+    ALSO CORRECTED, because it was the reason the old numbers were doubted: caution 1
+    of section 11 used to read "the chains are not equilibrated". The ladder IS
+    equilibrated now, so the remaining low-T caveat is REACHABILITY, not convergence:
+    at T=1, 241 and 236 of 324 sites have ZERO ENTROPY in the measured window, and
+    188 and 184 never accept a move anywhere in the 300000-move chain; acceptance is
+    0.011. Those two counts are different statistics and were conflated at first:
+    chain_site_stats accumulates proposals/accepted/mean_dU over the WHOLE chain and
+    only entropy and native_frac respect burn_in_frac (checked in the code, and its
+    docstring says so), so "sites never accepted" in the compare log is NOT a
+    post-t_eq number. Quote the zero-entropy count beside a table of entropies. Section 6's intro and 6.5's framing of the open
+    question were carrying the same stale claim and were fixed with it. Caution 3
+    softened from "about half of the agreement is burial" to "most": entropy vs RSA
+    alone is +0.46 to +0.54 at T = 4-16 against +0.45 to +0.50 for the raw family
+    correlation.
+
+2026-11-18 (fifth entry)  pten_k_sites.py: kept-window acceptance and mean_dU, and the
+    check that mean_dU does NOT have the entropy's burn-in flaw
+    Raised by the other thread: chain_site_stats accumulates proposals, accepted and
+    mean_dU over the WHOLE chain while only entropy and native_frac respect
+    burn_in_frac. Two consequences, one cosmetic and one that could have moved a
+    headline claim.
+    (a) The compare log's "sites never accepted" was a whole-chain count being read as
+    a post-t_eq one. Now reported as "N anywhere / M in the kept window", and the
+    per-site table carries proposals_kept, accepted_kept and mean_dU_kept beside the
+    whole-chain three. BOTH groups are kept rather than one replacing the other: "never
+    accepted anything in 300000 moves" is about the landscape, "accepted nothing after
+    t_eq" is what entropy 0 in the same window means. Nothing downstream shifts.
+    (b) THE ONE THAT MATTERED: mean_dU is the energy side of the comparison, the
+    -mean_dU rows of sampled_vs_references_spearman.tsv, so the burn-in finding of the
+    second entry could have applied to it too. MEASURED, and it does not. Over the 12
+    equil_ref chains x 4 references the median |mean_dU_kept - mean_dU| is 0.004 and the
+    max 0.044, against 0.104 for the ENTROPY's own 0.5 -> 0.8 shift at T=8 family, and
+    against a median of 0.003 between the two INDEPENDENT CHAINS of the same T (max
+    0.034). So the burn-in shift in -mean_dU is the size of chain-to-chain noise. Only
+    one family-vs-abundance ordering flips, T16.c1 (+0.377 -> +0.422 family crossing
+    +0.405 -> +0.407 abundance) while its partner T16 moves the other way (+0.370 ->
+    +0.342): the shortest chain in the ladder, 90001 moves, 18000 kept. So "the ENERGY
+    prefers abundance" needs NO re-quoting; only the entropy side did.
+    WHY IT IS ROBUST -- and the first reading of this was WRONG, corrected the same hour:
+    it is NOT that dU is independent of the chain's state. dU = U(proposed) - U(current),
+    so the per-site values drift as the chain melts, and at high T by a lot. chain0,
+    median |shift| of per-site mean_dU, whole chain vs the 0.8 window, as a share of the
+    median value, with the Spearman between the two orderings: T=2 1.08 on 36.2 = 3%,
+    rho 0.997; T=4 2.06 on 37.4 = 6%, 0.990; T=8 5.41 on 44.3 = 12%, 0.965; T=16 10.28
+    on 57.7 = 18%, 0.921. chain1 agrees to a few hundredths, so it is drift, not noise.
+    What survives is the ORDER, and everything quoted from mean_dU is a RANK correlation,
+    so a near-rank-preserving drift passes through. That also explains the one flip: T=16
+    has the weakest rank preservation (0.921; chain1 11.06 on 59.0 = 19%, rho 0.919) and is
+    exactly where the ordering moved -- so the flip is the PREDICTED place for one, not an
+    anomaly, and the trend is monotonic in T because the hotter the chain the further its
+    pre-t_eq sequences sit from the equilibrated ones. Where would the energy side break?
+    Above T=16, with the slope given by those four rows.
+    The real asymmetry with the entropy is what each statistic is made of: every move
+    proposes at SOME site whether accepted or not, so mean_dU accumulates proposals
+    everywhere throughout the chain and the pre-t_eq ones are worse samples of a similar
+    ordering; the entropy is a time average of the OCCUPIED state, so pre-t_eq moves
+    contribute states from a DIFFERENT distribution. Hence 0.104 against 0.044 at worst.
+    Also fixed the PerformanceWarning that had started printing into the middle of the
+    log: the ~100 per-chain columns are collected in a dict and concatenated once.
+    Doc 5.1 (the measurement) and 6.5 (one clause). Re-ran compare at 0.8; the entropy
+    numbers are unchanged, as they must be.
