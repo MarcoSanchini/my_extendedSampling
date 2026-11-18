@@ -143,9 +143,22 @@ wt-like. The 1,138 is the number quoted in the abstract.
 position, which carries the authors' own call of 115 positions as mutationally "intolerant"
 and 41 as "enhanced". In that table the intolerant positions have a mean score between 0.13
 and 0.72. We also use the 2021 follow-up (Matreyek et al., Genome Medicine 13:165), which
-filled in missing variants and brings PTEN to 5,083 scored missense variants. The scores are
-the copyright of the University of Washington, free for academic non-commercial use, which is
-why the raw files are downloaded by the script and not stored in the repository.
+filled in missing variants and brings PTEN to 5,083 scored missense variants.
+
+**The 2021 set is a superset of the 2018 set, not a second set beside it.** Checked on the
+two files: all 4,112 variants scored in 2018 are scored in 2021 as well, and 971 are new, so
+5,083 is the total and not an addition — 66% of the 7,639 possible missense variants, up from
+54%. The new ones are spread over 230 of the 403 positions rather than filling in a region.
+The overlapping 4,112 are also *re-scored*: the file keeps the 2018 value unchanged in
+`score_orig`, but `score_total` pools it with the new replicates, so the shared variants move
+a little, median absolute change 0.04 and up to 0.68, Spearman 0.94 between the old and new
+value. That is why the 2018 and 2021 columns in the tables below differ at all, and why they
+are reported separately rather than averaged: they are the same experiment seen with 5.8 and
+with 7.9 replicates per variant on average.
+
+The scores are the copyright of the University of Washington, free for academic
+non-commercial use, which is why the raw files are downloaded by the script and not stored in
+the repository.
 
 ## 2.2 Mighell et al. 2018: lipid phosphatase activity
 
@@ -322,8 +335,74 @@ itself included). N_eff is the sum of the weights. X is 80% for the family and p
 tiers, the usual choice in the coevolution literature, and 95% for the two ortholog tiers,
 because at 80% nearly all orthologs would fall in one cluster and N_eff would be about 1.
 
-**Entropy.** For each site, the Shannon entropy of the weighted amino acid frequencies, in
-nats: 0 when one residue is always there, ln 20 = 3.0 when all twenty are equally likely.
+**What is in the family and pdomain tiers.** The two broad tiers are not abstractions, so it
+is worth naming what is actually in them. Counting the descriptions in the alignment:
+
+- **family** (2,716 sequences, coverage ≥ 0.8 of the 324 columns, no identity threshold).
+  Requiring 80% coverage of a construct that *is* the phosphatase domain plus the C2 domain
+  means a hit must have both, so this tier is the proteins built like PTEN. Counted by name:
+  **1,597 tensins** (tensin-1, -2 and -3, which carry the same phosphatase + C2 pair), 658
+  entries named as PTEN itself across the eukaryotes, 121 TPTE / voltage-sensing
+  phosphatases, 364 hypothetical or uncharacterised, and a scattering of the rest. Median
+  identity to human PTEN 33%.
+
+  **That composition is worth holding on to.** "Family conservation", the profile the sampled
+  entropy follows most closely in section 5.3, is in the majority *tensin* variation, not
+  PTEN variation. Tensins are focal-adhesion proteins whose phosphatase domain is
+  catalytically dead or near-dead. So the tier measures what this fold needs in order to be
+  a fold, across proteins that mostly do not do PTEN's chemistry — which, read that way, is
+  less at odds with the abundance result of 6.4b than "conservation versus stability" makes
+  it sound.
+- **pdomain** (6,002 sequences, covering ≥ 0.7 of the phosphatase domain's columns, nothing
+  asked of C2). This drops the requirement of a C2 domain and keeps anything whose
+  *catalytic* domain aligns. The 3,286 extra entries are 1,080 hypothetical or
+  uncharacterised, 550 more PTEN-named, 536 **cyclin-G-associated kinase** (GAK), 501 more
+  tensins and 125 auxilins. It is the superfamily seen from PTEN's own catalytic domain.
+  Because the C2 columns of these sequences are mostly gaps, the entropy is defined only on
+  the 172 phosphatase-domain sites — which is why `family`, not `pdomain`, is the default
+  natural tier: it is the only broad one that covers the whole construct.
+
+The four tiers are strictly nested: vertebrate ⊂ orthologs ⊂ family ⊂ pdomain (checked —
+no sequence is in family but outside pdomain). Each step down adds more distant relatives
+and so more variety, which is exactly what the entropy column records.
+
+**Entropy, and what a nat is.** For each site, the Shannon entropy of the weighted amino acid
+frequencies, `H = −Σ p log p` over the 20 amino acids (gaps are not a 21st letter; they are
+counted separately and a site is discarded if more than half of the weighted sequences are
+gapped). The **nat** is the unit you get by using the natural logarithm in that formula
+instead of log base 2, which would give bits: 1 nat = 1/ln 2 ≈ 1.44 bits. Nothing else
+changes.
+
+The scale this puts us on, which is the useful thing to remember:
+
+| entropy | meaning |
+| --- | --- |
+| 0 | one amino acid, always — the site never varies |
+| 0.69 = ln 2 | two residues, equally often |
+| 1.61 = ln 5 | five residues equally often, or a handful with one dominating |
+| 2.996 = ln 20 | all twenty equally likely, i.e. no constraint at all |
+
+So the family tier's median of 1.76 nats is "about six residues' worth of choice at a typical
+site", and the vertebrate tier's 0.01 is "a typical site never changes at all".
+
+**There is only one human sequence in any of this.** Counted in the alignment: of the 92
+sequences in the vertebrate tier, 4 are human, and they are the same gene — UniProt P60484
+(the reference itself) plus three TrEMBL entries for it, F6KCZ3, A0A386NCS8 and F6KD02. Over
+the 324 construct columns F6KCZ3 differs from the reference at one position, A0A386NCS8 at
+one, F6KD02 only where it has unknown residues, and all four differ at the same four
+C-terminal columns, which is the construct's own junction and not biology. The family tier
+has 25 human rows, but 21 of those are paralogs: tensins, TPTE, TPTE2, GAK, auxilin, at 31
+to 43% identity.
+
+This is by construction, and it is worth keeping in mind when reading the word "natural" in
+this document. The alignment comes from UniRef90, which clusters at 90% identity, so every
+human allele collapses into one cluster representative; human population variation cannot
+appear in it even in principle. And there would be little to find: PTEN is effectively
+monomorphic in people, and its missense variants are individually rare and largely
+pathogenic, which is why there is a VAMP-seq experiment at all. So "natural conservation"
+here means *across species*, never across humans. The experiments are the only within-human
+reference in the comparison, and they are within-human only in the sense that the variants
+were built in a human cell line.
 
 **Sites without an entropy.** A site gets no value when more than half of the weighted
 sequences have a gap there. This happens at the C-terminal end. Natural PTEN has the 286 to
@@ -333,6 +412,10 @@ sequences have a gap there. This happens at the C-terminal end. Natural PTEN has
 The thresholds are options of the script; section 8 shows how to change or remove them.
 
 ## 3.3 The flatness table, with the amount of data behind each row
+
+Entropies are in **nats** (natural logarithm; 1 nat = 1.44 bits). The scale runs from 0, one
+amino acid always, to ln 20 = 3.0, all twenty equally likely — see the end of 3.2, which also
+says what the family and pdomain tiers contain.
 
 | profile | data behind it | sites | mean | median | 10th to 90th percentile |
 | --- | --- | --- | --- | --- | --- |
@@ -528,15 +611,83 @@ and T = 2) there are 104. They contain 16 of the 28 natural sites (9.0 expected)
 
 ## 5.3 The burial control
 
-A residue buried in the core is hard to mutate for any reason, and all the references know
-it: relative solvent accessibility (RSA, the exposed fraction of the side chain in the
-crystal, from the VAMP-seq table) correlates +0.65 with abundance, +0.64 with activity and
-+0.53 with family entropy. It also correlates +0.54 to +0.58 with the sampled entropy at
-T = 4 and 8. So part of any agreement is just "both know which sites are buried".
+### What RSA is
 
-The columns "burial removed" are partial correlations: RSA is regressed out of both ranks
-and the residuals are correlated. What remains is agreement that burial cannot explain. At
-T = 8 it is +0.45 for the family entropy, +0.41 for activity and +0.19 for abundance.
+**Relative solvent accessibility.** Take a residue in the folded structure and measure the
+area of its surface that a water-sized sphere can still touch — its solvent-accessible
+surface area. On its own that number means little, because a tryptophan is bigger than a
+glycine, so it is divided by the area the *same* residue type would expose with nothing
+packed around it (the standard reference is that residue in an extended Gly-X-Gly
+tripeptide). The ratio is the relative solvent accessibility, and it is comparable across
+residue types: **0 means completely buried in the core, 100% means as exposed as it could
+possibly be.** Values slightly above 100 occur for very exposed residues in unusual
+backbone conformations, which is why ours reach 108.
+
+Ours is the `rsa` column of the VAMP-seq positional table, computed by Matreyek et al. on
+the 1D5R crystal. It exists for the 277 of our 324 sites that are resolved in that crystal.
+Median 18.7%, with 85 sites under 5% (genuinely core) and 56 above 50% (surface).
+
+### Why it has to be controlled for
+
+Burial drives everything at once. A buried side chain is packed against its neighbours, so
+almost any substitution disturbs the packing and destabilises the protein; and evolution
+conserves those positions for the same reason. Measured on our table:
+
+| | buried (RSA < 10%, 103 sites) | exposed (RSA > 40%, 77 sites) |
+| --- | --- | --- |
+| mean `log10 dU` | 1.70 | 1.40 |
+| mean abundance score | 0.50 | 0.83 |
+| mean family entropy | 1.17 | 2.05 |
+
+Every column separates. So burial is a **common cause**: it independently raises the
+energy's cost, lowers the experimental abundance and lowers the natural entropy. Two
+quantities that both track burial will correlate with each other even if neither knows
+anything else. And that is the whole worry, because RSA can be computed from the crystal
+structure in milliseconds with no model at all — if the energy's agreement with the
+experiments were to vanish once burial is removed, then 6,156 ESM3 forward passes would be
+an expensive way of rediscovering which residues are in the core.
+
+### The "RSA itself" row, and what regressing it out does
+
+The row labelled **RSA itself** is the plain Spearman of each quantity with RSA: how much
+each one is simply measuring burial. On the site table:
+
+| quantity | Spearman with RSA |
+| --- | --- |
+| abundance (VAMP-seq 2021) | +0.65 |
+| activity (Mighell) | +0.64 |
+| family entropy | +0.53 |
+| orthologs entropy | +0.40 |
+| `−mean log10 dU` (section 6) | **+0.43** |
+| sampled entropy, T = 4 and 8 | +0.54 to +0.58 |
+
+Read the fifth row against the ones above it: the energy agrees with burial (+0.43) *more
+strongly than it agrees with any of the three biological references* (+0.31 for abundance is
+its best). That is the fact that makes the control necessary rather than decorative.
+
+**Regressing it out** means taking a partial correlation. Concretely, in
+`partial_spearman`: rank all three quantities; fit a straight line predicting rank(x) from
+rank(RSA) and keep the residual, i.e. the part of x's ordering that burial does not account
+for; do the same for y; then correlate the two residuals. In words, it answers *among sites
+that are equally buried, do the two still agree?* What survives is agreement burial cannot
+explain.
+
+One honest caveat on the direction of the error. Partialling out RSA removes everything that
+burial can account for, including any genuine signal that happens to travel with burial —
+and some of what the energy legitimately knows about packing *is* burial. So the partial
+correlations are a deliberately conservative floor, not an unbiased estimate: the truth lies
+somewhere between the raw and the partial column.
+
+A related point worth noticing, because it is the quiet strength of section 6.3's
+within-site statistic: **RSA is a property of a position, so it is constant within a site.**
+It therefore cannot contribute anything to a within-site ranking, and the within-site
+correlation needs no burial control at all — it has already conditioned on burial
+completely, along with every other per-site property, measured or not.
+
+### At T = 8
+
+What remains after burial is removed is +0.45 for the family entropy, +0.41 for activity
+and +0.19 for abundance.
 
 **Reading.** The sampler is not flat, and the signal grows with longer chains. But once
 burial is set aside it follows what the family conserves more than what keeps the protein
@@ -653,7 +804,7 @@ Four things are worth knowing before you launch it.
    `_exact_energy` one sequence at a time. Above 1 the script uses the batched forward from
    `code/tests/bench_batch.py`, which expands ESM3's batch-1 inputs by hand and keeps the
    same bfloat16 autocast — and that path was *measured* to disagree with `_exact_energy`,
-   see 6.2b below. The whole scan takes about ten minutes either way, so there is nothing to
+   see 6.2a and 6.2b below. The whole scan takes about ten minutes either way, so there is nothing to
    buy by batching.
 3. **It prints its own resolution limit.** Two forward passes on the *same* sequence should
    give exactly 0. Whatever they give instead is run-to-run numerical noise in the
@@ -664,6 +815,56 @@ Four things are worth knowing before you launch it.
 4. **It refuses to disagree with the reference.** `pten_k_sites.py mutants` checks that the
    wild-type residue the scan mutated is the one in the site table, site by site, and stops
    if any differs: a CSV produced on another sequence is useless here.
+
+## 6.2a What batching is, and where the discrepancy comes from
+
+**Batching.** A forward pass sends one sequence through the network and gets one attention map
+back. The GPU does that with thousands of threads, and at 324 residues there is not enough
+work to keep them busy: the benchmark of 29 October measured the card about 41% idle during a
+single-sequence pass. Batching stacks `B` sequences into one tensor and runs them through
+together, so every matrix multiplication is `B` times bigger and the card is used properly.
+The sequences never interact — it is `B` independent calculations sharing one trip through the
+network. `--batch 19` means one site's 19 mutants per pass.
+
+**It is mathematically a no-op here, and that was checked.** ESM3's own `_last_attention`
+refuses a batch (`"Attention can be computed only for single sequences"`), so the batched path
+in `code/tests/bench_batch.py` builds it by hand: it takes the same default tokens, expands
+them from 1 row to `B` identical rows, and calls the encoder and the transformer stack
+directly. The only post-processing, `clean_and_symm`, slices off the BOS and EOS positions and
+averages the map with its transpose — per sequence, with nothing summed or normalised across
+the batch. So no sequence can influence another, and the discrepancy is not the model seeing
+them differently. It is arithmetic.
+
+**Where the arithmetic goes.** Three things compound.
+
+1. *The forward pass runs in bfloat16.* Under `torch.autocast` the matrix multiplications use
+   bfloat16, which keeps 8 bits of mantissa against float32's 24 — its steps are 65,536 times
+   coarser, a relative precision of about 0.39%. That is the error on every intermediate
+   quantity, before anything accumulates.
+2. *Floating-point addition is not associative, and the order depends on the shape.* `(a+b)+c`
+   and `a+(b+c)` differ once rounding is involved. A GPU matrix multiplication computes each
+   output entry as a sum of many products, split across threads and tiles and added back in an
+   order the library chooses — and it chooses from the *shape* of the operands. Going from one
+   sequence to nineteen changes every shape, so a different kernel runs, the partial sums are
+   added in a different order, and the rounding lands differently. This is the step worth
+   taking slowly, because it explains what looks like a contradiction in 6.2b: the same
+   sequence run twice at the same batch size agrees **bit for bit** (noise floor 0), while the
+   same sequence at two different batch sizes does not. Determinism in floating point is per
+   shape, not absolute.
+   In float32, summing the same 2,000 numbers forwards and then backwards already differs in
+   the seventh digit. Here it is bfloat16, 65,536 times coarser, through 48 transformer blocks.
+3. *`U_am` amplifies what is left.* The attention entries are small — a row of 326 positions
+   sums to 1, so a typical entry is about 0.003 — and the energy takes their logarithm.
+   Logarithms pass relative error straight through (`d log x = dx/x`), so bfloat16's 0.39% on
+   an entry becomes about 0.0039 in absolute terms on `log am`. Then 52,326 pairs (the upper
+   triangle of 324 × 324) are squared and summed. If those small errors point in random
+   directions they largely cancel, which is the median difference of 0.55 measured in 6.2b; if
+   they line up they do not, which is the maximum of 151.
+
+**Why it had never mattered.** All of the above is equally true of every run this project has
+done. It only became visible here because `dU = U` near the reference, so the quantity being
+compared is 6 to 84 rather than the thousands that `U` reaches for a drifted sequence — see the
+note on `bench_batch.py`'s tolerance at the end of 6.2b.
 
 ## 6.2b Measured on astaroth, 15 November: the batched path is biased
 
@@ -752,18 +953,112 @@ position, same wild-type residue, same mutant residue — so `dU` can be put dir
 that variant's VAMP-seq score (2018 and the 2021 composite) and Mighell's activity score.
 Roughly 4,000 and 5,300 of the 6,156 mutants have a measurement. Three numbers come out:
 
-- the Spearman correlation of `-dU` with the score over all matched variants;
-- the same **within site**: both quantities are ranked among the variants *at that site*
-  and centred before being pooled. This asks the sharper question. A correlation over all
-  variants can come entirely from the sites — a buried site is expensive and all its
-  variants are destabilising — and no per-site profile can tell the difference. The
-  within-site number asks whether, at a given site, the energy ranks the 19 substitutions
-  the way the experiment does. If it is near zero while the pooled one is high, the energy
-  knows which *sites* matter and nothing about which *residue* belongs there;
-- the AUC of `-dU` as a classifier of the authors' own variant calls: "low or possibly low"
-  abundance, and activity below the loss-of-function cut. 0.5 is chance, and below 0.5 means
-  anti-correlated. Variants without a measurement are left out rather than counted as
-  negatives.
+- the **pooled** Spearman correlation of `−dU` with the score, over all matched variants;
+- the same **within site**;
+- the **AUC** of `dU` as a classifier of the authors' own variant calls.
+
+**What the AUC is**, since it sits in the same table as the correlations and is a different
+kind of number. Take one damaging variant and one tolerated variant at random; the AUC is the
+probability that the damaging one has the higher `dU`. It is the area under the ROC curve,
+and it equals the Mann-Whitney U statistic divided by the number of pairs, which is how
+`auc()` computes it. 0.5 is chance, 1.0 is a perfect separation, and below 0.5 means the
+energy is systematically calling the damaging variants the *cheap* ones. Two things define
+it: the label and the score.
+
+- The **label** is the *damaging* outcome, taken from each experiment's own class column:
+  `low` or `possibly_low` in that file's `abundance_class` for the two VAMP-seq sets, and
+  `Cum_score` below `--activity-lof` for Mighell. Each row of the table uses its own
+  experiment's call, so the 2021 row is not judged by the 2018 file's classes. Variants with
+  no measurement are left out rather than counted as tolerated.
+- The **score** is `dU` itself, not `−dU`. A cost should be *high* for a damaging variant, so
+  above 0.5 is the agreement direction here, while for the correlations agreement is a
+  positive rho on `−dU`. Mixing those two orientations is the mistake recorded in section 11.
+
+Unlike a correlation the AUC ignores how large `dU` is and how bad the variant is; it only
+asks about ordering across the two classes. That makes it robust to the long tail of `dU` and
+blind to everything inside a class, which is why both are reported. `positives` and
+`labelled` in the output file give the class sizes it rests on.
+
+**Both correlations use the papers' continuous scores, not their four classes.** Worth
+being explicit, because each paper publishes both. The rank correlations take
+`PTEN_variant_data.tsv`'s `score` (2018), `Composite_abundance_data.tsv`'s `score_total`
+(2021) and Mighell's `Cum_score`: real numbers, 4,112 / 5,083 / 7,260 scored missense
+variants, and in each file essentially every value is distinct (4,112 distinct values in
+4,112 rows for 2018; 7,230 in 7,260 for Mighell). So Spearman ranks about four thousand
+distinct levels, not four.
+
+The four-way class — `wt-like`, `possibly_wt-like`, `possibly_low`, `low` — enters in
+exactly two places, both of them flagged as such in the tables:
+
+- the **AUC**, which has to have a binary label: "damaging" is `low` or `possibly_low` for
+  abundance, and `Cum_score` below `--activity-lof` for activity. This is the one binned
+  number in section 6.4b;
+- the **K-set rules** of section 4, which count what share of a site's variants fall under
+  the authors' synonymous 5th percentile.
+
+Binning throws away information, so if the two ever disagree, trust the rank correlation.
+The AUC is reported because it is the number the papers' own readers would recognise, and
+because it is the only form in which "does it find the damaging ones?" has a yes/no answer.
+
+### The two correlations, defined
+
+**Spearman's rho** is the ordinary (Pearson) correlation computed on *ranks* instead of
+values: replace every `dU` by its position in the sorted list of `dU`s, every score by its
+position in the sorted list of scores, and correlate those. It therefore measures only
+whether the two orderings agree, which is what we want here — `dU` runs from 4.8 to 2860
+while an abundance score sits between about 0 and 1.5, and no linear relation between such
+quantities would mean anything. +1 is identical ordering, 0 none, −1 reversed. Everything
+is written with `−dU` so that **positive means agreement**: cheap in silico, abundant in the
+laboratory.
+
+**Pooled** means all the matched variants are ranked together in one list of about 4,000,
+ignoring which position each belongs to. It answers: across the whole protein, are the
+expensive substitutions the damaging ones?
+
+**Within site** means each variant is ranked only among the variants measured *at its own
+position* — 5 to 19 of them, median 14, since not every substitution was assayed — then each
+site's mean rank is subtracted, so every site is centred on zero, and all the centred ranks
+are pooled into a single correlation. The centring removes everything that is constant
+within a site, above all that site's overall level of cost and of damage. What is left can
+only come from the ordering *inside* positions. In statistical terms it is the "within" or
+fixed-effects estimator: the rank analogue of a partial correlation conditioned on site
+identity.
+
+That is the sharper question, and it is sharper in a specific way. A pooled correlation can
+be large with *no* within-site information at all — a buried position is expensive and all
+of its substitutions are damaging, an exposed one is cheap and all of its are tolerated, and
+that alone produces agreement. No per-site profile, including every figure in section 5, can
+tell the two apart. If the within-site number were near zero while the pooled one was high,
+`U_am` would know which *positions* matter and nothing about which *residue* belongs in
+them.
+
+A note on wording, since the same statistic carries two names in this document: the
+per-site table of 6.4b calls its uncontrolled column "raw" and the per-variant table calls
+its uncontrolled column "pooled". Both are the plain Spearman with nothing partialled out;
+the end of 6.4b lays the two tables side by side.
+
+Three related numbers, for the 2021 abundance data, so the relationship is clear:
+
+| | |
+| --- | --- |
+| pooled Spearman | +0.345 |
+| within site (pooled centred ranks, what the table reports) | +0.325 |
+| mean of the 289 individual per-site Spearmans | +0.309 |
+| median of them | +0.373 |
+| share of sites with a positive one | 82%, range −0.80 to +0.92 |
+
+The reported figure weights each site by how many variants it has, which is why it is close
+to, but not exactly, the average of the per-site correlations. The point of the table is that
+all three agree: this is not an artefact of one way of pooling.
+
+A worked example, N334 (site 304), 18 measured variants, per-site rho +0.37. Ranked by `dU`,
+cheapest first: S, T, G, Q, A, C, L, K, M, Y, V, D, R, I, E, W, F, P. At the cheap end the
+abundance scores are 0.80 (S), 0.50 (T), 0.83 (G); at the expensive end 0.41 (W), 0.66 (F),
+0.44 (P), proline being the most expensive of all at `dU` 94.8 against a median of 40. So
+the ends do line up — the energy puts proline and tryptophan at the bottom of this position
+and so does the experiment — but threonine is cheap in silico and poorly abundant in the
+laboratory, and several in the middle are out of order. That is what +0.37 looks like, and
+it is worth seeing once: these correlations are real and loose, not tight.
 
 ## 6.4 The figures it writes
 
@@ -775,7 +1070,7 @@ Horizontal: `dU` of that exact substitution, logarithmic. Vertical: the same sub
 measured score — abundance 2021, abundance 2018, activity. The dotted line is wild type
 (1 for abundance) or the loss-of-function cut (−1.11 for activity). The cloud falls to the
 right in all three: expensive in silico, damaging in the laboratory. Each title carries the
-pooled Spearman and the within-site one. Note the shape of the activity panel in particular,
+pooled Spearman and the within-site one, both defined at the end of 6.3. Note the shape of the activity panel in particular,
 a dense band near 0 and a second population near −4: those are the folded-but-dead and the
 degraded variants, and `dU` separates them from wild type at AUC 0.72.
 
@@ -823,7 +1118,10 @@ negative, as the floor argument of 6.1 requires. The scan was first run at `--ba
 redone at the default after 6.2b; the numbers below are from the exact run, and 6.2b reports
 what the difference between the two turned out to be.
 
-Per site, Spearman of `−mean log10 dU` against each reference (n = 280 to 311):
+Per site, Spearman of `−mean log10 dU` against each reference (n = 280 to 311). Both columns
+and the last row are defined in section 5.3: the second column is the partial correlation
+given RSA, "among sites that are equally buried, do the two still agree?", and the last row
+is how much the energy is simply measuring burial.
 
 | reference | raw | with burial (RSA) regressed out |
 | --- | --- | --- |
@@ -831,15 +1129,47 @@ Per site, Spearman of `−mean log10 dU` against each reference (n = 280 to 311)
 | PTEN-like family entropy | +0.21 | −0.07 |
 | abundance (VAMP-seq 2021) | +0.31 | **+0.12** |
 | activity (Mighell) | +0.30 | +0.05 |
-| RSA itself | +0.43 | — |
+| RSA itself | **+0.43** | — |
+
+The last row is the one to read first: the energy tracks burial more closely than it tracks
+any of the three biological references. Most of what the raw column shows is the core of the
+protein being expensive, which the crystal structure already says for free.
 
 Per variant, each in-silico mutant against the same substitution in the laboratory:
 
-| experiment | variants | pooled rho | within site | AUC of `dU` for the damaging call |
+| experiment | variants | pooled rho | within site | AUC of `dU` | positives / labelled |
+| --- | --- | --- | --- | --- | --- |
+| abundance 2021 | 4,079 | +0.35 | **+0.32** | 0.689 | 1,710 / 3,523 |
+| abundance 2018 | 3,349 | +0.37 | **+0.34** | 0.686 | 1,647 / 3,349 |
+| activity (Mighell) | 5,324 | +0.37 | **+0.35** | 0.720 | 1,732 / 5,324 |
+
+(Before 16 November the AUC column held one number per *label* rather than per experiment,
+so the 0.686 of the 2018 classes was printed on the 2021 row. The 2021 classes give 0.689,
+and nothing else changes.)
+
+**"raw" and "pooled" are the same statistic.** Both words mean the plain Spearman
+correlation with nothing partialled out, computed over everything at once; neither is a
+different kind of correlation from the other. They differ only in what one observation *is*,
+and in which controlled column sits next to them:
+
+| | one observation is | plain column | controlled column | what the control removes |
 | --- | --- | --- | --- | --- |
-| abundance 2021 | 4,079 | +0.35 | **+0.32** | 0.686 |
-| abundance 2018 | 3,349 | +0.37 | **+0.34** | — |
-| activity (Mighell) | 5,324 | +0.37 | **+0.35** | 0.720 |
+| per site (first table) | a position, 1 of ~290 | **raw** | RSA regressed out | burial, one per-site property |
+| per variant (second table) | a substitution, 1 of ~4,000 | **pooled** | within site | site identity, i.e. every per-site property at once |
+
+So "raw" is the per-site table's uncontrolled column and "pooled" is the per-variant table's
+uncontrolled column. If the per-site table had been written with the per-variant table's
+headings its first column would say "pooled", and vice versa; the two names are an accident
+of having written the tables months apart, not a distinction.
+
+One consequence is worth stating. Regressing out RSA controls for a *single* per-site
+property, chosen by hand, so a per-site correlation that survives it can still be explained
+by some other per-site property nobody regressed out. Centring within a site controls for
+site identity, which is every per-site property simultaneously — burial, secondary
+structure, domain, distance to the active site, how many variants were measured there. That
+is why the within-site column needs no burial control of its own, and why +0.32 within a
+site is a stronger statement than +0.12 per site with RSA removed, even though it is a
+weaker-looking comparison to set up.
 
 Two things stand out, and they are the two the scan was built to settle.
 
@@ -905,6 +1235,418 @@ as it ranks positions. A per-site energy that ranked sites well but residues at 
 have been a much weaker object than it looks; this is not that. It is also the one number
 here that the per-site profiles of section 5 could never have produced, which is the
 argument for having built the scan at all.
+
+## 6.6 The contact-map energy of Zambon et al., at 2 and 32 steps (16 November)
+
+**What was scanned.** `scan_mutants_E.py` (PR #54) decodes each mutant with ESM3's structure
+track and compares its contact map with the reference's, the way the paper defines the
+energy:
+
+    E = sum_ij |D_ij(mut) − D_ij(ref)| / sum_ij (D_ij(mut) + D_ij(ref)),   |i − j| > 2
+
+with `D` the CA contact map at 8 Å, both maps decoded at the same number of steps, so
+`E(reference) = 0` exactly. Run on astaroth: all 6,156 mutants at **2 steps** (14 minutes,
+0.13 s each), and the 20 sites `0, 17, 34, …, 323` at **32 steps** (380 mutants, 1.1 s each;
+the whole scan would take about two hours). The same comparison as for `U_am` then runs
+unchanged, because `pten_k_sites.py mutants` now takes the energy column as an option:
+
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E2.csv  --energy-column E --tag E2
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E32.csv --energy-column E --tag E32
+    # like for like: the other two energies on exactly the 380 mutants of the 32-step scan
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E2.csv  --energy-column E --tag E2_on32 \
+        --same-mutants-as pten_natural/pten_mutants_E32.csv
+    python pten_k_sites.py mutants --same-mutants-as pten_natural/pten_mutants_E32.csv --tag Uam_on32
+    # and how much the two energies agree with EACH OTHER (section 6.6a), added to any of the above
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E2.csv --energy-column E --tag E2 \
+        --versus pten_natural/pten_single_mutants.csv --versus-column dU
+
+Every output file carries the tag, so nothing of the `U_am` analysis is overwritten.
+
+**Per variant, all 6,156 mutants (E at 2 steps against `U_am`):**
+
+| experiment | variants | `U_am` pooled | E2 pooled | `U_am` within site | E2 within site | AUC `U_am` | AUC E2 |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| abundance 2021 | 4,079 | +0.345 | +0.172 | +0.325 | +0.101 | 0.689 | 0.596 |
+| abundance 2018 | 3,349 | +0.372 | +0.200 | +0.342 | +0.118 | 0.686 | 0.605 |
+| activity | 5,324 | +0.365 | +0.112 | +0.346 | +0.105 | 0.720 | 0.566 |
+
+The contact-map energy agrees with both experiments, in the right direction and beyond
+chance, but at a half to a third of `U_am`'s strength, pooled and within site alike. The gap
+is not noise: a site-level bootstrap puts `U_am − E2` at +0.12 to +0.22 for abundance and
++0.21 to +0.30 for activity (95%).
+
+**Like for like on the 380 mutants of the 32-step scan:**
+
+| experiment | variants | `U_am` | E2 | E32 |
+| --- | --- | --- | --- | --- |
+| abundance 2021, pooled | 236 | +0.402 | +0.127 | +0.103 |
+| abundance 2018, pooled | 211 | +0.451 | +0.196 | +0.190 |
+| activity, pooled | 320 | +0.366 | +0.041 | +0.132 |
+| AUC, low abundance | 211 | 0.720 | 0.601 | 0.610 |
+| AUC, activity loss of function | 320 | 0.730 | 0.526 | 0.541 |
+
+Sixteen times the decoding steps buys nothing measurable: `E32 − E2` has a 95% bootstrap
+interval of −0.21 to +0.18 for abundance and −0.09 to +0.30 for activity, while `U_am − E32`
+is +0.12 to +0.45 and +0.02 to +0.42. These rest on 19 sites, so they are wide, but they
+point the same way as the full 2-step scan.
+
+**Per site, 2 steps.** `−mean log10 E` against abundance +0.25 raw and **+0.14 with burial
+regressed out**, which is as much as `U_am` keeps (+0.12). Against everything else it keeps
+nothing or turns negative once burial is out: activity −0.15, family −0.29, orthologs
+−0.06. The top 108 sites by E hold 46 of the 108 abundance K-sites (P 0.009), exactly what
+`U_am` managed, and no more of the activity or natural ones than chance. So at the level of
+sites the contact-map energy is a pure *fold* signal — which is what a contact map should be —
+and it loses the active site entirely, where `U_am` at least found the P loop's packing.
+
+## 6.6a How much do the two energies agree with each other?
+
+Both are read off the same network, so this is the ceiling on how similarly they can behave
+anywhere downstream. `--versus` reports it, and writes `energy_vs_energy*.tsv`:
+
+| E against `U_am` | mutants | pooled | within site | per site |
+| --- | --- | --- | --- | --- |
+| 2 steps, all | 6,156 | +0.466 | +0.303 | +0.676 |
+| 2 steps, on the 380 | 380 | +0.524 | +0.282 | +0.749 |
+| 32 steps | 380 | +0.141 | +0.169 | +0.150 |
+
+The per-site column is the correlation of the two per-site means of `log10`, so it is
+comparable to the per-site numbers elsewhere in this document; `scan_mutants_E.py`'s own
+summary prints a slightly different version of it (mean E against mean log10 `dU`, +0.681 and
++0.212), which is the same quantity read on a different scale.
+
+Three things to take from it. **Per site they largely agree** (+0.68): both say the core is
+expensive, which is the part of either energy that the crystal structure would also give.
+**Per mutant they agree much less** (+0.47 pooled, +0.30 within a site), so the two energies
+genuinely rank substitutions at a position differently — they are not two measurements of one
+thing. And **the 32-step E agrees with `U_am` far *worse* than the 2-step E does** on exactly
+the same 380 mutants, +0.14 against +0.52. More decoding steps do not converge the contact
+energy toward the attention energy; they move it away, which is what the reproducibility
+numbers below say should happen.
+
+## 6.6b Why E is weak per variant: the decoded response is mostly not reproducible
+
+Every one of the 6,156 mutants changes the 2-step contact map; none leaves
+it unchanged, and the median mutant gains or loses 37 of about 900 contacts while moving the
+structure by only 0.45 Å RMSD. The decoder is deterministic — the same sequence twice
+differs in 0 contacts — so this is not sampling noise. It is sensitivity: a 0.45 Å shift
+anywhere moves pairs that sit near the 8 Å cutoff across it. The test is to decode the same
+mutants at two step counts and ask whether they agree:
+
+| per-mutant agreement, 2 vs 32 steps, 380 mutants | Spearman | median within a site |
+| --- | --- | --- |
+| E | 0.108 | 0.120 |
+| CA RMSD to the reference's prediction | 0.020 | 0.004 |
+| pLDDT | 0.042 | −0.032 |
+
+If both step counts measured the same effect of the mutation plus their own idiosyncratic
+response, the agreement between them bounds how much of each is effect: about a tenth for E,
+essentially none for RMSD and pLDDT. RMSD and pLDDT used directly as costs are accordingly
+weaker still than E against the experiments (pooled +0.13 and +0.10 for abundance at 2
+steps). What E does carry is largely shared with `U_am`, as section 6.6a shows, and the
+step-count agreement above is the reason that sharing falls apart at 32 steps. Section 6.6c
+turns this two-point check into a sweep over five step counts, which is where the size of the
+effect becomes clear.
+
+## 6.6c The step-count sweep: E does not converge in the number of decoding steps
+
+Marco ran the same 20 sites at 3, 4, 8 and 32 steps as well (16 November; the 8-step run was
+interrupted at 373 of 380 mutants). That turns the two-point check of 6.6b into a sweep, and
+it says something stronger than "32 steps is no better". On the 373 mutants all five scans
+share:
+
+| Spearman | E2 | E3 | E4 | E8 | E32 |
+| --- | --- | --- | --- | --- | --- |
+| **E2** | 1 | +0.264 | +0.300 | +0.122 | +0.115 |
+| **E3** | +0.264 | 1 | +0.174 | +0.090 | +0.074 |
+| **E4** | +0.300 | +0.174 | 1 | +0.016 | −0.002 |
+| **E8** | +0.122 | +0.090 | +0.016 | 1 | +0.055 |
+| **E32** | +0.115 | +0.074 | −0.002 | +0.055 | 1 |
+| against `U_am` | **+0.518** | +0.331 | +0.377 | +0.138 | +0.146 |
+
+No pair of step counts agrees above +0.30, and 4 against 32 is zero. There is no sign of a
+limit: the number of decoding steps is not a nuisance parameter that converges, it selects a
+different per-mutant energy each time. Meanwhile every one of them correlates with `U_am`
+(+0.14 to +0.52), and per site they all correlate with it strongly (+0.67 to +0.74). So each
+scan does carry real signal about the mutation; what differs between them is larger than
+that signal.
+
+That is the thing to measure directly. The median |E_n − E2| against the spread of E2 across
+mutants (its interquartile range, 0.0060):
+
+| | E3 | E4 | E8 | E32 |
+| --- | --- | --- | --- | --- |
+| median shift from E2, in E2 interquartile ranges | 0.5× | 0.5× | 1.2× | **1.6×** |
+
+**Changing the number of decoding steps moves E further than the mutations do.** With the
+per-mutant spread smaller than the step-count shift, the correlations above are the most one
+could expect, and nothing is wrong with the scans.
+
+Averaging does not rescue it. Taking the mean rank of all five step counts gives +0.528
+against `U_am`, against +0.518 for the single best — so this is not zero-mean noise that more
+decodes would cancel, but five different systematic functionals. Against the experiments the
+mean rank is +0.10 for abundance and +0.17 for activity, no better than E2 alone.
+
+**Scale, which is the root of it.** For `U_am` the interquartile spread across these mutants
+is 1.23 times the median; for E at 2 steps it is 0.30. `U_am` is a sum of 52,326 squared
+differences of continuous log-attention values, so a substitution moves it smoothly and by a
+lot. E is a normalised count of flips in about 900 *binary* contacts, and the median mutant
+flips 36 of them while moving the structure by 0.45 Å. A mutation can only change E through
+pairs that happen to lie within a fraction of an Å of the 8 Å cutoff — and which pairs those
+are is a property of the decoding trajectory, hence of the step count.
+
+**Why the attention energy should be expected to win here, rather than this being an
+anomaly.** The decoder returns the most likely structure for a sequence, and for a point
+mutant that is essentially always the wild-type fold; the decode projects the mutation away.
+This is the documented behaviour of structure predictors generally: predicted structures are
+nearly invariant to single substitutions and their confidence metrics are poor predictors of
+stability effects, which is why deep-mutational-scan prediction is done with
+sequence-likelihood models rather than with structure predictors. (Background, not measured
+here.) The attention map sits on the sequence side of that divide. It also matters what the
+experiments measure: abundance is a folding free energy, which no single predicted structure
+expresses, while activity is chemistry at a site the contact map barely resolves.
+
+**What would test the threshold explanation.** Replace the hard 8 Å cutoff by a smooth
+contact — a sigmoid of the distance — so that a pair at 7.9 Å and one at 8.1 Å stop counting
+as a whole contact gained or lost. The CA distances already exist inside
+`bench_decode.contact_map` before the threshold is applied. If a soft E agrees across step
+counts far better than +0.1 to +0.3, the threshold was the problem and a soft E may be usable
+in the loop; if it does not, the decode itself is the problem and no reweighting will fix it.
+That is one change to `scan_mutants_E.py` and about 15 minutes on astaroth for the 20-site
+subset at two step counts. It departs from the paper's definition of E, which is a reason to
+report it as a diagnostic rather than as the energy.
+
+**What it means for the sampler.** Two things, one for each use of E.
+
+1. *As an energy inside the Monte Carlo loop.* It is affordable at 2 steps (0.13 s, about
+   one `U_am` move), and it is not flat: no mutant has `dE = 0`, which was the worry
+   `scan_mutants_E.py` was written to settle. But most of what it assigns to a single
+   mutation is a property of the decoder rather than of the mutation, so a chain on E would
+   be driven largely by that jitter. On this evidence `U_am` is the better energy for the
+   K-site question by a factor of two to three, and E at more steps is not better.
+2. *As the observable the paper reports.* E is still the right thing to *measure* a sampled
+   sequence's fold with, where the differences are large (many mutations, not one) and the
+   jitter of a few tens of contacts is small against them. Nothing here argues against that.
+
+If E is to be tried in the loop anyway, the soft-contact diagnostic of 6.6e is the thing to
+run first: it decides whether the hard 8 Å threshold is what is costing E its per-mutant
+resolution, or whether the decode itself is.
+
+## 6.6d Why a sequence-side energy should be expected to win, with references
+
+Marco asked for the literature behind the claim in 6.6c, which is fair: it is the one part
+of that section that is not our own measurement. The claim has two halves.
+
+**Half one: predicting mutation effects from sequence likelihood works, and is the standard
+way it is done.** A family of models is trained to put a probability on amino-acid sequences
+— from an alignment of one family, or from all known proteins at once — and the predicted
+effect of a mutation is simply how much less likely the mutant is than the wild type,
+`log p(mutant) − log p(wild type)`. Nothing is trained on mutation data, which is why these
+are called *zero-shot* or *unsupervised* predictors. The line runs through
+
+- Hopf et al., *Mutation effects predicted from sequence co-variation*, Nature Biotechnology
+  **35**, 128–135 (2017) — pairwise couplings fitted to one family's alignment;
+- Riesselman, Ingraham & Marks, *Deep generative models of genetic variation capture the
+  effects of mutations*, Nature Methods **15**, 816–822 (2018) — DeepSequence, a VAE on an
+  alignment;
+- Frazer et al., *Disease variant prediction with deep generative models of evolutionary
+  data*, Nature **599**, 91–95 (2021) — EVE, the clinical-classification version;
+- Meier et al., *Language models enable zero-shot prediction of the effects of mutations on
+  protein function*, NeurIPS 2021 — ESM-1v, the same idea with a protein language model and
+  no per-family alignment.
+
+How well does that work? The benchmark is **ProteinGym** (Notin et al., *ProteinGym:
+Large-Scale Benchmarks for Protein Fitness Prediction and Design*, NeurIPS 2023, Datasets
+and Benchmarks track), 217 deep-mutational-scan assays. Its Table 2 gives the corrected
+average Spearman of the leading unsupervised models: TranceptEVE 0.456, GEMME 0.455, EVE
+0.439, VESPA 0.436, MSA Transformer 0.434, Tranception 0.434, ESM-1v 0.407, ESM-2 15B 0.401,
+ESM-1b 0.394. **So the state of the art on this task sits around 0.4 to 0.46, averaged over
+assays.** Section 6.4b's `U_am` numbers — +0.345, +0.372, +0.365 on the three PTEN
+experiments — are therefore in the same range as published variant-effect predictors, which
+is worth knowing before concluding anything about whether the energy works. Two honest
+caveats: per-assay values scatter widely around those averages, so a single protein proves
+little either way; and ProteinGym contains PTEN assays with every baseline already scored on
+them, which is the fair comparison and is one download away (section 10.2).
+
+**Half two: a predicted structure is the wrong place to look for the effect of a point
+mutation.** This is well documented, and specifically for the quantity we care about:
+
+- Buel & Walters, *Can AlphaFold2 predict the impact of missense mutations on structure?*,
+  Nature Structural & Molecular Biology **29**, 1–2 (2022). Three cases where a known
+  structure-disrupting substitution changes the prediction almost not at all: average Cα
+  RMSD 0.1 Å and 0.3 Å for the hHR23a UBA domains with L198A, 0.6 Å for BRCA1 BRCT with
+  A1708E, and pLDDT 95 against 94 between wild type and mutant. Their conclusion is that
+  AlphaFold2 is "largely unable to predict when a point mutation causes defective protein
+  folding". Note how close 0.1 to 0.6 Å is to the 0.45 Å median we measure for PTEN.
+- Pak et al., *Using AlphaFold to predict the impact of single mutations on protein stability
+  and function*, PLoS ONE **18**(3), e0282689 (2023). 976 mutations in 90 proteins: the
+  change in pLDDT at the mutated residue correlates with experimental ΔΔG at Pearson 0.17,
+  and the change in whole-protein pLDDT at 0.00. On 447 GFP mutants against measured
+  fluorescence, 0.14 and 0.16. Their conclusion is that the confidence metrics cannot
+  estimate the effect of a mutation on stability or function.
+- The honest counterpoint: *AlphaFold2 can predict single-mutation effects*, Physical Review
+  Letters **131**, 218401 (2023), argues that the predictions do carry single-mutation
+  information **on average** across thousands of pairs, through local structural strain
+  rather than through confidence scores. That is a statement about ensembles, not about
+  ranking one protein's substitutions, and it is the strain field rather than a contact map
+  that carries it. It is the strongest argument that something is there to be extracted,
+  and it is also a different observable from E.
+
+Both halves point the same way, and the reason is not a defect of any particular model. A
+structure predictor answers "what is the most likely fold for this sequence", and the most
+likely fold for a point mutant is the wild-type fold; the answer is nearly invariant by
+design. The experiments we compare against measure something else: VAMP-seq abundance is
+dominated by folding stability, a free-energy difference that no single predicted structure
+expresses, and Mighell's activity is catalytic chemistry. A sequence-likelihood object is
+closer to those because evolutionary frequency already integrates stability and function
+over the whole family.
+
+Where does `U_am` sit? It is read off the attention map of a sequence model, not off a
+decoded structure, so it is on the sequence side of this divide — but it is not a likelihood
+either. It measures how far the attention map moves, which is why its relation to the
+contact map matters at all: attention maps are known to encode contacts (Rao et al.,
+*Transformer protein language models are unsupervised structure learners*, ICLR 2021). So
+`U_am` is better thought of as a *structure-sensitive sequence* readout, which is exactly
+where our measurements put it: 6.6a finds it agrees with the contact-map energy at +0.68 per
+site, and 6.4b finds it beats it per variant by a factor of two to three.
+
+**Two caveats of our own, so the comparison is not read as more than it is.** First, these
+references are about AlphaFold2 and ours is ESM3's structure track; the mechanism argued here
+(the prediction returns the most likely fold) is shared, but the specific numbers are not
+transferable. Second, the papers above were verified against the sources on 17 November
+2026 for title, venue and the numbers quoted; the four papers in half one were cited from
+memory for volume and page, so check those against the journals before they go in the
+thesis.
+
+## 6.6e The soft-contact diagnostic, and what it would settle
+
+`scan_mutants_E.py --soft-widths` (17 November) replaces the hard 8 Å step with a sigmoid of
+the Cα distance,
+
+    c_ij = 1 / (1 + exp((d_ij − 8 Å) / w)),    |i − j| > 2
+
+and computes E from it with the paper's formula unchanged — `|D_ij(mut) − D_ij(ref)|` summed
+over pairs and normalised the same way, which for the hard map is exactly the XOR the code
+already used. A pair at the cutoff counts one half, one width closer 0.73, one width further
+0.27. As `w → 0` the soft energy becomes the hard one exactly, and the script verifies that
+limit on random coordinates before it touches the GPU, so a mistake in the softening cannot
+be mistaken for a result. The widths 0.5, 1 and 2 Å are all computed from the *same* decode
+alongside the hard E, so the whole thing costs no extra GPU time and the columns are paired
+mutant by mutant.
+
+What it decides. Section 6.6c measured that the step count moves E further than the mutations
+do, and proposed two explanations: the threshold, or the decode. They differ in what the
+softening does.
+
+- If the **threshold** is the problem, the 0.45 Å shift that a mutant produces is being
+  amplified into tens of discrete contact flips by pairs sitting near 8 Å. Smoothing lets
+  those pairs contribute in proportion to how far they actually moved, so the step-count
+  agreement should rise with the width, and the wider columns should also agree better with
+  `U_am` and with the experiments. Then a soft E is a candidate for the loop.
+- If the **decode** is the problem — the trajectory genuinely puts the loops somewhere else
+  at a different step count — then smoothing changes nothing material, because the distances
+  themselves differ. The step-count agreement stays near 0.1 to 0.3 at every width. Then no
+  reweighting of distances rescues E, and the route out is a predictor without a decoding
+  schedule at all, ESMFold being the obvious one and the one Zambon et al. use.
+
+The run is the same 20 sites at 2, 8 and 32 steps, about 25 minutes on astaroth, with the
+commands in section 9. The number to read is the "agreement between the two" block, in
+particular the last line, which gives the median step-count shift as a share of each
+column's own interquartile range: 1.6 for the hard E at 32 steps is the figure to beat, and
+anything still above about 1 means the step count still moves E more than the mutations do.
+
+One thing the soft version is not: it is a departure from the paper's definition of E, so it
+belongs in the thesis as a diagnostic of why the hard E behaves as it does, not as a
+redefinition of the paper's energy.
+
+## 6.6f What this negative result does and does not undermine
+
+Worth stating plainly, because the last two days have produced one clear negative result and
+it is easy to let it spread further than it reaches.
+
+**What is undermined.** One specific object: the contact-map energy *computed through ESM3's
+`generate()`* as a per-mutant quantity. Sections 6.6b and 6.6c show it is dominated by the
+decoding schedule, so it cannot be the energy of a Monte Carlo move as it stands. That is a
+real finding and it closes a route that was open on Friday.
+
+**What is not.** The sampler in this thesis does not use that energy. It uses `U_am`, the
+attention-map distance, and `U_am` is what the scan actually tested against two independent
+experiments: +0.345 to +0.372 pooled, +0.325 to +0.346 within a site, AUC 0.686 to 0.720.
+Those numbers did not move. If anything the comparison strengthened them, because the
+contact-map energy was the natural rival and came out at a half to a third of the strength on
+the same 6,156 mutants, and because the ProteinGym averages in 6.6d put `U_am` in the range
+of published variant-effect predictors rather than below it.
+
+**What was never claimed and still is not.** That `U_am` is a free energy, that low `U_am`
+implies the sequence folds, or that the sampler is equilibrated. The first two are the open
+interpretation question recorded in `structure_comparison.tex`; the third is caution 1 of
+section 11 and is a property of the runs, not of the energy.
+
+**Where the premises are genuinely worth re-examining**, as opposed to abandoning:
+
+1. *E as the paper's observable.* Unaffected and still the right thing to measure a sampled
+   sequence with, where sequences differ by many mutations and the schedule jitter of a few
+   tens of contacts is small against the signal. The negative result is about single
+   mutations.
+2. *The schedule itself.* ESM3's structure track is a generative decoder with a number of
+   steps; ESMFold is one deterministic forward pass and is what Zambon et al. use. If a
+   structural energy is wanted in the loop, that is the comparison to make, and the
+   measurements now argue for it rather than merely permitting it.
+3. *`U_structure_ce`.* Already in `energies.py`, already differentiable, already from the
+   same forward pass as `U_am`, and switched off (`lambda_structure_ce = 0`). It is the
+   in-loop structural term that does not need `generate()` at all. Section 6.6g describes it
+   and the scan that tests it, which Marco asked for on 17 November.
+
+A negative result that took 25 minutes of GPU time and killed one candidate energy is a
+cheap outcome, not a broken project. The thing to avoid is the opposite error: having built a
+chain on E and discovered this afterwards.
+
+## 6.6g `U_structure_ce`, the structural energy that needs no decoding schedule
+
+Everything in 6.6b to 6.6e is about an energy read off a *generated* structure. There is a
+second structural energy already in the code and it is not of that kind
+(`code/utils/energies.py:compute_U_structure_ce`):
+
+    U_ce(s) = cross_entropy( structure_logits(s), structure_tokens(reference) )
+
+`predict_structure_logits` gives, for each position, a distribution over ESM3's 4,096
+structure tokens, and the energy is the mean negative log probability of the *reference's*
+token at that position. The reference's tokens are its own argmax, which is how
+`rate_sampler._setup` builds the target. Three properties follow, and they are the reason
+this is worth a scan of its own:
+
+- **No `generate()`, so no schedule.** One forward pass through the structure head. The
+  entire non-convergence of 6.6c cannot arise here; there is nothing to converge in.
+- **No threshold.** It is a continuous function of logits, so the 8 Å discontinuity that
+  6.6e is built to diagnose is absent as well.
+- **Differentiable, and from the same forward as `U_am`.** It is already wired into
+  `_grad_pass_sites` and `_energy_and_grad`, with `lambda_structure_ce` defaulting to 0, so
+  it could go into the loop today at the cost of one extra head.
+
+**The trap, and it is the mirror image of the `dU = U` identity of 6.1.** `U_am` is a
+squared distance with `U_am(reference) = 0` as its global minimum, so for a single mutant
+`dU` *is* `U`. A cross-entropy has neither property: `U_ce(reference)` is the entropy of the
+reference's own structure prediction, which is some positive number, and nothing says a
+mutant cannot score *below* it — the structure head may well be more certain about a mutant
+than about the wild type. So here `dU_ce = U_ce(mutant) − U_ce(reference)` must actually be
+subtracted, and it can be negative. `scan_single_mutants.py --structure-ce` prints
+`U_ce(reference)` and its own noise floor for exactly this reason, and writes `U_ce` and
+`dU_ce` as separate columns. On the analysis side, `pten_k_sites.py mutants` now detects a
+non-positive energy and falls back to the plain mean per site instead of the mean of
+`log10`, saying so in its output, rather than clipping negatives into a logarithm.
+
+What to expect, stated in advance so the result is not read backwards afterwards. If `U_ce`
+agrees with the experiments at the level of `U_am` or better, the structural side of the
+energy is worth switching on and the only thing wrong with the contact-map route was
+`generate()`. If it agrees at the level of the contact-map energy, then what fails is
+*structure* as a readout of a point mutation, exactly as 6.6d's literature would predict,
+and the fact that `U_am` works is about it being a sequence-side object rather than about it
+being a distance between maps. Both outcomes are informative, which is the mark of a
+diagnostic worth running.
+
+Cost: one extra forward through the structure head per mutant on top of the 0.044 s the
+attention pass takes, so expect something in the region of a quarter of an hour for all
+6,156, against 4.5 minutes for `U_am` alone. The script runs 5 sites first and prints the
+measured rate, and it resumes, so the trial is not wasted.
 
 # 7. InterPro, Pfam, and the step to run locally
 
@@ -1062,6 +1804,53 @@ chains. Step 6 is the only one that needs ESM3 and the card.
     python pten_k_sites.py mutants \
         --mutants pten_natural/pten_single_mutants.csv > pten_natural/mutants.log 2>&1
 
+    # 8. the contact-map energy of the same mutants, GPU. 2 steps for all 324 sites is
+    #    14 min; more steps only on the 20-site subset (section 6.6).
+    nohup python -u scan_mutants_E.py --num-steps 2 \
+        --out pten_natural/pten_mutants_E2.csv > scan_mutants_E2.log 2>&1 &
+    for st in 3 4 8 32; do
+        python -u scan_mutants_E.py --num-steps $st --sites $(seq 0 17 323) \
+            --out pten_natural/pten_mutants_E$st.csv \
+            --compare pten_natural/pten_mutants_E2.csv > scan_mutants_E$st.log 2>&1
+    done
+
+    # 8b. THE SOFT-CONTACT DIAGNOSTIC of section 6.6e, GPU, about 25 min in total.
+    #     Hard and soft E (widths 0.5, 1, 2 A) come from the same decode, so the only
+    #     cost is the decodes themselves. Each run is compared with the 2-step one;
+    #     read the "agreement between the two" block of the summary.
+    for st in 2 8 32; do
+        python -u scan_mutants_E.py --num-steps $st --sites $(seq 0 17 323) \
+            --out pten_natural/pten_mutants_soft_E$st.csv \
+            --compare pten_natural/pten_mutants_soft_E2.csv > scan_mutants_soft_E$st.log 2>&1
+    done
+    # the summary again, without re-decoding anything:
+    python scan_mutants_E.py --summary-only --out pten_natural/pten_mutants_soft_E32.csv \
+        --compare pten_natural/pten_mutants_soft_E2.csv
+
+    # 8c. 8b and the U_structure_ce scan of 6.6g in one go, strictly one GPU process at a
+    #     time, with nvidia-smi between the steps and the correlations at the end:
+    nohup ./run_soft_and_ce.sh > run_soft_and_ce.log 2>&1 &
+    #     (env: STEPS, SITES, CE_SITES, SKIP_CE=1. It refuses to start without the U_am scan.)
+
+    # 8d. U_structure_ce on its own: the cross-entropy against the reference's structure
+    #     tokens, one forward through the structure head per mutant, no generate().
+    #     dU_ce is a DIFFERENCE and may be negative; see 6.6g.
+    python -u scan_single_mutants.py --structure-ce --sites 0 1 2 3 4 \
+        --out pten_natural/pten_mutants_ce.csv            # trial, prints the rate
+    nohup python -u scan_single_mutants.py --structure-ce \
+        --out pten_natural/pten_mutants_ce.csv > scan_mutants_ce.log 2>&1 &
+
+    # 9. either energy against the experiments, and the two against each other (no GPU).
+    #    --energy-column picks the cost, --tag keeps the outputs apart, --versus adds
+    #    the energy-vs-energy block of 6.6a.
+    python pten_k_sites.py mutants --tag Uam
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_E2.csv \
+        --energy-column E --tag E2 --versus pten_natural/pten_single_mutants.csv
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_soft_E2.csv \
+        --energy-column E_w1 --tag soft_E2_w1 --versus pten_natural/pten_single_mutants.csv
+    python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_ce.csv \
+        --energy-column dU_ce --tag ce --versus pten_natural/pten_single_mutants.csv
+
 If the scan is interrupted, or the card is needed for something else, just run the same
 step 6 command again: it picks up at the first site it has not finished. Step 7 works on a
 partial CSV too — it says how many sites are missing and uses what is there — so the
@@ -1099,7 +1888,8 @@ labels with `--show`.
 | `pten_mutants_variant_level.csv` | one row per mutant with the matching VAMP-seq and activity scores |
 | `mutants_vs_references_spearman.tsv`, `mutants_vs_references_partial_rsa.tsv` | the per-site correlations of section 6.3, raw and with burial removed |
 | `mutants_in_K_sets.tsv` | cost inside/outside each K-like set, with shift-test p values |
-| `mutants_vs_experiments_variant_level.tsv` | the pooled and within-site correlations per experiment |
+| `mutants_vs_experiments_variant_level.tsv` | per experiment: the pooled and within-site correlations, and the AUC with its damaging call and class sizes |
+| `energy_vs_energy.tsv` | with `--versus`, how much the two energies agree with each other (section 6.6a) |
 | `pten_mutant_profile.png`, `mutants_vs_references.png`, `mutants_vs_experiments.png` | the three figures of section 6.4 |
 | `mutants.log` | the printed tables of 6.4b |
 | `*.log` | the printed tables of each step |
@@ -1107,7 +1897,117 @@ labels with `--show`.
 The `.png` files are ignored by git under `monte_carlo/`. To keep one in the repository copy
 it to `softmax/docs/figures/` and add it with `git add -f`.
 
-# 10. Cautions, and what is not verified
+# 10. Databases: what exists, what this container can reach, what we already hold
+
+Written 16 November, after probing about forty hosts from the cloud container with `curl`.
+Every "blocked" below is a measured 403 from the network policy on the CONNECT, not a guess;
+every "reachable" was a 200.
+
+## 10.1 The short version
+
+The single most useful finding is that **we do not need a new download to compare against
+tumour variants.** `PTEN_variant_data.tsv`, which `pten_k_sites.py fetch` already pulls,
+carries a 2018 snapshot of COSMIC, ClinVar and gnomAD per variant, on exactly the
+position / wild-type / mutant key the scan uses. See 10.4.
+
+## 10.2 Natural sequences
+
+| source | what it gives for PTEN | from this container |
+| --- | --- | --- |
+| **OpenProteinSet** (`openfold.s3.amazonaws.com`) | precomputed UniRef90, BFD and MGnify alignments per PDB chain; `pdb/1d5r_A/`, `7jvx_A`, `2cm2_A`. This is where all four tiers of section 3 come from | **reachable**, and already used |
+| **gnomAD v4.1** (`gcp-public-data--gnomad` on GCS, `gnomad-public-us-east-1` on S3) | human *population* germline variants with allele counts and frequencies, plus the constraint tables | **reachable** (verified by listing both buckets) |
+| 1000 Genomes (`1000genomes` on S3) | older population panel, superseded by gnomAD | reachable, not worth using |
+| UniProt / UniRef (`rest.uniprot.org`, `ftp.uniprot.org`) | the canonical P60484 record, isoforms, UniRef50/90/100 clusters | blocked |
+| Ensembl Compara (`rest.ensembl.org`) | one-to-one orthologs across the vertebrates with gene trees — the principled version of our "vertebrate" tier | blocked |
+| OrthoDB, eggNOG | curated orthologous groups at a chosen taxonomic level, with alignments | blocked |
+| InterPro / Pfam | domain families and their alignments. Section 7 already covers this and already says it has to run on your machine | blocked |
+| MaveDB, ProteinGym | the two PTEN experiments in standard form, and ProteinGym's baseline scores for ESM-1v, EVE and the rest — the natural yardstick for `U_am` | blocked (ProteinGym's GitHub README is reachable, its data archives are not) |
+
+So in the cloud the sequence side is OpenProteinSet or nothing, which is what we have been
+doing. Anything else — a cleaner ortholog set from Ensembl, Pfam alignments, the ProteinGym
+baselines — has to be fetched on astaroth.
+
+## 10.3 Tumour and clinical variants
+
+| source | what it gives | from this container |
+| --- | --- | --- |
+| **COSMIC** v102 (`cancer.sanger.ac.uk`) | the reference somatic catalogue; the Cancer Mutation Census gives per-variant tumour counts | blocked, *and* it needs a registered login, so it is a browser download on your machine either way |
+| **cBioPortal** (`www.cbioportal.org`, datahub) | per-study somatic mutation tables, TCGA and MSK-IMPACT among them, with a clean REST API | blocked. Its datahub is a GitHub repository, but the data files are git-lfs pointers and the lfs endpoint is blocked too |
+| **GDC / TCGA** (`api.gdc.cancer.gov`) | the masked somatic MAFs behind TCGA | API blocked. The AWS mirror `tcga-2-open.s3.amazonaws.com` *is* reachable, but its keys are GDC file UUIDs, so without the manifest from the blocked API there is no way to find a file |
+| AACR GENIE (Synapse) | ~200k clinical sequencing samples, the largest panel set | blocked, and needs an account |
+| ICGC/ARGO, IntOGen, cancerhotspots.org, CIViC, OncoKB | aggregated somatic calls, driver and hotspot calls, clinical annotation | all blocked |
+| **ClinVar** (NCBI FTP) | germline clinical classifications, the ClinGen PTEN expert panel's among them | blocked |
+| LOVD PTEN, ClinGen VCEP (`erepo.clinicalgenome.org`) | the PTEN locus-specific germline databases, Cowden and PHTS variants | blocked |
+
+Every genuine tumour database is blocked here, so a fresh pull is a job for astaroth. That
+turns out to matter less than it looks.
+
+## 10.4 What is already in the files we download
+
+`PTEN_variant_data.tsv` is not only abundance scores. One row per variant, 7,639 missense
+among them, and the columns include:
+
+- `cosmic_count`, the number of times that exact amino-acid change was seen in COSMIC as of
+  2018: 1,723 occurrences spread over 533 of the missense variants;
+- the same split by tissue — `cancer_brain_count`, `cancer_uterine_count`,
+  `cancer_breast_count`, `cancer_colorectal_count`, `cancer_nsclc_count`,
+  `cancer_endometrial_count`, `cancer_melanoma_count` — each with a matching
+  `*_cancer_expected` column, the authors' mutational-signature expectation, so an
+  observed-over-expected enrichment is computable without re-deriving the signatures;
+- `gnomad_allele_count`, `gnomad_allele_number`, `gnomad_allele_freq`: the germline
+  population side;
+- `clinvar_pathog`, `clinvar_likely_pathog`, `clinvar_uncertain`, `clinvar_benign` and the
+  review status;
+- `snv`, whether the change is reachable by a single nucleotide substitution — which turns
+  out to be the column that makes the tumour comparison work at all;
+- fifteen predictor calls: SIFT, PolyPhen-2 (HDIV and HVAR), CADD, PROVEAN, FATHMM, SNAP2,
+  MutationAssessor, MutationTaster, LRT, MetaSVM, MetaLR, M-CAP, PTENpred, and
+  `predictor_fraction_deleterious`. So `U_am` can be put against the standard predictors on
+  the same 6,118 variants, with no new download at all;
+- `ddg`, `evolutionary_coupling_avg`, `AA1_psic`, and the structural columns of section 5.3.
+
+The per-position file `PTEN_positional_data.tsv` carries the site-level `cosmic_count` as
+well, next to `rsa`.
+
+## 10.5 A first look, since the data was already on disk
+
+Matching the exact scan to these columns gives 6,118 variants. This is not yet in the
+script; the numbers were computed by hand on 16 November and are a preview, not a result.
+
+**Raw, the comparison fails.** AUC of `dU` for "seen in COSMIC at least twice" is 0.513,
+pooled rho +0.02. Nothing.
+
+**The reason is the genetic code, not the energy.** COSMIC can only contain substitutions a
+tumour can reach, and 532 of the 533 COSMIC-observed variants are single-nucleotide changes,
+while the scan enumerates all 19 substitutions per site. Only 1,906 of the 6,118 are
+SNV-reachable, so "COSMIC versus not" is mostly "reachable by one base change versus not".
+Restricted to those 1,906:
+
+| contrast | n | AUC of `dU` |
+| --- | --- | --- |
+| seen in COSMIC at least once vs never | 532 vs 1,374 | 0.588 |
+| at least twice vs never | 243 | 0.613 |
+| at least five times vs never | 65 | 0.642 |
+| present in gnomAD vs absent | 49 | 0.366, i.e. 0.634 the other way round |
+| ClinVar pathogenic or likely pathogenic vs the rest (all 6,118) | 81 | 0.602 |
+| **COSMIC-recurrent vs present in gnomAD** | 236 vs 49 | **0.729** |
+
+The last row is the sharpest contrast in this whole document: somatic variants that recur in
+tumours against variants that healthy people carry. 0.729 is above the 0.686 the energy
+manages on abundance and level with the 0.720 on activity, and it needed no new experiment.
+It rests on 49 negatives, so it is a hint, not a measurement.
+
+Per site the COSMIC counts add nothing: rho −0.10 raw, and burial explains it (RSA against
+site COSMIC count −0.40). The recurrent sites are the buried ones. R130, the CpG hotspot with
+355 occurrences, ranks only 59th of 324 by cost; G129 ranks 26th and G132 48th.
+
+**What would make this a result rather than a preview**: a `tumour` subcommand that does the
+matching with the `snv` restriction built in, reports observed over expected per tissue
+instead of raw counts, and puts `U_am` beside the fifteen predictors on the same rows. Half a
+day, no GPU, and it can run in the cloud because the data is already downloaded. Say the word
+and I will write it.
+
+# 11. Cautions, and what is not verified
 
 1. **The chains are not equilibrated.** At T = 1, 198 sites never accepted a move in
    220,000. The list of the sampler's K-sites will keep shrinking as chains get longer. The

@@ -6897,6 +6897,47 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
       than the reference's 19 mutants; if it does not, the difference in
       reading 1 is just equilibration (198 sites never accepted at T=1).
 
+2026-11-16 -- where the batched/single discrepancy comes from (Marco asked)
+    Checked that batching is mathematically a no-op in this path, so the
+    difference is purely floating point:
+      - _last_attention asserts batch 1; bench_batch.py's batched version
+        expands the SAME default tokens from 1 row to B identical rows and
+        calls encoder.custom_forward + transformer.last_attention directly.
+      - clean_and_symm is per-sample (slices BOS/EOS, averages with the
+        transpose). Nothing is summed or normalised across the batch, so no
+        sequence can influence another.
+    Mechanism, three compounding steps:
+      1. autocast runs the matmuls in bfloat16: 8 mantissa bits vs float32's
+         24, i.e. steps 65536x coarser, ~0.39% relative precision.
+      2. FP addition is not associative and a GPU matmul's reduction order is
+         chosen from the SHAPE of the operands. B=1 and B=19 select different
+         kernels/tilings, hence different summation orders, hence different
+         rounding. This is why "noise floor 0" and "batched disagrees" are
+         both true: determinism is PER SHAPE, not absolute.
+      3. U_am amplifies. Attention entries ~1/326 ~ 0.003 and the energy takes
+         their log, which passes relative error straight through (d log x =
+         dx/x): 0.39% on an entry -> ~0.0039 absolute on log(am). 52326 pairs
+         (upper triangle of 324x324) are then squared and summed; random signs
+         largely cancel (median difference 0.55), aligned signs do not (max
+         151).
+    Written up as section 6.2a of docs/pten_k_sites_explained.md.
+
+2026-11-16  PTEN databases: reachability probe, and what is already on disk
+    Probed ~40 database hosts from the cloud container. Reachable: OpenProteinSet
+    (already used), gnomAD v4.1 (both the GCS and the S3 public bucket), 1000genomes,
+    raw.githubusercontent.com, api.github.com, tcga-2-open on S3 (but UUID-keyed, so
+    useless without the blocked GDC manifest). Blocked: UniProt, Ensembl, OrthoDB,
+    eggNOG, InterPro, NCBI/ClinVar, RCSB, AlphaFold, COSMIC, cBioPortal and its
+    datahub (git-lfs), GDC API, Synapse/GENIE, ICGC, IntOGen, cancerhotspots, CIViC,
+    OncoKB, MaveDB, ProteinGym archives, LOVD, Zenodo, figshare, OSF, ColabFold.
+    The useful finding is that PTEN_variant_data.tsv, which `fetch` already downloads,
+    carries a 2018 COSMIC/ClinVar/gnomAD snapshot per variant plus 15 predictor calls
+    and an `snv` flag, on the same key as the scan. First look, by hand: raw AUC of dU
+    for COSMIC-recurrent is 0.513 (nothing), because 532 of 533 COSMIC variants are
+    single-nucleotide-reachable while the scan enumerates all 19; restricted to the
+    1,906 SNV-reachable variants it is 0.588/0.613/0.642 at counts >=1/2/5, gnomAD
+    0.366, ClinVar P/LP 0.602, and COSMIC-recurrent vs gnomAD-observed 0.729 on
+    236 vs 49. Per site COSMIC is just burial (RSA vs count -0.40). Doc section 10.
 2026-11-16 -- PTEN weekend run: T=2, 3, 8, 16 equilibrated; T=4 is not
     Run 2026-11-14/16 (42 h), all two reference-started chains differing only
     by seed: equil_ref T=2 to 650000, T=4 to 180000, T=8 150000 and T=16 90000
@@ -7077,3 +7118,91 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     Zambon et al actually use) and U_structure_ce, which is already in
     energies.py, comes out of the same forward pass as U_am and is
     differentiable. Neither needs generate().
+
+2026-11-16  PTEN: the contact-map energy E (Zambon et al) against both experiments
+    Marco ran scan_mutants_E.py on astaroth: all 6156 mutants at 2 steps, the 20
+    sites 0,17,...,323 at 32 steps (380 mutants). pten_k_sites.py mutants gained
+    --energy-column (E for these scans), --tag (suffix on every output so U_am's are
+    not overwritten) and --same-mutants-as (like-for-like subsets).
+    Per variant, 2 steps vs U_am: pooled +0.172/+0.200/+0.112 (abundance 2021/2018,
+    activity) against +0.345/+0.372/+0.365; within site +0.10/+0.12/+0.11 against
+    +0.33/+0.34/+0.35; AUC 0.605/0.566 against 0.686/0.720. Site bootstrap
+    U_am - E2: +0.12..+0.22 abundance, +0.21..+0.30 activity. On the 380 mutants of
+    the 32-step scan: U_am +0.40/+0.45/+0.37, E2 +0.13/+0.20/+0.04, E32
+    +0.10/+0.19/+0.13; E32 - E2 CI spans zero. Per site E2 keeps abundance beyond
+    burial (+0.14, U_am +0.12) and loses activity (-0.15) and family (-0.29).
+    Mechanism: no mutant leaves the 2-step map unchanged (median 37 of ~900
+    contacts flip at 0.45 A RMSD), decoding is deterministic, and per-mutant
+    agreement between 2 and 32 steps is 0.108 for E, 0.020 for RMSD, 0.042 for
+    pLDDT: the decoded response to a single mutation is mostly decoder-specific.
+    Doc section 6.6.
+
+2026-11-16  PTEN: energy-vs-energy agreement, and the AUC in the output file
+    pten_k_sites.py mutants gained --versus/--versus-column (how much two energies
+    agree with each other: pooled, within site, per site, written to
+    energy_vs_energy*.tsv). E vs U_am: 2 steps +0.466 pooled / +0.303 within site /
+    +0.676 per site on all 6156; on the 380 mutants of the 32-step scan +0.524 /
+    +0.282 / +0.749, while E32 vs U_am is only +0.141 / +0.169 / +0.150. More
+    decoding steps move E away from U_am, not toward it.
+    The AUC is now a column of mutants_vs_experiments_variant_level*.tsv instead of
+    being printed only to the log, and each experiment is scored against its OWN
+    class column: load_variants gained abundance2021_is_low from class_2021. The
+    2021 row had been showing the 2018 classes' 0.686; its own classes give 0.689.
+    Doc: AUC defined in 6.3, 6.4b table fixed, new section 6.6a.
+
+2026-11-16  PTEN: E does not converge in the number of decoding steps
+    Marco added E3, E4, E8 (interrupted at 373 of 380) and E32 on the same 20 sites.
+    On the 373 mutants all five share, NO pair of step counts agrees above +0.30 and
+    E4 vs E32 is -0.002: E2/E3/E4/E8/E32 correlate +0.264, +0.300, +0.122, +0.115
+    with E2 and +0.518, +0.331, +0.377, +0.138, +0.146 with U_am. Per site every one
+    agrees with U_am at +0.67..+0.74, so each scan carries real signal; the
+    step-count difference is simply bigger. Measured: median |E_n - E2| is 0.5x the
+    E2 interquartile range at 3 and 4 steps, 1.2x at 8, 1.6x at 32 -- changing the
+    step count moves E further than the mutations do. Mean rank of all five vs U_am
+    +0.528 against +0.518 for the best single, so it is not zero-mean noise.
+    Scale: IQR/median is 1.23 for U_am and 0.30 for E2. E is a normalised count of
+    flips in ~900 BINARY contacts and the median mutant flips 36 at 0.45 A RMSD, so
+    only pairs within a fraction of an A of the 8 A cutoff can move it, and which
+    those are depends on the decoding trajectory. Next test proposed: smooth
+    (sigmoid) contact instead of the hard cutoff, which separates "the threshold is
+    the problem" from "the decode is the problem". Doc section 6.6c.
+
+2026-11-17  PTEN: soft-contact diagnostic, and the literature behind "sequence beats
+            structure" for point mutations
+    scan_mutants_E.py --soft-widths (default 0.5 1 2 A) computes E with the 8 A step
+    replaced by a sigmoid of the CA distance, from the SAME decode as the hard E, so
+    it costs no GPU. Width -> 0 reproduces the hard E exactly and the script checks
+    that on random coordinates before touching the GPU; the soft noise floor for the
+    reference decoded twice is printed too. summary() now prints every energy column
+    side by side, including, for --compare, the median step-count shift as a share of
+    each column's own IQR (1.6 for the hard E at 32 steps is the figure to beat).
+    Doc 6.6e; commands as step 8b of section 9.
+    Doc 6.6d collects the references Marco asked for: zero-shot sequence-likelihood
+    predictors (Hopf 2017, Riesselman 2018, Frazer 2021 EVE, Meier 2021 ESM-1v) and
+    ProteinGym (Notin 2023, NeurIPS D&B) whose Table 2 gives corrected-average
+    Spearman 0.39-0.46 for the leading unsupervised models over 217 DMS assays --
+    the band U_am's +0.345/+0.372/+0.365 sits in. Structure side: Buel & Walters
+    2022 NSMB 29:1-2 (AF2 insensitive to disruptive missense: 0.1-0.6 A RMSD, pLDDT
+    95 vs 94), Pak 2023 PLoS ONE 18:e0282689 (dpLDDT vs ddG r = 0.17 at the site,
+    0.00 whole-protein, 976 mutations), and the counterpoint PRL 131:218401 (2023),
+    which finds single-mutation signal on average via structural strain, not pLDDT.
+    Doc 6.6f states what the negative result does and does not undermine: it kills
+    the generate()-based contact energy as a per-mutant quantity, not U_am, whose
+    experiment numbers are unchanged; U_structure_ce (differentiable, same forward
+    pass, lambda = 0 today) is the untested in-loop structural term.
+
+2026-11-17  PTEN: U_structure_ce as a per-mutant energy, and one runner for both scans
+    scan_single_mutants.py --structure-ce sets lambda_structure_ce = 1, builds
+    ref_structure_tokens the way rate_sampler._setup does (argmax of the reference's
+    own structure logits; the scan assembles the sampler by hand and never calls
+    _setup), and writes U_ce and dU_ce next to dU. TRAP, the mirror image of the
+    dU = U identity: U_ce is a CROSS-ENTROPY, so U_ce(reference) is not 0 and is not
+    a minimum, dU_ce must really be subtracted, and it CAN BE NEGATIVE. The script
+    prints U_ce(reference) and its own noise floor; pten_k_sites.py mutants now
+    detects a non-positive energy and uses the plain per-site mean instead of the
+    mean of log10 (and says so) rather than clipping negatives into a log.
+    --structure-ce refuses --batch > 1, which only knows the attention path.
+    New run_soft_and_ce.sh runs the soft-contact diagnostic at 2/8/32 steps and then
+    the CE scan, one GPU process at a time, set -e, nvidia-smi between steps, 5-site
+    CE trial first (resumable, so not wasted), correlations at the end. Doc 6.6g,
+    commands as steps 8c and 8d of section 9.
