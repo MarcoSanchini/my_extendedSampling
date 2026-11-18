@@ -174,7 +174,7 @@ Y46H	46	Y	H	1	1	1.0	Glioblastoma	0.0	1.0	False	False	0.9993	P/LP	10:87894081:T:C
 Y46N	46	Y	N	0	0										P/LP	1.0	P/LP	1.0	True	4075814	PHTS|cancer			10:87894081:T:A	c.136T>A	0												False	True	False	phosphatase	39	True	True	V
 R47G	47	R	G	0	0										P/LP	3.0	P/LP	1.0	True	189401	PHTS|cancer			10:87894084:A:G	c.139A>G	0												False	True	False	phosphatase	40	True	True	V
 R47K	47	R	K	1	1	1.0	Glioblastoma	0.0	1.0	False	False	0.998	P/LP	10:87894085:G:A	P/LP	3.0	P/LP	1.0	True	373446	PHTS|cancer			10:87894085:G:A	c.140G>A	0												True	True	False	phosphatase	40	True	True	CV
-R47M	47	R	M	2	0	0.0	Endometrial Cancer|Esophagogastric Cancer	1.0	0.0	False	False	1.0		10:87894085:G:T												0												True	False	False	phosphatase	40	True		C
+R47M	47	R	M	2	0	0.0	Endometrial Cancer|Esophagogastric Cancer	1.0	0.0	False	False	1.0		10:87894085:G:T												0												True	False	False	phosphatase	40	True	True	C
 R47T	47	R	T	0	0										VUS	1.0	VUS	1.0	True	4908606				10:87894085:G:C	c.140G>C	0												False	True	False	phosphatase	40	True	True	V
 N48D	48	N	D	0	0										conflicting	1.0	conflicting	1.0	True	918670	cancer	Tier II - Potential		10:87894087:A:G	c.142A>G	0												False	True	False	phosphatase	41	True	True	V
 N48I	48	N	I	1	1	1.0	Breast Cancer	0.0	0.0	True	True	0.9997		10:87894088:A:T												0												True	False	False	phosphatase	41	True	True	C
@@ -264,9 +264,9 @@ N69H	69	N	H	0	0										conflicting	1.0	conflicting	1.0	True	928126	cancer			10
 N69I	69	N	I	0	0										VUS	3.0	VUS	1.0	True	2126293	PHTS|cancer			10:87925554:A:T	c.206A>T	0												False	True	False	phosphatase	62	True	True	V
 N69K	69	N	K	0	0										VUS	1.0	VUS	1.0	True	820673	cancer			10:87925555:T:G	c.207T>G	0												False	True	False	phosphatase	62	True	True	V
 N69S	69	N	S	0	0										conflicting	1.0	conflicting	1.0	True	189476	PHTS|cancer			10:87925554:A:G	c.206A>G	5	1569280.0	3.1861745513e-06	0.0		gnomAD Exomes,gnomAD Genomes	8.89e-06	27.4	0.936	10:87925554:A:G	c.206A>G	conflicting	False	True	True	phosphatase	62	True	True	VG
-L70F	70	L	F	0	0										VUS	2.0	VUS	1.0	True	196250	cancer			10:87925556:C:T	c.208C>T	0												False	True	False	phosphatase	63	True		V
-L70H	70	L	H	1	1	1.0	Glioblastoma	0.0	1.0	False	False	0.9996		10:87925557:T:A												0												True	False	False	phosphatase	63	True		C
-L70I	70	L	I	0	0										VUS	1.0	VUS	1.0	True	4729499	PHTS|cancer			10:87925556:C:A	c.208C>A	0												False	True	False	phosphatase	63	True		V
+L70F	70	L	F	0	0										VUS	2.0	VUS	1.0	True	196250	cancer			10:87925556:C:T	c.208C>T	0												False	True	False	phosphatase	63	True	True	V
+L70H	70	L	H	1	1	1.0	Glioblastoma	0.0	1.0	False	False	0.9996		10:87925557:T:A												0												True	False	False	phosphatase	63	True	True	C
+L70I	70	L	I	0	0										VUS	1.0	VUS	1.0	True	4729499	PHTS|cancer			10:87925556:C:A	c.208C>A	0												False	True	False	phosphatase	63	True	True	V
 L70P	70	L	P	0	0										P/LP	3.0	P/LP	1.0	True	7826	PHTS|cancer	Tier I - Strong		10:87925557:T:C	c.209T>C	0												False	True	False	phosphatase	63	True	True	V
 L70R	70	L	R	0	0										conflicting	1.0	conflicting	1.0	True	1785871	PHTS|cancer			10:87925557:T:G	c.209T>G	0												False	True	False	phosphatase	63	True	True	V
 C71F	71	C	F	0	0										conflicting	1.0	conflicting	1.0	True	468675	PHTS|cancer			10:87931048:G:T	c.212G>T	1	1605230.0	6.229636874466588e-07	0.0		gnomAD Exomes		31.0	0.958	10:87931048:G:T	c.212G>T	conflicting	False	True	True	phosphatase	64	True	True	VG
@@ -445,7 +445,7 @@ A120E	120	A	E	0	0										VUS	3.0	VUS	1.0	True	428222	PHTS|cancer			10:87933118
 A120G	120	A	G	0	0										VUS	1.0	VUS	1.0	True	1498241	PHTS|cancer			10:87933118:C:G	c.359C>G	0												False	True	False	phosphatase	113	True	True	V
 A120T	120	A	T	0	0										conflicting	1.0	conflicting	1.0	True	189485	PHTS|cancer			10:87933117:G:A	c.358G>A	0												False	True	False	phosphatase	113	True	True	V
 A120V	120	A	V	0	0										VUS	2.0	VUS	1.0	True	658145	PHTS|cancer			10:87933118:C:T	c.359C>T	0												False	True	False	phosphatase	113	True	True	V
-A121E	121	A	E	0	0										P/LP	1.0	P/LP	1.0	True	2674284	PHTS			10:87933121:C:A	c.362C>A	0												False	True	False	phosphatase	114	True		V
+A121E	121	A	E	0	0										P/LP	1.0	P/LP	1.0	True	2674284	PHTS			10:87933121:C:A	c.362C>A	0												False	True	False	phosphatase	114	True	True	V
 A121G	121	A	G	0	0										VUS	1.0	VUS	1.0	True	7842	PHTS|cancer			10:87933121:C:G	c.362C>G	0												False	True	False	phosphatase	114	True	True	V
 A121P	121	A	P	0	0										P/LP	1.0	P/LP	1.0	True	2687614	cancer		Likely oncogenic	10:87933120:G:C	c.361G>C	0												False	True	False	phosphatase	114	True	True	V
 A121S	121	A	S	0	0										P/LP	1.0	P/LP	1.0	True	4677133	cancer			10:87933120:G:T	c.361G>T	1	1613414.0	6.198037205577738e-07	0.0		gnomAD Exomes		27.1	0.787	10:87933120:G:T	c.361G>T	P/LP	False	True	True	phosphatase	114	True	True	VG
@@ -474,7 +474,7 @@ K125E	125	K	E	0	0										P/LP	3.0	P/LP	1.0	True	1338262	PHTS|cancer			10:87933
 K125N	125	K	N	0	0										VUS	1.0	VUS	1.0	True	1360588	PHTS|cancer			10:87933134:A:C	c.375A>C	0												False	True	False	phosphatase	118	True	True	V
 K125R	125	K	R	0	0										P/LP	1.0	P/LP	1.0	True	1803052	autism/macrocephaly			10:87933133:A:G	c.374A>G	0												False	True	False	phosphatase	118	True	True	V
 K125T	125	K	T	2	2	0.0	Endometrial Cancer	2.0	0.0	True	True	0.999		10:87933133:A:C	P/LP	1.0	P/LP	1.0	True	4879828	PHTS|cancer			10:87933133:A:C	c.374A>C	0												True	True	False	phosphatase	118	True	True	CV
-A126D	126	A	D	2	2	1.0	Endometrial Cancer|Esophagogastric Cancer	1.0	0.0	True	True	0.9993	P/LP	10:87933136:C:A	conflicting	1.0	conflicting	1.0	True	2674280	PHTS|cancer			10:87933136:C:A	c.377C>A	0												True	True	False	phosphatase	119	True		CV
+A126D	126	A	D	2	2	1.0	Endometrial Cancer|Esophagogastric Cancer	1.0	0.0	True	True	0.9993	P/LP	10:87933136:C:A	conflicting	1.0	conflicting	1.0	True	2674280	PHTS|cancer			10:87933136:C:A	c.377C>A	0												True	True	False	phosphatase	119	True	True	CV
 A126G	126	A	G	1	1	0.0	Breast Cancer	0.0	0.0	True	True	0.9682	VUS	10:87933136:C:G	VUS	1.0	VUS	1.0	True	1508589	PHTS|cancer		Likely oncogenic	10:87933136:C:G	c.377C>G	0												True	True	False	phosphatase	119	True	True	CV
 A126P	126	A	P	0	0										P/LP	2.0	P/LP	1.0	True	1067089	PHTS|cancer			10:87933135:G:C	c.376G>C	0												False	True	False	phosphatase	119	True	True	V
 A126S	126	A	S	2	1	0.0	Endometrial Cancer	2.0	0.0	True	True	0.9736	VUS	10:87933135:G:T	VUS	1.0	VUS	1.0	True	484625	cancer			10:87933135:G:T	c.376G>T	0												True	True	False	phosphatase	119	True	True	CV
@@ -497,8 +497,8 @@ R130L	130	R	L	7	5	1.0	Cervical Cancer|Endometrial Cancer|Melanoma	5.0	0.0	True	T
 R130P	130	R	P	3	3	0.0	Breast Cancer|Endometrial Cancer	2.0	0.0	True	True	0.9998	P/LP	10:87933148:G:C	P/LP	3.0	P/LP	1.0	True	142018	PHTS|cancer			10:87933148:G:C	c.389G>C	0												True	True	False	phosphatase	123	True	True	CV
 R130Q	130	R	Q	54	20	8.0	Breast Cancer|Cervical Cancer|Colorectal Cancer|Endometrial Cancer|Esophagogastric Cancer|Glioblastoma|Head and Neck Cancer|Non-Small Cell Lung Cancer|Sarcoma	35.0	3.0	True	True	0.9996	P/LP	10:87933148:G:A	P/LP	3.0	P/LP	1.0	True	7829	PHTS|cancer	Tier I - Strong	Oncogenic	10:87933148:G:A	c.389G>A	0												True	True	False	phosphatase	123	True	True	CV
 T131A	131	T	A	1	1	1.0	Glioblastoma	0.0	1.0	True	False	0.9961	VUS	10:87933150:A:G	VUS	1.0	VUS	2.0	True	2687547|1954944	PHTS|cancer			10:87933149:AA:GG|10:87933150:A:G	c.390_391delinsGG|c.391A>G	1	1613954.0	6.195963453729165e-07	0.0		gnomAD Exomes		26.5	0.977	10:87933150:A:G	c.391A>G	VUS	True	True	True	phosphatase	124	True	True	CVG
-T131I	131	T	I	0	0										P/LP	3.0	P/LP	1.0	True	39669	PHTS|cancer	Tier I - Strong		10:87933151:C:T	c.392C>T	0												False	True	False	phosphatase	124	True		V
-T131N	131	T	N	1	1	1.0	Ovarian Epithelial Tumor	0.0	0.0	True	False	0.9992	VUS	10:87933151:C:A	VUS	1.0	VUS	1.0	True	2443991	PHTS|cancer			10:87933151:C:A	c.392C>A	0												True	True	False	phosphatase	124	True		CV
+T131I	131	T	I	0	0										P/LP	3.0	P/LP	1.0	True	39669	PHTS|cancer	Tier I - Strong		10:87933151:C:T	c.392C>T	0												False	True	False	phosphatase	124	True	True	V
+T131N	131	T	N	1	1	1.0	Ovarian Epithelial Tumor	0.0	0.0	True	False	0.9992	VUS	10:87933151:C:A	VUS	1.0	VUS	1.0	True	2443991	PHTS|cancer			10:87933151:C:A	c.392C>A	0												True	True	False	phosphatase	124	True	True	CV
 T131S	131	T	S	0	0										VUS	1.0	VUS	1.0	True	482073	cancer			10:87933151:C:G	c.392C>G	0												False	True	False	phosphatase	124	True	True	V
 G132A	132	G	A	0	0										P/LP	1.0	P/LP	1.0	True	2687617				10:87933154:G:C	c.395G>C	0												False	True	False	phosphatase	125	True	True	V
 G132C	132	G	C	0	0										conflicting	1.0	conflicting	1.0	True	4854628	PHTS|cancer			10:87933153:G:T	c.394G>T	0												False	True	False	phosphatase	125	True	True	V
@@ -605,7 +605,7 @@ E157A	157	E	A	0	0										VUS	2.0	VUS	1.0	True	1370842	PHTS|cancer			10:8793322
 E157G	157	E	G	0	0										conflicting	1.0	conflicting	1.0	True	427593	PHTS|autism/macrocephaly|cancer			10:87933229:A:G	c.470A>G	1	1612404.0	6.201919618160213e-07	0.0		gnomAD Exomes		25.4	0.906	10:87933229:A:G	c.470A>G	conflicting	False	True	True	phosphatase	150	True	True	VG
 E157K	157	E	K	0	0										VUS	2.0	VUS	1.0	True	2435279	cancer			10:87933228:G:A	c.469G>A	1	1612620.0	6.201088911212809e-07	0.0		gnomAD Exomes		23.2	0.604	10:87933228:G:A	c.469G>A	VUS	False	True	True	phosphatase	150	True	True	VG
 V158A	158	V	A	0	0										VUS	0.0	VUS	1.0	True	2687613	cancer			10:87933232:T:C	c.473T>C	0												False	True	False	phosphatase	151	True	True	V
-V158I	158	V	I	0	0										VUS	1.0	VUS	1.0	True	492329	cancer			10:87933231:G:A	c.472G>A	0												False	True	False	phosphatase	151	True		V
+V158I	158	V	I	0	0										VUS	1.0	VUS	1.0	True	492329	cancer			10:87933231:G:A	c.472G>A	0												False	True	False	phosphatase	151	True	True	V
 V158L	158	V	L	0	0										conflicting	1.0	conflicting	1.0	True	1037500	PHTS|cancer			10:87933231:G:T	c.472G>T	1	1611982.0	6.203543215743104e-07	0.0		gnomAD Genomes		23.8	0.741	10:87933231:G:T	c.472G>T	conflicting	False	True	True	phosphatase	151	True	True	VG
 V158R	158	V	R	0	0										VUS	0.0	VUS	1.0	False	2687545	cancer			10:87933231:GTA:AGG	c.472_474delinsAGG	0												False	True	False	phosphatase	151	True	False	V
 R159G	159	R	G	0	0										P/LP	2.0	P/LP	1.0	True	186094	PHTS|cancer			10:87933234:A:G	c.475A>G	0												False	True	False	phosphatase	152	True	True	V
@@ -783,7 +783,7 @@ C211W	211	C	W	0	0										P/LP	3.0	P/LP	1.0	True	279878	PHTS|cancer			10:879522
 N212D	212	N	D	0	0										VUS	1.0	VUS	1.0	True	1320458				10:87952259:A:G	c.634A>G	0												False	True	False	C2	205	True	True	V
 N212H	212	N	H	0	0										VUS	2.0	VUS	1.0	True	948056	PHTS|cancer			10:87952259:A:C	c.634A>C	0												False	True	False	C2	205	True	True	V
 N212S	212	N	S	0	0										VUS	2.0	VUS	1.0	True	495808	PHTS|cancer			10:87957853:A:G	c.635A>G	0												False	True	False	C2	205	True	True	V
-P213H	213	P	H	0	0										VUS	1.0	VUS	1.0	True	522165	cancer			10:87957856:C:A	c.638C>A	0												False	True	False	C2	206	True		V
+P213H	213	P	H	0	0										VUS	1.0	VUS	1.0	True	522165	cancer			10:87957856:C:A	c.638C>A	0												False	True	False	C2	206	True	True	V
 P213L	213	P	L	0	0										VUS	1.0	VUS	1.0	True	1485363	PHTS|cancer			10:87957856:C:T	c.638C>T	0												False	True	False	C2	206	True	True	V
 P213S	213	P	S	0	0										VUS	1.0	VUS	1.0	True	826369	cancer			10:87957855:C:T	c.637C>T	0												False	True	False	C2	206	True	True	V
 Q214L	214	Q	L	0	0										VUS	1.0	VUS	1.0	True	1470275	PHTS|cancer			10:87957859:A:T	c.641A>T	2	1613922.0	1.2392172608e-06	0.0		gnomAD Exomes	2.800000000000001e-07	22.7	0.566	10:87957859:A:T	c.641A>T	VUS	False	True	True	C2	207	True	True	VG
@@ -844,8 +844,8 @@ R233P	233	R	P	0	0																					1	1614050.0	6.195594932003346e-07	0.0		gno
 R233Q	233	R	Q	1	1	1.0	Bladder Cancer	0.0	0.0	False	False	0.3841	VUS	10:87957916:G:A	VUS	3.0	VUS	1.0	True	376510	PHTS|cancer			10:87957916:G:A	c.698G>A	2	1614050.0	1.2391189864e-06	0.0		gnomAD Exomes	2.800000000000001e-07	23.7	0.527	10:87957916:G:A	c.698G>A	VUS	True	True	True	C2	226	True	True	CVG
 R234G	234	R	G	0	0										VUS	2.0	VUS	1.0	True	492337	PHTS|cancer			10:87957918:C:G	c.700C>G	0												False	True	False	C2	227	True	True	V
 R234L	234	R	L	0	0										VUS	1.0	VUS	1.0	True	3075548	PHTS|cancer			10:87957919:G:T	c.701G>T	0												False	True	False	C2	227	True	True	V
-R234Q	234	R	Q	0	0										VUS	3.0	VUS	1.0	True	7840	PHTS|cancer			10:87957919:G:A	c.701G>A	3	1614014.0	1.8587199367e-06	0.0		gnomAD Exomes	2.800000000000001e-07	25.6	0.697	10:87957919:G:A	c.701G>A	VUS	False	True	True	C2	227	True		VG
-R234W	234	R	W	0	0										VUS	3.0	VUS	1.0	True	184844	PHTS|cancer			10:87957918:C:T	c.700C>T	6	1613904.0	3.7176932456e-06	0.0		gnomAD Exomes,gnomAD Genomes	1.2399999999e-06	26.2	0.648	10:87957918:C:T	c.700C>T	VUS	False	True	True	C2	227	True		VG
+R234Q	234	R	Q	0	0										VUS	3.0	VUS	1.0	True	7840	PHTS|cancer			10:87957919:G:A	c.701G>A	3	1614014.0	1.8587199367e-06	0.0		gnomAD Exomes	2.800000000000001e-07	25.6	0.697	10:87957919:G:A	c.701G>A	VUS	False	True	True	C2	227	True	True	VG
+R234W	234	R	W	0	0										VUS	3.0	VUS	1.0	True	184844	PHTS|cancer			10:87957918:C:T	c.700C>T	6	1613904.0	3.7176932456e-06	0.0		gnomAD Exomes,gnomAD Genomes	1.2399999999e-06	26.2	0.648	10:87957918:C:T	c.700C>T	VUS	False	True	True	C2	227	True	True	VG
 E235A	235	E	A	0	0										VUS	2.0	VUS	1.0	True	1718817	PHTS|cancer			10:87957922:A:C	c.704A>C	0												False	True	False	C2	228	True	True	V
 E235D	235	E	D	0	0										VUS	1.0	VUS	1.0	True	4147002	cancer			10:87957923:A:C	c.705A>C	0												False	True	False	C2	228	True	True	V
 E235G	235	E	G	0	0										VUS	1.0	VUS	1.0	True	4677079	cancer			10:87957922:A:G	c.704A>G	0												False	True	False	C2	228	True	True	V
@@ -881,8 +881,8 @@ P246Q	246	P	Q	0	0										VUS	2.0	VUS	1.0	True	2231857	PHTS|cancer			10:8795795
 P246R	246	P	R	1	1	0.0	Hepatobiliary Cancer	0.0	0.0	True	False	0.9779	VUS	10:87957955:C:G	VUS	1.0	VUS	1.0	True	2587208	cancer		Uncertain significance	10:87957955:C:G	c.737C>G	0												True	True	False	C2	239	True	True	CV
 P246S	246	P	S	2	1	0.0	Melanoma|Pleural Mesothelioma	0.0	0.0	True	False	0.8344		10:87957954:C:T												0												True	False	False	C2	239	True	True	C
 P246T	246	P	T	0	0										VUS	1.0	VUS	1.0	True	965633	PHTS|cancer			10:87957954:C:A	c.736C>A	0												False	True	False	C2	239	True	True	V
-L247F	247	L	F	1	1	0.0	Non-Small Cell Lung Cancer	0.0	0.0	False	False	0.9313		10:87957959:A:C	VUS	2.0	VUS	1.0	True	4740306	PHTS|cancer			10:87957959:A:C	c.741A>C	0												True	True	False	C2	240	True		CV
-L247S	247	L	S	0	0										P/LP	3.0	P/LP	1.0	True	223142	PHTS|cancer			10:87957958:T:C	c.740T>C	0												False	True	False	C2	240	True		V
+L247F	247	L	F	1	1	0.0	Non-Small Cell Lung Cancer	0.0	0.0	False	False	0.9313		10:87957959:A:C	VUS	2.0	VUS	1.0	True	4740306	PHTS|cancer			10:87957959:A:C	c.741A>C	0												True	True	False	C2	240	True	True	CV
+L247S	247	L	S	0	0										P/LP	3.0	P/LP	1.0	True	223142	PHTS|cancer			10:87957958:T:C	c.740T>C	0												False	True	False	C2	240	True	True	V
 P248A	248	P	A	0	0										VUS	1.0	VUS	1.0	True	5027591	cancer			10:87957960:C:G	c.742C>G	0												False	True	False	C2	241	True	True	V
 P248H	248	P	H	1	1	0.0	Non-Small Cell Lung Cancer	0.0	0.0	False	False	0.9958		10:87957961:C:A												0												True	False	False	C2	241	True	True	C
 P248L	248	P	L	0	0										VUS	1.0	VUS	1.0	True	2823685	PHTS|cancer			10:87957961:C:T	c.743C>T	1	1614108.0	6.195372304703279e-07	0.0		gnomAD Exomes		25.0	0.832	10:87957961:C:T	c.743C>T	VUS	False	True	True	C2	241	True	True	VG
@@ -906,7 +906,7 @@ I253N	253	I	N	0	0										P/LP	2.0	P/LP	1.0	True	480942	PHTS|cancer	Tier I - St
 I253S	253	I	S	0	0										conflicting	1.0	conflicting	1.0	True	1478930	PHTS|cancer			10:87957976:T:G	c.758T>G	0												False	True	False	C2	246	True	True	V
 I253T	253	I	T	0	0										VUS	2.0	VUS	1.0	True	1001963	PHTS|cancer			10:87957976:T:C	c.758T>C	0												False	True	False	C2	246	True	True	V
 I253V	253	I	V	0	0										VUS	2.0	VUS	1.0	True	3311267	PHTS|cancer			10:87957975:A:G	c.757A>G	0												False	True	False	C2	246	True	True	V
-K254I	254	K	I	0	0										VUS	1.0	VUS	1.0	True	1687639				10:87957979:A:T	c.761A>T	0												False	True	False	C2	247	True		V
+K254I	254	K	I	0	0										VUS	1.0	VUS	1.0	True	1687639				10:87957979:A:T	c.761A>T	0												False	True	False	C2	247	True	True	V
 K254Q	254	K	Q	0	0										VUS	1.0	VUS	1.0	True	4147018	cancer			10:87957978:A:C	c.760A>C	0												False	True	False	C2	247	True	True	V
 K254R	254	K	R	0	0										VUS	1.0	VUS	1.0	True	1382720	PHTS|cancer			10:87957979:A:G	c.761A>G	0												False	True	False	C2	247	True	True	V
 K254T	254	K	T	0	0										P/LP	2.0	P/LP	1.0	True	428207	cancer			10:87957979:A:C	c.761A>C	0												False	True	False	C2	247	True	True	V
@@ -987,7 +987,7 @@ P281A	281	P	A	0	0										VUS	3.0	VUS	1.0	True	184466	PHTS|cancer			10:87960933
 P281S	281	P	S	1	0	0.0	Endometrial Cancer	1.0	0.0	False	False	0.4117	VUS	10:87960933:C:T	VUS	1.0	VUS	1.0	True	468720	PHTS|cancer			10:87960933:C:T	c.841C>T	2	1608430.0	1.2434485802e-06	0.0		gnomAD Exomes	2.800000000000001e-07	23.6	0.584	10:87960933:C:T	c.841C>T	VUS	True	True	True	C2	274	True	True	CVG
 P281T	281	P	T	0	0										VUS	1.0	VUS	1.0	False	5027590	cancer			10:87960932:AC:TA	c.840_841delinsTA	0												False	True	False	C2	274	True	True	V
 G282A	282	G	A	0	0										VUS	2.0	VUS	1.0	True	3662351	PHTS|cancer			10:87960937:G:C	c.845G>C	0												False	True	False	C2	275	True	True	V
-G282E	282	G	E	0	0										VUS	2.0	VUS	1.0	True	954195	PHTS|cancer			10:87960937:G:A	c.845G>A	0												False	True	False	C2	275	True		V
+G282E	282	G	E	0	0										VUS	2.0	VUS	1.0	True	954195	PHTS|cancer			10:87960937:G:A	c.845G>A	0												False	True	False	C2	275	True	True	V
 G282R	282	G	R	0	0										VUS	1.0	VUS	1.0	True	2567282	cancer			10:87960936:G:C	c.844G>C	0												False	True	False	C2	275	True	True	V
 P283A	283	P	A	0	0										VUS	2.0	VUS	1.0	True	629197	PHTS|cancer			10:87960939:C:G	c.847C>G	0												False	True	False	C2	276	True	True	V
 P283L	283	P	L	0	0										VUS	2.0	VUS	1.0	True	923099	PHTS|cancer			10:87960940:C:T	c.848C>T	0												False	True	False	C2	276	True	True	V
@@ -1130,9 +1130,9 @@ F337I	337	F	I	1	1	1.0	Non-Small Cell Lung Cancer	0.0	0.0	False	False	0.9966		10:
 F337L	337	F	L	0	0										VUS	1.0	VUS	1.0	True	4742968	PHTS|cancer			10:87961103:T:A	c.1011T>A	1	1613388.0	6.198137087916855e-07	0.0		gnomAD Exomes		29.3	0.821	10:87961101:T:C	c.1009T>C		False	True	True	C2	307	True	True	VG
 F337S	337	F	S	0	0										VUS	2.0	VUS	1.0	True	1728487	cancer			10:87961102:T:C	c.1010T>C	0												False	True	False	C2	307	True	True	V
 F337Y	337	F	Y	0	0										VUS	2.0	VUS	1.0	True	484613	cancer			10:87961102:T:A	c.1010T>A	0												False	True	False	C2	307	True	True	V
-S338C	338	S	C	0	0										VUS	2.0	VUS	1.0	True	1736322	PHTS|cancer			10:87961105:C:G	c.1013C>G	0												False	True	False	C2	308	True		V
+S338C	338	S	C	0	0										VUS	2.0	VUS	1.0	True	1736322	PHTS|cancer			10:87961105:C:G	c.1013C>G	0												False	True	False	C2	308	True	True	V
 S338T	338	S	T	0	0										VUS	1.0	VUS	1.0	True	1439337	PHTS|cancer			10:87961104:T:A	c.1012T>A	0												False	True	False	C2	308	True	True	V
-S338Y	338	S	Y	0	0										VUS	1.0	VUS	1.0	True	2834356	PHTS|cancer			10:87961105:C:A	c.1013C>A	0												False	True	False	C2	308	True		V
+S338Y	338	S	Y	0	0										VUS	1.0	VUS	1.0	True	2834356	PHTS|cancer			10:87961105:C:A	c.1013C>A	0												False	True	False	C2	308	True	True	V
 P339A	339	P	A	0	0										VUS	1.0	VUS	1.0	True	3073991	PHTS|cancer			10:87961107:C:G	c.1015C>G	0												False	True	False	C2	309	True	True	V
 P339Q	339	P	Q	0	0										VUS	1.0	VUS	1.0	True	584755	PHTS|cancer			10:87961108:C:A	c.1016C>A	0												False	True	False	C2	309	True	True	V
 P339S	339	P	S	0	0										VUS	2.0	VUS	1.0	True	961193	PHTS|cancer			10:87961107:C:T	c.1015C>T	0												False	True	False	C2	309	True	True	V
@@ -1179,7 +1179,7 @@ P354L	354	P	L	0	0										VUS	3.0	VUS	1.0	True	142212	PHTS|cancer			10:87965321
 P354Q	354	P	Q	0	0										B/LB	3.0	B/LB	1.0	True	143020	PHTS|cancer			10:87965321:C:A	c.1061C>A	189	1609508.0	0.0001174271889297	0.0	segdup	gnomAD Exomes,gnomAD Genomes	0.00013278	22.2	0.497	10:87965321:C:A	c.1061C>A	B/LB	False	True	True	C-tail		False	True	VG
 P354R	354	P	R	0	0										conflicting	1.0	conflicting	1.0	True	1780374	cancer			10:87965321:C:G	c.1061C>G	0												False	True	False	C-tail		False	True	V
 P354S	354	P	S	0	0										B/LB	1.0	B/LB	1.0	True	4146996	cancer			10:87965320:C:T	c.1060C>T	0												False	True	False	C-tail		False	True	V
-S355L	355	S	L	0	0										VUS	2.0	VUS	1.0	True	1685048	cancer			10:87965324:C:T	c.1064C>T	0												False	True	False	C-tail		False		V
+S355L	355	S	L	0	0										VUS	2.0	VUS	1.0	True	1685048	cancer			10:87965324:C:T	c.1064C>T	0												False	True	False	C-tail		False	True	V
 N356D	356	N	D	0	0										conflicting	1.0	conflicting	1.0	True	142263	PHTS|cancer			10:87965326:A:G	c.1066A>G	3	1610172.0	1.8631549921e-06	0.0	segdup	gnomAD Exomes	2.800000000000001e-07	22.8	0.383	10:87965326:A:G	c.1066A>G	conflicting	False	True	True	C-tail		False	True	VG
 N356H	356	N	H	0	0										VUS	1.0	VUS	1.0	True	3311266	cancer			10:87965326:A:C	c.1066A>C	1	1610172.0	6.210516640458287e-07	0.0	segdup	gnomAD Exomes		23.3	0.304	10:87965326:A:C	c.1066A>C	VUS	False	True	True	C-tail		False	True	VG
 N356I	356	N	I	0	0										VUS	1.0	VUS	1.0	True	628653	cancer			10:87965327:A:T	c.1067A>T	0												False	True	False	C-tail		False	True	V

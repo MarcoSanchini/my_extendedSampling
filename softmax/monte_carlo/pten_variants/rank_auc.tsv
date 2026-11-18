@@ -7,139 +7,155 @@ all	tumour (any) vs population-only	E2 site mean	0.4949	0.4344	0.5533	254	152
 all	tumour (any) vs population-only	U_ce site mean	0.6988	0.6471	0.7508	254	152
 all	tumour (any) vs population-only	-abundance_2021	0.7001	0.6442	0.7612	182	114
 all	tumour (any) vs population-only	-activity	0.7940	0.7439	0.8382	226	131
-all	tumour recurrent vs gnomAD AC>=2	U_am	0.6978	0.5905	0.7896	73	47
-all	tumour recurrent vs gnomAD AC>=2	E2	0.4857	0.3857	0.5908	73	47
-all	tumour recurrent vs gnomAD AC>=2	U_ce	0.7697	0.6823	0.8476	73	47
-all	tumour recurrent vs gnomAD AC>=2	U_am site mean	0.5430	0.4241	0.6669	73	47
-all	tumour recurrent vs gnomAD AC>=2	E2 site mean	0.4812	0.3745	0.5829	73	47
-all	tumour recurrent vs gnomAD AC>=2	U_ce site mean	0.7540	0.6593	0.8392	73	47
-all	tumour recurrent vs gnomAD AC>=2	-abundance_2021	0.6730	0.5573	0.7807	48	36
-all	tumour recurrent vs gnomAD AC>=2	-activity	0.8547	0.7822	0.9191	68	42
-all	tumour non-hypermutated vs population-only	U_am	0.6828	0.6248	0.7360	194	152
-all	tumour non-hypermutated vs population-only	E2	0.5212	0.4566	0.5836	194	152
-all	tumour non-hypermutated vs population-only	U_ce	0.7240	0.6691	0.7786	194	152
-all	tumour non-hypermutated vs population-only	U_am site mean	0.5751	0.5151	0.6367	194	152
-all	tumour non-hypermutated vs population-only	E2 site mean	0.4942	0.4374	0.5521	194	152
-all	tumour non-hypermutated vs population-only	U_ce site mean	0.7187	0.6654	0.7736	194	152
-all	tumour non-hypermutated vs population-only	-abundance_2021	0.7152	0.6541	0.7816	138	114
-all	tumour non-hypermutated vs population-only	-activity	0.8308	0.7852	0.8737	173	131
-all	tumour recurrent vs tumour singleton	U_am	0.5221	0.4496	0.5987	73	181
-all	tumour recurrent vs tumour singleton	E2	0.5247	0.4503	0.5943	73	181
-all	tumour recurrent vs tumour singleton	U_ce	0.5792	0.4988	0.6610	73	181
-all	tumour recurrent vs tumour singleton	U_am site mean	0.4844	0.4068	0.5622	73	181
-all	tumour recurrent vs tumour singleton	E2 site mean	0.5012	0.4206	0.5760	73	181
-all	tumour recurrent vs tumour singleton	U_ce site mean	0.5406	0.4649	0.6149	73	181
-all	tumour recurrent vs tumour singleton	-abundance_2021	0.3860	0.2893	0.4823	48	134
-all	tumour recurrent vs tumour singleton	-activity	0.6055	0.5285	0.6893	68	158
-all	tumour recurrent vs tumour singleton	AlphaMissense (cBioPortal only)	0.6797	0.6053	0.7546	73	181
-all	ClinVar P/LP vs gnomAD (not P/LP)	U_am	0.7049	0.6491	0.7584	248	152
-all	ClinVar P/LP vs gnomAD (not P/LP)	E2	0.5394	0.4815	0.5953	248	152
-all	ClinVar P/LP vs gnomAD (not P/LP)	U_ce	0.7518	0.6989	0.8006	248	152
-all	ClinVar P/LP vs gnomAD (not P/LP)	U_am site mean	0.5493	0.4848	0.6079	248	152
-all	ClinVar P/LP vs gnomAD (not P/LP)	E2 site mean	0.4344	0.3779	0.4917	248	152
-all	ClinVar P/LP vs gnomAD (not P/LP)	U_ce site mean	0.7213	0.6678	0.7737	248	152
-all	ClinVar P/LP vs gnomAD (not P/LP)	-abundance_2021	0.7683	0.7132	0.8196	181	114
-all	ClinVar P/LP vs gnomAD (not P/LP)	-activity	0.8975	0.8621	0.9275	233	132
-all	ClinVar P/LP vs gnomAD (not P/LP)	AlphaMissense (cBioPortal only)	0.7671	0.5896	0.9139	105	12
-all	ClinVar P/LP vs ClinVar VUS	U_am	0.6773	0.6398	0.7151	248	635
-all	ClinVar P/LP vs ClinVar VUS	E2	0.5394	0.4960	0.5826	248	635
-all	ClinVar P/LP vs ClinVar VUS	U_ce	0.7011	0.6635	0.7403	248	635
-all	ClinVar P/LP vs ClinVar VUS	U_am site mean	0.5538	0.5151	0.5954	248	635
-all	ClinVar P/LP vs ClinVar VUS	E2 site mean	0.4561	0.4156	0.4966	248	635
-all	ClinVar P/LP vs ClinVar VUS	U_ce site mean	0.6563	0.6156	0.6937	248	635
-all	ClinVar P/LP vs ClinVar VUS	-abundance_2021	0.6753	0.6251	0.7241	181	452
-all	ClinVar P/LP vs ClinVar VUS	-activity	0.8607	0.8312	0.8879	233	551
-all	ClinVar P/LP vs ClinVar VUS	AlphaMissense (cBioPortal only)	0.7955	0.7201	0.8620	105	60
-all	ClinVar PHTS vs autism/macrocephaly	U_am	0.5086	0.3565	0.6621	669	12
-all	ClinVar PHTS vs autism/macrocephaly	E2	0.5726	0.3938	0.7507	669	12
-all	ClinVar PHTS vs autism/macrocephaly	U_ce	0.5042	0.3796	0.6509	669	12
-all	ClinVar PHTS vs autism/macrocephaly	U_am site mean	0.4948	0.3023	0.7014	669	12
-all	ClinVar PHTS vs autism/macrocephaly	E2 site mean	0.5547	0.3648	0.7363	669	12
-all	ClinVar PHTS vs autism/macrocephaly	U_ce site mean	0.5109	0.3070	0.6886	669	12
-all	ClinVar PHTS vs autism/macrocephaly	-abundance_2021	0.4101	0.2274	0.6067	485	10
-all	ClinVar PHTS vs autism/macrocephaly	-activity	0.5601	0.4745	0.6546	591	12
-all	consensus damaging vs consensus tolerated	U_am	0.6989	0.5957	0.7825	276	47
-all	consensus damaging vs consensus tolerated	E2	0.4954	0.4112	0.5876	276	47
-all	consensus damaging vs consensus tolerated	U_ce	0.7628	0.6912	0.8294	276	47
-all	consensus damaging vs consensus tolerated	U_am site mean	0.5394	0.4330	0.6518	276	47
-all	consensus damaging vs consensus tolerated	E2 site mean	0.4219	0.3282	0.5158	276	47
-all	consensus damaging vs consensus tolerated	U_ce site mean	0.7424	0.6542	0.8210	276	47
-all	consensus damaging vs consensus tolerated	-abundance_2021	0.8020	0.7428	0.8565	199	38
-all	consensus damaging vs consensus tolerated	-activity	0.9013	0.8546	0.9418	258	42
-all	observed anywhere vs never observed	U_am	0.4078	0.3882	0.4271	1093	5025
-all	observed anywhere vs never observed	E2	0.4674	0.4479	0.4867	1093	5025
-all	observed anywhere vs never observed	U_ce	0.4558	0.4372	0.4755	1093	5025
-all	observed anywhere vs never observed	-abundance_2021	0.4826	0.4599	0.5053	786	3293
-all	observed anywhere vs never observed	-activity	0.5207	0.5010	0.5424	966	4358
-snv	tumour (any) vs population-only	U_am	0.6702	0.6185	0.7234	249	150
-snv	tumour (any) vs population-only	E2	0.5192	0.4566	0.5728	249	150
-snv	tumour (any) vs population-only	U_ce	0.7102	0.6567	0.7645	249	150
-snv	tumour (any) vs population-only	U_am site mean	0.5604	0.5048	0.6163	249	150
-snv	tumour (any) vs population-only	E2 site mean	0.4979	0.4384	0.5534	249	150
-snv	tumour (any) vs population-only	U_ce site mean	0.6981	0.6473	0.7471	249	150
-snv	tumour (any) vs population-only	-abundance_2021	0.7000	0.6380	0.7531	181	112
-snv	tumour (any) vs population-only	-activity	0.7924	0.7506	0.8344	221	129
-snv	tumour recurrent vs gnomAD AC>=2	U_am	0.7086	0.6015	0.7988	71	45
-snv	tumour recurrent vs gnomAD AC>=2	E2	0.5027	0.4011	0.6058	71	45
-snv	tumour recurrent vs gnomAD AC>=2	U_ce	0.7731	0.6835	0.8526	71	45
-snv	tumour recurrent vs gnomAD AC>=2	U_am site mean	0.5643	0.4519	0.6892	71	45
-snv	tumour recurrent vs gnomAD AC>=2	E2 site mean	0.4980	0.4031	0.6066	71	45
-snv	tumour recurrent vs gnomAD AC>=2	U_ce site mean	0.7587	0.6626	0.8464	71	45
-snv	tumour recurrent vs gnomAD AC>=2	-abundance_2021	0.6777	0.5612	0.7947	48	34
-snv	tumour recurrent vs gnomAD AC>=2	-activity	0.8545	0.7727	0.9227	66	40
-snv	tumour non-hypermutated vs population-only	U_am	0.6844	0.6257	0.7405	190	150
-snv	tumour non-hypermutated vs population-only	E2	0.5232	0.4617	0.5856	190	150
-snv	tumour non-hypermutated vs population-only	U_ce	0.7244	0.6699	0.7810	190	150
-snv	tumour non-hypermutated vs population-only	U_am site mean	0.5793	0.5204	0.6363	190	150
-snv	tumour non-hypermutated vs population-only	E2 site mean	0.4953	0.4319	0.5542	190	150
-snv	tumour non-hypermutated vs population-only	U_ce site mean	0.7189	0.6634	0.7702	190	150
-snv	tumour non-hypermutated vs population-only	-abundance_2021	0.7149	0.6464	0.7774	137	112
-snv	tumour non-hypermutated vs population-only	-activity	0.8295	0.7837	0.8733	169	129
-snv	tumour recurrent vs tumour singleton	U_am	0.5253	0.4463	0.6014	71	178
-snv	tumour recurrent vs tumour singleton	E2	0.5372	0.4564	0.6138	71	178
-snv	tumour recurrent vs tumour singleton	U_ce	0.5787	0.4986	0.6629	71	178
-snv	tumour recurrent vs tumour singleton	U_am site mean	0.4948	0.4143	0.5740	71	178
-snv	tumour recurrent vs tumour singleton	E2 site mean	0.5167	0.4403	0.5920	71	178
-snv	tumour recurrent vs tumour singleton	U_ce site mean	0.5485	0.4700	0.6221	71	178
-snv	tumour recurrent vs tumour singleton	-abundance_2021	0.3859	0.2918	0.4746	48	133
-snv	tumour recurrent vs tumour singleton	-activity	0.6131	0.5291	0.6916	66	155
-snv	tumour recurrent vs tumour singleton	AlphaMissense (cBioPortal only)	0.6749	0.6022	0.7457	71	178
-snv	ClinVar P/LP vs gnomAD (not P/LP)	U_am	0.7051	0.6541	0.7562	244	150
-snv	ClinVar P/LP vs gnomAD (not P/LP)	E2	0.5409	0.4853	0.5991	244	150
-snv	ClinVar P/LP vs gnomAD (not P/LP)	U_ce	0.7511	0.7023	0.7998	244	150
-snv	ClinVar P/LP vs gnomAD (not P/LP)	U_am site mean	0.5521	0.4922	0.6121	244	150
-snv	ClinVar P/LP vs gnomAD (not P/LP)	E2 site mean	0.4335	0.3804	0.4930	244	150
-snv	ClinVar P/LP vs gnomAD (not P/LP)	U_ce site mean	0.7184	0.6636	0.7700	244	150
-snv	ClinVar P/LP vs gnomAD (not P/LP)	-abundance_2021	0.7667	0.7087	0.8183	177	112
-snv	ClinVar P/LP vs gnomAD (not P/LP)	-activity	0.8965	0.8611	0.9257	229	130
-snv	ClinVar P/LP vs gnomAD (not P/LP)	AlphaMissense (cBioPortal only)	0.7671	0.5905	0.9095	105	12
-snv	ClinVar P/LP vs ClinVar VUS	U_am	0.6817	0.6468	0.7216	244	612
-snv	ClinVar P/LP vs ClinVar VUS	E2	0.5427	0.5019	0.5822	244	612
-snv	ClinVar P/LP vs ClinVar VUS	U_ce	0.7045	0.6656	0.7446	244	612
-snv	ClinVar P/LP vs ClinVar VUS	U_am site mean	0.5549	0.5127	0.5913	244	612
-snv	ClinVar P/LP vs ClinVar VUS	E2 site mean	0.4566	0.4143	0.4963	244	612
-snv	ClinVar P/LP vs ClinVar VUS	U_ce site mean	0.6583	0.6194	0.6982	244	612
-snv	ClinVar P/LP vs ClinVar VUS	-abundance_2021	0.6743	0.6216	0.7226	177	442
-snv	ClinVar P/LP vs ClinVar VUS	-activity	0.8606	0.8284	0.8886	229	530
-snv	ClinVar P/LP vs ClinVar VUS	AlphaMissense (cBioPortal only)	0.7956	0.7239	0.8620	105	58
-snv	ClinVar PHTS vs autism/macrocephaly	U_am	0.5038	0.3661	0.6628	653	12
-snv	ClinVar PHTS vs autism/macrocephaly	E2	0.5705	0.3659	0.7588	653	12
-snv	ClinVar PHTS vs autism/macrocephaly	U_ce	0.4992	0.3636	0.6503	653	12
-snv	ClinVar PHTS vs autism/macrocephaly	U_am site mean	0.4928	0.2982	0.6838	653	12
-snv	ClinVar PHTS vs autism/macrocephaly	E2 site mean	0.5532	0.3646	0.7335	653	12
-snv	ClinVar PHTS vs autism/macrocephaly	U_ce site mean	0.5098	0.3228	0.6798	653	12
-snv	ClinVar PHTS vs autism/macrocephaly	-abundance_2021	0.4084	0.2218	0.6088	476	10
-snv	ClinVar PHTS vs autism/macrocephaly	-activity	0.5581	0.4717	0.6476	577	12
-snv	consensus damaging vs consensus tolerated	U_am	0.7071	0.6139	0.7984	270	45
-snv	consensus damaging vs consensus tolerated	E2	0.5036	0.4115	0.5968	270	45
-snv	consensus damaging vs consensus tolerated	U_ce	0.7676	0.6854	0.8405	270	45
-snv	consensus damaging vs consensus tolerated	U_am site mean	0.5558	0.4484	0.6638	270	45
-snv	consensus damaging vs consensus tolerated	E2 site mean	0.4264	0.3326	0.5194	270	45
-snv	consensus damaging vs consensus tolerated	U_ce site mean	0.7409	0.6545	0.8190	270	45
-snv	consensus damaging vs consensus tolerated	-abundance_2021	0.8036	0.7437	0.8554	195	36
-snv	consensus damaging vs consensus tolerated	-activity	0.9015	0.8535	0.9403	252	40
-snv	observed anywhere vs never observed	U_am	0.5125	0.4851	0.5388	1063	812
-snv	observed anywhere vs never observed	E2	0.4970	0.4699	0.5225	1063	812
-snv	observed anywhere vs never observed	U_ce	0.5602	0.5350	0.5855	1063	812
-snv	observed anywhere vs never observed	-abundance_2021	0.5335	0.5028	0.5655	772	536
-snv	observed anywhere vs never observed	-activity	0.6317	0.6050	0.6590	938	712
+all	tumour (any) vs population-only	predictor_fraction_deleterious	0.7946	0.7477	0.8391	254	152
+all	tumour recurrent vs gnomAD AC>=2	U_am	0.6978	0.5864	0.7963	73	47
+all	tumour recurrent vs gnomAD AC>=2	E2	0.4857	0.3867	0.5962	73	47
+all	tumour recurrent vs gnomAD AC>=2	U_ce	0.7697	0.6861	0.8482	73	47
+all	tumour recurrent vs gnomAD AC>=2	U_am site mean	0.5430	0.4308	0.6561	73	47
+all	tumour recurrent vs gnomAD AC>=2	E2 site mean	0.4812	0.3798	0.5859	73	47
+all	tumour recurrent vs gnomAD AC>=2	U_ce site mean	0.7540	0.6523	0.8418	73	47
+all	tumour recurrent vs gnomAD AC>=2	-abundance_2021	0.6730	0.5543	0.7847	48	36
+all	tumour recurrent vs gnomAD AC>=2	-activity	0.8547	0.7766	0.9219	68	42
+all	tumour recurrent vs gnomAD AC>=2	predictor_fraction_deleterious	0.8872	0.8223	0.9454	73	47
+all	tumour non-hypermutated vs population-only	U_am	0.6828	0.6236	0.7391	194	152
+all	tumour non-hypermutated vs population-only	E2	0.5212	0.4561	0.5822	194	152
+all	tumour non-hypermutated vs population-only	U_ce	0.7240	0.6730	0.7788	194	152
+all	tumour non-hypermutated vs population-only	U_am site mean	0.5751	0.5131	0.6422	194	152
+all	tumour non-hypermutated vs population-only	E2 site mean	0.4942	0.4362	0.5527	194	152
+all	tumour non-hypermutated vs population-only	U_ce site mean	0.7187	0.6659	0.7729	194	152
+all	tumour non-hypermutated vs population-only	-abundance_2021	0.7152	0.6523	0.7789	138	114
+all	tumour non-hypermutated vs population-only	-activity	0.8308	0.7829	0.8742	173	131
+all	tumour non-hypermutated vs population-only	predictor_fraction_deleterious	0.7996	0.7541	0.8464	194	152
+all	tumour recurrent vs tumour singleton	U_am	0.5221	0.4492	0.5949	73	181
+all	tumour recurrent vs tumour singleton	E2	0.5247	0.4496	0.6023	73	181
+all	tumour recurrent vs tumour singleton	U_ce	0.5792	0.4963	0.6537	73	181
+all	tumour recurrent vs tumour singleton	U_am site mean	0.4844	0.4067	0.5605	73	181
+all	tumour recurrent vs tumour singleton	E2 site mean	0.5012	0.4227	0.5765	73	181
+all	tumour recurrent vs tumour singleton	U_ce site mean	0.5406	0.4668	0.6212	73	181
+all	tumour recurrent vs tumour singleton	-abundance_2021	0.3860	0.2926	0.4770	48	134
+all	tumour recurrent vs tumour singleton	-activity	0.6055	0.5246	0.6869	68	158
+all	tumour recurrent vs tumour singleton	AlphaMissense (cBioPortal only)	0.6797	0.6030	0.7473	73	181
+all	tumour recurrent vs tumour singleton	predictor_fraction_deleterious	0.5764	0.5115	0.6433	73	181
+all	ClinVar P/LP vs gnomAD (not P/LP)	U_am	0.7049	0.6489	0.7561	248	152
+all	ClinVar P/LP vs gnomAD (not P/LP)	E2	0.5394	0.4811	0.5952	248	152
+all	ClinVar P/LP vs gnomAD (not P/LP)	U_ce	0.7518	0.7021	0.7996	248	152
+all	ClinVar P/LP vs gnomAD (not P/LP)	U_am site mean	0.5493	0.4906	0.6139	248	152
+all	ClinVar P/LP vs gnomAD (not P/LP)	E2 site mean	0.4344	0.3775	0.4927	248	152
+all	ClinVar P/LP vs gnomAD (not P/LP)	U_ce site mean	0.7213	0.6658	0.7787	248	152
+all	ClinVar P/LP vs gnomAD (not P/LP)	-abundance_2021	0.7683	0.7163	0.8177	181	114
+all	ClinVar P/LP vs gnomAD (not P/LP)	-activity	0.8975	0.8611	0.9301	233	132
+all	ClinVar P/LP vs gnomAD (not P/LP)	AlphaMissense (cBioPortal only)	0.7671	0.5976	0.9128	105	12
+all	ClinVar P/LP vs gnomAD (not P/LP)	predictor_fraction_deleterious	0.8470	0.8034	0.8866	248	152
+all	ClinVar P/LP vs ClinVar VUS	U_am	0.6773	0.6368	0.7152	248	635
+all	ClinVar P/LP vs ClinVar VUS	E2	0.5394	0.4982	0.5819	248	635
+all	ClinVar P/LP vs ClinVar VUS	U_ce	0.7011	0.6624	0.7376	248	635
+all	ClinVar P/LP vs ClinVar VUS	U_am site mean	0.5538	0.5142	0.5911	248	635
+all	ClinVar P/LP vs ClinVar VUS	E2 site mean	0.4561	0.4141	0.4982	248	635
+all	ClinVar P/LP vs ClinVar VUS	U_ce site mean	0.6563	0.6193	0.6940	248	635
+all	ClinVar P/LP vs ClinVar VUS	-abundance_2021	0.6753	0.6295	0.7282	181	452
+all	ClinVar P/LP vs ClinVar VUS	-activity	0.8607	0.8322	0.8895	233	551
+all	ClinVar P/LP vs ClinVar VUS	AlphaMissense (cBioPortal only)	0.7955	0.7218	0.8665	105	60
+all	ClinVar P/LP vs ClinVar VUS	predictor_fraction_deleterious	0.7678	0.7399	0.7979	248	635
+all	ClinVar PHTS vs autism/macrocephaly	U_am	0.5086	0.3538	0.6742	669	12
+all	ClinVar PHTS vs autism/macrocephaly	E2	0.5726	0.3854	0.7538	669	12
+all	ClinVar PHTS vs autism/macrocephaly	U_ce	0.5042	0.3736	0.6455	669	12
+all	ClinVar PHTS vs autism/macrocephaly	U_am site mean	0.4948	0.2902	0.6879	669	12
+all	ClinVar PHTS vs autism/macrocephaly	E2 site mean	0.5547	0.3484	0.7401	669	12
+all	ClinVar PHTS vs autism/macrocephaly	U_ce site mean	0.5109	0.3311	0.6987	669	12
+all	ClinVar PHTS vs autism/macrocephaly	-abundance_2021	0.4101	0.2194	0.6210	485	10
+all	ClinVar PHTS vs autism/macrocephaly	-activity	0.5601	0.4745	0.6496	591	12
+all	ClinVar PHTS vs autism/macrocephaly	predictor_fraction_deleterious	0.3756	0.2543	0.5008	669	12
+all	consensus damaging vs consensus tolerated	U_am	0.6989	0.5958	0.7904	276	47
+all	consensus damaging vs consensus tolerated	E2	0.4954	0.4114	0.5863	276	47
+all	consensus damaging vs consensus tolerated	U_ce	0.7628	0.6837	0.8326	276	47
+all	consensus damaging vs consensus tolerated	U_am site mean	0.5394	0.4394	0.6413	276	47
+all	consensus damaging vs consensus tolerated	E2 site mean	0.4219	0.3324	0.5143	276	47
+all	consensus damaging vs consensus tolerated	U_ce site mean	0.7424	0.6527	0.8234	276	47
+all	consensus damaging vs consensus tolerated	-abundance_2021	0.8020	0.7470	0.8571	199	38
+all	consensus damaging vs consensus tolerated	-activity	0.9013	0.8541	0.9391	258	42
+all	consensus damaging vs consensus tolerated	predictor_fraction_deleterious	0.9149	0.8597	0.9638	276	47
+all	observed anywhere vs never observed	U_am	0.4078	0.3877	0.4257	1093	5025
+all	observed anywhere vs never observed	E2	0.4674	0.4488	0.4847	1093	5025
+all	observed anywhere vs never observed	U_ce	0.4558	0.4358	0.4738	1093	5025
+all	observed anywhere vs never observed	-abundance_2021	0.4826	0.4614	0.5069	786	3293
+all	observed anywhere vs never observed	-activity	0.5207	0.5014	0.5407	966	4358
+snv	tumour (any) vs population-only	U_am	0.6687	0.6148	0.7211	254	152
+snv	tumour (any) vs population-only	E2	0.5166	0.4614	0.5708	254	152
+snv	tumour (any) vs population-only	U_ce	0.7101	0.6562	0.7622	254	152
+snv	tumour (any) vs population-only	U_am site mean	0.5562	0.4959	0.6137	254	152
+snv	tumour (any) vs population-only	E2 site mean	0.4949	0.4429	0.5572	254	152
+snv	tumour (any) vs population-only	U_ce site mean	0.6988	0.6472	0.7563	254	152
+snv	tumour (any) vs population-only	-abundance_2021	0.7001	0.6388	0.7556	182	114
+snv	tumour (any) vs population-only	-activity	0.7940	0.7464	0.8338	226	131
+snv	tumour (any) vs population-only	predictor_fraction_deleterious	0.7946	0.7491	0.8405	254	152
+snv	tumour recurrent vs gnomAD AC>=2	U_am	0.6978	0.5975	0.7963	73	47
+snv	tumour recurrent vs gnomAD AC>=2	E2	0.4857	0.3772	0.5927	73	47
+snv	tumour recurrent vs gnomAD AC>=2	U_ce	0.7697	0.6852	0.8531	73	47
+snv	tumour recurrent vs gnomAD AC>=2	U_am site mean	0.5430	0.4249	0.6564	73	47
+snv	tumour recurrent vs gnomAD AC>=2	E2 site mean	0.4812	0.3637	0.5862	73	47
+snv	tumour recurrent vs gnomAD AC>=2	U_ce site mean	0.7540	0.6633	0.8391	73	47
+snv	tumour recurrent vs gnomAD AC>=2	-abundance_2021	0.6730	0.5572	0.7912	48	36
+snv	tumour recurrent vs gnomAD AC>=2	-activity	0.8547	0.7878	0.9181	68	42
+snv	tumour recurrent vs gnomAD AC>=2	predictor_fraction_deleterious	0.8872	0.8218	0.9538	73	47
+snv	tumour non-hypermutated vs population-only	U_am	0.6828	0.6258	0.7419	194	152
+snv	tumour non-hypermutated vs population-only	E2	0.5212	0.4637	0.5879	194	152
+snv	tumour non-hypermutated vs population-only	U_ce	0.7240	0.6729	0.7746	194	152
+snv	tumour non-hypermutated vs population-only	U_am site mean	0.5751	0.5094	0.6398	194	152
+snv	tumour non-hypermutated vs population-only	E2 site mean	0.4942	0.4319	0.5545	194	152
+snv	tumour non-hypermutated vs population-only	U_ce site mean	0.7187	0.6629	0.7732	194	152
+snv	tumour non-hypermutated vs population-only	-abundance_2021	0.7152	0.6479	0.7764	138	114
+snv	tumour non-hypermutated vs population-only	-activity	0.8308	0.7873	0.8719	173	131
+snv	tumour non-hypermutated vs population-only	predictor_fraction_deleterious	0.7996	0.7512	0.8443	194	152
+snv	tumour recurrent vs tumour singleton	U_am	0.5221	0.4461	0.5925	73	181
+snv	tumour recurrent vs tumour singleton	E2	0.5247	0.4503	0.6037	73	181
+snv	tumour recurrent vs tumour singleton	U_ce	0.5792	0.4999	0.6536	73	181
+snv	tumour recurrent vs tumour singleton	U_am site mean	0.4844	0.4124	0.5616	73	181
+snv	tumour recurrent vs tumour singleton	E2 site mean	0.5012	0.4247	0.5779	73	181
+snv	tumour recurrent vs tumour singleton	U_ce site mean	0.5406	0.4717	0.6159	73	181
+snv	tumour recurrent vs tumour singleton	-abundance_2021	0.3860	0.2951	0.4810	48	134
+snv	tumour recurrent vs tumour singleton	-activity	0.6055	0.5288	0.6816	68	158
+snv	tumour recurrent vs tumour singleton	AlphaMissense (cBioPortal only)	0.6797	0.6042	0.7495	73	181
+snv	tumour recurrent vs tumour singleton	predictor_fraction_deleterious	0.5764	0.5062	0.6434	73	181
+snv	ClinVar P/LP vs gnomAD (not P/LP)	U_am	0.7039	0.6527	0.7599	247	152
+snv	ClinVar P/LP vs gnomAD (not P/LP)	E2	0.5388	0.4820	0.5983	247	152
+snv	ClinVar P/LP vs gnomAD (not P/LP)	U_ce	0.7509	0.6987	0.7978	247	152
+snv	ClinVar P/LP vs gnomAD (not P/LP)	U_am site mean	0.5483	0.4892	0.6099	247	152
+snv	ClinVar P/LP vs gnomAD (not P/LP)	E2 site mean	0.4342	0.3792	0.4927	247	152
+snv	ClinVar P/LP vs gnomAD (not P/LP)	U_ce site mean	0.7206	0.6622	0.7736	247	152
+snv	ClinVar P/LP vs gnomAD (not P/LP)	-abundance_2021	0.7682	0.7129	0.8168	180	114
+snv	ClinVar P/LP vs gnomAD (not P/LP)	-activity	0.8971	0.8640	0.9289	232	132
+snv	ClinVar P/LP vs gnomAD (not P/LP)	AlphaMissense (cBioPortal only)	0.7671	0.5821	0.9179	105	12
+snv	ClinVar P/LP vs gnomAD (not P/LP)	predictor_fraction_deleterious	0.8466	0.8033	0.8874	247	152
+snv	ClinVar P/LP vs ClinVar VUS	U_am	0.6803	0.6416	0.7167	247	624
+snv	ClinVar P/LP vs ClinVar VUS	E2	0.5394	0.4985	0.5832	247	624
+snv	ClinVar P/LP vs ClinVar VUS	U_ce	0.7045	0.6678	0.7403	247	624
+snv	ClinVar P/LP vs ClinVar VUS	U_am site mean	0.5537	0.5141	0.5926	247	624
+snv	ClinVar P/LP vs ClinVar VUS	E2 site mean	0.4562	0.4128	0.4956	247	624
+snv	ClinVar P/LP vs ClinVar VUS	U_ce site mean	0.6591	0.6226	0.6964	247	624
+snv	ClinVar P/LP vs ClinVar VUS	-abundance_2021	0.6776	0.6248	0.7267	180	446
+snv	ClinVar P/LP vs ClinVar VUS	-activity	0.8608	0.8328	0.8875	232	541
+snv	ClinVar P/LP vs ClinVar VUS	AlphaMissense (cBioPortal only)	0.7955	0.7202	0.8636	105	60
+snv	ClinVar P/LP vs ClinVar VUS	predictor_fraction_deleterious	0.7700	0.7396	0.7993	247	624
+snv	ClinVar PHTS vs autism/macrocephaly	U_am	0.5068	0.3467	0.6737	665	12
+snv	ClinVar PHTS vs autism/macrocephaly	E2	0.5721	0.3836	0.7499	665	12
+snv	ClinVar PHTS vs autism/macrocephaly	U_ce	0.5019	0.3628	0.6368	665	12
+snv	ClinVar PHTS vs autism/macrocephaly	U_am site mean	0.4948	0.2888	0.6972	665	12
+snv	ClinVar PHTS vs autism/macrocephaly	E2 site mean	0.5539	0.3736	0.7418	665	12
+snv	ClinVar PHTS vs autism/macrocephaly	U_ce site mean	0.5100	0.3201	0.6942	665	12
+snv	ClinVar PHTS vs autism/macrocephaly	-abundance_2021	0.4093	0.2286	0.5944	483	10
+snv	ClinVar PHTS vs autism/macrocephaly	-activity	0.5588	0.4773	0.6447	588	12
+snv	ClinVar PHTS vs autism/macrocephaly	predictor_fraction_deleterious	0.3734	0.2571	0.4974	665	12
+snv	consensus damaging vs consensus tolerated	U_am	0.6981	0.6005	0.7857	275	47
+snv	consensus damaging vs consensus tolerated	E2	0.4946	0.4015	0.5830	275	47
+snv	consensus damaging vs consensus tolerated	U_ce	0.7620	0.6933	0.8383	275	47
+snv	consensus damaging vs consensus tolerated	U_am site mean	0.5386	0.4270	0.6364	275	47
+snv	consensus damaging vs consensus tolerated	E2 site mean	0.4219	0.3272	0.5122	275	47
+snv	consensus damaging vs consensus tolerated	U_ce site mean	0.7419	0.6573	0.8181	275	47
+snv	consensus damaging vs consensus tolerated	-abundance_2021	0.8012	0.7402	0.8512	198	38
+snv	consensus damaging vs consensus tolerated	-activity	0.9010	0.8544	0.9427	257	42
+snv	consensus damaging vs consensus tolerated	predictor_fraction_deleterious	0.9147	0.8550	0.9630	275	47
+snv	observed anywhere vs never observed	U_am	0.5164	0.4898	0.5429	1081	825
+snv	observed anywhere vs never observed	E2	0.4999	0.4743	0.5280	1081	825
+snv	observed anywhere vs never observed	U_ce	0.5618	0.5370	0.5887	1081	825
+snv	observed anywhere vs never observed	-abundance_2021	0.5345	0.5035	0.5651	779	543
+snv	observed anywhere vs never observed	-activity	0.6333	0.6085	0.6581	955	723

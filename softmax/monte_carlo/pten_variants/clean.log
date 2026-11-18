@@ -25,6 +25,6 @@
    -> 235 distinct protein changes
 
 == CDS from the files: 1065 of 1212 bases named; codons fully named 286, resolved to one codon with the protein's help 362 of 403
-   (/home/user/repo/softmax/monte_carlo/pten_natural/raw/PTEN_variant_data.tsv not found: SNV reachability from the files alone)
-   substitutions: SNV-reachable 2348, not 5202, unknown 107 of 7657
+   PTEN_variant_data.tsv found: its `snv` column agrees with the files' codons on 100.0% of 7532 substitutions; used wherever the files leave it unknown
+   substitutions: SNV-reachable 2397, not 5260, unknown 0 of 7657
    check: of 1951 variants observed as SNVs, 0 come out unreachable (must be 0)
