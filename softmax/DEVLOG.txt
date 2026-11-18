@@ -7438,3 +7438,39 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     log: the ~100 per-chain columns are collected in a dict and concatenated once.
     Doc 5.1 (the measurement) and 6.5 (one clause). Re-ran compare at 0.8; the entropy
     numbers are unchanged, as they must be.
+
+2026-11-18 (sixth entry)  PTEN: the float32 U_structure_ce re-run, and what it corrects
+    Marco re-ran scan_single_mutants.py --structure-ce on the fixed energies.py
+    (scan_mutants_ce_fp32.log, 8.8 min, 0.085 s/mutant). The resolution report added in
+    the fourth entry says: 5831 distinct values over 6156 mutants, largest tie 0.0%,
+    smallest gap 1e-06, IQR 2.445e-02, no warning -- against 26 distinct values and a
+    38.2% tie before. U_ce(reference) 2.390625 -> 2.397402, i.e. the bf16 value was that
+    rounded to 1/64, as it had to be. TWO of 6156 mutants now have NEGATIVE dU_ce (min
+    -0.0035), so the 6.6g trap does fire, but only just. Both scans kept, the old one as
+    pten_mutants_ce_bf16.csv, so the comparison is on identical mutants.
+    THREE RESULTS, one of which CORRECTS the fourth entry:
+    (a) THE PER-SITE SIGNAL WAS NEVER DAMAGED. Every site-level number moves < 0.01 and
+    the partial-given-RSA row is identical to 3 d.p. (family +0.438 -> +0.442, activity
+    +0.549 -> +0.552, activity|RSA +0.264 -> +0.264). A site's figure is the mean over its
+    19 mutants, and averaging 19 values quantised to 1/64 recovers the resolution. So
+    "U_ce reads the SITE 2-3x better than U_am and survives conditioning on burial" was
+    never an artefact.
+    (b) POOLED AND AUC IMPROVED by enough to matter: pooled +0.374/+0.395/+0.443 ->
+    +0.387/+0.408/+0.456, AUC 0.683/0.685/0.755 -> 0.700/0.701/0.772. U_ce now beats U_am
+    on ALL THREE AUCs (0.689/0.686/0.720), not level on two. A pooled ranking of 6156
+    variants with 26 available values was wasting its discriminating power.
+    (c) CORRECTION: the WITHIN-SITE DEFICIT IS REAL, not the dtype. The fourth entry and
+    doc 6.6i guessed it was "partly, possibly mostly" quantisation. Within site U_ce goes
+    +0.255 -> +0.255, +0.272 -> +0.269, +0.283 -> +0.287: NO MOVEMENT, against U_am's
+    +0.325/+0.342/+0.346. 5831 values instead of 26 bought nothing there. So
+    U_structure_ce genuinely has less SUBSTITUTION resolution, and the reason is what it
+    measures: a structure-token cross-entropy asks how disturbed the local geometry is,
+    and two substitutions at one site that disturb the fold similarly earn a similar
+    penalty whatever the residues' chemistry. The attention map carries residue identity.
+    Same line 6.6d draws between structure predictors and sequence-likelihood models, now
+    visible WITHIN one model's two heads.
+    Complementarity stands and is sharper: U_ce the better site readout and the better
+    damaging/tolerated classifier, U_am the better ranker of the 19 substitutions at a
+    position, both one forward pass, agreeing +0.693 pooled (was +0.672). Scale caution
+    unchanged: median dU_ce 0.032 vs dU_am 32, so lambda_structure_ce ~ 1e3.
+    Doc 6.6j; 6.6i now points at it and step 8e of section 9 is marked done.
