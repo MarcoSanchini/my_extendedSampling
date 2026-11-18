@@ -974,6 +974,7 @@ def cmd_rank(args):
 	res.to_csv(os.path.join(args.out_dir, "rank_auc.tsv"), sep="\t", index=False, float_format="%.4f")
 	pct.to_csv(os.path.join(args.out_dir, "rank_percentiles.tsv"), sep="\t", index=False, float_format="%.2f")
 	plot_rank(m, cats, energies, os.path.join(args.out_dir, "rank_by_category.png"))
+	plot_auc(res, os.path.join(args.out_dir, "rank_auc.png"))
 	print(f"\nOutputs in {args.out_dir}: rank.log, pten_variants_ranked.tsv, rank_auc.tsv, rank_percentiles.tsv, "
 		"rank_by_category.png" + (", compound_additivity.png" if os.path.exists(os.path.join(args.out_dir, "compound_scores.csv")) else ""))
 
@@ -1014,6 +1015,38 @@ def compound(m, scans, args, fh):
 	axes[0].set_title("orange = hypermutated sample", fontsize=8)
 	fig.tight_layout()
 	fig.savefig(os.path.join(args.out_dir, "compound_additivity.png"), dpi=130)
+	plt.close(fig)
+
+
+def plot_auc(res, path):
+	"""Forest plot: AUC with its 95% bootstrap interval, one panel per contrast, SNV-reachable variants."""
+	order = ["U_am", "U_am site mean", "U_ce", "U_ce site mean", "E2", "E2 site mean", "-abundance_2021", "-activity"]
+	colors = {"U_am": "#3b6fb6", "U_ce": "#2a7f62", "E2": "#c2571a", "-abundance_2021": "#7a5195", "-activity": "#444444"}
+	d = res[(res.restrict == "snv") & res.score.isin(order)]
+	contrasts = [c for c in d.contrast.unique() if not c.startswith("observed")]
+	fig, axes = plt.subplots(2, (len(contrasts) + 1) // 2, figsize=(3.2 * ((len(contrasts) + 1) // 2), 6.4), sharey=True)
+	for ax, c in zip(axes.flat, contrasts):
+		e = d[d.contrast == c].set_index("score").reindex(order)
+		y = np.arange(len(order))[::-1]
+		for yi, (name, r) in zip(y, e.iterrows()):
+			if not np.isfinite(r.auc):
+				continue
+			col = colors[name.replace(" site mean", "")]
+			hollow = name.endswith("site mean")
+			ax.errorbar(r.auc, yi, xerr=[[r.auc - r.lo], [r.hi - r.auc]], fmt="o", ms=5, color=col,
+				mfc="white" if hollow else col, capsize=2, lw=1)
+		ax.axvline(.5, color="k", lw=.6, ls=":")
+		ax.set_xlim(.3, 1.)
+		n = e.dropna(subset=["auc"]).iloc[0]
+		ax.set_title(f"{c}\n({int(n.n_pos)} vs {int(n.n_neg)})", fontsize=8)
+		ax.set_yticks(np.arange(len(order))[::-1], order, fontsize=8)
+		ax.set_xlabel("AUC", fontsize=8)
+	for ax in list(axes.flat)[len(contrasts):]:
+		ax.axis("off")
+	fig.suptitle("AUC with 95% bootstrap interval, SNV-reachable variants; hollow = the energy's mean over the site's 19 mutants",
+		fontsize=9)
+	fig.tight_layout()
+	fig.savefig(path, dpi=150)
 	plt.close(fig)
 
 
