@@ -7307,7 +7307,55 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     nothing to acceptance; comparable means lambda ~ 1e3, at which point the
     quantisation would dominate the acceptance, not just the correlations.
 
-2026-11-18 (second entry)  PTEN doc: re-quoted from the post-t_eq tables
+2026-11-18 (third entry) -- the sampled entropies were NOT measured after
+    equilibration, and the T=8 headline number was inflated by it
+    `analyze_nsites.py` averages over (t_eq, end], but `pten_k_sites.py
+    compare` keeps the last `--burn-in-frac` of each chain, default 0.5, which
+    is a different window. With every t_eq now known, t_eq as a fraction of
+    chain length is 0.60 (T1), 0.47 (T1.5), 0.68 (T2), 0.56 (T3), 0.55 (T4),
+    0.56 (T5), 0.44 (T6), 0.80 (T8), 0.67 (T16): SEVEN OF NINE temperatures
+    had pre-equilibration moves in the average. 0.8 clears t_eq everywhere and
+    is what the comparison was re-run with (commit 038c410, equil_ref, both
+    chains, --reference-only).
+
+    Partial Spearman against RSA, sampled entropy vs the references, 0.8:
+      T     family|RSA        abundance|RSA     (chain0 / chain1)
+      1     -0.043 / +0.013   +0.159 / +0.113
+      1.5   +0.042 / +0.099   +0.115 / +0.079
+      2     +0.143 / +0.137   +0.066 / +0.088
+      4     +0.278 / +0.271   +0.150 / +0.120
+      8     +0.273 / +0.288   +0.182 / +0.162
+      16    +0.275 / +0.235   +0.194 / +0.134
+
+    THE CONTRAST SURVIVES: family > abundance at every T >= 2, in both chains.
+    The ENERGY still prefers abundance (-mean_dU: +0.307 abundance against
+    +0.168 family at T=1), so the reading of 2026-11-15 stands -- the
+    conservation preference is made by the SAMPLING.
+    BUT THE MAGNITUDE DOES NOT. docs/pten_k_sites_explained.md quotes
+    "+0.45 family against +0.19 abundance at T=8" in four places (5.3, 9.2,
+    10.1, 11); at 0.8 that T=8 row is +0.27/+0.29 against +0.18/+0.16. The
+    factor falls from 2.3 to 1.6.
+
+    IS THE DROP THE BURN-IN OR JUST A SHORTER WINDOW? Measured, because the
+    0.8 window at T=8 is only 30000 moves (6333 accepted) against 75000:
+      T4, all windows clean (t_eq 220000):
+        180000 moves kept, 22729 accepted: family|RSA +0.283
+         80000 moves kept, 10145 accepted:             +0.278
+         30000 moves kept,  3966 accepted:             +0.270
+      T8, 0.5 keeps 75000 (45000 of them BEFORE t_eq): +0.377
+          0.8 keeps 30000, all after t_eq:             +0.273
+    A sixfold shorter clean window costs 0.013 at T=4; removing the
+    pre-equilibration moves at T=8 costs 0.104. So the drop is the burn-in,
+    not attenuation, and the corrected number is the one to quote.
+    (T2 does attenuate more -- +0.160 at 210000 kept, +0.111 at 29900 -- so at
+    low T, where acceptance is 0.05, the window still has to be long.)
+
+    TO DO in the K-sites thread, which owns that document: re-quote 5.3, 9.2,
+    10.1 and 11 from the 0.8 tables, and say in section 7 that the entropies
+    are measured after t_eq. T3, T5 and T6 live in `equil`, not `equil_ref`,
+    so they are absent from this re-run and need their own pass.
+
+2026-11-18 (fourth entry)  PTEN doc: re-quoted from the post-t_eq tables
     Acting on the other thread's measurement (its own entry is in PR #58): `compare`
     keeps the last --burn-in-frac of each chain, default 0.5, which is NOT t_eq, and
     the equilibrated ladder's t_eq as a fraction of chain length exceeds 0.5 at seven
@@ -7344,7 +7392,7 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     alone is +0.46 to +0.54 at T = 4-16 against +0.45 to +0.50 for the raw family
     correlation.
 
-2026-11-18 (third entry)  pten_k_sites.py: kept-window acceptance and mean_dU, and the
+2026-11-18 (fifth entry)  pten_k_sites.py: kept-window acceptance and mean_dU, and the
     check that mean_dU does NOT have the entropy's burn-in flaw
     Raised by the other thread: chain_site_stats accumulates proposals, accepted and
     mean_dU over the WHOLE chain while only entropy and native_frac respect
