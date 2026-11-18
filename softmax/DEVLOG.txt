@@ -7343,3 +7343,34 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     softened from "about half of the agreement is burial" to "most": entropy vs RSA
     alone is +0.46 to +0.54 at T = 4-16 against +0.45 to +0.50 for the raw family
     correlation.
+
+2026-11-18 (third entry)  pten_k_sites.py: kept-window acceptance and mean_dU, and the
+    check that mean_dU does NOT have the entropy's burn-in flaw
+    Raised by the other thread: chain_site_stats accumulates proposals, accepted and
+    mean_dU over the WHOLE chain while only entropy and native_frac respect
+    burn_in_frac. Two consequences, one cosmetic and one that could have moved a
+    headline claim.
+    (a) The compare log's "sites never accepted" was a whole-chain count being read as
+    a post-t_eq one. Now reported as "N anywhere / M in the kept window", and the
+    per-site table carries proposals_kept, accepted_kept and mean_dU_kept beside the
+    whole-chain three. BOTH groups are kept rather than one replacing the other: "never
+    accepted anything in 300000 moves" is about the landscape, "accepted nothing after
+    t_eq" is what entropy 0 in the same window means. Nothing downstream shifts.
+    (b) THE ONE THAT MATTERED: mean_dU is the energy side of the comparison, the
+    -mean_dU rows of sampled_vs_references_spearman.tsv, so the burn-in finding of the
+    second entry could have applied to it too. MEASURED, and it does not. Over the 12
+    equil_ref chains x 4 references the median |mean_dU_kept - mean_dU| is 0.004 and the
+    max 0.044, against 0.104 for the ENTROPY's own 0.5 -> 0.8 shift at T=8 family, and
+    against a median of 0.003 between the two INDEPENDENT CHAINS of the same T (max
+    0.034). So the burn-in shift in -mean_dU is the size of chain-to-chain noise. Only
+    one family-vs-abundance ordering flips, T16.c1 (+0.377 -> +0.422 family crossing
+    +0.405 -> +0.407 abundance) while its partner T16 moves the other way (+0.370 ->
+    +0.342): the shortest chain in the ladder, 90001 moves, 18000 kept. So "the ENERGY
+    prefers abundance" needs NO re-quoting; only the entropy side did. Why it is immune:
+    mean_dU averages the cost of PROPOSALS, which are made at every site whether accepted
+    or not, so it samples a site's intrinsic cost from the first move, while the entropy
+    is a time average of the STATE, which is what equilibration changes.
+    Also fixed the PerformanceWarning that had started printing into the middle of the
+    log: the ~100 per-chain columns are collected in a dict and concatenated once.
+    Doc 5.1 (the measurement) and 6.5 (one clause). Re-ran compare at 0.8; the entropy
+    numbers are unchanged, as they must be.

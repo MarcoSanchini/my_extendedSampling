@@ -576,8 +576,21 @@ Two other per-site quantities come out of the same replay:
 
 - `native_frac`, the share of the time the site holds the reference residue;
 - `mean_dU`, the average energy change of the moves *proposed* at the site, accepted or
-  not. It is the sampler's own estimate of what mutating that site costs, and it needs no
-  equilibration.
+  not. It is the sampler's own estimate of what mutating that site costs.
+
+`mean_dU` is averaged over the **whole** chain, not over the kept window — only the entropy
+and `native_frac` sit behind the burn-in — so the claim that it "needs no equilibration" was
+an assertion worth checking rather than a fact, and the burn-in correction above could in
+principle have hit the `-mean_dU` rows as hard as the entropy rows. It was checked on
+18 November by computing `mean_dU_kept` over the same window as the entropy: the median shift
+across the twelve chains and four references is **0.004** and the largest is 0.044, against
+0.104 for the entropy's own burn-in shift at T = 8, and against a median of 0.003 between two
+*independent chains* of the same temperature. So the shift is the size of chain-to-chain
+noise, and the assertion holds. The one ordering it flips is T = 16 chain 1, where family
+crosses abundance by 0.02 while its partner chain moves the other way — the shortest chain in
+the ladder, and exactly the noise this comparison measures. `compare` now reports both, per
+site in the table and as a `-mean_dU_kept` row, so the two can never again be taken for each
+other.
 
 ## 5.2 The numbers
 
@@ -1256,7 +1269,9 @@ rather than abundance because ESM3's attention map encodes evolutionary conserva
 directly, or because burial is doing the work in chains that had not converged. Half of that
 alternative is now closed from the sampling side as well: the chains *have* converged, and
 re-measuring after t_eq cut the margin by about a third without reversing it (section 5.2). The scan
-cannot be blamed on equilibration, and it came out on the second side: the energy's own
+cannot be blamed on equilibration — nor, as of 18 November, can the `-mean_dU` side of the
+comparison, which moves by 0.004 in the median when restricted to the post-t_eq window
+(section 5.1) — and it came out on the second side: the energy's own
 residual agreement, burial removed, is with abundance (+0.12) and not with conservation
 (−0.07 family, −0.11 orthologs), while the chains at T = 8 give +0.27/+0.29 for family
 against +0.18/+0.16 for abundance.

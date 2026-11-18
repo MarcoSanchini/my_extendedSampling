@@ -432,6 +432,12 @@ def chain_site_stats(run_dir, ref, burn_in_frac):
 	native_frac share of the kept moves the site spends on the reference residue
 	proposals, accepted   over the WHOLE chain
 	mean_dU     mean U(proposed) - U(current) of the single-site proposals at the site, whole chain
+	proposals_kept, accepted_kept, mean_dU_kept   the same three over the KEPT window only, i.e.
+	            behind the same k >= first guard as the entropy, so they can be compared with it.
+	            Both groups are returned rather than one replacing the other, because they answer
+	            different questions and were once confused for each other: "this site never
+	            accepted anything in 300000 moves" is about the landscape, "this site accepted
+	            nothing after t_eq" is what the entropy of 0 in the same window means.
 	"""
 	with open(os.path.join(run_dir, "start.txt")) as f:
 		start = [l.strip() for l in f if l.strip() and not l.startswith("#")][0]
@@ -454,10 +460,13 @@ def chain_site_stats(run_dir, ref, burn_in_frac):
 	counts = np.zeros((L, 256))
 	since = np.full(L, first)              # move at which each site took its current residue (clipped to burn-in)
 	prop, acc, dU = np.zeros(L), np.zeros(L), np.zeros(L)
+	prop_k, acc_k, dU_k = np.zeros(L), np.zeros(L), np.zeros(L)
 	for k, (sites, aas, du, ok) in enumerate(rows):
 		sites = [int(x) for x in sites.split(",")]
 		if len(sites) == 1:
 			prop[sites[0]] += 1; dU[sites[0]] += du; acc[sites[0]] += ok
+			if k >= first:
+				prop_k[sites[0]] += 1; dU_k[sites[0]] += du; acc_k[sites[0]] += ok
 		if ok:
 			for s_, a in zip(sites, aas.split(",")):
 				if k >= first:
@@ -469,7 +478,9 @@ def chain_site_stats(run_dir, ref, burn_in_frac):
 	with np.errstate(divide="ignore", invalid="ignore"):
 		H = -np.where(p > 0, p * np.log(p), 0.).sum(axis=1)
 	return pd.DataFrame({"entropy": H, "native_frac": p[np.arange(L), ref_b], "proposals": prop, "accepted": acc,
-		"mean_dU": np.where(prop > 0, dU / np.maximum(prop, 1), np.nan)}), {
+		"mean_dU": np.where(prop > 0, dU / np.maximum(prop, 1), np.nan),
+		"proposals_kept": prop_k, "accepted_kept": acc_k,
+		"mean_dU_kept": np.where(prop_k > 0, dU_k / np.maximum(prop_k, 1), np.nan)}), {
 		"moves": N, "start_is_reference": start == ref, "final_Hd": int((seq != ref_b).sum()),
 		"accepted_kept": int(sum(r[3] for r in rows[first:]))}
 
@@ -576,6 +587,8 @@ def cmd_compare(args):
 	os.makedirs(args.out_dir, exist_ok=True)
 	runs = discover_runs(args)
 	stats, ent, ref_started = {}, pd.DataFrame(index=t.site), []
+	chain_cols = {}                 # collected and concatenated once below: inserting ~100
+	                                # columns one at a time fragments the frame and warns
 	print("chains (entropy over the last "
 		f"{1 - args.burn_in_frac:.0%} of the moves):")
 	for label, path in runs.items():
@@ -587,21 +600,30 @@ def cmd_compare(args):
 			ref_started.append(label)
 		stats[label] = st
 		ent[label] = st.entropy.values
-		for c in ("entropy", "native_frac", "proposals", "accepted", "mean_dU"):
-			t[f"{label}_{c}"] = st[c].values
+		for c in ("entropy", "native_frac", "proposals", "accepted", "mean_dU",
+				"proposals_kept", "accepted_kept", "mean_dU_kept"):
+			chain_cols[f"{label}_{c}"] = st[c].values
 		print(f"  {label:6s} {info['moves']:7d} moves, start {'reference' if info['start_is_reference'] else 'other'}, "
 			f"final Hd {info['final_Hd']:3d}, {info['accepted_kept']:5d} accepted in the kept part, "
 			f"mean entropy {st.entropy.mean():.3f}, sites at entropy 0: {(st.entropy == 0).sum()}/{len(ref)}, "
-			f"sites never accepted: {(st.accepted == 0).sum()}")
+			f"sites never accepted: {(st.accepted == 0).sum()} anywhere / "
+			f"{(st.accepted_kept == 0).sum()} in the kept window")
+
+	if chain_cols:
+		t = pd.concat([t, pd.DataFrame(chain_cols, index=t.index)], axis=1)
 
 	refs = {"orthologs entropy": t.nat_orthologs_entropy, "family entropy": t.nat_family_entropy,
 		"abundance mean": t.abundance2021_mean, "activity mean": t.activity_mean}
 	print("\nSpearman, sampled entropy vs each reference (all are 'higher = more tolerant'; n = sites with data).")
-	print("A second line gives the same for -mean_dU of the proposals, the sampler's own mutation cost.")
+	print("Further lines give the same for -mean_dU of the proposals, the sampler's own mutation cost, over")
+	print("the whole chain and over the kept window. The whole-chain one includes the approach to")
+	print("equilibrium, exactly the flaw --burn-in-frac exists to remove from the entropy, so compare the two.")
 	rows = []
 	for label, st in stats.items():
 		rows.append({"chain": label, "quantity": "entropy", **{k: spearman(st.entropy, v) for k, v in refs.items()}})
 		rows.append({"chain": label, "quantity": "-mean_dU", **{k: spearman(-st.mean_dU, v) for k, v in refs.items()}})
+		rows.append({"chain": label, "quantity": "-mean_dU_kept",
+			**{k: spearman(-st.mean_dU_kept, v) for k, v in refs.items()}})
 	sp = pd.DataFrame(rows)
 	print(sp.to_string(index=False, float_format=lambda x: f"{x:+.3f}"))
 	sp.to_csv(os.path.join(args.out_dir, "sampled_vs_references_spearman.tsv"), sep="\t", index=False, float_format="%.4f")
