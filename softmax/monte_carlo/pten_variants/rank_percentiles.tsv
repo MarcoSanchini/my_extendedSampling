@@ -1,0 +1,24 @@
+category	n	U_am pct	E2 pct	U_ce pct	U_am pct among SNV	E2 pct among SNV	U_ce pct among SNV
+cbio_all	249	52.06	47.83	58.58	64.37	53.07	67.47
+cbio_recurrent	71	52.06	52.69	69.43	64.37	58.03	76.59
+cbio_singleton	178	51.19	47.02	55.90	63.60	52.25	64.83
+cbio_nonhyper	190	53.13	48.75	61.15	65.28	54.05	69.71
+cbio_endometrial	126	48.76	50.60	65.75	61.44	55.79	73.57
+cbio_glioblastoma	57	58.65	51.96	65.18	69.81	57.07	73.01
+cbio_second_hit	121	56.06	47.83	58.58	67.57	53.07	67.47
+clinvar_all	973	38.85	45.77	43.84	51.15	51.04	53.81
+clinvar_PLP	244	57.91	48.29	67.73	69.20	53.56	75.23
+clinvar_VUS	612	28.61	44.24	34.91	41.20	49.33	44.45
+clinvar_conflicting	113	42.43	47.83	53.64	55.04	53.07	62.77
+clinvar_expert	113	57.50	42.72	66.36	68.85	47.52	74.19
+clinvar_PHTS	679	41.76	47.20	45.29	54.29	52.27	55.41
+clinvar_autism	38	37.30	50.12	46.21	49.89	55.32	56.19
+gnomad_all	174	27.51	44.64	29.25	39.97	49.80	38.43
+gnomad_singleton	121	28.69	40.51	32.15	41.28	44.93	41.39
+gnomad_ac2	53	23.95	53.60	27.86	35.79	59.01	36.96
+merged_all	1063	38.44	45.05	43.69	50.83	50.27	53.65
+tumour_only	225	52.06	47.83	58.56	64.37	53.07	67.41
+population_only	150	25.61	45.41	27.44	37.63	50.65	36.45
+tumour_and_population	24	46.54	42.38	64.02	58.48	47.12	72.16
+consensus_damaging	270	57.26	47.83	66.63	68.59	53.07	74.43
+consensus_tolerated	45	13.76	50.60	24.22	22.24	55.79	32.67

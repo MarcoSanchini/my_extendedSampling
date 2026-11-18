@@ -1,0 +1,18 @@
+== merged: 1269 distinct canonical missense changes; cBioPortal 263, ClinVar 1164, gnomAD 235
+   overlaps at the protein level (exclusive regions):
+     cBioPortal only           64   in construct    60
+     ClinVar only             796   in construct   687
+     gnomAD only               38   in construct    30
+     cBioPortal + ClinVar     174   in construct   170
+     cBioPortal + gnomAD        3   in construct     2
+     ClinVar + gnomAD         172   in construct   122
+     all three                 22   in construct    22
+   inside the 324-aa construct: 1093; outside: 176 (C-tail 93, loop 286-309 60, N-term 23)
+   DNA level (GRCh38 chr:pos:ref:alt; cBioPortal lifted by -1759757): C 269, V 1223, G 235; C&V 196, C&G 23, V&G 189, all 20
+   protein changes shared by cBioPortal and ClinVar through a DIFFERENT DNA change: 4
+   cBioPortal's ClinVar column: 184 variants labelled, 184 in the ClinVar file, 19 disagree: L25F VUS->P/LP, Y27D VUS->conflicting, M35I P/LP->VUS, A39V conflicting->P/LP, E43K VUS->conflicting, G44D conflicting->P/LP, S59P VUS->conflicting, D92E conflicting->P/LP, C105R P/LP->conflicting, L108F P/LP->conflicting, A126D P/LP->conflicting, L152P conflicting->VUS, D153Y VUS->conflicting, F154C P/LP->VUS, F154L VUS->conflicting, P204L VUS->conflicting, V217G VUS->conflicting, D326G P/LP->conflicting, K342N P/LP->VUS
+   gnomAD's ClinVar column: 189 variants labelled, 189 in the ClinVar file, 1 disagree: F241L conflicting->P/LP
+   tumour changes also in gnomAD: 25: D24H (1 pt, AC 1), I28T (1 pt, AC 1), L42V (1 pt, AC 1), H93L (1 pt, AC 1), I101T (3 pt, AC 1), C105G (1 pt, AC 1), G127R (2 pt, AC 1), K128Q (2 pt, AC 1), G129R (2 pt, AC 1), R130L (7 pt, AC 1), T131A (1 pt, AC 1), R142Q (1 pt, AC 7), R142W (11 pt, AC 5), Y155C (2 pt, AC 3), G165E (3 pt, AC 1), S170R (1 pt, AC 1), R173C (13 pt, AC 5), R173H (7 pt, AC 3), Y177C (1 pt, AC 1), R233Q (1 pt, AC 2), M239V (1 pt, AC 1), P246L (6 pt, AC 3), P281S (1 pt, AC 2), N334K (1 pt, AC 1), E394K (1 pt, AC 1)
+   ClinVar P/LP also in gnomAD: 24 (L23V AC 1, D24H AC 1, T26I AC 3, I50T AC 1, Y68H AC 2, L100F AC 1, I101T AC 1, C105G AC 1, W111C AC 1, A121S AC 1, G127R AC 1, G129R AC 1, R130L AC 1, M134T AC 1, Y155C AC 3, S170R AC 1, R173C AC 5, R173H AC 3, Y174C AC 2, V175M AC 1, Y177C AC 1, F241L AC 1, P246L AC 3, K267N AC 1)
+   SNV-reachable: 1238, not 12, unknown 19; not reachable but observed: D19F (V), Y29I (V), P38F (V), V53D (V), A137F (V), G143E (V), F145R (V), G156K (V), V158R (V), T160D (V), K197I (V), F273P (V)
+   compound tumour sequences: 77 samples with 2+ PTEN missense, 75 with 2+ inside the construct (42 hypermutated)

@@ -1,0 +1,30 @@
+
+== cBioPortal: 1203 rows, 25 studies, 877 samples
+   mutation types: Missense_Mutation 516, Frame_Shift_Del 232, Nonsense_Mutation 226, Frame_Shift_Ins 103, Splice_Site 78, In_Frame_Del 22, fusion 18, Splice_Region 5, Translation_Start_Site 2, In_Frame_Ins 1
+   missense rows 516 in 418 samples / 417 patients; exact duplicates (sample, change) 0; same patient + same change in two samples 1 -> dropped (one count per patient)
+   samples with 2+ PTEN missense: 77 (kept: they become compound sequences)
+   protein changes reached by 2+ DNA changes: 6 (C124S, D92E, G129R, G36R, S10R, W111R)
+   hypermutated samples (> 500 mutations): 119, carrying 179 of the missense rows
+
+== ClinVar: header 24 fields, data rows [25] fields  -> TRAP 1: reading with index_col=False so the labels do not shift
+   4277 variations
+   with a missense consequence: 1355; named on NM_000314(PTEN): 1350; named on another gene (KLLN, TRAP 3): 5
+   PTEN-named but no canonical missense p. in the name (PTEN-L-only or UTR, TRAP 2): 127
+   canonical missense rows 1223; duplicate VariationID 0, duplicate SPDI 0; non-SNV (MNV/indel) rows 22
+   classes: VUS 798, P/LP 274, conflicting 141, B/LB 10
+   protein changes carried by 2+ variations: 55 -> collapsed: class = most severe call among the rows at the highest review tier
+   -> 1164 distinct protein changes
+   GRCh37 - GRCh38 on 3000 SNVs: 1759757 for 100.0% of them
+
+== gnomAD: 1868 alleles; transcripts: ENST00000371953.8 1412, ENST00000693560.1 413, ENST00000472832.2 41, ENST00000688308.1 2
+   missense 469; on ENST00000371953: 235; on ENST00000693560 (PTEN-L extension = canonical 5' UTR, TRAP 2): 232; on others (KLLN etc, TRAP 3): 2
+   e.g. dropped: p.Cys65Ser AF 0.994, p.Gly4Arg AF 0.143, p.Leu171Val AF 0.00153
+   joint filter not PASS: 0 -> dropped
+   duplicate variant IDs 0, duplicate protein changes 0; flagged segdup/lcr 42 (kept, flagged)
+   allele count: singletons 146, 2+ 89, 10+ 15; homozygotes present at 1
+   -> 235 distinct protein changes
+
+== CDS from the files: 1065 of 1212 bases named; codons fully named 286, resolved to one codon with the protein's help 362 of 403
+   (/home/user/repo/softmax/monte_carlo/pten_natural/raw/PTEN_variant_data.tsv not found: SNV reachability from the files alone)
+   substitutions: SNV-reachable 2348, not 5202, unknown 107 of 7657
+   check: of 1951 variants observed as SNVs, 0 come out unreachable (must be 0)
