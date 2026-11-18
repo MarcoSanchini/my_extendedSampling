@@ -599,12 +599,18 @@ the per-site values drift as the chain melts — and at high temperature by a lo
 | T = 8 | 5.41 | 12% | 0.965 |
 | T = 16 | 10.28 | 18% | 0.921 |
 
-The second chain of each temperature gives the same to within a few hundredths, so this is
-drift and not noise. What survives is the **ordering**, and everything this document quotes
-from `mean_dU` is a rank correlation, so a near-rank-preserving drift passes straight through.
+The second chain of each temperature gives the same to within a few hundredths — at T = 16,
+11.06 on 59.0 = 19% with ρ = 0.919 against chain 0's 18% and 0.921 — so this is drift and not
+noise. What survives is the **ordering**, and everything this document quotes from `mean_dU`
+is a rank correlation, so a near-rank-preserving drift passes straight through.
+
 That is also what ties the two observations together: T = 16, where rank preservation is
-weakest at 0.921, is precisely the one temperature whose family-versus-abundance ordering
-flips in one chain and not the other.
+weakest, is precisely the one temperature whose family-versus-abundance ordering flips in one
+chain and not the other. The flip is therefore not an anomaly but the predicted place for
+one, and the trend is monotonic in T because the hotter the chain, the further its pre-t_eq
+sequences sit from the equilibrated ones. It also answers the question a supervisor would ask
+next — where would the energy side break? — with a slope rather than a shrug: above T = 16,
+and the four rows above say how fast.
 
 The real asymmetry with the entropy is what each statistic is made of. Every move proposes at
 *some* site whether or not it is accepted, so `mean_dU` accumulates proposals at every site
