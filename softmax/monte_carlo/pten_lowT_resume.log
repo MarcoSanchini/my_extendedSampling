@@ -31,3 +31,7 @@ python -u /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/r
 GPU free memory: 23835 MB   Running: 1 / 2 (soft cap)
   PID 288723  log /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study/logs/equil_ref_T1_chain1.log
 All launched. Waiting...
+PID 288718 finished (exit 0).
+PID 288723 finished (exit 0).
+Phase equil finished. Analyse with:
+  python /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/analyze_nsites.py equil /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten1d5r_study --equil-dir equil_ref
