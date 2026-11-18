@@ -7011,6 +7011,114 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
       scan of E at 2 steps (6156 decodes, ~14 min).
     Table also in docs/pten_metrics.tex section 7.
 
+2026-11-16 (third entry) -- single-mutant scan of the contact-map energy E
+    scan_mutants_E.py, chains paused: all 6156 PTEN point mutants decoded at
+    2 steps (0.133 s each, 14 min), and 20 sites (seq 0 17 323, 380 mutants)
+    at 32 steps (1.115 s each). E is the CA-8A contact-map difference to the
+    reference's prediction AT THE SAME STEP COUNT, so E(ref) = 0 exactly; a
+    sequence decoded twice gives 0 differing contacts, so E is deterministic
+    within one schedule.
+
+                         2 steps (6156)      32 steps (380)
+    E median                  0.0204              0.0292
+    E 10-90%             0.0160-0.0264       0.0225-0.0405
+    contacts changed, median      37                  53
+    RMSD to ref decode, med   0.45 A              0.80 A
+    Spearman(E, dU_am) pooled  0.466               0.141
+      within site, median      0.324               0.125
+      per site                 0.681               0.212
+
+    1. E IS NOT FLAT. No mutant out of 6156 leaves the contact map unchanged;
+       the median point mutation moves 37 of ~900 contacts. The worry that a
+       structure predictor returns dE = 0 for most proposals is settled: it
+       does not. (Worst mutants: F208D/E, L295K, K190I -- E 0.07-0.10.)
+    2. AND IT AGREES WITH U_am at 2 steps: 0.466 pooled, 0.324 WITHIN site,
+       the same substitution resolution U_am showed against the experiments
+       (2026-11-15). The top 5% by E have median dU_am 152 against 32 overall.
+    3. BUT E IS SCHEDULE-DEPENDENT, and this is the finding that matters. On
+       the 380 mutants both scans share, Spearman(E_2, E_32) = 0.108 and the
+       site means correlate 0.068. The two step counts deterministically
+       disagree about WHICH mutants are expensive, so at most one of them is
+       measuring the mutation rather than its own unmasking order. E tracks
+       the RMSD between the two decodes (0.59 at 2 steps, 0.85 at 32), i.e.
+       much of it is where the decoder happened to put the loops.
+       Note bench_decode.py 2026-11-16 found 2 and 32 steps EQUALLY accurate
+       against the crystal (P@L 0.98, RMSD 2.0): both predictions are good,
+       they just differ from each other by about as much as a mutation does.
+    4. The 32-step scan is the WEAKER of the two (0.141 pooled), against the
+       expectation that more steps are better. Its site term is also nearly
+       gone: 5% of its variance is between sites against 34% at 2 steps.
+
+    READING. An in-loop contact-map energy is affordable (point 1) and not
+    obviously wrong (point 2), but point 3 says its per-mutant value is not a
+    property of the sequence alone. A chain would sample a landscape partly
+    made by the decoder's schedule, and nothing here says which schedule is
+    the physical one. Before building it:
+      a. decode each of a few hundred mutants at 2, 3, 4, 8 steps and see
+         whether any pair of schedules agrees with each other better than
+         0.1 -- if consecutive schedules agree, the 2-vs-32 gap is a
+         resolution effect; if none do, E at one schedule is not a function
+         of the structure.
+      b. Zambon et al use ESMFold, a single deterministic forward with no
+         unmasking schedule at all, so their E has no such freedom. The
+         honest comparison may need ESMFold rather than ESM3's generate().
+    Marco's own proposal, worth keeping either way: one full forward at B
+    yields U_am, its gradient AND the step-1 structure logits, so a 1-step E
+    would cost ~0.14 s/move instead of 0.24; needs generate()'s loop opened up.
+
+2026-11-16 (fourth entry) -- the schedule control: E's per-mutant value is
+    decode flicker
+    (Run the same evening; the control proposed in the third entry.) The same
+    20 sites (seq 0 17 323) at 3, 4 and 8 steps, next to the 2- and 32-step
+    scans. The 8-step run was interrupted at 19 of 20 sites; everything below
+    uses the 19 sites all five schedules share.
+
+    Spearman(E_a, E_b) on the shared mutants, per mutant | over site means:
+            2            3            4            8           32
+      2     -      0.27|0.75    0.31|0.60    0.13|-0.14   0.11|0.07
+      3  0.27|0.75     -        0.18|0.62    0.09|0.07    0.08|0.20
+      4  0.31|0.60  0.18|0.62      -         0.01|0.17   -0.01|-0.19
+      8  0.13|-.14  0.09|0.07   0.01|0.17       -         0.06|0.01
+     32  0.11|0.07  0.08|0.20  -0.01|-0.19   0.06|0.01       -
+
+    NO TWO SCHEDULES AGREE PER MUTANT. Even 2 against 3 steps, which differ by
+    one unmasking round, correlate 0.27; 3 against 4 is 0.18. So the 2-vs-32
+    gap of the third entry is NOT a resolution effect. The decisive number:
+    the spread of one mutant's E ACROSS the five schedules (median sd 0.0062)
+    is LARGER than the spread across mutants AT a fixed schedule (sd 0.0036
+    to 0.0076). Changing the schedule moves E as much as changing the residue.
+    E is deterministic within a schedule (same sequence twice: 0 contacts
+    differ), so this is not noise in the usual sense -- it is a different,
+    equally arbitrary landscape per schedule.
+
+    WHAT SURVIVES: the SITE level, and only at few steps. The site means of 2,
+    3 and 4 steps agree with each other at 0.60-0.75, and with U_am at
+    0.74/0.70/0.62 (-mean log10 dU, 19 sites). At 8 and 32 steps even that is
+    gone (0.16, 0.21). Per-mutant agreement with U_am follows the same curve:
+
+      steps   s/mutant   pooled   within site   site mean   corr(E, RMSD)
+        2       0.133     0.513      0.213        0.744        0.59
+        3       0.177     0.323      0.180        0.700        0.49
+        4       0.223     0.374      0.140        0.619        0.61
+        8       0.421     0.137      0.264        0.158        0.60
+       32       1.115     0.148      0.139        0.209        0.85
+
+    CONCLUSION, and it is a negative one worth stating plainly. An ESM3
+    generate()-based contact-map energy cannot be the energy of a Monte Carlo
+    move: its difference between two sequences one mutation apart is dominated
+    by which unmasking order the decoder happened to follow, and E correlates
+    0.6-0.85 with the RMSD between the two decodes. A chain would sample the
+    decoder's schedule, not the protein. The site-level signal at 2-4 steps is
+    real and consistent, so E stays usable as a SUBSAMPLED, site-level readout
+    of a finished U_am chain -- which is the use the supervisor offered as the
+    alternative, and the measurements now argue for it rather than merely
+    allowing it.
+    If an in-loop structural energy is still wanted, the two candidates that
+    do not have this freedom are ESMFold (one deterministic forward, what
+    Zambon et al actually use) and U_structure_ce, which is already in
+    energies.py, comes out of the same forward pass as U_am and is
+    differentiable. Neither needs generate().
+
 2026-11-16  PTEN: the contact-map energy E (Zambon et al) against both experiments
     Marco ran scan_mutants_E.py on astaroth: all 6156 mutants at 2 steps, the 20
     sites 0,17,...,323 at 32 steps (380 mutants). pten_k_sites.py mutants gained
