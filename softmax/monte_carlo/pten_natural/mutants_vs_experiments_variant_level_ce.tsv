@@ -1,0 +1,4 @@
+experiment	variants matched	rho(-dU, score)	rho within site	sites	damaging call	AUC(dU, damaging)	positives	labelled
+abundance 2021 (VAMP-seq composite)	4079	0.3740	0.2553	289	low or possibly low (2021 classes)	0.6829	1710	3523
+abundance 2018 (VAMP-seq)	3349	0.3952	0.2715	256	low or possibly low (2018 classes)	0.6845	1647	3349
+activity (Mighell high-confidence)	5324	0.4427	0.2831	311	score < -1.11	0.7546	1732	5324

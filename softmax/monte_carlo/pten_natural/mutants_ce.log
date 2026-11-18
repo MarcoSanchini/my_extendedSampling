@@ -1,0 +1,61 @@
+energy: column 'dU_ce' of pten_natural/pten_mutants_ce.csv, called dU below
+6156 mutants over 324/324 sites (19-19 per site; the scan writes 19)
+dU: min 0, median 0.03125, max 0.4375. 3 of 6156 are <= 0, which is expected for a cross-entropy difference: the per-site statistic below is the PLAIN mean, not the mean of log10.
+
+--- per site -------------------------------------------------------------
+Spearman against each reference. Every reference is 'higher = more tolerant' and dU is a COST,
+so the correlation is taken with -dU: a positive number means the sampler's energy agrees.
+  quantity  orthologs entropy  family entropy  abundance mean  activity mean    RSA
+  -mean dU             +0.309          +0.438          +0.494         +0.549 +0.606
+-median dU             +0.326          +0.446          +0.482         +0.521 +0.576
+   -min dU             +0.173          +0.259          +0.197         +0.256 +0.262
+  n: orthologs entropy 280, family entropy 305, abundance mean 289, activity mean 311; |rho| above about 0.12 is beyond chance at the 5% level
+
+With burial regressed out (partial Spearman given RSA), the same question minus the fact that
+buried sites are both expensive to mutate and conserved:
+quantity  orthologs entropy | RSA  family entropy | RSA  abundance mean | RSA  activity mean | RSA
+-mean dU                   +0.089                +0.161                +0.146               +0.264
+
+Is the cost raised inside each K-like set? mean dU inside / outside, with p against
+circular shifts of the set along the sequence (smallest possible 1/L = 0.003):
+        set  n_in  mean_in  mean_out  ratio_of_dU  shift_p
+  K_natural    28    0.053     0.044          NaN    0.037
+K_abundance   108    0.053     0.041          NaN    0.003
+ K_activity    97    0.055     0.041          NaN    0.003
+
+mutational K-sites (mean dU in the top 25%, i.e. >= 0.053): 85/324 scanned sites
+  overlap with K_natural: 10/28  expected 7.3  P=0.17
+  overlap with K_abundance: 49/108  expected 28.3  P=5.7e-08
+  overlap with K_activity: 49/97  expected 25.4  P=3e-10
+  (size-matched: the same comparison with the mutational set cut to each other set's size,
+   which removes the dependence of the overlap on --mutant-k)
+  top  28 vs K_natural: 3/28  expected 2.4  P=0.44
+  top 108 vs K_abundance: 62/108  expected 36.0  P=1.4e-10
+  top  97 vs K_activity: 56/97  expected 29.0  P=3.3e-12
+
+--- against the other energy ---------------------------------------------
+dU_ce of pten_mutants_ce.csv vs dU of pten_single_mutants.csv, on the 6156 mutants both scans contain.
+Both are costs, so a POSITIVE correlation means they rank mutants the same way.
+  pooled over all mutants: +0.672
+  within site (centred ranks, 324 sites): +0.637
+  per site, on the mean of log10: +0.641
+
+--- per variant ----------------------------------------------------------
+Each in-silico mutant matched to the same substitution in the two experiments. This is the
+comparison the papers themselves make, and the one a per-site profile cannot: it asks whether
+the energy ranks the 19 substitutions at a site, not just which sites are expensive.
+                         experiment  variants matched  rho(-dU, score)  rho within site  sites  AUC(dU, damaging)  positives  labelled
+abundance 2021 (VAMP-seq composite)              4079           +0.374           +0.255    289             +0.683       1710      3523
+          abundance 2018 (VAMP-seq)              3349           +0.395           +0.272    256             +0.685       1647      3349
+ activity (Mighell high-confidence)              5324           +0.443           +0.283    311             +0.755       1732      5324
+
+The last three columns are the energy used as a CLASSIFIER of the authors' own variant calls,
+one call per experiment. AUC is the area under the ROC curve, equivalently the probability that
+a randomly chosen damaging variant has a higher dU than a randomly chosen tolerated one. The label
+is the DAMAGING outcome and the score is dU itself, so above 0.5 is the agreement direction and
+0.5 is chance. Variants with no measurement are left out rather than counted as tolerated:
+  abundance 2021 (VAMP-seq composite): damaging = low or possibly low (2021 classes), 1710 of 3523 labelled variants
+  abundance 2018 (VAMP-seq): damaging = low or possibly low (2018 classes), 1647 of 3349 labelled variants
+  activity (Mighell high-confidence): damaging = score < -1.11, 1732 of 5324 labelled variants
+
+Outputs in /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten_natural, each name ending in _ce: pten_site_table_mutants, pten_mutants_variant_level, mutants_vs_references_spearman, mutants_vs_references_partial_rsa, mutants_in_K_sets, mutants_vs_experiments_variant_level, pten_mutant_profile.png, mutants_vs_references.png, mutants_vs_experiments.png

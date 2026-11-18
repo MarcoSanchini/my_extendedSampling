@@ -1,0 +1,108 @@
+nohup: ignoring input
+
+== 10:02:13  start; GPU now at 416 MiB, 24570 MiB
+
+== 10:02:13  soft-contact E at 2 steps -> pten_natural/pten_mutants_soft_E2.csv (no --compare: it is the baseline)
+# E = 0 (identical contact map to the reference): 0.0% of mutants; n_diff <= 2: 0.0%
+# E quantiles 10/25/50/75/90/max: 0.0155 0.0172 0.0198 0.0232 0.0259 0.0400
+# n_diff quantiles 10/25/50/75/90/max: 28 31 36 42 47 72
+# RMSD to the reference's prediction: median 0.45 A, 90% 0.57, max 0.91; pLDDT median 88.4, min 86.9
+# sites where EVERY mutant has E = 0: 0 of 20; where none does: 20
+# E_w0.5 quantiles 10/50/90: 0.0168 0.0203 0.0251
+# E_w1 quantiles 10/50/90: 0.0159 0.0193 0.0238
+# E_w2 quantiles 10/50/90: 0.0130 0.0159 0.0196
+# joined with pten_natural/pten_single_mutants.csv: 380 mutants
+#   agreement with U_am                   E    E_w0.5      E_w1      E_w2
+#     pooled                         +0.524    +0.613    +0.631    +0.635
+#     within site (median)           +0.262    +0.264    +0.265    +0.253
+#     per site (means)               +0.744    +0.838    +0.850    +0.833
+#   dU_am where E > 0: median 26.7 (n=380)
+
+== 10:03:33  GPU after 2 steps: 436 MiB, 24570 MiB
+
+== 10:03:33  soft-contact E at 8 steps -> pten_natural/pten_mutants_soft_E8.csv, compared with pten_natural/pten_mutants_soft_E2.csv
+# joined with pten_natural/pten_single_mutants.csv: 380 mutants
+#   agreement with U_am                   E    E_w0.5      E_w1      E_w2
+#     pooled                         +0.141    +0.285    +0.304    +0.314
+#     within site (median)           +0.264    +0.168    +0.210    +0.176
+#     per site (means)               +0.233    +0.543    +0.594    +0.586
+#   dU_am where E > 0: median 26.7 (n=380)
+# against pten_natural/pten_mutants_soft_E2.csv on 380 shared mutants. This is the diagnostic the softening is for:
+#   agreement between the two              E    E_w0.5      E_w1      E_w2
+#     pooled                         +0.127    +0.236    +0.251    +0.252
+#     within site (median)           +0.157    +0.202    +0.263    +0.254
+#     per site (means)               -0.084    +0.227    +0.310    +0.331
+#     median |difference|            0.0072    0.0102    0.0093    0.0072
+#     as a share of its own IQR        1.38      2.55      2.34      2.20
+#   E = 0 in both 0.0%, in this only 0.0%, in the other only 0.0%
+
+== 10:06:42  GPU after 8 steps: 324 MiB, 24570 MiB
+
+== 10:06:42  soft-contact E at 32 steps -> pten_natural/pten_mutants_soft_E32.csv, compared with pten_natural/pten_mutants_soft_E2.csv
+# joined with pten_natural/pten_single_mutants.csv: 380 mutants
+#   agreement with U_am                   E    E_w0.5      E_w1      E_w2
+#     pooled                         +0.141    +0.135    +0.154    +0.165
+#     within site (median)           +0.125    +0.085    +0.132    +0.183
+#     per site (means)               +0.212    +0.075    +0.099    +0.098
+#   dU_am where E > 0: median 26.7 (n=380)
+# against pten_natural/pten_mutants_soft_E2.csv on 380 shared mutants. This is the diagnostic the softening is for:
+#   agreement between the two              E    E_w0.5      E_w1      E_w2
+#     pooled                         +0.108    +0.102    +0.123    +0.132
+#     within site (median)           +0.120    +0.120    +0.151    +0.168
+#     per site (means)               +0.068    +0.140    +0.176    +0.205
+#     median |difference|            0.0098    0.0094    0.0096    0.0081
+#     as a share of its own IQR        0.79      0.86      1.10      1.31
+#   E = 0 in both 0.0%, in this only 0.0%, in the other only 0.0%
+
+== 10:17:30  GPU after 32 steps: 337 MiB, 24570 MiB
+
+== 10:17:30  U_structure_ce, 5 sites first -> pten_natural/pten_mutants_ce.csv
+# U_am(ref, ref) = 0.000e+00   noise floor (same sequence twice) = 0.000e+00
+# U_structure_ce(reference) = 2.390625, and NOT 0: it is the cross-entropy of the reference's structure logits against their own argmax, so dU_ce = U_ce - 2.390625 and may be negative.
+# U_ce noise floor (same sequence twice) = 0.000e+00
+# 5/5 sites, 0.1 min, 0.089 s per mutant, 0.0 min left
+
+== 10:17:59  GPU after the trial: 337 MiB, 24570 MiB
+
+== 10:17:59  U_structure_ce, all sites (resumes, the 5 above are kept)
+# 319/319 sites, 9.0 min, 0.089 s per mutant, 0.0 min left
+
+# done. pten_natural/pten_mutants_ce.csv
+# next: python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_ce.csv
+
+== 10:27:17  GPU after the CE scan: 294 MiB, 24570 MiB
+
+== 10:27:17  correlations (CPU only)
+--- against the other energy ---------------------------------------------
+dU_ce of pten_mutants_ce.csv vs dU of pten_single_mutants.csv, on the 6156 mutants both scans contain.
+Both are costs, so a POSITIVE correlation means they rank mutants the same way.
+  pooled over all mutants: +0.672
+  within site (centred ranks, 324 sites): +0.637
+  per site, on the mean of log10: +0.641
+
+--- per variant ----------------------------------------------------------
+Each in-silico mutant matched to the same substitution in the two experiments. This is the
+comparison the papers themselves make, and the one a per-site profile cannot: it asks whether
+the energy ranks the 19 substitutions at a site, not just which sites are expensive.
+                         experiment  variants matched  rho(-dU, score)  rho within site  sites  AUC(dU, damaging)  positives  labelled
+abundance 2021 (VAMP-seq composite)              4079           +0.374           +0.255    289             +0.683       1710      3523
+          abundance 2018 (VAMP-seq)              3349           +0.395           +0.272    256             +0.685       1647      3349
+ activity (Mighell high-confidence)              5324           +0.443           +0.283    311             +0.755       1732      5324
+
+The last three columns are the energy used as a CLASSIFIER of the authors' own variant calls,
+one call per experiment. AUC is the area under the ROC curve, equivalently the probability that
+a randomly chosen damaging variant has a higher dU than a randomly chosen tolerated one. The label
+is the DAMAGING outcome and the score is dU itself, so above 0.5 is the agreement direction and
+0.5 is chance. Variants with no measurement are left out rather than counted as tolerated:
+  abundance 2021 (VAMP-seq composite): damaging = low or possibly low (2021 classes), 1710 of 3523 labelled variants
+  abundance 2018 (VAMP-seq): damaging = low or possibly low (2018 classes), 1647 of 3349 labelled variants
+  activity (Mighell high-confidence): damaging = score < -1.11, 1732 of 5324 labelled variants
+
+Outputs in /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten_natural, each name ending in _ce: pten_site_table_mutants, pten_mutants_variant_level, mutants_vs_references_spearman, mutants_vs_references_partial_rsa, mutants_in_K_sets, mutants_vs_experiments_variant_level, pten_mutant_profile.png, mutants_vs_references.png, mutants_vs_experiments.png
+
+== 10:27:29  done; GPU back to 366 MiB, 24570 MiB
+
+Read these:
+  scan_mutants_soft_E*.log   'agreement between the two' block: hard E vs each soft width
+  pten_natural/mutants_ce.log        U_structure_ce against both experiments
+  pten_natural/mutants_soft_E2_w1.log   the soft E at width 1 A against both experiments

@@ -1,0 +1,14 @@
+# reference pten_1d5r, L=324
+# device cuda:0
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 67749.40it/s]
+# U_am(ref, ref) = 0.000e+00   noise floor (same sequence twice) = 0.000e+00
+# U_structure_ce(reference) = 2.390625, and NOT 0: it is the cross-entropy of the reference's structure logits against their own argmax, so dU_ce = U_ce - 2.390625 and may be negative.
+# U_ce noise floor (same sequence twice) = 0.000e+00
+# 19 mutants per site, 5 sites requested, 0 already in pten_natural/pten_mutants_ce.csv, 5 to do (95 forward passes)
+site   0 M: dU min     25.967 (V) median     64.153 max     85.421 (G)
+site   1 I: dU min      7.024 (V) median     21.437 max     52.284 (D)
+site   2 V: dU min      5.608 (I) median     21.635 max     82.618 (D)
+# 5/5 sites, 0.1 min, 0.089 s per mutant, 0.0 min left
+
+# done. pten_natural/pten_mutants_ce.csv
+# next: python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_ce.csv

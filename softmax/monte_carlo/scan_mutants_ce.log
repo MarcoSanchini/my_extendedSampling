@@ -1,0 +1,51 @@
+# reference pten_1d5r, L=324
+# device cuda:0
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 99220.09it/s]
+# U_am(ref, ref) = 0.000e+00   noise floor (same sequence twice) = 0.000e+00
+# U_structure_ce(reference) = 2.390625, and NOT 0: it is the cross-entropy of the reference's structure logits against their own argmax, so dU_ce = U_ce - 2.390625 and may be negative.
+# U_ce noise floor (same sequence twice) = 0.000e+00
+# 19 mutants per site, 324 sites requested, 5 already in pten_natural/pten_mutants_ce.csv, 319 to do (6061 forward passes)
+site   5 N: dU min      9.715 (D) median     19.972 max     58.885 (W)
+site   6 K: dU min      8.077 (R) median     52.395 max    216.881 (P)
+site   7 R: dU min      7.398 (K) median     20.394 max     50.194 (W)
+# 10/319 sites, 0.3 min, 0.089 s per mutant, 8.7 min left
+# 20/319 sites, 0.6 min, 0.089 s per mutant, 8.4 min left
+# 30/319 sites, 0.8 min, 0.089 s per mutant, 8.1 min left
+# 40/319 sites, 1.1 min, 0.089 s per mutant, 7.8 min left
+# 50/319 sites, 1.4 min, 0.089 s per mutant, 7.6 min left
+site  54 H: dU min      8.871 (Y) median     60.745 max    127.235 (P)
+# 60/319 sites, 1.7 min, 0.089 s per mutant, 7.3 min left
+# 70/319 sites, 2.0 min, 0.089 s per mutant, 7.0 min left
+# 80/319 sites, 2.2 min, 0.089 s per mutant, 6.7 min left
+# 90/319 sites, 2.5 min, 0.089 s per mutant, 6.4 min left
+# 100/319 sites, 2.8 min, 0.089 s per mutant, 6.2 min left
+site 104 W: dU min     11.135 (Y) median     32.002 max    109.433 (P)
+# 110/319 sites, 3.1 min, 0.089 s per mutant, 5.9 min left
+# 120/319 sites, 3.4 min, 0.089 s per mutant, 5.6 min left
+# 130/319 sites, 3.7 min, 0.089 s per mutant, 5.3 min left
+# 140/319 sites, 3.9 min, 0.089 s per mutant, 5.0 min left
+# 150/319 sites, 4.2 min, 0.089 s per mutant, 4.7 min left
+site 154 R: dU min      6.293 (Q) median     10.407 max     25.150 (G)
+# 160/319 sites, 4.5 min, 0.089 s per mutant, 4.5 min left
+# 170/319 sites, 4.8 min, 0.089 s per mutant, 4.2 min left
+# 180/319 sites, 5.1 min, 0.089 s per mutant, 3.9 min left
+# 190/319 sites, 5.3 min, 0.089 s per mutant, 3.6 min left
+# 200/319 sites, 5.6 min, 0.089 s per mutant, 3.3 min left
+site 204 C: dU min     36.090 (A) median    117.443 max    318.255 (E)
+# 210/319 sites, 5.9 min, 0.089 s per mutant, 3.1 min left
+# 220/319 sites, 6.2 min, 0.089 s per mutant, 2.8 min left
+# 230/319 sites, 6.5 min, 0.089 s per mutant, 2.5 min left
+# 240/319 sites, 6.7 min, 0.089 s per mutant, 2.2 min left
+# 250/319 sites, 7.0 min, 0.089 s per mutant, 1.9 min left
+site 254 Q: dU min     11.637 (K) median     25.895 max     47.405 (L)
+# 260/319 sites, 7.3 min, 0.089 s per mutant, 1.7 min left
+# 270/319 sites, 7.6 min, 0.089 s per mutant, 1.4 min left
+# 280/319 sites, 7.9 min, 0.089 s per mutant, 1.1 min left
+# 290/319 sites, 8.1 min, 0.089 s per mutant, 0.8 min left
+# 300/319 sites, 8.4 min, 0.089 s per mutant, 0.5 min left
+site 304 N: dU min     11.638 (S) median     39.616 max     94.786 (P)
+# 310/319 sites, 8.7 min, 0.089 s per mutant, 0.3 min left
+# 319/319 sites, 9.0 min, 0.089 s per mutant, 0.0 min left
+
+# done. pten_natural/pten_mutants_ce.csv
+# next: python pten_k_sites.py mutants --mutants pten_natural/pten_mutants_ce.csv

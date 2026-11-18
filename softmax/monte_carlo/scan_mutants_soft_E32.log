@@ -1,0 +1,32 @@
+# soft widths [0.5, 1.0, 2.0] A; the width -> 0 limit reproduces the hard E exactly (checked)
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 121734.42it/s]
+# pten_1d5r, L=324, 32 steps: reference pLDDT 93.8, 910 contacts; same sequence twice differs in 0 contacts (must be 0)
+# soft noise floor, same sequence twice: E_w0.5 0.00e+00, E_w1 0.00e+00, E_w2 0.00e+00 (must be 0)
+# 20 sites requested, 0 already in pten_natural/pten_mutants_soft_E32.csv, 20 to do (380 decodes)
+# 10/20 sites, 5.2 min, 1.641 s per mutant, 5.2 min left; site 153 T: E min 0.0209 median 0.0318 max 0.0436, zeros 0/19
+# 20/20 sites, 10.4 min, 1.640 s per mutant, 0.0 min left; site 323 E: E min 0.0226 median 0.0309 max 0.0403, zeros 0/19
+
+# SUMMARY of pten_natural/pten_mutants_soft_E32.csv: 380 mutants over 20 sites
+# time per mutant: median 1.618 s
+# E = 0 (identical contact map to the reference): 0.0% of mutants; n_diff <= 2: 0.0%
+# E quantiles 10/25/50/75/90/max: 0.0225 0.0246 0.0292 0.0369 0.0405 0.0613
+# n_diff quantiles 10/25/50/75/90/max: 41 45 53 67 74 112
+# RMSD to the reference's prediction: median 0.80 A, 90% 1.43, max 1.99; pLDDT median 93.0, min 90.7
+# sites where EVERY mutant has E = 0: 0 of 20; where none does: 20
+# E_w0.5 quantiles 10/50/90: 0.0235 0.0296 0.0395
+# E_w1 quantiles 10/50/90: 0.0232 0.0287 0.0366
+# E_w2 quantiles 10/50/90: 0.0196 0.0240 0.0294
+# joined with pten_natural/pten_single_mutants.csv: 380 mutants
+#   agreement with U_am                   E    E_w0.5      E_w1      E_w2
+#     pooled                         +0.141    +0.135    +0.154    +0.165
+#     within site (median)           +0.125    +0.085    +0.132    +0.183
+#     per site (means)               +0.212    +0.075    +0.099    +0.098
+#   dU_am where E > 0: median 26.7 (n=380)
+# against pten_natural/pten_mutants_soft_E2.csv on 380 shared mutants. This is the diagnostic the softening is for:
+#   agreement between the two              E    E_w0.5      E_w1      E_w2
+#     pooled                         +0.108    +0.102    +0.123    +0.132
+#     within site (median)           +0.120    +0.120    +0.151    +0.168
+#     per site (means)               +0.068    +0.140    +0.176    +0.205
+#     median |difference|            0.0098    0.0094    0.0096    0.0081
+#     as a share of its own IQR        0.79      0.86      1.10      1.31
+#   E = 0 in both 0.0%, in this only 0.0%, in the other only 0.0%
