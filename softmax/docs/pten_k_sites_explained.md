@@ -1648,6 +1648,161 @@ attention pass takes, so expect something in the region of a quarter of an hour 
 6,156, against 4.5 minutes for `U_am` alone. The script runs 5 sites first and prints the
 measured rate, and it resumes, so the trial is not wasted.
 
+## 6.6h The diagnostic answers: the decode, not the threshold (18 November)
+
+The run of section 6.6e is done — 20 sites, 380 mutants, 2 then 8 then 32 steps, about
+15 minutes — and it gives the second of the two outcomes 6.6e set out. Softening the contact
+function does **not** restore reproducibility across step counts.
+
+The line to read is the step-count agreement between a schedule and the 2-step baseline, on
+the same 380 mutants, hard E beside the three widths:
+
+| 8 steps vs 2 steps | E (hard) | w = 0.5 Å | w = 1 Å | w = 2 Å |
+|---|---|---|---|---|
+| pooled ρ | +0.127 | +0.236 | +0.251 | +0.252 |
+| per site (20 sites) | −0.084 | +0.227 | +0.310 | +0.331 |
+| median \|difference\| | 0.0072 | 0.0102 | 0.0093 | 0.0072 |
+| as a share of its own IQR | 1.38 | 2.55 | 2.34 | 2.20 |
+
+| 32 steps vs 2 steps | E (hard) | w = 0.5 Å | w = 1 Å | w = 2 Å |
+|---|---|---|---|---|
+| pooled ρ | +0.108 | +0.102 | +0.123 | +0.132 |
+| per site (20 sites) | +0.068 | +0.140 | +0.176 | +0.205 |
+| median \|difference\| | 0.0098 | 0.0094 | 0.0096 | 0.0081 |
+| as a share of its own IQR | 0.79 | 0.86 | 1.10 | 1.31 |
+
+Pooled agreement between two step counts stays between +0.10 and +0.25 at every width —
+exactly the "+0.1 to +0.3 at every width" that 6.6e named as the decode's signature. The
+last row is the number 6.6e said to beat, and it gets *worse*, not better: the median shift
+rises from 0.79 to 1.31 times the column's own interquartile range at 32 steps, and from
+1.38 to 2.20 at 8. The reason is visible one row above. The absolute shift is unchanged by
+softening (0.0098 against 0.0081 at 32 steps, 0.0072 against 0.0072 at 8), while the spread
+*across mutants* shrinks, because a smooth contact function averages over the pairs the hard
+one counts one at a time. Smoothing buys precision in the quantity and nothing at all in its
+reproducibility, so the signal-to-schedule ratio falls.
+
+This is not because the softening does nothing. At a **fixed** step count it clearly helps,
+which is the honest part of the result:
+
+| agreement with `U_am` at 2 steps | E (hard) | w = 0.5 Å | w = 1 Å | w = 2 Å |
+|---|---|---|---|---|
+| pooled ρ | +0.524 | +0.613 | +0.631 | +0.635 |
+| within site (median) | +0.262 | +0.264 | +0.265 | +0.253 |
+| per site (20 sites) | +0.744 | +0.838 | +0.850 | +0.833 |
+
+So the 8 Å step really was costing signal — per site, agreement with `U_am` rises from +0.74
+to +0.85 — and a soft map is the better observable of the two if you are going to compute E
+at all. Against the experiments, on the same 20 sites so that the comparison is like for
+like, the gain is in the same direction but small enough to be noise at this sample size
+(236 to 320 variants, 16 to 18 sites with data):
+
+| same 20 sites, 2 steps | hard E | E at w = 1 Å |
+|---|---|---|
+| abundance 2021, pooled ρ | +0.127 | +0.141 |
+| abundance 2018, pooled ρ | +0.197 | +0.179 |
+| activity, pooled ρ | +0.041 | +0.137 |
+| AUC, abundance 2021 | 0.590 | 0.614 |
+| AUC, abundance 2018 | 0.601 | 0.584 |
+| AUC, activity | 0.526 | 0.623 |
+
+Two of three improve and activity improves a lot, but every number here is far below `U_am`'s
++0.345/+0.372/+0.365 and AUC 0.689/0.686/0.720 on the full scan, and the per-site columns
+rest on 20 points, where ±0.2 is ordinary scatter. Nothing in this table changes a
+conclusion; it is quoted so that the soft version is not left looking untested against the
+experiments.
+
+**What this settles.** The hard threshold was a real but secondary defect. The primary one is
+that ESM3's iterative decoder puts the structure in a materially different place at a
+different step count, and no reweighting of distances can repair a difference that is already
+in the coordinates. Section 6.6c's verdict therefore stands at every width: the
+`generate()`-based contact energy cannot be a Monte Carlo energy. The route out is a
+predictor with no decoding schedule at all — ESMFold, which is what Zambon et al. use, or the
+structure head used directly, which is section 6.6g.
+
+## 6.6i `U_structure_ce` measured: it wins per site, loses per substitution, and was quantised to 26 values
+
+The same run scanned `U_structure_ce` over all 324 × 19 = 6,156 mutants (`--structure-ce`,
+section 6.6g) at 0.089 s per mutant, 9 minutes in total, against 0.044 s for `U_am` alone.
+`U_structure_ce(reference) = 2.390625` nats, confirming it is a cross-entropy and not zero at
+the reference, and its noise floor over a repeated sequence is exactly 0.
+
+The trap 6.6g warned about did not fire: `dU_ce` is non-negative for all 6,156 mutants, and
+its minimum is exactly 0, so empirically the reference *is* the minimum over single mutants
+even though nothing in the definition requires it. Worth stating as a measurement rather than
+a property: it would not survive a sequence far from the reference.
+
+**Against the two experiments, per variant, beside `U_am` on exactly the same mutants:**
+
+| experiment | ρ pooled, `U_am` | ρ pooled, `U_ce` | ρ within site, `U_am` | ρ within site, `U_ce` | AUC `U_am` | AUC `U_ce` |
+|---|---|---|---|---|---|---|
+| abundance 2021 (4,079 variants) | +0.345 | **+0.374** | **+0.325** | +0.255 | **0.689** | 0.683 |
+| abundance 2018 (3,349) | +0.372 | **+0.395** | **+0.342** | +0.272 | 0.686 | 0.685 |
+| activity (5,324) | +0.365 | **+0.443** | **+0.346** | +0.283 | 0.720 | **0.755** |
+
+**Per site, both energies as −mean `dU` per position, recomputed on the same statistic:**
+
+| reference | `U_am` | `U_ce` | `U_am` given RSA | `U_ce` given RSA |
+|---|---|---|---|---|
+| orthologs entropy | +0.050 | **+0.308** | −0.131 | **+0.088** |
+| family entropy | +0.164 | **+0.438** | −0.110 | **+0.161** |
+| abundance mean | +0.297 | **+0.491** | +0.097 | **+0.166** |
+| activity mean | +0.261 | **+0.549** | +0.006 | **+0.264** |
+| RSA itself | +0.411 | +0.606 | — | — |
+
+Read together these two tables say something sharper than "`U_ce` is better". The two energies
+are good at different things.
+
+- **`U_ce` knows which site.** Its per-position profile correlates with every reference at two
+  to three times `U_am`'s strength, and — this is the part that matters — it survives
+  conditioning on solvent accessibility, which `U_am`'s does not. `U_am`'s site profile is
+  essentially *all* burial: partial out RSA and it drops to −0.13, −0.11, +0.10, +0.01, i.e.
+  nothing. `U_ce` keeps +0.09 to +0.26, and its best surviving signal is against activity,
+  the reference furthest from a simple buried/exposed split. Section 6.5's complaint that the
+  energy sides with abundance and not with family conservation is a statement about `U_am`
+  only; `U_ce` reaches +0.44 against family entropy.
+- **`U_am` knows which substitution.** Within site — rank the 19 substitutions at a position,
+  centre, pool — `U_am` is ahead on all three experiments, +0.325/+0.342/+0.346 against
+  +0.255/+0.272/+0.283.
+- The two agree with each other at +0.672 pooled, +0.637 within site, +0.641 per site: enough
+  to be measuring the same thing, far from enough to be redundant.
+
+**But the within-site comparison is not yet a fair fight, because `U_ce` was quantised.** Every
+one of the 6,156 values is an exact multiple of 1/64 = 0.015625, and there are only **26
+distinct values in the whole scan**, with 38.2% of mutants sharing a single one and 76.5% in
+three. The median cost of a mutation is 0.031 — *two* representable steps — and the
+interquartile range of the entire energy is 0.0156, i.e. **one step**. The cause is that
+`predict_structure_logits` runs under bfloat16 autocast, and `cross_entropy` on bfloat16
+logits returns a bfloat16 *scalar*, whose spacing at magnitude ~2.4 is exactly 2⁻⁶. `U_am`
+escapes this only by accident of scale: it sums 52,326 squared terms into a number of order
+10¹, and takes 6,155 distinct values over the same 6,156 mutants.
+
+Nothing downstream complains about that — Spearman simply fills with ties — which is why it
+had to be looked for. It bites the within-site number hardest, because that statistic asks
+the energy to order 19 substitutions at one position, and the median site offers only **4**
+distinct values, with 108 of 324 sites offering 3 or fewer. So `U_ce`'s substitution-level
+deficit against `U_am` is partly, and possibly mostly, an artefact of its own output dtype,
+and every `U_ce` number in the two tables above is a **lower bound**.
+
+The fix is one `.float()` in `utils/energies.py:compute_U_structure_ce`, which costs one
+`[L, 4096]` softmax in fp32, keeps the autograd graph the sampler's gradient needs, and is in
+place as of 18 November; `scan_single_mutants.py` now also prints the distinct-value count and
+the largest tie at the end of a `--structure-ce` scan, and warns when the step is large
+compared with the spread, so this cannot recur silently. The 9-minute scan wants re-running on
+the fixed code before any of the `U_ce` figures go in the thesis.
+
+**Why this matters beyond the scan.** Unlike E, `U_structure_ce` is usable in the loop as it
+stands: one forward pass, no `generate()`, no schedule, no threshold, differentiable, and
+`lambda_structure_ce` is already a parameter of `rate_sampler` that has been 0 for the whole
+project. The natural next experiment is therefore not a replacement but a sum,
+`lambda_am · U_am + lambda_structure_ce · U_structure_ce`, with the site-level and
+substitution-level strengths of the two terms complementing each other. One caution on the
+scale: `dU_ce` has a median of 0.031 nats against `dU_am`'s 32, so at the ladder's interesting
+temperatures (T ≈ 2.5, section 6.6c's companion run) a `lambda_structure_ce` of 1 contributes
+nothing whatever to a Metropolis decision. Making the two terms comparable needs
+`lambda_structure_ce` of order 10³, and at that point the quantisation above is no longer a
+cosmetic concern about correlations but the dominant artefact in the acceptance — another
+reason the `.float()` has to land before the term is switched on.
+
 # 7. InterPro, Pfam, and the step to run locally
 
 ## 7.1 What they are
@@ -1839,6 +1994,16 @@ chains. Step 6 is the only one that needs ESM3 and the card.
         --out pten_natural/pten_mutants_ce.csv            # trial, prints the rate
     nohup python -u scan_single_mutants.py --structure-ce \
         --out pten_natural/pten_mutants_ce.csv > scan_mutants_ce.log 2>&1 &
+
+    # 8e. RE-RUN of 8d on the float32 cross-entropy (18 November). The first scan came out
+    #      quantised to 26 distinct values because cross_entropy on bfloat16 logits returns
+    #      a bfloat16 scalar; see 6.6i. Delete the old file first -- the scan RESUMES, so it
+    #      would keep the quantised rows -- and keep the old one for the comparison:
+    mv pten_natural/pten_mutants_ce.csv pten_natural/pten_mutants_ce_bf16.csv
+    nohup python -u scan_single_mutants.py --structure-ce \
+        --out pten_natural/pten_mutants_ce.csv > scan_mutants_ce_fp32.log 2>&1 &
+    #      The scan now ends with a 'dU_ce resolution:' line: expect ~6156 distinct values
+    #      and a largest tie near 0%. If it still warns, the .float() did not take effect.
 
     # 9. either energy against the experiments, and the two against each other (no GPU).
     #    --energy-column picks the cost, --tag keeps the outputs apart, --versus adds

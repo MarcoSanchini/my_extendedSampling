@@ -61,9 +61,11 @@ Then compare with the papers and the natural alignments:
     python pten_k_sites.py mutants --mutants pten_natural/pten_single_mutants.csv
 """
 import argparse
+import csv
 import os
 import sys
 import time
+from collections import Counter
 
 import numpy as np
 
@@ -140,6 +142,40 @@ def done_sites(path, n_expected, header=COLUMNS):
 				keep.append(line)
 	full = {s for s, n in counts.items() if n == n_expected}
 	return full, [l for l in keep if int(l.split(",", 1)[0]) in full]
+
+
+def resolution_report(path):
+	"""How many distinct values dU_ce actually takes, printed because it once took 26.
+
+	U_am sums 52326 squared terms and comes out with a different value for every
+	mutant. U_structure_ce is a single mean over L positions, so it is quantised by
+	the dtype of its own output: computed under bfloat16 autocast it landed on
+	multiples of 2**-6 = 0.015625 while the median mutation costs 0.031, i.e. two
+	steps, and 38% of 6156 mutants shared one value (2026-11-18, fixed by the
+	.float() in utils/energies.py:compute_U_structure_ce). Nothing downstream
+	complains about that -- Spearman just quietly fills with ties -- so the scan
+	says it out loud instead."""
+	try:
+		with open(path) as fh:
+			rows = list(csv.DictReader(fh))
+		vals = [float(r["dU_ce"]) for r in rows if r.get("dU_ce") not in (None, "")]
+	except (OSError, KeyError, ValueError) as exc:
+		print(f"# could not re-read {path} for the resolution check: {exc}", flush=True)
+		return
+	if not vals:
+		return
+	distinct = len(set(vals))
+	top = max(Counter(vals).values())
+	spread = np.subtract(*np.percentile(vals, [75, 25]))
+	gaps = np.diff(np.unique(vals))
+	step = float(gaps.min()) if len(gaps) else float("nan")
+	print(f"# dU_ce resolution: {distinct} distinct values over {len(vals)} mutants, "
+		f"largest tie {100 * top / len(vals):.1f}%, smallest gap {step:.3e}, IQR {spread:.3e}", flush=True)
+	if distinct < len(vals) / 10 or step > spread / 8:
+		print("# WARNING: dU_ce is coarse compared with its own spread, so the correlations "
+			"below are a LOWER BOUND and are full of ties. This is what a bfloat16 scalar "
+			"looks like: check that compute_U_structure_ce still casts its logits to float32.",
+			flush=True)
 
 
 def main():
@@ -321,6 +357,9 @@ def main():
 				print(f"site {s:3d} {cur}: dU min {min(dU):10.3f} ({vocab[cand_idx[int(np.argmin(dU))]]}) "
 					f"median {np.median(dU):10.3f} max {max(dU):10.3f} "
 					f"({vocab[cand_idx[int(np.argmax(dU))]]})", flush=True)
+
+	if args.structure_ce:
+		resolution_report(args.out)
 
 	print(f"\n# done. {args.out}", flush=True)
 	print("# next: python pten_k_sites.py mutants --mutants " + args.out, flush=True)

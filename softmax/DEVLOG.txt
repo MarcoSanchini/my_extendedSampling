@@ -7251,3 +7251,58 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     the effective sample is small and both chains start at the reference.
     R-hat 1.00-1.01 from 220000 and a flat Hd say they agree, not that the
     native basin was crossed; <Hd> 19 of 324 (6% mutated) is the claim.
+
+2026-11-18  PTEN: the soft-contact diagnostic answers "the decode", and U_structure_ce
+    measured (plus the bfloat16 quantisation that capped it)
+    run_soft_and_ce.sh ran clean on astaroth, 10:02-10:27, GPU back to its starting
+    416 MiB after every step.
+    SOFT CONTACT, the diagnostic of 2026-11-17: the THRESHOLD was not the problem.
+    Step-count agreement with the 2-step baseline on 380 shared mutants stays at
+    +0.10 to +0.25 pooled at every width, and the median shift as a share of the
+    column's own IQR gets WORSE, 0.79 -> 1.31 at 32 steps and 1.38 -> 2.20 at 8,
+    because the absolute shift is unchanged (0.0098 -> 0.0081 at 32 steps) while
+    softening compresses the spread across mutants. At a FIXED step count it does
+    help: agreement with U_am at 2 steps rises from +0.524 to +0.635 pooled and
+    +0.744 to +0.850 per site, and against the experiments on the same 20 sites it
+    improves 2 of 3 (activity +0.041 -> +0.137, AUC 0.526 -> 0.623) though every
+    number there is within noise at 236-320 variants. VERDICT, unchanged at every
+    width: a generate()-based E cannot be a Monte Carlo energy; the decoder puts the
+    structure somewhere else at a different step count and no reweighting of
+    distances repairs that. Doc 6.6h.
+    U_STRUCTURE_CE, all 6156 mutants, 0.089 s each, 9 min. U_ce(reference) = 2.390625
+    nats, noise floor 0. dU_ce turned out NON-NEGATIVE everywhere with minimum exactly
+    0, so the reference is empirically the minimum over single mutants (a measurement,
+    not a property). vs U_am: +0.672 pooled, +0.637 within site, +0.641 per site.
+    THE TWO ENERGIES ARE COMPLEMENTARY, which is the result:
+      per variant, U_am -> U_ce: abundance 2021 +0.345 -> +0.374, abundance 2018
+        +0.372 -> +0.395, activity +0.365 -> +0.443; AUC 0.689/0.686/0.720 ->
+        0.683/0.685/0.755. U_ce WINS pooled and on activity AUC.
+      within site (rank the 19 substitutions at a position): U_am WINS,
+        +0.325/+0.342/+0.346 against +0.255/+0.272/+0.283.
+      per site (-mean dU, same statistic both): U_ce wins everywhere and, unlike
+        U_am, SURVIVES PARTIALLING OUT RSA. orthologs +0.050 -> +0.308 (given RSA
+        -0.131 -> +0.088), family +0.164 -> +0.438 (-0.110 -> +0.161), abundance
+        +0.297 -> +0.491 (+0.097 -> +0.166), activity +0.261 -> +0.549
+        (+0.006 -> +0.264). U_am's site profile is essentially ALL burial; U_ce's is
+        not. So U_ce knows WHICH SITE, U_am knows WHICH SUBSTITUTION.
+    BUG FOUND IN THE PROCESS, and fixed: every one of the 6156 U_ce values was an
+    exact multiple of 1/64, only 26 DISTINCT VALUES in the whole scan, 38.2% of
+    mutants on one of them, median mutation cost 0.031 = two steps, and the IQR of
+    the entire energy equal to ONE step. Cause: predict_structure_logits runs under
+    bfloat16 autocast and cross_entropy on bf16 logits returns a bf16 SCALAR, spacing
+    2**-6 at magnitude 2.4. U_am escapes only by scale (52326 summed squares, 6155
+    distinct values on the same mutants). Nothing downstream complains -- Spearman
+    just fills with ties -- and it hits the WITHIN-SITE number hardest, since the
+    median site offers only 4 distinct values for its 19 substitutions and 108 of 324
+    offer <= 3. So every U_ce number above is a LOWER BOUND. Fix: .float() on the
+    logits in utils/energies.py:compute_U_structure_ce (one fp32 softmax, graph kept,
+    so the sampler's gradient is unchanged); scan_single_mutants.py now prints a
+    'dU_ce resolution:' line with the distinct count and largest tie and warns when
+    the step is large against the spread. Doc 6.6i, re-run as step 8e of section 9.
+    NEXT, and this is the in-loop point: lambda_structure_ce has been 0 for the whole
+    project and U_ce needs no generate(), no schedule, no threshold, and is
+    differentiable, so U = lambda_am*U_am + lambda_structure_ce*U_structure_ce is the
+    natural experiment, the two terms being strong at different things. SCALE CAUTION:
+    median dU_ce 0.031 against dU_am 32, so at T ~ 2.5 a lambda of 1 contributes
+    nothing to acceptance; comparable means lambda ~ 1e3, at which point the
+    quantisation would dominate the acceptance, not just the correlations.
