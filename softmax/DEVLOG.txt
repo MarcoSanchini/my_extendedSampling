@@ -7206,3 +7206,48 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     the CE scan, one GPU process at a time, set -e, nvidia-smi between steps, 5-site
     CE trial first (resumable, so not wasted), correlations at the end. Doc 6.6g,
     commands as steps 8c and 8d of section 9.
+
+2026-11-18 -- the ladder is complete: every T equilibrated, and the heat
+    capacity has a peak at T ~ 2.5-3
+    T=1 and T=1.5 run fresh to 300000 (equil_ref, SEED_BASE=200, two
+    reference-started chains), T=4 resumed 180000 -> 400000. With these,
+    t_eq EXISTS AT EVERY TEMPERATURE OF THE LADDER, which the 2026-11-12
+    entry said was reached at none:
+
+    T     dir        moves   t_eq     <U>     <Hd>   acc     C=Var(U)/T^2
+    1     equil_ref  300000  180000     53.0   19.1  0.011   124 +- 11
+    1.5   equil_ref  300000  140000    158.5   47.5  0.028   133 +-  6
+    2     equil_ref  650000  440000    302.6   75.9  0.048   360 +- 77
+    3     equil      180000  100000*   679.6  132.7  0.093   241 +- 13
+    4     equil_ref  400000  220000    999.6  167.2  0.127   253 +- 56
+    5     equil      180000  100000   1297.8  189.4  0.154   297 +-  1
+    6     equil      180000   80000   1573.4  205.4  0.177   200 +- 46
+    8     equil_ref  150000  120000   1855.9  219.3  0.214   138 +-  4
+    16    equil_ref   90000   60000   2948.7  251.6  0.293    93 +- 10
+    (the +- is half the difference between the two chains, not a standard
+    error; T=3 keeps its * from 2026-11-16.)
+
+    T=4 WAS THE SLOWEST and is now done: t_eq 220000, i.e. it needed more
+    than the 180000 it had on 2026-11-16, when Rhat_Hd was still 1.28. Its
+    <U> moved 1040 -> 1000 with the extra 220000 moves, so the earlier
+    number was biased high by the approach.
+
+    THE HEAT CAPACITY PEAK, by both estimators. d<U>/dT between neighbouring
+    temperatures (midpoint T): 211 (1.25), 288 (1.75), 377 (2.5), 320 (3.5),
+    298 (4.5), 276 (5.5), 141 (7), 137 (12). It rises, peaks at T ~ 2.5, and
+    falls: a maximum, not a shoulder. Var(U)/T^2 agrees where it is precise
+    (360 at T=2 against the 377 derivative) but is noisy per chain -- at T=2
+    the two chains give 436 and 283, at T=4 197 and 309 -- so the DERIVATIVE
+    is the better estimator here and the fluctuation one needs more chains.
+
+    THIS CORRECTS 2026-11-16 (second entry), which said C falls monotonically
+    from T=2 so any peak must be below T=3. That was an artefact of the
+    ladder stopping at T=2: with T=1 and T=1.5 in hand, C clearly rises into
+    the peak from below. The peak sits inside the T ~ 3-5 melting range of
+    2026-11-12 and matches dHd/dT, which is flat at ~57 per unit T from T=1
+    to T=3 and drops to 34, 22 above it.
+
+    CAVEAT at T=1: acceptance 0.011, about 3100 accepted moves in 300000, so
+    the effective sample is small and both chains start at the reference.
+    R-hat 1.00-1.01 from 220000 and a flat Hd say they agree, not that the
+    native basin was crossed; <Hd> 19 of 324 (6% mutated) is the claim.
