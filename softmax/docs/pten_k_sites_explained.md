@@ -586,11 +586,35 @@ principle have hit the `-mean_dU` rows as hard as the entropy rows. It was check
 across the twelve chains and four references is **0.004** and the largest is 0.044, against
 0.104 for the entropy's own burn-in shift at T = 8, and against a median of 0.003 between two
 *independent chains* of the same temperature. So the shift is the size of chain-to-chain
-noise, and the assertion holds. The one ordering it flips is T = 16 chain 1, where family
-crosses abundance by 0.02 while its partner chain moves the other way — the shortest chain in
-the ladder, and exactly the noise this comparison measures. `compare` now reports both, per
-site in the table and as a `-mean_dU_kept` row, so the two can never again be taken for each
-other.
+noise, and the `-mean_dU` rows of section 5.2 need no correction.
+
+**But not because `dU` is independent of the chain's state, which it is not.** `dU` is
+U(proposed) − U(current), measured against whatever sequence the chain currently holds, so
+the per-site values drift as the chain melts — and at high temperature by a lot:
+
+| chain 0 | median \|shift\| in per-site `mean_dU` | as a share of its median value | Spearman, whole chain vs kept |
+|---|---|---|---|
+| T = 2 | 1.08 | 3% | 0.997 |
+| T = 4 | 2.06 | 6% | 0.990 |
+| T = 8 | 5.41 | 12% | 0.965 |
+| T = 16 | 10.28 | 18% | 0.921 |
+
+The second chain of each temperature gives the same to within a few hundredths, so this is
+drift and not noise. What survives is the **ordering**, and everything this document quotes
+from `mean_dU` is a rank correlation, so a near-rank-preserving drift passes straight through.
+That is also what ties the two observations together: T = 16, where rank preservation is
+weakest at 0.921, is precisely the one temperature whose family-versus-abundance ordering
+flips in one chain and not the other.
+
+The real asymmetry with the entropy is what each statistic is made of. Every move proposes at
+*some* site whether or not it is accepted, so `mean_dU` accumulates proposals at every site
+throughout the chain, and the pre-t_eq ones are drawn from sequences that are merely somewhat
+less melted — worse samples of a similar ordering. The entropy is a time average of the
+*occupied* state, so pre-t_eq moves contribute states from a different distribution
+altogether, not noisier samples of the same one. Hence 0.104 against 0.044 at worst.
+
+`compare` now reports both windows, per site in the table and as a `-mean_dU_kept` row, so the
+two can never again be taken for each other.
 
 ## 5.2 The numbers
 

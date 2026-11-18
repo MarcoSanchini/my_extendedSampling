@@ -7366,10 +7366,22 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     one family-vs-abundance ordering flips, T16.c1 (+0.377 -> +0.422 family crossing
     +0.405 -> +0.407 abundance) while its partner T16 moves the other way (+0.370 ->
     +0.342): the shortest chain in the ladder, 90001 moves, 18000 kept. So "the ENERGY
-    prefers abundance" needs NO re-quoting; only the entropy side did. Why it is immune:
-    mean_dU averages the cost of PROPOSALS, which are made at every site whether accepted
-    or not, so it samples a site's intrinsic cost from the first move, while the entropy
-    is a time average of the STATE, which is what equilibration changes.
+    prefers abundance" needs NO re-quoting; only the entropy side did.
+    WHY IT IS ROBUST -- and the first reading of this was WRONG, corrected the same hour:
+    it is NOT that dU is independent of the chain's state. dU = U(proposed) - U(current),
+    so the per-site values drift as the chain melts, and at high T by a lot. chain0,
+    median |shift| of per-site mean_dU, whole chain vs the 0.8 window, as a share of the
+    median value, with the Spearman between the two orderings: T=2 1.08 on 36.2 = 3%,
+    rho 0.997; T=4 2.06 on 37.4 = 6%, 0.990; T=8 5.41 on 44.3 = 12%, 0.965; T=16 10.28
+    on 57.7 = 18%, 0.921. chain1 agrees to a few hundredths, so it is drift, not noise.
+    What survives is the ORDER, and everything quoted from mean_dU is a RANK correlation,
+    so a near-rank-preserving drift passes through. That also explains the one flip: T=16
+    has the weakest rank preservation (0.921) and is exactly where the ordering moved.
+    The real asymmetry with the entropy is what each statistic is made of: every move
+    proposes at SOME site whether accepted or not, so mean_dU accumulates proposals
+    everywhere throughout the chain and the pre-t_eq ones are worse samples of a similar
+    ordering; the entropy is a time average of the OCCUPIED state, so pre-t_eq moves
+    contribute states from a DIFFERENT distribution. Hence 0.104 against 0.044 at worst.
     Also fixed the PerformanceWarning that had started printing into the middle of the
     log: the ~100 per-chain columns are collected in a dict and concatenated once.
     Doc 5.1 (the measurement) and 6.5 (one clause). Re-ran compare at 0.8; the entropy
