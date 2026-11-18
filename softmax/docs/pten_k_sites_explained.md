@@ -586,7 +586,9 @@ here came from the run of 2026-11-13 with `--burn-in-frac 0.5`, the default, whi
 last half of each chain. Half a chain is not the same thing as "after equilibration", and
 once the ladder was equilibrated at every temperature the measured t_eq turned out to be a
 *larger* fraction than 0.5 at seven of the nine temperatures: 0.60, 0.47, 0.68, 0.56, 0.55,
-0.56, 0.44, 0.80, 0.67 at T = 1, 1.5, 2, 3, 4, 5, 6, 8, 16. So the old averages contained
+0.56, 0.44, 0.80, 0.67 at T = 1, 1.5, 2, 3, 4, 5, 6, 8, 16 (T = 3 passes the R-hat
+criterion only at the last grid point, so its figure is the weakest of the nine, though it is
+equilibrated from 100,000 moves in practice). So the old averages contained
 pre-equilibration moves. `--burn-in-frac 0.8` clears t_eq everywhere, and everything below
 is measured that way, on the `equil_ref` chains, both replicas, each started from the
 reference. The contrast this section is about survives; its size does not — see the reading
@@ -1260,9 +1262,13 @@ residual agreement, burial removed, is with abundance (+0.12) and not with conse
 against +0.18/+0.16 for abundance.
 
 That is a statement about the chains, and it has a mundane reading and an interesting one.
-The mundane one is *reachability*: at T = 1, 188 and 184 sites of 324 never accepted a move
-even in the post-t_eq window, so what the sampled entropy ranks there is partly which sites
-the chain ever reached, and nothing says reachability should track abundance. Note what this
+The mundane one is *reachability*: at T = 1, 241 and 236 sites of 324 have zero entropy in
+the window the entropies are measured on, and 188 and 184 never accept a move anywhere in
+the 300,000-move chain. (The two counts differ because `chain_site_stats` accumulates
+`accepted` over the whole chain while only the entropy respects the burn-in; the zero-entropy
+count is the one to quote beside a table of entropies.) So what the sampled entropy ranks at
+T = 1 is partly which sites the chain ever reached, and nothing says reachability should
+track abundance. Note what this
 reading no longer is, as of the 18 November re-measurement: it is not non-equilibration. The
 ladder is equilibrated at every temperature and the averages above are taken after t_eq, so
 "the chains have not converged" is excluded as an explanation. A chain can be equilibrated
@@ -2224,9 +2230,10 @@ and I will write it.
 1. **The chains are equilibrated, but low T is still reachability-limited.** This caution
    used to read "the chains are not equilibrated"; as of 18 November the ladder has a
    measured t_eq at every temperature and every average quoted here is taken after it
-   (`--burn-in-frac 0.8`, section 5.2). What remains is that at T = 1 some 185 of 324 sites
-   never accept a move even in the post-t_eq window, because acceptance there is 0.011, so
-   the sampled entropy at low T ranks reachability as much as tolerance. The correlations at
+   (`--burn-in-frac 0.8`, section 5.2). What remains is that at T = 1, 241 and 236 of 324 sites
+   have zero entropy in the measured window (188 and 184 never accept a move anywhere in the
+   chain), because acceptance there is 0.011, so the sampled entropy at low T ranks
+   reachability as much as tolerance. The correlations at
    T = 4, 8 and 16 are the ones to quote. Note also that the earlier `--burn-in-frac 0.5`
    default kept pre-t_eq moves at seven of nine temperatures and inflated the
    conservation-over-abundance margin by about a third.
