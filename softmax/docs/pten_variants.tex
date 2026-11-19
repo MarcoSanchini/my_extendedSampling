@@ -802,29 +802,30 @@ hold. The numbers come from one-off scripts, not from \file{pten\_variants.py}.
 \subsection{ClinGen Evidence Repository, PTEN VCEP}
 
 \begin{itemize}
-\item \textbf{Content.} Web exports of the PTEN Variant Curation Expert
-  Panel's classifications, with the ACMG codes met: complete lists for
-  pathogenic (76), uncertain (62), likely benign (32) and benign (12); for
-  likely pathogenic only the first page (25 of an unknown total) was
-  available. 207 distinct records.
-\item \textbf{Missense.} 102 records (63 P/LP, 33 VUS, 6 B/LB), every one
-  already in the merged table; 101 carry the same class as our ClinVar file.
-  The exception is M134I: the panel calls c.402G$>$C likely pathogenic and
-  c.402G$>$A uncertain, which a protein-level key merges. The 6 B/LB are the
-  same A79T, S229T, Q298E, S294R, P354Q, S360G (only A79T and S229T inside
-  the construct), so there is still no benign missense class.
-\item \textbf{Functional evidence.} 55 of 63 P/LP missense use PS3, 4 of 6
-  B/LB use BS3, and 21 of 33 VUS carry PS3 or BS3. Functional assays enter
-  most expert classifications, which is the circularity again.
-\item \textbf{Ranking.} P/LP vs VUS inside the construct (61 vs 27):
-  $\Uam$ 0.67, $\Uce$ 0.66, $\Etwo$ 0.61, abundance 0.66 (42 vs 19),
-  activity 0.92 (54 vs 25). Keeping only the 11 VUS classified without
-  functional evidence: $\Uam$ 0.63, $\Uce$ 0.62, $\Etwo$ 0.64, activity
-  0.98. The energies sit where they sit against ClinVar labels; activity is
-  near perfect because it is part of the label. With 27 VUS the 95\,\%
-  bootstrap intervals are wide ($\Uam$ 0.54--0.80, $\Uce$ 0.52--0.79,
-  $\Etwo$ 0.48--0.74), so the $\Etwo$ figure does not reverse its
-  chance-level result elsewhere.
+\item \textbf{Content.} Complete web exports of the PTEN Variant Curation
+  Expert Panel's classifications, with the ACMG codes met: pathogenic (76),
+  likely pathogenic (53), uncertain (62), likely benign (32), benign (12);
+  235 distinct ClinVar records. (The first export was one 25-row page per
+  class and the second had its file names shifted by one class; the
+  \texttt{Classification} column was used throughout.)
+\item \textbf{Missense.} 122 records: 83 P/LP (82 changes, G36R by two
+  codons), 33 VUS, 6 B/LB. Every change is already in the merged table, and
+  all but one carry the same class as our ClinVar file. The exception is
+  M134I: the panel calls c.402G$>$C likely pathogenic and c.402G$>$A
+  uncertain, which a protein-level key merges. The 6 B/LB are the same A79T,
+  S229T, Q298E, S294R, P354Q, S360G (only A79T and S229T inside the
+  construct), so there is still no benign missense class.
+\item \textbf{Functional evidence.} 69 of 83 P/LP missense records use PS3,
+  4 of 6 B/LB use BS3, and 21 of 33 VUS carry PS3 or BS3. Functional assays
+  enter most expert classifications, which is the circularity again.
+\item \textbf{Ranking.} P/LP vs VUS inside the construct (80 vs 27), with
+  95\,\% bootstrap intervals: $\Uam$ 0.67 (0.54--0.80), $\Uce$ 0.65
+  (0.53--0.77), $\Etwo$ 0.58 (0.45--0.70), abundance 0.68 (0.53--0.82; 60 vs
+  19), activity 0.87 (0.79--0.95; 73 vs 25). Keeping only the 11 VUS
+  classified without functional evidence: $\Uam$ 0.63, $\Uce$ 0.61, $\Etwo$
+  0.60, abundance 0.69, activity 0.92. The energies sit where they sit
+  against ClinVar labels, $\Etwo$'s interval contains 0.5, and activity is
+  highest because it is part of the label.
 \end{itemize}
 
 Verdict: neither source changes a result. MaveDB's label history supports the
