@@ -767,7 +767,66 @@ dotted line = exact additivity; orange = hypermutated sample.}
 \end{enumerate}
 
 % ===========================================================================
-\section{Caveats}
+\section{Other databases checked}
+% ===========================================================================
+
+Two further sources were exported by hand on 2026-11-19 and checked against
+the merged table. Neither is in \file{databases/} and neither enters the
+results above; this section records that they were looked at and what they
+hold. The numbers come from one-off scripts, not from \file{pten\_variants.py}.
+
+\subsection{MaveDB, Matreyek et al.\ 2018 VAMP-seq (urn:mavedb:00000013-a-1)}
+
+\begin{itemize}
+\item \textbf{Score.} The 2018 abundance score; Spearman 0.95 with the
+  \texttt{abundance\_2021} column already used (660 shared variants).
+\item \textbf{Pathogenic/benign columns of the score CSV.} Not labels: each
+  calibration cuts the score at thresholds (fitted on ClinVar controls) and
+  returns ACMG PS3/BS3 evidence strengths. They are the score again. The CSV's
+  gnomAD and VEP columns are empty.
+\item \textbf{ClinVar annotations of the variant-details file.} Genuine
+  ClinVar records per candidate allele, in twelve yearly snapshots
+  (02/2015 to 01/2026). On the 2026 snapshot they label 646 missense
+  variants, 95\,\% identical to our ClinVar file, with 2 new. Their 115
+  benign/likely-benign entries are 109 synonymous and the same 6 missense we
+  already had, so there is still no benign missense class. gnomAD annotations
+  are sparse (144 rows against 235 missense in our gnomAD file).
+\item \textbf{What is new: label history.} Re-labelling P/LP vs VUS with the
+  2018 snapshot (before functional data fed the classifications) gives
+  abundance 0.69, $\Uam$ 0.66, $\Uce$ 0.67, $\Etwo$ 0.58, activity 0.70
+  (69--114 per class). On the 2026 snapshot: 0.70, 0.71, 0.72, 0.51, 0.85.
+  Only activity jumps, which is the circularity of Section~\ref{sec:caveats}
+  made visible; the ESM3 energies do not depend on it.
+\end{itemize}
+
+\subsection{ClinGen Evidence Repository, PTEN VCEP}
+
+\begin{itemize}
+\item \textbf{Content.} Five exports (pathogenic, likely pathogenic,
+  uncertain, likely benign, benign), all from the PTEN Variant Curation
+  Expert Panel: 112 rows, with the ACMG codes met. Four files hold exactly 25
+  rows, which looks like one page of the web export, not the panel's full set.
+\item \textbf{Missense.} 57 rows (36 P/LP, 15 VUS, 6 B/LB), all already in the
+  merged table; 56 carry the same class as our ClinVar file. The exception is
+  M134I: the panel calls c.402G$>$C likely pathogenic and c.402G$>$A
+  uncertain, which a protein-level key merges. The 6 B/LB are again A79T,
+  S229T, Q298E, S294R, P354Q, S360G (only A79T and S229T inside the
+  construct).
+\item \textbf{Functional evidence.} 30 of 36 P/LP missense use PS3 and 4 of 6
+  B/LB use BS3: functional assays are part of most expert classifications,
+  which is the circularity again.
+\item \textbf{Ranking.} P/LP vs VUS on these 36 vs 13 in-construct missense:
+  $\Uam$ 0.49, $\Uce$ 0.48, $\Etwo$ 0.50, abundance 0.47, activity 0.84. The
+  panel's VUS are not population variants: 11 of 15 carry PS3 or BS3 and
+  several are loss-of-activity, so this contrast is between two disease-like
+  groups and too small to read.
+\end{itemize}
+
+Verdict: neither source changes a result. MaveDB's label history supports the
+circularity caveat for the activity AUC; ClinGen adds only the evidence codes.
+
+% ===========================================================================
+\section{Caveats}\label{sec:caveats}
 % ===========================================================================
 
 \begin{itemize}

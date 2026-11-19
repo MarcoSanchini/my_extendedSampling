@@ -212,3 +212,8 @@ additivity of the compounds (compound vs the sum of its singles) to `rank.log` a
 
 On astaroth, `clean` and `rank` also pick up `pten_natural/raw/PTEN_variant_data.tsv`:
 its `snv` column for the 107 unknown substitutions, and its 15 predictors next to U_am.
+
+## 7. Other databases checked (2026-11-19, not in `databases/`)
+
+- **MaveDB urn:mavedb:00000013-a-1** (Matreyek 2018 VAMP-seq): score = 2018 abundance (rho 0.95 with `abundance_2021`); calibration columns are score thresholds turned into PS3/BS3, not labels; ClinVar annotations (yearly 2015-2026) are 95% identical to our ClinVar file and add no benign missense. Only new: on 2018 labels activity AUC is 0.70 vs 0.85 on 2026 labels, the energies barely move (circularity of the activity AUC).
+- **ClinGen Evidence Repository, PTEN VCEP** (5 exports, 112 rows, likely one 25-row page each): 57 missense, all already in the merged table, 56/57 same class; 30/36 P/LP use PS3. Nothing changes a result. Details in `pten_variants.tex`, section "Other databases checked".
