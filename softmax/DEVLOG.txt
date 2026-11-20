@@ -7602,3 +7602,17 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     59 sites (less diverse set). Verdict: K_natural does not depend on UniRef90's 59% tensins.
     Merging a protein's domain hits into one row also gives the 310-353 segment an orthologue
     entropy, which UniRef90's split hits leave above the gap cut-off.
+
+2026-11-20 (third entry)  PTEN variants report: clarifications, and the sampled K-sets at
+            every temperature
+    Marco's review of docs/pten_variants.tex: added what tensins are and how they enter the
+    alignments (1.5), a worked SNV-reachability example (R130 = CGA -> G, L, P, Q only; 150 of
+    380 residue pairs are one-base reachable) and how each comparison stays inside the 1906
+    reachable substitutions (1.6), the wt+position+mut key, what "intronic" means, the KLLN
+    rows (killin residues W149R, P79T read as PTEN would be wrong) and ENST00000472832 S153
+    (2.1), readings of Figure 1's bottom panels and of the compound figure.
+    Why T4/T8: reran `pten_variants.py profiles` at all nine ladder temperatures
+    (kset_enrichment_all_T.tsv, kset_density_correlations_all_T.tsv). Below T4 the 10% set is
+    every frozen site (210/145/67/43 at T1/1.5/2/3) and the signal fades (recurrent tumour
+    1.14 at T1); from T4 to T16 it is a plateau, recurrent tumour 3.2-3.6 (best T6), P/LP
+    2.2-2.6 (best T8), damaging-density rho -0.38 to -0.42 (best T6, -0.27 given RSA).
