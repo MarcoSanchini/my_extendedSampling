@@ -40,6 +40,11 @@ Subcommands
   loop     what the references say about the 286-309 loop that the construct
            lacks: tiers of the full-length alignment (PDB 7JVX chain A) and
            the two scans on the loop sites.
+  msa      robustness of the natural reference to the sequence database: the
+           same tiers from the BFD and MGnify alignments of the 1D5R chain
+           (OpenProteinSet), plus any FASTA given with --fasta (e.g. a UniRef100
+           download), compared with UniRef90 site by site, on the K-like set and
+           on the disease-variant enrichment of pten_variants.py.
   pfam     the natural reference rebuilt from Pfam: asks InterPro which Pfam
            families lie on human PTEN, downloads their alignments, projects
            them on the reference through PTEN's own row and compares the
@@ -67,6 +72,8 @@ Usage:
         --runs-dir pten1d5r_study/equil_ref pten1d5r_study/equil      # the whole ladder
     python pten_k_sites.py family
     python pten_k_sites.py mutants                             # needs scan_single_mutants.py's CSV (GPU)
+    python pten_k_sites.py msa                                 # BFD and MGnify vs UniRef90
+    python pten_k_sites.py msa --fasta uniref100=../../databases/<file>.fasta
     python pten_k_sites.py pfam                                # local machine only
     python pten_k_sites.py build --vertebrate-identity 0.95    # or: none
 """
@@ -202,10 +209,12 @@ def weighted_entropy(X, w, max_gap):
 	return H, gap, np.array(list(AA))[best], p[np.arange(L), best]
 
 
-def natural_tiers(a3m, ref, rmap, args):
-	"""Four nested natural alignments of the reference and their per-site entropies."""
+def natural_tiers(a3m, ref, rmap, args, seqs=None):
+	"""Four nested natural alignments of the reference and their per-site entropies.
+	`seqs` (query first, one string of len(ref) match columns each) replaces reading `a3m`."""
 	L = len(ref)
-	names, seqs = read_a3m(a3m, L)
+	if seqs is None:
+		names, seqs = read_a3m(a3m, L)
 	if seqs[0] != ref:
 		raise ValueError(f"{a3m}: the query is not the {REF_NAME} reference")
 	X = encode(seqs, L)
@@ -1411,6 +1420,209 @@ def cmd_pfam(args):
 	print(f"\nOutputs in {args.out_dir}: pten_site_table_pfam.csv, pfam_summary.tsv, pten_pfam_profile.png")
 
 
+# -------------------------------------------------------------------- msa --- #
+# Does the natural reference depend on which sequence database the homologs come from?
+# OpenProteinSet ships three alignments of the same 1D5R chain, searched the AlphaFold 2 way:
+#   uniref90   jackhmmer on UniRef90 (UniProt clustered at 90% identity) -- the one used everywhere above
+#   bfd        HHblits on BFD + Uniclust30 (UniProt plus metagenome/metatranscriptome assemblies, clustered)
+#   mgnify     jackhmmer on MGnify (proteins predicted from environmental metagenomes, EBI)
+# and --fasta adds any unaligned set of sequences (e.g. a UniRef100 download), aligned here onto the
+# 324 reference columns with a profile HMM built from the UniRef90 alignment (pyhmmer).
+
+MSA_SOURCES = {"uniref90": "1d5r_A_uniref90_hits.a3m", "bfd": "1d5r_A_bfd_uniclust_hits.a3m",
+	"mgnify": "1d5r_A_mgnify_hits.a3m"}
+MSA_URLS = {f: S3 + "1d5r_A/a3m/" + f[len("1d5r_A_"):] for f in MSA_SOURCES.values()}
+
+
+def read_fasta(path):
+	names, seqs = [], []
+	opener = gzip.open if path.endswith(".gz") else open
+	with opener(path, "rt") as f:
+		for line in f:
+			line = line.strip()
+			if line.startswith(">"):
+				names.append(line[1:]); seqs.append([])
+			elif names and line:
+				seqs[-1].append(line)
+	return names, ["".join(s).upper() for s in seqs]
+
+
+def align_onto_reference(names, raw, ref, seed_seqs, max_evalue):
+	"""Unaligned sequences -> rows on the reference's match columns, through a profile HMM of `seed_seqs`
+	(the reference's own alignment, every column a match state). Every domain hit of a sequence fills its
+	columns (PTEN's phosphatase and C2 often come out as two domains); a column two domains both cover keeps
+	the better-scoring one. Returns the kept names, their rows, and a per-sequence log table."""
+	import pyhmmer
+	alpha = pyhmmer.easel.Alphabet.amino()
+	L = len(ref)
+	seed = [s.replace(".", "-") for s in seed_seqs]
+	msa = pyhmmer.easel.TextMSA(name="ref", sequences=[pyhmmer.easel.TextSequence(name=f"s{i}", sequence=s)
+		for i, s in enumerate(seed)])
+	msa.reference = "x" * L                     # hand architecture: exactly the L reference columns are match states
+	builder = pyhmmer.plan7.Builder(alpha, architecture="hand")
+	hmm, _, _ = builder.build_msa(msa.digitize(alpha), pyhmmer.plan7.Background(alpha))
+	assert hmm.M == L, (hmm.M, L)
+	targets = [pyhmmer.easel.TextSequence(name=f"t{i}", sequence=re.sub("[^A-Z]", "X", s)).digitize(alpha)
+		for i, s in enumerate(raw)]
+	rows = {}
+	logrows = []
+	for hits in pyhmmer.hmmsearch([hmm], targets, E=max_evalue, domE=max_evalue, Z=len(targets), domZ=len(targets)):
+		for hit in hits:
+			i = int(hit.name.decode()[1:]) if isinstance(hit.name, bytes) else int(hit.name[1:])
+			if hit.evalue > max_evalue:
+				continue
+			row = ["-"] * L
+			score = [-np.inf] * L
+			for dom in hit.domains:
+				if dom.i_evalue > max_evalue:
+					continue
+				ali = dom.alignment
+				pos = ali.hmm_from - 1
+				for hc, tc in zip(ali.hmm_sequence, ali.target_sequence):
+					if hc == ".":               # insertion in the target, no reference column
+						continue
+					if pos < L and dom.score > score[pos]:
+						row[pos] = tc.upper() if tc.isalpha() else "-"
+						score[pos] = dom.score
+					pos += 1
+			rows[i] = "".join(row)
+			logrows.append({"name": names[i], "length": len(raw[i]), "evalue": hit.evalue, "score": hit.score,
+				"domains": sum(d.i_evalue <= max_evalue for d in hit.domains),
+				"coverage": sum(c != "-" for c in rows[i]) / L})
+	keep = sorted(rows)
+	return [names[i] for i in keep], [rows[i] for i in keep], pd.DataFrame(logrows)
+
+
+def enrichment_in(t, kmask, m, snv):
+	"""Observed / expected SNV-reachable distinct variants of each category inside a site set
+	(the pten_variants.py `profiles` statistic, for the categories that carry its results)."""
+	nat = t[t.native]
+	s = snv.merge(nat[["uniprot_pos", "site"]], left_on="position", right_on="uniprot_pos")
+	reach = s[s.snv == True].groupby("site").size().reindex(t.site, fill_value=0).values      # noqa: E712
+	frac = reach[kmask].sum() / reach.sum()
+	cls = m.clinvar_class
+	tolerated = m.in_gnomad & (m.gnomad_ac >= 2) & (cls != "P/LP")
+	damaging = (cls == "P/LP") | (m.cbio_patients >= 2)
+	cats = {"cbio_recurrent": m.cbio_patients >= 2, "clinvar_PLP": cls == "P/LP", "gnomad_all": m.in_gnomad,
+		"consensus_damaging": damaging & ~tolerated}
+	out = {}
+	for name, mask in cats.items():
+		d = m[mask.values & (m.snv == True).values]                                         # noqa: E712
+		inside = d.site.astype(int).isin(t.site[kmask]).sum()
+		out[name] = inside / (len(d) * frac) if len(d) else np.nan
+	return out
+
+
+def cmd_msa(args):
+	from scipy.stats import spearmanr
+	ref, t, _ = build_table(args)
+	out = os.path.join(args.out_dir, "msa_sources")
+	os.makedirs(out, exist_ok=True)
+	sources = {}
+	for name, fname in MSA_SOURCES.items():
+		path = os.path.join(args.raw_dir, fname)
+		if not os.path.exists(path):
+			print(f"downloading {fname}")
+			urllib.request.urlretrieve(MSA_URLS[fname], path)
+		sources[name] = read_a3m(path, len(ref))[1]
+	for spec in args.fasta or []:
+		label, path = spec.split("=", 1)
+		names, raw = read_fasta(path)
+		kept, rows, lg = align_onto_reference(names, raw, ref, sources["uniref90"], args.max_evalue)
+		lg.to_csv(os.path.join(out, f"{label}_hits.tsv"), sep="\t", index=False, float_format="%.4g")
+		# identical sequences would only inflate the count (the weighting removes them anyway): report them
+		n_unique = len(set(raw))
+		print(f"{label}: {len(raw)} sequences in {os.path.basename(path)} ({n_unique} distinct), {len(kept)} hit the "
+			f"PTEN profile at E <= {args.max_evalue:g}; {int((lg.coverage >= args.min_coverage).sum())} cover >= "
+			f"{args.min_coverage:.0%} of the reference")
+		with open(os.path.join(out, f"{label}_aligned.a3m"), "w") as f:
+			f.write(f">query\n{ref}\n" + "".join(f">{n}\n{s}\n" for n, s in zip(kept, rows)))
+		sources[label] = [ref] + rows
+
+	summ, sites = [], {"site": t.site, "uniprot_pos": t.uniprot_pos, "ref_aa": t.ref_aa}
+	tiers_by = {}
+	for name, seqs in sources.items():
+		tiers, ts = natural_tiers(name, ref, t, args, seqs=seqs)
+		tiers_by[name] = tiers
+		ts.insert(0, "source", name)
+		summ.append(ts)
+		for tier, (H, *_r) in tiers.items():
+			sites[f"{name}_{tier}"] = H
+	summ = pd.concat(summ)
+	sites = pd.DataFrame(sites)
+	m = snv = None
+	vdir = os.path.join(MONTE_CARLO_DIR, "pten_variants")
+	if os.path.exists(os.path.join(vdir, "pten_variants_merged.tsv")):
+		m = pd.read_csv(os.path.join(vdir, "pten_variants_merged.tsv"), sep="\t", low_memory=False)
+		m = m[m.in_construct].copy()
+		snv = pd.read_csv(os.path.join(vdir, "snv_reachability.tsv"), sep="\t")
+
+	cmp = []
+	base = "uniref90"
+	k_base = {tier: (sites[f"{base}_{tier}"] < args.natural_k).values for tier in tiers_by[base]}
+	for name in sources:
+		for tier in tiers_by[name]:
+			H = sites[f"{name}_{tier}"]
+			row = {"source": name, "tier": tier,
+				"sequences": int(summ[(summ.source == name) & (summ.tier == tier)].sequences.iloc[0]),
+				"n_eff": float(summ[(summ.source == name) & (summ.tier == tier)].n_eff.iloc[0]),
+				"sites_with_entropy": int(np.isfinite(H).sum())}
+			if row["n_eff"] < args.min_neff:
+				cmp.append(row)          # too few sequences for an entropy: counts only
+				continue
+			ok = np.isfinite(H) & np.isfinite(sites[f"{base}_{tier}"])
+			row["rho_vs_uniref90"] = spearmanr(H[ok], sites[f"{base}_{tier}"][ok])[0] if ok.sum() > 10 else np.nan
+			K = (H < args.natural_k).values
+			row["K_sites"] = int(K.sum())
+			row["K_shared_with_uniref90"] = int((K & k_base[tier]).sum())
+			row["K_jaccard"] = (K & k_base[tier]).sum() / max((K | k_base[tier]).sum(), 1)
+			row["rho_vs_abundance"] = spearman(H, t.abundance2021_mean)
+			row["rho_vs_activity"] = spearman(H, t.activity_mean)
+			row["rho_vs_activity_given_RSA"] = partial_spearman(H, t.activity_mean, t.rsa)
+			# The absolute cut is not portable between databases (a metagenomic alignment is more diverse at
+			# every site), so also take the same NUMBER of sites as UniRef90's set, lowest entropy first.
+			n_k = int(k_base[tier].sum())
+			Hr = np.where(np.isfinite(H), H, np.inf)
+			Kr = np.zeros(len(H), bool)
+			Kr[np.argsort(Hr, kind="stable")[:n_k]] = True
+			row["Krank_shared_with_uniref90"] = int((Kr & k_base[tier]).sum())
+			if m is not None:
+				for cat, r in enrichment_in(t, K, m, snv).items():
+					row[f"enrich_{cat}"] = r if K.sum() else np.nan
+				for cat, r in enrichment_in(t, Kr, m, snv).items():
+					row[f"enrich_rank_{cat}"] = r
+			cmp.append(row)
+	cmp = pd.DataFrame(cmp)
+	pd.set_option("display.width", 250)
+	print("\nalignment tiers per source (weights 1/neighbours, entropy NaN above "
+		f"{args.max_gap:.0%} gaps):")
+	print(summ[["source", "tier", "sequences", "n_eff", "median_identity_to_PTEN", "sites_with_entropy",
+		"mean_entropy_nats", "sites_entropy_lt_0.05"]].to_string(index=False, float_format=lambda x: f"{x:.3f}"))
+	print(f"\neach source against UniRef90, per tier (K = entropy < {args.natural_k} nats; enrich = observed/expected "
+		"SNV-reachable variants of the category inside K):")
+	print(cmp.to_string(index=False, float_format=lambda x: f"{x:.2f}"))
+	summ.to_csv(os.path.join(out, "msa_tiers.tsv"), sep="\t", index=False, float_format="%.4f")
+	cmp.to_csv(os.path.join(out, "msa_comparison.tsv"), sep="\t", index=False, float_format="%.4f")
+	sites.to_csv(os.path.join(out, "msa_site_entropy.tsv"), sep="\t", index=False, float_format="%.4f")
+
+	fig, axes = plt.subplots(2, 1, figsize=(13, 6.5), sharex=True)
+	colors = dict(zip(sources, ["#2a7f62", "#3b6fb6", "#c2571a", "#7a3fa0", "#444444"]))
+	for ax, tier in zip(axes, ("orthologs", "family")):
+		for name in sources:
+			if summ[(summ.source == name) & (summ.tier == tier)].n_eff.iloc[0] < args.min_neff:
+				continue                 # e.g. BFD has no orthologs: a flat zero line would read as "conserved"
+			ax.plot(t.site, sites[f"{name}_{tier}"], lw=1.1, color=colors[name], label=name, alpha=0.85)
+		ax.axhline(args.natural_k, color="k", lw=0.6, ls=":")
+		ax.set_ylabel(f"{tier} entropy [nats]")
+		ax.legend(ncol=len(sources), fontsize=8, loc="upper right", frameon=False)
+	axes[-1].set_xlabel("reference site (0-based)")
+	fig.suptitle("PTEN natural entropy from different sequence databases (same 1D5R chain, same tier rules)", fontsize=10)
+	fig.tight_layout()
+	fig.savefig(os.path.join(out, "msa_profiles.png"), dpi=150)
+	print(f"\nOutputs in {out}: msa_tiers.tsv, msa_comparison.tsv, msa_site_entropy.tsv, msa_profiles.png"
+		+ ("" if not args.fasta else ", <label>_hits.tsv, <label>_aligned.a3m"))
+
+
 def threshold(text):
 	"""A fraction in [0, 1]; 'none', 'off' or 'no' mean no threshold (0)."""
 	if str(text).lower() in ("none", "off", "no"):
@@ -1497,6 +1709,15 @@ def main():
 			"(e.g. U_am or E2 on the 380 mutants of the 32-step E scan)")
 	p.set_defaults(func=cmd_mutants)
 	p = sub.add_parser("loop", parents=[common]); p.set_defaults(func=cmd_loop)
+	p = sub.add_parser("msa", parents=[common])
+	p.add_argument("--fasta", nargs="+", help="LABEL=PATH: unaligned sequences (FASTA, .gz ok) to align onto the reference "
+		"with a profile HMM of the UniRef90 alignment and compare like the three OpenProteinSet sources "
+		"(e.g. uniref100=../../databases/uniref100_pten.fasta). Needs pyhmmer (pip install pyhmmer)")
+	p.add_argument("--min-neff", type=float, default=10., help="effective sequences a tier needs for its entropy to be "
+		"compared (default 10; the BFD alignment has no orthologs at all)")
+	p.add_argument("--max-evalue", type=float, default=1e-5, help="E-value a FASTA sequence and each of its domains need "
+		"against the PTEN profile to be kept (default 1e-5)")
+	p.set_defaults(func=cmd_msa)
 	p = sub.add_parser("pfam", parents=[common])
 	p.add_argument("--accessions", nargs="+", help="Pfam accessions to use (default: the ones InterPro places on human PTEN)")
 	p.add_argument("--alignment", default="full", choices=["full", "seed", "uniprot", "rp15", "rp35", "rp55", "rp75"],

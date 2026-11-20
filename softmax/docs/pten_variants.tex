@@ -770,10 +770,12 @@ dotted line = exact additivity; orange = hypermutated sample.}
 \section{Other databases checked}
 % ===========================================================================
 
-Two further sources were exported by hand on 2026-11-19 and checked against
-the merged table. Neither is in \file{databases/} and neither enters the
-results above; this section records that they were looked at and what they
-hold. The numbers come from one-off scripts, not from \file{pten\_variants.py}.
+Two variant sources (MaveDB, ClinGen) were exported by hand on 2026-11-19 and
+checked against the merged table, and the natural reference was rebuilt from
+two more sequence databases on 2026-11-20. None of them enters the results
+above; this section records that they were looked at and what they hold. The
+variant-source numbers come from one-off scripts; the sequence databases from
+\file{pten\_k\_sites.py msa}.
 
 \subsection{MaveDB, Matreyek et al.\ 2018 VAMP-seq (urn:mavedb:00000013-a-1)}
 
@@ -828,8 +830,83 @@ hold. The numbers come from one-off scripts, not from \file{pten\_variants.py}.
   highest because it is part of the label.
 \end{itemize}
 
-Verdict: neither source changes a result. MaveDB's label history supports the
-circularity caveat for the activity AUC; ClinGen's expert labels reproduce the ClinVar AUCs of the energies and show, through its evidence codes, why the activity AUC is inflated.
+\subsection{The natural reference from other sequence databases}
+
+$K_{\rm natural}$ and the family entropy come from one alignment: jackhmmer on
+UniRef90 (UniProt clustered at 90\,\% identity), as distributed by
+OpenProteinSet for the 1D5R chain. OpenProteinSet ships two more alignments of
+the same chain, searched the AlphaFold~2 way, and \file{pten\_k\_sites.py msa}
+puts all three through the same tier rules, weighting and thresholds.
+
+\begin{itemize}
+\item \textbf{BFD} (Big Fantastic Database, Steinegger and S\"oding): about
+  2.2 billion sequences, UniProt plus proteins predicted from metagenome and
+  metatranscriptome assemblies, pre-clustered into families; searched with
+  HHblits together with Uniclust30 (UniProt clustered at 30\,\%). Each hit is
+  already a cluster representative, so near-identical sequences never reach
+  the alignment: 3007 hits, but the orthologue tiers hold only the query
+  (every PTEN orthologue collapses into one 30\,\% cluster) and the family
+  tier has 477 sequences with $N_{\rm eff}=468$ (the weighting finds nothing
+  to remove).
+\item \textbf{MGnify} (EBI): proteins predicted from environmental metagenomes,
+  clustered at 90\,\%; searched with jackhmmer. Mostly microbial; PTEN is a
+  eukaryotic protein, so only 666 hits, 3 of them orthologue-like, 27 in the
+  family tier and 197 in the phosphatase-domain tier.
+\end{itemize}
+
+\begin{table}[h]\centering\small
+\setlength{\tabcolsep}{4pt}\begin{tabular}{lrrrrrrr}
+\toprule
+ & seqs & $N_{\rm eff}$ & $\rho$ vs UniRef90 & $K$ (rank) shared & $\rho$ activity & tumour rec.\ & P/LP\\
+\midrule
+UniRef90 family & 2716 & 506 & 1 & 28/28 & 0.69 & 4.3 & 3.7\\
+BFD family & 477 & 468 & 0.94 & 20/28 & 0.71 & 3.7 & 3.6\\
+MGnify family & 27 & 23 & 0.89 & 18/28 & 0.61 & 5.0 & 3.8\\
+UniRef90 phosphatase & 6002 & 1125 & 1 & 9/9 & 0.75 & 5.6 & 5.5\\
+BFD phosphatase & 1204 & 1163 & 0.89 & 4/9 & 0.70 & 5.9 & 4.4\\
+MGnify phosphatase & 197 & 165 & 0.96 & 6/9 & 0.75 & 6.5 & 5.3\\
+\bottomrule
+\end{tabular}
+\caption{The natural reference from three databases. $\rho$: Spearman of the
+per-site entropy with UniRef90's, and with the per-site activity mean. $K$
+(rank): the same number of lowest-entropy sites as UniRef90's $K_{\rm
+natural}$, and how many of them UniRef90's set shares. Last two columns:
+observed/expected SNV-reachable recurrent tumour and ClinVar P/LP variants
+inside that set (gnomAD: 0.7--1.1 everywhere).}
+\label{tab:msa}
+\end{table}
+
+The per-site profiles agree (Spearman 0.89--0.96; Figure~\ref{fig:msa}), and
+the disease enrichment of the conserved sites is the same in every database
+(3.6--5.0 for the family tier). What does not carry over is the absolute
+threshold: BFD is more diverse at every site (mean family entropy 2.02
+against 1.66 nats), so the fixed 0.5-nat cut leaves it with no $K$-sites at
+all, while MGnify's 27 sequences leave it with 45. A set defined by rank (the
+lowest 28 sites) is the portable form; with it 18--20 of UniRef90's 28 sites
+recur. The orthologue tiers can only be built from UniRef90 here.
+
+A further check against a UniRef100 download (identical sequences merged
+only) is wired in (\texttt{msa --fasta uniref100=PATH}): the sequences are
+aligned onto the 324 reference columns with a profile HMM built from the
+UniRef90 alignment (pyhmmer), each sequence and domain kept at
+$E\le10^{-5}$. Realigning UniRef90's own 7989 hits this way reproduces the
+family entropy at Spearman 0.99 and 28 of its 30 $K$-sites, and a PINK1
+decoy (``PTEN-induced kinase'', which a text search for PTEN returns) is
+rejected.
+
+\begin{figure}[h]\centering
+\includegraphics[width=\linewidth]{figures/pten_var_msa_sources.png}
+\caption{Orthologue (top, UniRef90 only: BFD and MGnify have too few
+orthologues) and family (bottom) entropy per reference site from the three
+databases. Dotted: the 0.5-nat $K_{\rm natural}$ threshold.}
+\label{fig:msa}
+\end{figure}
+
+Verdict: no source changes a result. MaveDB's label history supports the
+circularity caveat for the activity AUC; ClinGen's expert labels reproduce the
+ClinVar AUCs of the energies and show, through its evidence codes, why the
+activity AUC is inflated; BFD and MGnify reproduce the natural reference's
+ranking and its disease enrichment, though not its absolute threshold.
 
 % ===========================================================================
 \section{Caveats}\label{sec:caveats}

@@ -7574,3 +7574,18 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     sampled_vs_references_partial_rsa,sampled_entropy_in_K_sets}.tsv,
     pten_site_table_sampled.csv and the log, all now nine temperatures.
     Doc sections 4.3, 5.2, 5.3, 9 and caution 1 and 3 of 11 re-quoted.
+
+2026-11-20  PTEN: the natural reference from BFD and MGnify, and a UniRef100 path
+    New `pten_k_sites.py msa`: OpenProteinSet's BFD+Uniclust30 (HHblits) and MGnify
+    (jackhmmer) alignments of the 1D5R chain through the same tiers as UniRef90. Family
+    entropy vs UniRef90: BFD Spearman 0.94 (477 seqs, N_eff 468), MGnify 0.89 (27 seqs);
+    phosphatase tier 0.89 / 0.96. BFD has NO ortholog tiers (Uniclust30 = 30% clusters, every
+    orthologue is one representative) and is more diverse everywhere (mean family entropy 2.02
+    vs 1.66), so the fixed 0.5-nat K cut gives it 0 sites; by rank (lowest 28) 20 of
+    UniRef90's 28 K-sites recur, MGnify 18. Disease enrichment of those rank sets holds:
+    recurrent tumour 3.7 / 5.0 (UniRef90 4.3), ClinVar P/LP 3.6 / 3.8 (3.7), gnomAD ~1.
+    Rho with activity 0.71 / 0.61 (0.69). `--fasta LABEL=PATH` aligns any unaligned set onto
+    the 324 columns with a hand-architecture profile HMM of the UniRef90 alignment (pyhmmer,
+    E <= 1e-5 per sequence and domain, domains merged): realigning UniRef90's own hits gives
+    family rho 0.99 and 28 of 30 K-sites; a PINK1 decoy is rejected. Waiting for Marco's
+    UniRef100 "pten" download in databases/.
