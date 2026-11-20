@@ -7616,3 +7616,13 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     every frozen site (210/145/67/43 at T1/1.5/2/3) and the signal fades (recurrent tumour
     1.14 at T1); from T4 to T16 it is a plateau, recurrent tumour 3.2-3.6 (best T6), P/LP
     2.2-2.6 (best T8), damaging-density rho -0.38 to -0.42 (best T6, -0.27 given RSA).
+
+2026-11-20 (fourth entry)  PTEN: Pfam as a fifth natural reference
+    Marco ran `pten_k_sites.py pfam` on astaroth (ad611fb; first run, no bug). InterPro puts
+    PF22784 (DSP-PTPase phosphatase superfamily, 101 sites, 65-173, N_eff 2957) and PF10409
+    (PTEN C2, 127 sites, 188-349, N_eff 1210) on PTEN: 228 sites, 12 of the 28 K_natural.
+    C2: Spearman 0.85 with UniRef90 family, 8/10 lowest shared. Phosphatase: only 0.28 (a
+    superfamily, everything but the active site varies, mean 2.27 nats), but its 6 sites
+    under 0.5 nats are the P-loop H123 C124 G127 G129 R130 G132, all in K_natural, and 7 of
+    its lowest 10 are UniRef90's; enrichment of those 10: recurrent tumour 8.4, P/LP 5.4
+    (UniRef90 7.0, 4.8). Verdict unchanged: every source agrees on the catalytic core.
