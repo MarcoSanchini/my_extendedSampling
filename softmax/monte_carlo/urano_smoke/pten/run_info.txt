@@ -1,0 +1,14 @@
+# 2026-11-17 16:03:15  moves=200  resume=False
+T 4.0
+n_sites 1
+dt 0.0404052
+grad_mode one_pass
+seed 0
+start reference
+ref pten_1d5r
+ref_len 324
+wall_total_s 218.3
+gpu NVIDIA GeForce GTX 1070
+peak_allocated_MB 4769
+peak_reserved_MB 4804
+

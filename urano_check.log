@@ -1,0 +1,75 @@
+nohup: ignoring input
+== host
+urano
+Thu Nov 19 11:00:45 AM EST 2026
+== GPU
+name, memory.total [MiB], memory.used [MiB], driver_version, compute_cap
+NVIDIA GeForce GTX 1070, 8192 MiB, 1359 MiB, 580.196.07, 6.1
+pid, used_gpu_memory [MiB]
+6841, 1284 MiB
+== python / torch
+3.11.18 (main, Oct 26 2026, 11:35:17) [GCC 15.3.0]
+torch 2.12.1+cu126 cuda 12.6 available True
+bf16 True
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+ModuleNotFoundError: No module named 'custom_esm'
+custom_esm NOT importable: copy customs/custom_esm into site-packages
+== ESM3 load
+Traceback (most recent call last):
+  File "<stdin>", line 2, in <module>
+ModuleNotFoundError: No module named 'custom_esm'
+== 200-move one_pass chain (T=32), peak memory in run_info.txt
+PID: 24489
+
+# reference: zero_polymer (L=566 residues)
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 12918.20it/s]
+Traceback (most recent call last):
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py", line 244, in <module>
+    main(create_parser().parse_args())
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py", line 200, in main
+    sampler.sample(ref_seq=ref_seq, pars=pars, settings=settings)
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 151, in sample
+    eprot, data, pars, settings = self._setup(ref_seq, pars, settings)
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/run_nsites.py", line 84, in _setup
+    out = super()._setup(ref_seq, pars, settings)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 666, in _setup
+    U, U_am, grad, eprot = self._energy_and_grad(eprot, pars)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/softmax/code/classes/rate_sampler.py", line 398, in _energy_and_grad
+    am = self.model.predict_attention(sequence_probs=probs)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 802, in predict_attention
+    attention = self._last_attention(
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/esm3.py", line 786, in _last_attention
+    attention = self.transformer.last_attention(
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/transformer_stack.py", line 125, in last_attention
+    x = block(x, sequence_id, affine, affine_mask, chain_id)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/miniforge3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/miniforge3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/blocks.py", line 152, in forward
+    r1 = self.attn(x, sequence_id)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/miniforge3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/miniforge3/envs/dev/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/layers/attention.py", line 83, in forward
+    context_BHLD = F.scaled_dot_product_attention(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 7.91 GiB of which 14.69 MiB is free. Process 6841 has 1.25 GiB memory in use. Including non-PyTorch memory, this process has 6.57 GiB memory in use. Of the allocated memory 6.36 GiB is allocated by PyTorch, and 105.63 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+exit code 1
+cat: urano_smoke/one_pass/run_info.txt: No such file or directory
+max nvidia-smi memory.used (MiB):
+2026/11/19 11:01:28.126, 8087, 100
