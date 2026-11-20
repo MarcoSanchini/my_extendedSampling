@@ -7511,3 +7511,66 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     predictors (the individual calls are categorical): AUC 0.77-0.92.
     Report: docs/pten_variants.tex/.pdf (premises, every table, 9 figures under
     docs/figures/pten_var_*.png); rank now also draws rank_auc.png.
+
+2026-11-19  PTEN: the three missing temperatures, and the conservation contrast
+            has a maximum at T = 6
+    T = 3, 5 and 6 live in pten1d5r_study/equil rather than equil_ref, so the
+    post-t_eq pass of 18 November left them out and the ladder had a hole in the
+    middle. Filled it. All three are 180,001-move chains against t_eq of 100,000,
+    100,000 and 80,000, so --burn-in-frac 0.8 clears equilibration at each, with a
+    36,000-move kept window (short, but shortness costs ~0.013 at these T, measured
+    at T = 4).
+
+    They are not a formality: T = 6 is the maximum of the whole ladder.
+
+    Sampled entropy vs each reference, Spearman, the two chains of each T, burial
+    (RSA) regressed out:
+
+      T      family        abundance     activity
+      1      -0.04/+0.01   +0.16/+0.11   +0.08/+0.09
+      1.5    +0.04/+0.10   +0.12/+0.08   +0.11/+0.13
+      2      +0.14/+0.14   +0.07/+0.09   +0.15/+0.18
+      3      +0.21/+0.21   +0.11/+0.16   +0.25/+0.21     <- new
+      4      +0.28/+0.27   +0.15/+0.12   +0.28/+0.31
+      5      +0.32/+0.24   +0.18/+0.09   +0.26/+0.22     <- new
+      6      +0.34/+0.34   +0.15/+0.18   +0.34/+0.28     <- new, the maximum
+      8      +0.27/+0.29   +0.18/+0.16   +0.27/+0.23
+      16     +0.27/+0.24   +0.19/+0.13   +0.29/+0.23
+
+    family minus abundance, burial removed: -0.20/-0.10, -0.07/+0.02, +0.08/+0.05,
+    +0.10/+0.05, +0.13/+0.15, +0.13/+0.15, +0.19/+0.17, +0.09/+0.13, +0.08/+0.10.
+    T = 6 is the peak of that curve and also of the raw family correlation
+    (+0.53/+0.52, the largest anywhere) and of activity (+0.54/+0.51).
+
+    SO THE HEADLINE CHANGES AGAIN, in the other direction this time. On 18 November
+    the burn-in correction cut the conservation-over-abundance factor from 2.4 to
+    "1.5 to 1.8", measured at T = 8. At T = 6 it is 2.3 and 2.0. The honest
+    statement is ABOUT A FACTOR OF TWO, AT T = 6. Quote the differences and not the
+    ratios: the partial-correlation denominators are small (T = 5's second chain
+    gives 2.6 off an abundance partial of 0.09) while the differences agree between
+    chains.
+
+    Two things not to over-read. The apparent REVERSAL at T = 1 (abundance beats
+    family by 0.13 raw, 0.20 partial) is not physics: 241 and 236 of 324 sites have
+    zero entropy there, so the ranking is mostly ties. The curve is meaningful from
+    T = 2 up. And the energy side does not move: -mean_dU_kept at T = 6 is family
+    +0.34/+0.31 against abundance +0.38/+0.38, so even at the temperature where the
+    SAMPLED entropy most prefers conservation, the ENERGY still prefers abundance.
+    That split is the result and it is now measured across the whole ladder.
+
+    The sampler's own strict K-sites (entropy < 0.05 at both T = 1 and T = 2) are 98
+    post-t_eq against 104 before: 16/28 natural (8.5 expected, p = 0.002), 41/97
+    activity (29.3, p = 0.002), 38/108 abundance (32.7, p = 0.11). The abundance
+    overlap is the one that does not survive the correction, which is the sharpest
+    one-line form of the whole comparison.
+
+    WHY IT WAS MISSED, and the fix. compare took a single --runs-dir, so pointing it
+    at equil_ref silently dropped three temperatures with no warning. --runs-dir now
+    takes several directories (first one wins a duplicate label), and the canonical
+    run is a script, compare_ladder.sh, that names the eighteen chains and their two
+    parent directories explicitly and forces --burn-in-frac 0.8. equil's short hot
+    chains (T32, T64, T128, T316, 30,000 moves, no measured t_eq) are deliberately
+    excluded. Regenerated pten_natural/{sampled_vs_references_spearman,
+    sampled_vs_references_partial_rsa,sampled_entropy_in_K_sets}.tsv,
+    pten_site_table_sampled.csv and the log, all now nine temperatures.
+    Doc sections 4.3, 5.2, 5.3, 9 and caution 1 and 3 of 11 re-quoted.

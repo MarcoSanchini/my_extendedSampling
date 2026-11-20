@@ -518,8 +518,7 @@ log next to each set. Examples:
 
     python pten_k_sites.py build --natural-k 1.0
     python pten_k_sites.py build --abundance-k 0.58 --activity-lof -2.15
-    python pten_k_sites.py compare --runs-dir pten1d5r_study/equil --cold T1 T2 \
-        --natural-k 1.0 --out-dir pten_natural/natural_k1
+    bash compare_ladder.sh pten_natural/natural_k1 --cold T1 T2 --natural-k 1.0
 
 ## 4.4 How much the conclusions depend on the rules
 
@@ -638,8 +637,12 @@ reference. The contrast this section is about survives; its size does not — se
 after the tables.
 
 The chains: 300,001 moves at T = 1 and 1.5, 650,001 at T = 2, 400,001 at T = 4, 150,001 at
-T = 8, 90,001 at T = 16, with the last 20% of each kept. T = 3, 5 and 6 live in `equil`
-rather than `equil_ref` and were not in this pass, so they are absent below.
+T = 8, 90,001 at T = 16, and 180,001 at each of T = 3, 5 and 6, with the last 20% of each
+kept. **T = 3, 5 and 6 were added on 19 November** and they change the reading: they live in
+`equil` rather than `equil_ref`, so the first pass left them out, and the ladder's maximum
+turns out to sit at one of them. They are 180,001-move chains against t_eq of 100,000,
+100,000 and 80,000, so 0.8 clears equilibration at all three, leaving a 36,000-move window
+— short, but shortness costs about 0.013 at these temperatures (measured below).
 
 Spearman rank correlation between the sampled entropy and each reference: +1 means the two
 rank the sites identically, 0 means no relation. With about 300 sites, values beyond 0.12
@@ -652,8 +655,11 @@ chains, which is the honest error bar here.
 | 1 | 241 / 236 | +0.09 / +0.15 | +0.23 / +0.24 | +0.19 / +0.21 | −0.04 / +0.01 | +0.16 / +0.11 | +0.08 / +0.09 |
 | 1.5 | 170 / 175 | +0.21 / +0.29 | +0.27 / +0.25 | +0.28 / +0.30 | +0.04 / +0.10 | +0.12 / +0.08 | +0.11 / +0.13 |
 | 2 | 93 / 85 | +0.32 / +0.35 | +0.26 / +0.28 | +0.34 / +0.35 | +0.14 / +0.14 | +0.07 / +0.09 | +0.15 / +0.18 |
+| 3 | 71 / 77 | +0.41 / +0.42 | +0.32 / +0.39 | +0.43 / +0.42 | +0.21 / +0.21 | +0.11 / +0.16 | +0.25 / +0.21 |
 | 4 | 36 / 29 | +0.48 / +0.49 | +0.40 / +0.39 | +0.49 / +0.52 | +0.28 / +0.27 | +0.15 / +0.12 | +0.28 / +0.31 |
-| 8 | 13 / 15 | +0.48 / +0.50 | +0.43 / +0.39 | +0.51 / +0.48 | +0.27 / +0.29 | +0.18 / +0.16 | +0.27 / +0.23 |
+| 5 | 26 / 21 | +0.50 / +0.44 | +0.41 / +0.31 | +0.47 / +0.43 | +0.32 / +0.24 | +0.18 / +0.09 | +0.26 / +0.22 |
+| **6** | 23 / 13 | **+0.53 / +0.52** | +0.41 / +0.39 | **+0.54 / +0.51** | **+0.34 / +0.34** | +0.15 / +0.18 | **+0.34 / +0.28** |
+| 8 | 13 / 15 | +0.48 / +0.50 | +0.43 / +0.39 | +0.51 / +0.47 | +0.27 / +0.29 | +0.18 / +0.16 | +0.27 / +0.23 |
 | 16 | 8 / 10 | +0.46 / +0.45 | +0.40 / +0.39 | +0.49 / +0.48 | +0.27 / +0.24 | +0.19 / +0.13 | +0.29 / +0.23 |
 
 Mean sampled entropy inside each K-like set divided by the mean outside it:
@@ -663,7 +669,10 @@ Mean sampled entropy inside each K-like set divided by the mean outside it:
 | 1 | 0.28 / 0.22 | 0.22 / 0.27 | 0.31 / 0.42 |
 | 1.5 | 0.31 / 0.17 | 0.36 / 0.39 | 0.39 / 0.35 |
 | 2 | 0.35 / 0.26 | 0.47 / 0.47 | 0.43 / 0.42 |
+| 3 | 0.37 / 0.30 | 0.55 / 0.51 | 0.45 / 0.48 |
 | 4 | 0.41 / 0.44 | 0.63 / 0.65 | 0.52 / 0.54 |
+| 5 | 0.48 / 0.38 | 0.62 / 0.70 | 0.61 / 0.63 |
+| 6 | 0.51 / 0.41 | 0.67 / 0.71 | 0.59 / 0.61 |
 | 8 | 0.53 / 0.52 | 0.72 / 0.74 | 0.65 / 0.65 |
 | 16 | 0.69 / 0.60 | 0.80 / 0.78 | 0.69 / 0.68 |
 
@@ -682,6 +691,35 @@ T = 8 dropping the 45,000 pre-t_eq moves costs 0.104. At T = 2 the window length
 matter (+0.160 at 210,000 moves kept against +0.111 at 29,900), so at low temperature a long
 window is needed as well as a late one.
 
+**The contrast has a maximum, and it is at T = 6 (19 November).** Filling in T = 3, 5 and 6
+turns the burial-removed margin from a plateau into a curve. Family conservation minus
+abundance, the two chains of each temperature:
+
+| T | 1 | 1.5 | 2 | 3 | 4 | 5 | **6** | 8 | 16 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| raw | −0.13 / −0.09 | −0.05 / +0.04 | +0.06 / +0.07 | +0.09 / +0.04 | +0.09 / +0.10 | +0.09 / +0.13 | **+0.12 / +0.13** | +0.05 / +0.11 | +0.05 / +0.07 |
+| burial removed | −0.20 / −0.10 | −0.07 / +0.02 | +0.08 / +0.05 | +0.10 / +0.05 | +0.13 / +0.15 | +0.13 / +0.15 | **+0.19 / +0.17** | +0.09 / +0.13 | +0.08 / +0.10 |
+
+T = 6 is the maximum of both rows, and it is also where the raw family correlation is
+largest anywhere on the ladder (+0.53 / +0.52) and where the activity correlation peaks
+(+0.54 / +0.51). As a ratio, with burial removed, family over abundance is 2.3 and 2.0 at
+T = 6, against 1.5 and 1.8 at T = 8. So the honest headline for the conservation claim is
+**about a factor of two, measured at T = 6**, not the 1.5 to 1.8 that T = 8 alone suggested
+— and not the 2.4 of the uncorrected run either, which reached that number for the wrong
+reason.
+
+Two things not to over-read. The ratios themselves are unstable because the denominator is
+small (T = 5's second chain gives 2.6 from an abundance partial of 0.09), so quote the
+differences, which agree between chains, rather than the ratios. And the apparent *reversal*
+at T = 1, where abundance beats family by 0.13, is not a physical result: 241 and 236 of 324
+sites have zero entropy there, so the ranking is mostly ties and the Spearman is measuring
+almost nothing. The curve is meaningful from T = 2 up.
+
+The energy side is unchanged by the new temperatures: `-mean_dU_kept` at T = 6 gives family
++0.34 / +0.31 against abundance +0.38 / +0.38, so the energy still prefers abundance even at
+the temperature where the sampled entropy most prefers conservation. That split is the
+result, and it is now measured across the whole ladder.
+
 **The significance test.** Neighbouring sites resemble each other (a buried strand, an
 exposed loop), so shuffling sites at random would exaggerate the significance. Instead the
 whole set is shifted along the sequence by 1, 2, ..., 323 positions, which keeps its pattern
@@ -689,8 +727,12 @@ of runs, and the observed difference is ranked among the 323 shifted ones. The s
 this can give is 1/324 = 0.003, and that is the value reached at T >= 2 for almost every set.
 
 **The sampler's own K-sites.** With the strict definition (entropy below 0.05 at both T = 1
-and T = 2) there are 104. They contain 16 of the 28 natural sites (9.0 expected), 43 of the
-108 abundance sites (34.7 expected) and 46 of the 97 activity sites (31.1 expected).
+and T = 2) there are 98. They contain 16 of the 28 natural sites (8.5 expected, p = 0.002),
+38 of the 108 abundance sites (32.7 expected, p = 0.11) and 41 of the 97 activity sites
+(29.3 expected, p = 0.002). The set is the same size as before the burn-in correction (it
+was 104) and the natural and activity overlaps survive; the abundance overlap does not, and
+that is the sharpest single statement of the result: the sites the sampler freezes are the
+conserved and the catalytically needed ones, not the ones abundance happens to flag.
 
 ## 5.3 The burial control
 
@@ -767,14 +809,16 @@ It therefore cannot contribute anything to a within-site ranking, and the within
 correlation needs no burial control at all — it has already conditioned on burial
 completely, along with every other per-site property, measured or not.
 
-### At T = 8
+### At T = 6, the best temperature on the ladder
 
-What remains after burial is removed is +0.27/+0.29 for the family entropy, +0.27/+0.23 for
-activity and +0.18/+0.16 for abundance, the two numbers being the two independent chains.
+What remains after burial is removed is +0.34/+0.34 for the family entropy, +0.34/+0.28 for
+activity and +0.15/+0.18 for abundance, the two numbers being the two independent chains.
+(At T = 8, which this subsection quoted before T = 3, 5 and 6 were measured: +0.27/+0.29,
++0.27/+0.23 and +0.18/+0.16. Same ordering, smaller gap.)
 
-**Reading.** The sampler is not flat, and the signal grows with longer chains. But once
-burial is set aside it follows what the family conserves more than what keeps the protein
-abundant. That is unexpected, because the energy contains no catalysis. Two explanations
+**Reading.** The sampler is not flat. But once burial is set aside it follows what the
+family conserves more than what keeps the protein abundant, by about a factor of two at the
+temperature where the contrast is largest. That is unexpected, because the energy contains no catalysis. Two explanations
 are worth discussing with the supervisors. ESM3 was trained on natural sequences, so its
 attention map may encode family conservation directly, function included. Or the active
 site of PTEN is unusually well packed and RSA does not capture that. The single-mutant scan
@@ -2097,9 +2141,11 @@ chains. Step 6 is the only one that needs ESM3 and the card.
     # 2. the three references and the K-like sets
     python pten_k_sites.py build > pten_natural/build.log 2>&1
 
-    # 3. every chain of the ladder against the references
-    nohup python -u pten_k_sites.py compare --runs-dir pten1d5r_study/equil \
-        --cold T1 T2 > pten_natural/compare.log 2>&1 &
+    # 3. every chain of the ladder against the references. Use the script: the nine
+    #    temperatures whose t_eq is measured are split across equil_ref and equil, and
+    #    --runs-dir on either one alone silently drops some of them.
+    nohup bash compare_ladder.sh pten_natural --cold T1 T2 \
+        > pten_natural/sampled_entropy_vs_natural.log 2>&1 &
 
     # 4. the superfamily check from structure alignments
     python pten_k_sites.py family > pten_natural/family.log 2>&1
@@ -2189,8 +2235,13 @@ step 6 command again: it picks up at the first site it has not finished. Step 7 
 partial CSV too — it says how many sites are missing and uses what is there — so the
 correlations can be looked at after a few hundred sites, before the scan ends.
 
-**Step 3 compares everything.** `--runs-dir` takes every `T*/chain*` directory under
-`pten1d5r_study/equil`. Chain 0 of a temperature is labelled `T4`, the others `T4.c1`. The
+**Step 3 compares everything.** `compare_ladder.sh` names the eighteen chains of the nine
+measured temperatures explicitly, because they are split across `equil_ref` (T = 1, 1.5, 2,
+4, 8, 16) and `equil` (T = 3, 5, 6), and it forces `--burn-in-frac 0.8`. It passes any extra
+arguments straight through. `--runs-dir` now takes several directories for ad-hoc use and
+sweeps every `T*/chain*` under each, the first directory winning a duplicate label; note
+that `equil` also holds the short hot chains (T32, T64, T128) that have no measured t_eq, so
+the script does not use it. Chain 0 of a temperature is labelled `T4`, the others `T4.c1`. The
 log says for each chain whether it started from the reference. The chains started from a
 random sequence are included, but at low temperature they are trapped far from PTEN and
 their entropy says nothing about PTEN's sites; add `--reference-only` to leave them out.
@@ -2349,14 +2400,16 @@ and I will write it.
    have zero entropy in the measured window (188 and 184 never accept a move anywhere in the
    chain), because acceptance there is 0.011, so the sampled entropy at low T ranks
    reachability as much as tolerance. The correlations at
-   T = 4, 8 and 16 are the ones to quote. Note also that the earlier `--burn-in-frac 0.5`
-   default kept pre-t_eq moves at seven of nine temperatures and inflated the
-   conservation-over-abundance margin by about a third.
+   T = 4 and above are the ones to quote, and T = 6 is the best of them (section 5.2).
+   Note also that the earlier `--burn-in-frac 0.5` default kept pre-t_eq moves at seven of
+   nine temperatures and inflated the conservation-over-abundance margin by about a third.
 2. **One chain's time average underestimates the entropy of the ensemble.** Compare ratios
    and ranks, not absolute entropies.
 3. **Most of the agreement is burial**, and the remainder favours family conservation over
-   abundance, by a factor of 1.5 to 1.8 rather than the 2.4 first quoted (section 5.3).
-   Entropy against RSA alone is +0.46 to +0.54 at T = 4 to 16, against +0.45 to +0.50 for
+   abundance, by about a factor of two at T = 6 where the contrast is largest (2.3 and 2.0
+   in the two chains), falling to 1.5 to 1.8 at T = 8 and 1.4 to 1.8 at T = 16 — not the 2.4
+   first quoted, which came from an unequilibrated window (sections 5.2 and 5.3).
+   Entropy against RSA alone is +0.46 to +0.54 at T = 4 to 16, against +0.45 to +0.53 for
    the raw family correlation, which is why the partial column is the one to argue from.
 4. **The orthologs are few.** 92 sequences, N_eff 22. "Flat" for that tier partly means
    "little data".
