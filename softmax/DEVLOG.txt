@@ -7589,3 +7589,16 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     E <= 1e-5 per sequence and domain, domains merged): realigning UniRef90's own hits gives
     family rho 0.99 and 28 of 30 K-sites; a PINK1 decoy is rejected. Waiting for Marco's
     UniRef100 "pten" download in databases/.
+
+2026-11-20 (second entry)  PTEN: UniRef100
+    Marco downloaded UniProt's "pten" search at 100% clusters (databases/pten_uniref100.fasta,
+    2481 seqs) and ran `msa --fasta uniref100=...` on astaroth (5b2baea); the cloud rerun gives
+    the identical table. 2448 hit the PTEN profile at E <= 1e-5 (13 PINK1 and short fragments
+    rejected); 2416 are named PTEN, 28 auxilin, 4 tensin: PTEN across eukaryotes, median
+    identity 0.88. Orthologue tiers far deeper than UniRef90's (1396 seqs, N_eff 196 vs 44 at
+    >= 70%; rho 0.82 with UniRef90; vertebrate 0.70), enrichment still the weak 1.2-1.4. Family
+    tier: rho 0.94, activity rho 0.72 (0.69), 23 of the lowest 28 sites shared, enrichment
+    tumour 4.25 / P/LP 3.95 / gnomAD 0.91 (UniRef90 4.32 / 3.69 / 0.93); the 0.5-nat cut keeps
+    59 sites (less diverse set). Verdict: K_natural does not depend on UniRef90's 59% tensins.
+    Merging a protein's domain hits into one row also gives the 310-353 segment an orthologue
+    entropy, which UniRef90's split hits leave above the gap cut-off.

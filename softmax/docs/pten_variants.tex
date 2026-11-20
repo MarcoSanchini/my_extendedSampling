@@ -772,7 +772,7 @@ dotted line = exact additivity; orange = hypermutated sample.}
 
 Two variant sources (MaveDB, ClinGen) were exported by hand on 2026-11-19 and
 checked against the merged table, and the natural reference was rebuilt from
-two more sequence databases on 2026-11-20. None of them enters the results
+three more sequence sources on 2026-11-20. None of them enters the results
 above; this section records that they were looked at and what they hold. The
 variant-source numbers come from one-off scripts; the sequence databases from
 \file{pten\_k\_sites.py msa}.
@@ -862,12 +862,14 @@ puts all three through the same tier rules, weighting and thresholds.
 UniRef90 family & 2716 & 506 & 1 & 28/28 & 0.69 & 4.3 & 3.7\\
 BFD family & 477 & 468 & 0.94 & 20/28 & 0.71 & 3.7 & 3.6\\
 MGnify family & 27 & 23 & 0.89 & 18/28 & 0.61 & 5.0 & 3.8\\
+UniRef100 family & 2264 & 288 & 0.94 & 23/28 & 0.72 & 4.3 & 4.0\\
 UniRef90 phosphatase & 6002 & 1125 & 1 & 9/9 & 0.75 & 5.6 & 5.5\\
 BFD phosphatase & 1204 & 1163 & 0.89 & 4/9 & 0.70 & 5.9 & 4.4\\
 MGnify phosphatase & 197 & 165 & 0.96 & 6/9 & 0.75 & 6.5 & 5.3\\
+UniRef100 phosphatase & 2332 & 332 & 0.90 & 6/9 & 0.77 & 7.3 & 5.7\\
 \bottomrule
 \end{tabular}
-\caption{The natural reference from three databases. $\rho$: Spearman of the
+\caption{The natural reference from four sources. $\rho$: Spearman of the
 per-site entropy with UniRef90's, and with the per-site activity mean. $K$
 (rank): the same number of lowest-entropy sites as UniRef90's $K_{\rm
 natural}$, and how many of them UniRef90's set shares. Last two columns:
@@ -885,27 +887,58 @@ all, while MGnify's 27 sequences leave it with 45. A set defined by rank (the
 lowest 28 sites) is the portable form; with it 18--20 of UniRef90's 28 sites
 recur. The orthologue tiers can only be built from UniRef90 here.
 
-A further check against a UniRef100 download (identical sequences merged
-only) is wired in (\texttt{msa --fasta uniref100=PATH}): the sequences are
-aligned onto the 324 reference columns with a profile HMM built from the
-UniRef90 alignment (pyhmmer), each sequence and domain kept at
-$E\le10^{-5}$. Realigning UniRef90's own 7989 hits this way reproduces the
-family entropy at Spearman 0.99 and 28 of its 30 $K$-sites, and a PINK1
-decoy (``PTEN-induced kinase'', which a text search for PTEN returns) is
-rejected.
+\textbf{UniRef100} (identical sequences merged only). Marco downloaded the
+UniProt website search ``pten'' at 100\,\% clusters on 2026-11-20 (2481
+sequences, \file{databases/pten\_uniref100.fasta}) and ran \texttt{msa --fasta
+uniref100=PATH}: each sequence is aligned onto the 324 reference columns with
+a profile HMM built from the UniRef90 alignment (pyhmmer), sequence and
+domains kept at $E\le10^{-5}$, the phosphatase and C2 domain hits of one
+protein merged into one row. (Realigning UniRef90's own 7989 hits this way
+reproduces its family entropy at Spearman 0.99 and 28 of its 30 $K$-sites.)
+The cloud rerun reproduces Marco's astaroth table exactly.
+
+\begin{itemize}
+\item \textbf{What the set is.} A text search, not a homology search: 2448
+  of 2481 sequences hit the PTEN profile and 2263 cover $\ge80\,\%$ of the
+  reference; of the 33 rejected, 13 are PINK1 (``PTEN-induced kinase'') and
+  most of the rest short PTEN-named fragments (31--203 aa, among them the
+  PTEN upstream ORF peptide MP31). Of the hits, 2416 are named PTEN, 28 auxilin, 4 tensin: it is
+  PTEN across the eukaryotes (median identity 0.88, a quarter below 0.53),
+  with almost none of the tensins that make up 59\,\% of UniRef90's family
+  tier.
+\item \textbf{Orthologue tiers.} Far deeper than UniRef90's: 1396 sequences
+  at $\ge70\,\%$ identity ($N_{\rm eff}$ 196 against 44) and 844 at
+  $\ge90\,\%$ (67 against 22). Spearman with UniRef90 0.82 and 0.70; 194 and
+  222 of UniRef90's 220 and 248 low-entropy sites recur by rank. Their
+  disease enrichment is the same weak 1.2--1.4 as UniRef90's: near-identical
+  orthologues conserve almost every site, so the tier does not separate.
+  Because one protein is one row here, the 310--353 segment after the
+  deleted loop gets an orthologue entropy too, where UniRef90's split hits
+  leave it above the gap cut-off.
+\item \textbf{Family tier} (2264 sequences, $N_{\rm eff}$ 288). Spearman 0.94
+  with UniRef90; activity $\rho$ 0.72 (0.69); 23 of the 28 lowest sites shared;
+  enrichment of those 28: recurrent tumour 4.25 (4.32), ClinVar P/LP 3.95
+  (3.69), gnomAD 0.91 (0.93). Being mostly PTEN it is less diverse, so the
+  0.5-nat cut keeps 59 sites, twice UniRef90's 28: the absolute-threshold
+  point again.
+\end{itemize}
+
+So the natural reference does not depend on UniRef90's tensins: an
+alignment that is almost all PTEN ranks the sites the same way, picks most of
+the same $K$-sites, and gives them the same disease enrichment.
 
 \begin{figure}[h]\centering
 \includegraphics[width=\linewidth]{figures/pten_var_msa_sources.png}
-\caption{Orthologue (top, UniRef90 only: BFD and MGnify have too few
-orthologues) and family (bottom) entropy per reference site from the three
-databases. Dotted: the 0.5-nat $K_{\rm natural}$ threshold.}
+\caption{Orthologue (top; BFD and MGnify have too few orthologues) and
+family (bottom) entropy per reference site from the four sources. Dotted: the
+0.5-nat $K_{\rm natural}$ threshold.}
 \label{fig:msa}
 \end{figure}
 
 Verdict: no source changes a result. MaveDB's label history supports the
 circularity caveat for the activity AUC; ClinGen's expert labels reproduce the
 ClinVar AUCs of the energies and show, through its evidence codes, why the
-activity AUC is inflated; BFD and MGnify reproduce the natural reference's
+activity AUC is inflated; BFD, MGnify and UniRef100 reproduce the natural reference's
 ranking and its disease enrichment, though not its absolute threshold.
 
 % ===========================================================================
