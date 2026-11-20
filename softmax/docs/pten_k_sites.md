@@ -187,3 +187,7 @@ InterPro, which the cloud container cannot reach.
 
 Figures (png is git-ignored under monte_carlo, so copies are kept in `docs/figures/`):
 `pten_k_pten_site_profile_sampled.png`, `pten_k_sampled_vs_references.png`, `pten_k_pten_ptp_superfamily.png`.
+
+## Natural reference from other sequence databases (`msa`, 2026-11-20)
+
+`python pten_k_sites.py msa` rebuilds the four tiers from OpenProteinSet's BFD+Uniclust30 (HHblits) and MGnify (jackhmmer) alignments of the same 1D5R chain and compares them with UniRef90; `--fasta LABEL=PATH` adds any unaligned set (e.g. a UniRef100 download), aligned onto the 324 columns with a profile HMM of the UniRef90 alignment (needs `pip install pyhmmer`). Family entropy: BFD rho 0.94, MGnify 0.89; the phosphatase tier 0.89 and 0.96. BFD has no ortholog tiers (Uniclust30 collapses every orthologue into one cluster) and is more diverse at every site, so its family tier has no site below 0.5 nats; by rank, 20 of UniRef90's 28 K-sites recur (MGnify: 18). Outputs in `monte_carlo/pten_natural/msa_sources/`; numbers and figure in `docs/pten_variants.tex`, "Other databases checked".

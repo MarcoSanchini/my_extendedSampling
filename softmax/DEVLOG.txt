@@ -7498,6 +7498,20 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     U_am 59th pct): fold energies cannot rank them.
     PENDING on astaroth: `score` (75 compound tumour sequences + 50-mutant E2 repeat).
 
+2026-11-18 (eighth entry)  PTEN variants: the astaroth run and the full report
+    Marco ran clean/merge/score/rank on astaroth (c9190c3). PTEN_variant_data.tsv's `snv`
+    column agrees with the codons rebuilt from the three files on ALL 7532 substitutions
+    both define; 1906 of 6156 construct mutants are SNV-reachable, the number the COSMIC
+    look found independently. profiles re-run here on that final reachability (ratios move
+    <= 0.2). E2 REPEAT: 50/50 single mutants identical to the scan of days earlier, so E2's
+    chance-level AUC (0.49-0.54) is the energy, not noise. COMPOUNDS (75 tumour samples,
+    2-5 mutations in the construct): U_am nearly additive (compound/sum median 0.932,
+    Spearman 0.927), U_ce sub-additive (0.773, 0.894), E2 saturated (0.492, 0.495; every
+    compound 0.013-0.031). Only predictor_fraction_deleterious entered from the 15
+    predictors (the individual calls are categorical): AUC 0.77-0.92.
+    Report: docs/pten_variants.tex/.pdf (premises, every table, 9 figures under
+    docs/figures/pten_var_*.png); rank now also draws rank_auc.png.
+
 2026-11-19  PTEN: the three missing temperatures, and the conservation contrast
             has a maximum at T = 6
     T = 3, 5 and 6 live in pten1d5r_study/equil rather than equil_ref, so the
@@ -7560,3 +7574,18 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     sampled_vs_references_partial_rsa,sampled_entropy_in_K_sets}.tsv,
     pten_site_table_sampled.csv and the log, all now nine temperatures.
     Doc sections 4.3, 5.2, 5.3, 9 and caution 1 and 3 of 11 re-quoted.
+
+2026-11-20  PTEN: the natural reference from BFD and MGnify, and a UniRef100 path
+    New `pten_k_sites.py msa`: OpenProteinSet's BFD+Uniclust30 (HHblits) and MGnify
+    (jackhmmer) alignments of the 1D5R chain through the same tiers as UniRef90. Family
+    entropy vs UniRef90: BFD Spearman 0.94 (477 seqs, N_eff 468), MGnify 0.89 (27 seqs);
+    phosphatase tier 0.89 / 0.96. BFD has NO ortholog tiers (Uniclust30 = 30% clusters, every
+    orthologue is one representative) and is more diverse everywhere (mean family entropy 2.02
+    vs 1.66), so the fixed 0.5-nat K cut gives it 0 sites; by rank (lowest 28) 20 of
+    UniRef90's 28 K-sites recur, MGnify 18. Disease enrichment of those rank sets holds:
+    recurrent tumour 3.7 / 5.0 (UniRef90 4.3), ClinVar P/LP 3.6 / 3.8 (3.7), gnomAD ~1.
+    Rho with activity 0.71 / 0.61 (0.69). `--fasta LABEL=PATH` aligns any unaligned set onto
+    the 324 columns with a hand-architecture profile HMM of the UniRef90 alignment (pyhmmer,
+    E <= 1e-5 per sequence and domain, domains merged): realigning UniRef90's own hits gives
+    family rho 0.99 and 28 of 30 K-sites; a PINK1 decoy is rejected. Waiting for Marco's
+    UniRef100 "pten" download in databases/.

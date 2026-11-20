@@ -5,85 +5,85 @@
    T8/chain1: 150001 moves, start reference, kept from move 120000, mean entropy 1.617, sites at 0: 15
    K_sampled_T4: 33 sites at entropy <= 0.168 (lowest 10% of the native sites)
    K_sampled_T8: 33 sites at entropy <= 0.677 (lowest 10% of the native sites)
-   SNV-reachable substitutions inside the construct: 1875 over 322 native sites
+   SNV-reachable substitutions inside the construct: 1906 over 322 native sites
 
 == variants in each K-set: observed / expected under a uniform draw over the SNV-reachable substitutions
 kset                   K_natural  K_abundance  K_activity  K_sampled_T4  K_sampled_T8
 category                                                                             
-cbio_all                    2.95         1.45        2.23          2.07          1.90
-cbio_recurrent              4.51         1.34        2.80          3.26          3.41
-cbio_singleton              2.33         1.49        2.00          1.60          1.30
-cbio_nonhyper               3.25         1.52        2.50          2.00          2.07
-cbio_endometrial            3.48         1.32        2.30          2.51          2.32
-cbio_glioblastoma           2.91         1.46        2.42          2.40          2.48
-cbio_second_hit             3.92         1.33        2.50          2.52          2.17
-clinvar_all                 1.48         1.14        1.35          1.17          1.27
-clinvar_PLP                 3.79         1.37        2.68          2.20          2.60
-clinvar_VUS                 0.50         1.01        0.74          0.74          0.71
-clinvar_conflicting         1.79         1.40        1.79          1.31          1.52
-clinvar_expert              3.57         1.26        2.29          2.61          2.41
-clinvar_PHTS                1.66         1.16        1.49          1.30          1.35
-clinvar_autism              1.25         1.41        1.59          1.11          1.33
-gnomad_all                  0.95         0.87        0.83          0.85          0.87
-gnomad_singleton            0.98         0.96        0.95          0.96          0.75
-gnomad_ac2                  0.90         0.67        0.57          0.60          1.14
-merged_all                  1.41         1.14        1.31          1.14          1.19
-tumour_only                 2.85         1.46        2.21          2.06          1.79
-population_only             0.47         0.79        0.58          0.63          0.54
-tumour_and_population       3.96         1.36        2.38          2.19          2.94
-consensus_damaging          3.74         1.39        2.62          2.22          2.61
-consensus_tolerated         0.26         0.53        0.22          0.70          0.90
+cbio_all                    2.90         1.45        2.24          2.06          1.91
+cbio_recurrent              4.32         1.31        2.81          3.16          3.32
+cbio_singleton              2.33         1.50        2.01          1.62          1.34
+cbio_nonhyper               3.19         1.52        2.50          2.00          2.08
+cbio_endometrial            3.38         1.31        2.31          2.45          2.28
+cbio_glioblastoma           3.02         1.44        2.43          2.53          2.43
+cbio_second_hit             3.87         1.33        2.52          2.53          2.20
+clinvar_all                 1.45         1.14        1.35          1.18          1.28
+clinvar_PLP                 3.69         1.38        2.67          2.16          2.61
+clinvar_VUS                 0.52         1.01        0.74          0.77          0.73
+clinvar_conflicting         1.74         1.39        1.80          1.29          1.50
+clinvar_expert              3.40         1.28        2.24          2.51          2.41
+clinvar_PHTS                1.62         1.16        1.48          1.29          1.36
+clinvar_autism              1.23         1.42        1.59          1.10          1.33
+gnomad_all                  0.93         0.87        0.82          0.83          0.86
+gnomad_singleton            0.97         0.96        0.94          0.95          0.75
+gnomad_ac2                  0.85         0.65        0.55          0.57          1.10
+merged_all                  1.40         1.14        1.32          1.15          1.20
+tumour_only                 2.80         1.45        2.22          2.05          1.80
+population_only             0.46         0.79        0.58          0.62          0.53
+tumour_and_population       3.90         1.37        2.38          2.18          2.94
+consensus_damaging          3.61         1.39        2.62          2.17          2.60
+consensus_tolerated         0.25         0.51        0.21          0.67          0.86
 
    two-sided binomial p:
 kset                   K_natural  K_abundance  K_activity  K_sampled_T4  K_sampled_T8
 category                                                                             
-cbio_all                 1.4e-14      1.5e-06     2.7e-32       1.6e-06       2.7e-05
-cbio_recurrent           1.4e-11      5.9e-02     3.2e-20       7.7e-07       8.1e-08
-cbio_singleton           4.2e-06      9.3e-06     3.1e-16       2.0e-02       2.3e-01
-cbio_nonhyper            3.3e-14      1.1e-06     2.9e-36       9.6e-05       1.9e-05
-cbio_endometrial         1.9e-11      1.5e-02     1.0e-18       3.9e-06       2.7e-05
-cbio_glioblastoma        4.3e-04      2.2e-02     1.2e-10       4.5e-03       2.2e-03
-cbio_second_hit          3.6e-14      1.5e-02     1.0e-23       4.9e-06       2.5e-04
-clinvar_all              2.7e-05      2.2e-03     7.0e-12       1.0e-01       6.9e-03
-clinvar_PLP              2.4e-25      9.1e-05     9.4e-58       1.3e-07       2.1e-12
-clinvar_VUS              7.1e-05      9.4e-01     2.6e-05       3.8e-02       1.6e-02
-clinvar_conflicting      2.8e-02      4.6e-03     3.5e-07       3.7e-01       1.1e-01
-clinvar_expert           6.0e-11      6.1e-02     8.1e-17       3.6e-06       2.6e-05
-clinvar_PHTS             1.9e-06      4.5e-03     2.2e-15       1.6e-02       4.3e-03
-clinvar_autism           8.0e-01      1.1e-01     3.2e-02       9.9e-01       6.5e-01
-gnomad_all               1.0e+00      2.6e-01     1.7e-01       6.2e-01       6.8e-01
-gnomad_singleton         1.0e+00      8.3e-01     7.8e-01       1.0e+00       4.6e-01
-gnomad_ac2               1.0e+00      1.2e-01     5.2e-02       4.9e-01       8.6e-01
-merged_all               1.6e-04      1.5e-03     1.0e-10       1.6e-01       4.4e-02
-tumour_only              3.4e-12      3.1e-06     1.4e-28       6.5e-06       4.3e-04
-population_only          5.4e-02      8.3e-02     7.3e-04       1.8e-01       6.6e-02
-tumour_and_population    1.1e-03      2.9e-01     7.6e-05       1.4e-01       1.4e-02
-consensus_damaging       5.8e-27      1.2e-05     2.2e-59       1.6e-08       9.8e-14
-consensus_tolerated      2.0e-01      3.0e-02     3.3e-04       7.4e-01       1.0e+00
+cbio_all                 2.0e-14      1.2e-06     2.6e-33       1.4e-06       2.1e-05
+cbio_recurrent           4.2e-11      8.4e-02     4.4e-21       1.4e-06       1.5e-07
+cbio_singleton           3.2e-06      4.6e-06     1.5e-16       1.5e-02       1.8e-01
+cbio_nonhyper            3.6e-14      7.0e-07     6.0e-37       7.5e-05       1.3e-05
+cbio_endometrial         4.8e-11      2.0e-02     2.1e-19       6.1e-06       3.7e-05
+cbio_glioblastoma        1.6e-04      2.8e-02     5.1e-11       1.8e-03       2.6e-03
+cbio_second_hit          2.7e-14      1.5e-02     7.0e-25       3.0e-06       1.5e-04
+clinvar_all              4.5e-05      1.5e-03     7.0e-12       8.7e-02       4.8e-03
+clinvar_PLP              1.5e-24      4.8e-05     5.7e-58       2.4e-07       1.2e-12
+clinvar_VUS              1.2e-04      8.9e-01     2.2e-05       6.8e-02       2.3e-02
+clinvar_conflicting      3.4e-02      5.3e-03     2.1e-07       4.0e-01       1.2e-01
+clinvar_expert           2.6e-10      4.6e-02     3.9e-16       8.4e-06       1.7e-05
+clinvar_PHTS             4.2e-06      3.9e-03     1.9e-15       2.0e-02       3.4e-03
+clinvar_autism           8.2e-01      1.1e-01     3.3e-02       9.9e-01       6.5e-01
+gnomad_all               9.1e-01      2.3e-01     1.4e-01       5.7e-01       6.4e-01
+gnomad_singleton         1.0e+00      8.6e-01     7.8e-01       1.0e+00       4.6e-01
+gnomad_ac2               9.8e-01      8.4e-02     3.5e-02       4.3e-01       9.3e-01
+merged_all               1.9e-04      1.2e-03     5.8e-11       1.2e-01       3.4e-02
+tumour_only              4.5e-12      2.6e-06     1.3e-29       5.8e-06       3.3e-04
+population_only          4.3e-02      7.1e-02     5.0e-04       1.5e-01       5.9e-02
+tumour_and_population    1.2e-03      2.9e-01     7.8e-05       1.5e-01       1.4e-02
+consensus_damaging       6.6e-26      9.6e-06     1.9e-60       3.9e-08       8.0e-14
+consensus_tolerated      1.6e-01      2.0e-02     1.8e-04       6.6e-01       9.9e-01
 
 == Spearman of the per-site density (SNV-reachable, 'higher = more variants land here') with each reference ('higher = more tolerant'); a NEGATIVE value means variants land on conserved/intolerant sites
                             group  n_variants  rho density vs family entropy  rho density vs family entropy | RSA  rho density vs abundance mean  rho density vs abundance mean | RSA  rho density vs activity mean  rho density vs activity mean | RSA  rho density vs sampled T4  rho density vs sampled T4 | RSA  rho density vs sampled T8  rho density vs sampled T8 | RSA
 category                                                                                                                                                                                                                                                                                                                                                                       
-cbio_all               cBioPortal         254                         -0.455                               -0.363                         -0.293                               -0.096                        -0.554                              -0.471                     -0.334                           -0.218                     -0.346                           -0.204
-cbio_recurrent         cBioPortal          73                         -0.384                               -0.328                         -0.092                               +0.069                        -0.430                              -0.383                     -0.243                           -0.155                     -0.228                           -0.121
-cbio_singleton         cBioPortal         181                         -0.319                               -0.244                         -0.258                               -0.136                        -0.414                              -0.345                     -0.234                           -0.145                     -0.247                           -0.138
-cbio_nonhyper          cBioPortal         194                         -0.455                               -0.354                         -0.303                               -0.086                        -0.611                              -0.537                     -0.367                           -0.239                     -0.382                           -0.235
-cbio_endometrial       cBioPortal         128                         -0.372                               -0.318                         -0.148                               -0.039                        -0.405                              -0.347                     -0.222                           -0.126                     -0.249                           -0.142
-cbio_glioblastoma      cBioPortal          58                         -0.265                               -0.224                         -0.108                               +0.034                        -0.358                              -0.328                     -0.211                           -0.158                     -0.211                           -0.148
-cbio_second_hit        cBioPortal         124                         -0.396                               -0.326                         -0.182                               +0.029                        -0.467                              -0.411                     -0.262                           -0.171                     -0.285                           -0.180
-clinvar_all               ClinVar        1001                         -0.436                               -0.375                         -0.228                               -0.089                        -0.511                              -0.452                     -0.261                           -0.118                     -0.280                           -0.147
-clinvar_PLP               ClinVar         248                         -0.610                               -0.553                         -0.270                               +0.004                        -0.637                              -0.554                     -0.381                           -0.225                     -0.385                           -0.209
-clinvar_VUS               ClinVar         635                         +0.247                               +0.204                         +0.056                               -0.146                        +0.216                              +0.158                     +0.136                           +0.061                     +0.163                           +0.074
-clinvar_conflicting       ClinVar         114                         -0.233                               -0.132                         -0.196                               -0.064                        -0.279                              -0.162                     -0.119                           +0.018                     -0.189                           -0.059
-clinvar_expert            ClinVar         117                         -0.421                               -0.385                         -0.179                               +0.010                        -0.461                              -0.392                     -0.294                           -0.199                     -0.319                           -0.236
-clinvar_PHTS              ClinVar         695                         -0.415                               -0.334                         -0.210                               -0.026                        -0.499                              -0.425                     -0.237                           -0.072                     -0.271                           -0.145
+cbio_all               cBioPortal         254                         -0.461                               -0.357                         -0.301                               -0.108                        -0.563                              -0.475                     -0.345                           -0.217                     -0.359                           -0.210
+cbio_recurrent         cBioPortal          73                         -0.393                               -0.350                         -0.081                               +0.070                        -0.436                              -0.405                     -0.239                           -0.161                     -0.232                           -0.138
+cbio_singleton         cBioPortal         181                         -0.322                               -0.229                         -0.271                               -0.149                        -0.423                              -0.342                     -0.247                           -0.143                     -0.260                           -0.138
+cbio_nonhyper          cBioPortal         194                         -0.458                               -0.340                         -0.316                               -0.100                        -0.619                              -0.534                     -0.379                           -0.237                     -0.395                           -0.236
+cbio_endometrial       cBioPortal         128                         -0.380                               -0.337                         -0.140                               -0.037                        -0.411                              -0.366                     -0.220                           -0.131                     -0.252                           -0.155
+cbio_glioblastoma      cBioPortal          58                         -0.276                               -0.220                         -0.110                               +0.033                        -0.365                              -0.324                     -0.225                           -0.158                     -0.221                           -0.146
+cbio_second_hit        cBioPortal         124                         -0.406                               -0.323                         -0.182                               +0.029                        -0.473                              -0.408                     -0.273                           -0.168                     -0.293                           -0.177
+clinvar_all               ClinVar        1001                         -0.419                               -0.345                         -0.239                               -0.100                        -0.502                              -0.430                     -0.267                           -0.113                     -0.290                           -0.144
+clinvar_PLP               ClinVar         248                         -0.608                               -0.545                         -0.285                               -0.004                        -0.648                              -0.563                     -0.387                           -0.227                     -0.395                           -0.215
+clinvar_VUS               ClinVar         635                         +0.249                               +0.223                         +0.051                               -0.152                        +0.221                              +0.181                     +0.120                           +0.063                     +0.145                           +0.072
+clinvar_conflicting       ClinVar         114                         -0.237                               -0.143                         -0.189                               -0.057                        -0.285                              -0.176                     -0.111                           +0.023                     -0.182                           -0.056
+clinvar_expert            ClinVar         117                         -0.403                               -0.361                         -0.183                               +0.009                        -0.463                              -0.393                     -0.290                           -0.194                     -0.326                           -0.243
+clinvar_PHTS              ClinVar         695                         -0.403                               -0.314                         -0.221                               -0.039                        -0.493                              -0.414                     -0.243                           -0.068                     -0.282                           -0.145
 clinvar_autism            ClinVar          38                         -0.131                               -0.073                         -0.160                               -0.113                        -0.200                              -0.162                     -0.009                           +0.069                     -0.051                           +0.033
-gnomad_all                 gnomAD         176                         +0.120                               +0.080                         +0.130                               +0.093                        +0.050                              +0.001                     +0.055                           +0.001                     +0.049                           -0.012
-gnomad_singleton           gnomAD         121                         +0.024                               -0.014                         +0.076                               +0.051                        -0.033                              -0.081                     +0.006                           -0.029                     +0.021                           -0.009
-gnomad_ac2                 gnomAD          55                         +0.139                               +0.122                         +0.093                               +0.061                        +0.126                              +0.106                     +0.062                           +0.020                     +0.029                           -0.034
-merged_all                 merged        1093                         -0.445                               -0.389                         -0.222                               -0.097                        -0.535                              -0.484                     -0.268                           -0.132                     -0.293                           -0.171
-tumour_only                merged         230                         -0.464                               -0.371                         -0.287                               -0.103                        -0.540                              -0.460                     -0.327                           -0.199                     -0.334                           -0.175
-population_only            merged         152                         +0.207                               +0.168                         +0.170                               +0.094                        +0.175                              +0.124                     +0.112                           +0.056                     +0.111                           +0.051
-tumour_and_population      merged          24                         -0.154                               -0.153                         -0.098                               -0.022                        -0.244                              -0.244                     -0.108                           -0.106                     -0.134                           -0.143
-consensus_damaging         merged         276                         -0.623                               -0.558                         -0.274                               -0.011                        -0.643                              -0.552                     -0.396                           -0.243                     -0.391                           -0.212
-consensus_tolerated        merged          47                         +0.194                               +0.133                         +0.167                               +0.099                        +0.194                              +0.140                     +0.108                           +0.032                     +0.076                           -0.023
+gnomad_all                 gnomAD         176                         +0.133                               +0.097                         +0.140                               +0.098                        +0.058                              +0.008                     +0.060                           +0.005                     +0.046                           -0.017
+gnomad_singleton           gnomAD         121                         +0.024                               -0.009                         +0.076                               +0.051                        -0.032                              -0.078                     +0.002                           -0.030                     +0.014                           -0.013
+gnomad_ac2                 gnomAD          55                         +0.153                               +0.133                         +0.104                               +0.068                        +0.131                              +0.105                     +0.072                           +0.026                     +0.034                           -0.036
+merged_all                 merged        1093                         -0.440                               -0.368                         -0.228                               -0.104                        -0.530                              -0.470                     -0.281                           -0.131                     -0.312                           -0.175
+tumour_only                merged         230                         -0.473                               -0.368                         -0.298                               -0.111                        -0.558                              -0.472                     -0.341                           -0.202                     -0.351                           -0.186
+population_only            merged         152                         +0.222                               +0.185                         +0.179                               +0.100                        +0.182                              +0.129                     +0.118                           +0.061                     +0.110                           +0.045
+tumour_and_population      merged          24                         -0.155                               -0.153                         -0.098                               -0.022                        -0.245                              -0.244                     -0.110                           -0.106                     -0.136                           -0.143
+consensus_damaging         merged         276                         -0.622                               -0.553                         -0.286                               -0.017                        -0.654                              -0.563                     -0.401                           -0.245                     -0.400                           -0.219
+consensus_tolerated        merged          47                         +0.207                               +0.144                         +0.177                               +0.106                        +0.198                              +0.138                     +0.117                           +0.039                     +0.080                           -0.025
