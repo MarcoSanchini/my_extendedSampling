@@ -1,0 +1,31 @@
+nohup: ignoring input
+Pfam families InterPro places on human PTEN (P60484):
+  PF22784  Swiss Army Knife protein, DSP-PTPase phosphatase domain residues 82-144
+  PF10409  C2 domain of PTEN tumour-suppressor protein residues 189-348
+
+downloading the full alignment of PF22784 ...
+
+PF22784 Swiss Army Knife protein, DSP-PTPase phosphatase domain: 10477 rows, 7486 used, N_eff 2957, median identity to PTEN 0.22; 101 reference sites (UniProt 65-173) get an entropy, mean 2.27 nats. PTEN is a row of the alignment.
+  Spearman with PTEN-like family entropy   +0.28  (n=101)
+  Spearman with phosphatase tier entropy   +0.34  (n=101)
+  Spearman with orthologs entropy          +0.33  (n=101)
+  Spearman with abundance mean             +0.18  (n=92)
+  Spearman with activity mean              +0.38  (n=101)
+  sites below 0.5 nats: 6; in K_natural: 6/9  expected 0.5  P=6.6e-08
+  sites below 0.5 nats: 6; in K_abundance: 2/38  expected 2.3  P=0.74
+  sites below 0.5 nats: 6; in K_activity: 6/48  expected 2.9  P=0.0097
+  conserved sites: H123 C124 G127 G129 R130 G132
+
+downloading the full alignment of PF10409 ...
+
+PF10409 C2 domain of PTEN tumour-suppressor protein: 17298 rows, 15204 used, N_eff 1210, median identity to PTEN 0.22; 127 reference sites (UniProt 188-349) get an entropy, mean 2.07 nats. PTEN is a row of the alignment.
+  Spearman with PTEN-like family entropy   +0.85  (n=122)
+  Spearman with orthologs entropy          +0.43  (n=93)
+  Spearman with abundance mean             +0.66  (n=112)
+  Spearman with activity mean              +0.53  (n=117)
+  sites below 0.5 nats: 2; in K_natural: 2/3  expected 0.0  P=0.00037
+  sites below 0.5 nats: 2; in K_abundance: 1/45  expected 0.7  P=0.58
+  sites below 0.5 nats: 2; in K_activity: 2/19  expected 0.3  P=0.021
+  conserved sites: D252 D326
+
+Outputs in /home/marco.sanchini/my_project/extendedSampling/softmax/monte_carlo/pten_natural: pten_site_table_pfam.csv, pfam_summary.tsv, pten_pfam_profile.png

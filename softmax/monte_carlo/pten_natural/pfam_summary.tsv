@@ -1,0 +1,3 @@
+accession	rows_in_alignment	rows_at_coverage_0.7	rows_used	n_eff	median_identity_to_PTEN	reference_sites	sites_with_entropy	uniprot_from	uniprot_to	mean_entropy_nats	sites_entropy_lt_0.5	anchor
+PF22784	10477	7486	7486	2957.215	0.224	109	101	65	173	2.273	6	PTEN is a row of the alignment
+PF10409	17298	15204	15204	1209.838	0.223	138	127	188	349	2.067	2	PTEN is a row of the alignment
