@@ -992,7 +992,7 @@ each other). The three panels have the same layout, one per energy.
 
 Two variant sources (MaveDB, ClinGen) were exported by hand on 2026-11-19 and
 checked against the merged table, and the natural reference was rebuilt from
-three more sequence sources on 2026-11-20. None of them enters the results
+four more sequence sources on 2026-11-20 (BFD, MGnify, UniRef100, Pfam). None of them enters the results
 above; this section records that they were looked at and what they hold. The
 variant-source numbers come from one-off scripts; the sequence databases from
 \file{pten\_k\_sites.py msa}.
@@ -1147,6 +1147,67 @@ So the natural reference does not depend on UniRef90's tensins: an
 alignment that is almost all PTEN ranks the sites the same way, picks most of
 the same $K$-sites, and gives them the same disease enrichment.
 
+\paragraph{Pfam.} Run by Marco on astaroth on 2026-11-20
+(\texttt{pten\_k\_sites.py pfam}, which needs the EBI servers; \file{pfam.log},
+\file{pten\_natural/pten\_site\_table\_pfam.csv}). Pfam is a curated database
+of protein \emph{domain} families: one hand-checked seed alignment and one
+profile HMM per domain, and a ``full'' alignment of every reference-proteome
+protein that the HMM matches. InterPro places two Pfam families on human PTEN:
+\begin{itemize}
+\item \textbf{PF22784}, ``Swiss Army Knife protein, DSP-PTPase phosphatase
+  domain'' (InterPro range 82--144): the dual-specificity protein tyrosine
+  phosphatases in general, a superfamily far wider than PTEN. 7486 rows,
+  $N_{\rm eff}$ 2957, median identity to PTEN 0.22; projected through PTEN's
+  own row it gives an entropy at 101 sites (UniProt 65--173).
+\item \textbf{PF10409}, ``C2 domain of PTEN tumour-suppressor protein''
+  (189--348): PTEN's own C2 family, the C2 domains of the PTEN-like
+  proteins, tensins among them. 15204 rows, $N_{\rm eff}$ 1210, median identity 0.22;
+  127 sites (188--349).
+\end{itemize}
+Together they cover 228 of the 324 sites and 12 of the 28 $K_{\rm natural}$
+sites; the N-terminal 7--64 and the phosphatase--C2 linker get no Pfam
+entropy. Comparison on the covered sites, the lowest-entropy sites taken by
+rank as before (10 per domain):
+
+\begin{table}[H]\centering\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+domain & source & $\rho$ vs UniRef90 & $\rho$ activity & lowest 10 shared & tumour rec. & P/LP\\
+\midrule
+phosphatase & UniRef90 family & 1 & 0.73 & 10/10 & 7.0 & 4.8\\
+(65--173) & Pfam PF22784 & 0.28 & 0.38 & 7/10 & 8.4 & 5.4\\
+ & UniRef100 family & 0.93 & 0.75 & 9/10 & 7.0 & 4.8\\
+\midrule
+C2 & UniRef90 family & 1 & 0.53 & 10/10 & 1.7 & 1.1\\
+(188--349) & Pfam PF10409 & 0.85 & 0.53 & 8/10 & 1.3 & 1.4\\
+ & UniRef100 family & 0.93 & 0.54 & 7/10 & 1.3 & 1.2\\
+\bottomrule
+\end{tabular}
+\caption{Pfam against the other sources on the sites Pfam covers. Enrichments
+are observed/expected over the whole construct, as in Table~\ref{tab:msa};
+with 10 sites per set they move by about 1 for a handful of variants.}
+\label{tab:pfam}
+\end{table}
+
+\begin{enumerate}
+\item \textbf{C2: Pfam agrees} (Spearman 0.85, 8 of 10 lowest sites shared,
+  same correlation with activity). PF10409 is essentially our family tier
+  restricted to the C2 domain, built by a different pipeline.
+\item \textbf{Phosphatase: Pfam agrees only on the catalytic core.} PF22784
+  spans every dual-specificity phosphatase, so outside the active site almost
+  every column varies (mean 2.27 nats) and the ranking agrees weakly with
+  UniRef90's (0.28). Its 6 sites below 0.5 nats are exactly the P-loop
+  signature H123, C124, G127, G129, R130, G132, all six in $K_{\rm natural}$;
+  7 of its lowest 10 are UniRef90's. Because those are the catalytic sites,
+  its disease enrichment is as high as UniRef90's or higher (8.4 and 5.4).
+\item The verdict for the whole natural reference does not change: the sites
+  that every source calls conserved are the catalytic P-loop and the core of
+  the two domains, and they are the disease sites. What the alignment depth
+  decides is how many other sites look conserved too: a superfamily
+  alignment (Pfam's phosphatase family, like the PF00102 check of the K-site
+  note) keeps only the catalytic machinery.
+\end{enumerate}
+
 \begin{figure}[h]\centering
 \includegraphics[width=\linewidth]{figures/pten_var_msa_sources.png}
 \caption{Orthologue (top; BFD and MGnify have too few orthologues) and
@@ -1159,7 +1220,9 @@ Verdict: no source changes a result. MaveDB's label history supports the
 circularity caveat for the activity AUC; ClinGen's expert labels reproduce the
 ClinVar AUCs of the energies and show, through its evidence codes, why the
 activity AUC is inflated; BFD, MGnify and UniRef100 reproduce the natural reference's
-ranking and its disease enrichment, though not its absolute threshold.
+ranking and its disease enrichment, though not its absolute threshold; Pfam
+agrees on the C2 domain and, in the phosphatase domain, on the catalytic
+P-loop, which carries the disease enrichment.
 
 % ===========================================================================
 \section{Caveats}\label{sec:caveats}
