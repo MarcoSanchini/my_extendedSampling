@@ -1,3 +1,4 @@
++ python -u pten_k_sites.py compare --burn-in-frac 0.8 --runs T1=pten1d5r_study/equil_ref/T1/chain0 T1.c1=pten1d5r_study/equil_ref/T1/chain1 T1.5=pten1d5r_study/equil_ref/T1.5/chain0 T1.5.c1=pten1d5r_study/equil_ref/T1.5/chain1 T2=pten1d5r_study/equil_ref/T2/chain0 T2.c1=pten1d5r_study/equil_ref/T2/chain1 T4=pten1d5r_study/equil_ref/T4/chain0 T4.c1=pten1d5r_study/equil_ref/T4/chain1 T8=pten1d5r_study/equil_ref/T8/chain0 T8.c1=pten1d5r_study/equil_ref/T8/chain1 T16=pten1d5r_study/equil_ref/T16/chain0 T16.c1=pten1d5r_study/equil_ref/T16/chain1 T3=pten1d5r_study/equil/T3/chain0 T3.c1=pten1d5r_study/equil/T3/chain1 T5=pten1d5r_study/equil/T5/chain0 T5.c1=pten1d5r_study/equil/T5/chain1 T6=pten1d5r_study/equil/T6/chain0 T6.c1=pten1d5r_study/equil/T6/chain1 --out-dir pten_natural --cold T1 T2
 chains (entropy over the last 20% of the moves):
   T1      300001 moves, start reference, final Hd  21,   600 accepted in the kept part, mean entropy 0.154, sites at entropy 0: 241/324, sites never accepted: 188 anywhere / 241 in the kept window
   T1.c1   300001 moves, start reference, final Hd  24,   635 accepted in the kept part, mean entropy 0.165, sites at entropy 0: 236/324, sites never accepted: 184 anywhere / 236 in the kept window
@@ -5,8 +6,14 @@ chains (entropy over the last 20% of the moves):
   T1.5.c1  300001 moves, start reference, final Hd  54,  1600 accepted in the kept part, mean entropy 0.368, sites at entropy 0: 175/324, sites never accepted: 114 anywhere / 175 in the kept window
   T2      650001 moves, start reference, final Hd  76,  6173 accepted in the kept part, mean entropy 0.660, sites at entropy 0: 93/324, sites never accepted: 55 anywhere / 93 in the kept window
   T2.c1   650001 moves, start reference, final Hd  69,  6369 accepted in the kept part, mean entropy 0.677, sites at entropy 0: 85/324, sites never accepted: 47 anywhere / 85 in the kept window
+  T3      180001 moves, start reference, final Hd 129,  3362 accepted in the kept part, mean entropy 0.944, sites at entropy 0: 71/324, sites never accepted: 38 anywhere / 71 in the kept window
+  T3.c1   180001 moves, start reference, final Hd 125,  3358 accepted in the kept part, mean entropy 0.934, sites at entropy 0: 77/324, sites never accepted: 35 anywhere / 77 in the kept window
   T4      400001 moves, start reference, final Hd 174, 10145 accepted in the kept part, mean entropy 1.362, sites at entropy 0: 36/324, sites never accepted: 11 anywhere / 36 in the kept window
   T4.c1   400001 moves, start reference, final Hd 166, 10091 accepted in the kept part, mean entropy 1.365, sites at entropy 0: 29/324, sites never accepted: 10 anywhere / 29 in the kept window
+  T5      180001 moves, start reference, final Hd 187,  5596 accepted in the kept part, mean entropy 1.427, sites at entropy 0: 26/324, sites never accepted: 9 anywhere / 26 in the kept window
+  T5.c1   180001 moves, start reference, final Hd 186,  5457 accepted in the kept part, mean entropy 1.387, sites at entropy 0: 21/324, sites never accepted: 7 anywhere / 21 in the kept window
+  T6      180001 moves, start reference, final Hd 213,  6570 accepted in the kept part, mean entropy 1.532, sites at entropy 0: 23/324, sites never accepted: 8 anywhere / 23 in the kept window
+  T6.c1   180001 moves, start reference, final Hd 202,  6212 accepted in the kept part, mean entropy 1.520, sites at entropy 0: 13/324, sites never accepted: 6 anywhere / 13 in the kept window
   T8      150001 moves, start reference, final Hd 213,  6333 accepted in the kept part, mean entropy 1.613, sites at entropy 0: 13/324, sites never accepted: 7 anywhere / 13 in the kept window
   T8.c1   150001 moves, start reference, final Hd 217,  6521 accepted in the kept part, mean entropy 1.617, sites at entropy 0: 15/324, sites never accepted: 5 anywhere / 15 in the kept window
   T16      90001 moves, start reference, final Hd 254,  5241 accepted in the kept part, mean entropy 1.719, sites at entropy 0: 8/324, sites never accepted: 2 anywhere / 8 in the kept window
@@ -35,12 +42,30 @@ T1.5.c1 -mean_dU_kept             +0.071          +0.190          +0.311        
   T2.c1       entropy             +0.247          +0.349          +0.283         +0.351
   T2.c1      -mean_dU             +0.085          +0.213          +0.327         +0.304
   T2.c1 -mean_dU_kept             +0.088          +0.212          +0.331         +0.305
+     T3       entropy             +0.220          +0.408          +0.320         +0.432
+     T3      -mean_dU             +0.107          +0.257          +0.349         +0.348
+     T3 -mean_dU_kept             +0.095          +0.259          +0.349         +0.357
+  T3.c1       entropy             +0.321          +0.423          +0.387         +0.423
+  T3.c1      -mean_dU             +0.113          +0.262          +0.354         +0.346
+  T3.c1 -mean_dU_kept             +0.135          +0.311          +0.366         +0.390
      T4       entropy             +0.249          +0.483          +0.396         +0.492
      T4      -mean_dU             +0.106          +0.266          +0.348         +0.368
      T4 -mean_dU_kept             +0.119          +0.256          +0.342         +0.353
   T4.c1       entropy             +0.234          +0.489          +0.388         +0.524
   T4.c1      -mean_dU             +0.109          +0.274          +0.355         +0.371
   T4.c1 -mean_dU_kept             +0.110          +0.283          +0.358         +0.377
+     T5       entropy             +0.279          +0.497          +0.410         +0.472
+     T5      -mean_dU             +0.113          +0.281          +0.371         +0.378
+     T5 -mean_dU_kept             +0.116          +0.300          +0.370         +0.388
+  T5.c1       entropy             +0.266          +0.437          +0.309         +0.426
+  T5.c1      -mean_dU             +0.134          +0.295          +0.369         +0.386
+  T5.c1 -mean_dU_kept             +0.136          +0.304          +0.352         +0.389
+     T6       entropy             +0.336          +0.525          +0.410         +0.536
+     T6      -mean_dU             +0.126          +0.307          +0.379         +0.400
+     T6 -mean_dU_kept             +0.131          +0.337          +0.375         +0.413
+  T6.c1       entropy             +0.304          +0.523          +0.390         +0.507
+  T6.c1      -mean_dU             +0.120          +0.295          +0.380         +0.390
+  T6.c1 -mean_dU_kept             +0.126          +0.312          +0.380         +0.407
      T8       entropy             +0.302          +0.476          +0.430         +0.509
      T8      -mean_dU             +0.126          +0.311          +0.388         +0.409
      T8 -mean_dU_kept             +0.123          +0.308          +0.393         +0.399
@@ -65,8 +90,14 @@ crystal, and the sampled-vs-reference Spearman with RSA regressed out (the 277 s
 T1.5.c1          +0.350                   +0.157                +0.099                +0.079               +0.127
      T2          +0.364                   +0.111                +0.143                +0.066               +0.150
   T2.c1          +0.403                   +0.129                +0.137                +0.088               +0.180
+     T3          +0.457                   +0.092                +0.207                +0.111               +0.249
+  T3.c1          +0.477                   +0.172                +0.207                +0.160               +0.212
      T4          +0.535                   +0.093                +0.278                +0.150               +0.284
   T4.c1          +0.534                   +0.067                +0.271                +0.120               +0.306
+     T5          +0.486                   +0.124                +0.317                +0.183               +0.263
+  T5.c1          +0.442                   +0.090                +0.240                +0.094               +0.216
+     T6          +0.523                   +0.167                +0.343                +0.152               +0.338
+  T6.c1          +0.491                   +0.171                +0.341                +0.175               +0.285
      T8          +0.538                   +0.138                +0.273                +0.182               +0.267
   T8.c1          +0.520                   +0.065                +0.288                +0.161               +0.225
     T16          +0.464                   +0.015                +0.275                +0.194               +0.291
@@ -93,12 +124,30 @@ T1.5.c1  K_activity    97    0.162     0.457  0.354         0.691          0.476
   T2.c1   K_natural    28    0.186     0.724  0.257         0.500          0.240    0.009
   T2.c1 K_abundance   108    0.387     0.823  0.471         0.343          0.222    0.003
   T2.c1  K_activity    97    0.345     0.819  0.421         0.351          0.225    0.003
+     T3   K_natural    28    0.371     0.998  0.372         0.393          0.203    0.003
+     T3 K_abundance   108    0.609     1.112  0.547         0.269          0.194    0.003
+     T3  K_activity    97    0.509     1.130  0.450         0.330          0.172    0.003
+  T3.c1   K_natural    28    0.299     0.994  0.300         0.571          0.206    0.003
+  T3.c1 K_abundance   108    0.571     1.115  0.512         0.343          0.185    0.003
+  T3.c1  K_activity    97    0.534     1.105  0.483         0.381          0.176    0.003
      T4   K_natural    28    0.586     1.435  0.409         0.429          0.081    0.003
      T4 K_abundance   108    0.982     1.551  0.633         0.102          0.116    0.003
      T4  K_activity    97    0.824     1.591  0.518         0.206          0.070    0.003
   T4.c1   K_natural    28    0.628     1.435  0.438         0.321          0.068    0.003
   T4.c1 K_abundance   108    1.003     1.547  0.648         0.120          0.074    0.003
   T4.c1  K_activity    97    0.857     1.583  0.541         0.175          0.053    0.003
+     T5   K_natural    28    0.713     1.494  0.477         0.321          0.057    0.003
+     T5 K_abundance   108    1.018     1.631  0.624         0.130          0.056    0.003
+     T5  K_activity    97    0.990     1.614  0.613         0.134          0.057    0.003
+  T5.c1   K_natural    28    0.560     1.465  0.382         0.250          0.047    0.003
+  T5.c1 K_abundance   108    1.081     1.539  0.702         0.083          0.056    0.003
+  T5.c1  K_activity    97    0.988     1.557  0.634         0.134          0.035    0.003
+     T6   K_natural    28    0.809     1.600  0.506         0.321          0.047    0.003
+     T6 K_abundance   108    1.158     1.719  0.673         0.093          0.060    0.003
+     T6  K_activity    97    1.037     1.744  0.595         0.144          0.040    0.003
+  T6.c1   K_natural    28    0.657     1.602  0.410         0.250          0.020    0.003
+  T6.c1 K_abundance   108    1.191     1.685  0.707         0.056          0.032    0.003
+  T6.c1  K_activity    97    1.046     1.723  0.607         0.082          0.022    0.003
      T8   K_natural    28    0.895     1.681  0.533         0.214          0.024    0.003
      T8 K_abundance   108    1.277     1.781  0.717         0.046          0.037    0.003
      T8  K_activity    97    1.166     1.804  0.647         0.082          0.022    0.003
@@ -112,9 +161,9 @@ T1.5.c1  K_activity    97    0.162     0.457  0.354         0.691          0.476
  T16.c1 K_abundance   108    1.442     1.859  0.776         0.037          0.028    0.003
  T16.c1  K_activity    97    1.294     1.902  0.680         0.072          0.013    0.003
 
-sampled K-sites (entropy < 0.05 at every one of ['T1']): 245/324
-  overlap with K_natural: 24/28  expected 21.2  P=0.14
-  overlap with K_abundance: 93/108  expected 81.7  P=0.0011
-  overlap with K_activity: 80/97  expected 73.3  P=0.039
+sampled K-sites (entropy < 0.05 at every one of ['T1', 'T2']): 98/324
+  overlap with K_natural: 16/28  expected 8.5  P=0.0018
+  overlap with K_abundance: 38/108  expected 32.7  P=0.11
+  overlap with K_activity: 41/97  expected 29.3  P=0.0018
 
-Outputs in /home/user/my_extendedSampling/softmax/monte_carlo/pten_natural: pten_site_table_sampled.csv, sampled_vs_references_spearman.tsv, sampled_vs_references_partial_rsa.tsv, sampled_entropy_in_K_sets.tsv, pten_site_profile_sampled.png, sampled_vs_family.png, sampled_vs_abundance.png, sampled_vs_activity.png, sampled_vs_references_by_T.png
+Outputs in pten_natural: pten_site_table_sampled.csv, sampled_vs_references_spearman.tsv, sampled_vs_references_partial_rsa.tsv, sampled_entropy_in_K_sets.tsv, pten_site_profile_sampled.png, sampled_vs_family.png, sampled_vs_abundance.png, sampled_vs_activity.png, sampled_vs_references_by_T.png

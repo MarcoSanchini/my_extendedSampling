@@ -63,7 +63,8 @@ Usage:
     python pten_k_sites.py build
     python pten_k_sites.py compare --runs T1=pten1d5r_study/equil/T1/chain0 \\
         T2=pten1d5r_study/equil/T2/chain0 T4=pten1d5r_study/equil/T4/chain0 --cold T1 T2
-    python pten_k_sites.py compare --runs-dir pten1d5r_study/equil --cold T1 T2    # every chain
+    python pten_k_sites.py compare --burn-in-frac 0.8 --cold T1 T2 \
+        --runs-dir pten1d5r_study/equil_ref pten1d5r_study/equil      # the whole ladder
     python pten_k_sites.py family
     python pten_k_sites.py mutants                             # needs scan_single_mutants.py's CSV (GPU)
     python pten_k_sites.py pfam                                # local machine only
@@ -522,10 +523,15 @@ def discover_runs(args):
 		if not path:
 			raise ValueError(f"--runs entries are LABEL=DIR, got {item!r}")
 		runs[label] = path
-	if args.runs_dir:
-		for tdir in sorted(os.listdir(args.runs_dir)):
-			for cdir in sorted(os.listdir(os.path.join(args.runs_dir, tdir))) if os.path.isdir(os.path.join(args.runs_dir, tdir)) else []:
-				path = os.path.join(args.runs_dir, tdir, cdir)
+	# Several --runs-dir are allowed because the ladder is split across two of them
+	# (equil_ref holds T1..T2, T4, T8, T16; equil holds T3, T5, T6), and taking only one
+	# silently drops temperatures -- which is exactly what hid the T=6 maximum until
+	# 2026-11-19. setdefault means the FIRST directory listed wins a duplicate label, so
+	# list the one with the longer chains first.
+	for runs_dir in args.runs_dir or []:
+		for tdir in sorted(os.listdir(runs_dir)):
+			for cdir in sorted(os.listdir(os.path.join(runs_dir, tdir))) if os.path.isdir(os.path.join(runs_dir, tdir)) else []:
+				path = os.path.join(runs_dir, tdir, cdir)
 				m = re.fullmatch(r"chain(\d+)", cdir)
 				if not m or not os.path.isfile(os.path.join(path, "start.txt")):
 					continue
@@ -533,7 +539,7 @@ def discover_runs(args):
 					continue
 				runs.setdefault(tdir if m.group(1) == "0" else f"{tdir}.c{m.group(1)}", path)
 	if not runs:
-		raise SystemExit("compare needs --runs LABEL=DIR ... or --runs-dir DIR (a directory of T*/chain*)")
+		raise SystemExit("compare needs --runs LABEL=DIR ... or --runs-dir DIR [DIR ...] (directories of T*/chain*)")
 	return dict(sorted(runs.items(), key=lambda kv: (label_T(kv[0]), kv[0])))
 
 
@@ -1458,7 +1464,7 @@ def main():
 	p = sub.add_parser("build", parents=[common]); p.set_defaults(func=cmd_build)
 	p = sub.add_parser("compare", parents=[common])
 	p.add_argument("--runs", nargs="+", help="LABEL=RUN_DIR, a run dir holding start.txt and data.dat(.gz)")
-	p.add_argument("--runs-dir", help="take every T*/chain* under this directory (e.g. pten1d5r_study/equil): chain0 is "
+	p.add_argument("--runs-dir", nargs="+", help="take every T*/chain* under these directories (e.g. pten1d5r_study/equil_ref pten1d5r_study/equil): chain0 is "
 		"labelled T4, the others T4.c1, ...")
 	p.add_argument("--reference-only", action="store_true", help="leave out the chains that did not start from the reference")
 	p.add_argument("--burn-in-frac", type=float, default=0.5)
