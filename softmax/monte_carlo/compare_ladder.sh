@@ -12,6 +12,19 @@
 #
 # --burn-in-frac 0.8 is not optional: the 0.5 default does not clear t_eq at seven of the
 # nine temperatures. See docs/pten_k_sites_explained.md section 5.2.
+#
+# TWO passes are written, because they answer different questions and quoting the wrong one
+# produced a spurious result on 2026-11-19:
+#   OUT/            --burn-in-frac 0.8, every chain's window safely past its own t_eq. Use
+#                   it for a statement about ONE temperature.
+#   OUT/matched16k/ --match-accepted 16000, every window holding the same number of ACCEPTED
+#                   moves. Use it for any statement COMPARING temperatures. A fixed fraction
+#                   does not: the per-site entropy is attenuated when the window holds few
+#                   accepted moves, so at 0.8 the hot chains' short windows scored lower than
+#                   they should and invented a maximum at T=6 that is really a plateau.
+#                   Caveat printed in its own log: at 16000 the windows of T=2, 3 and 5 start
+#                   before their t_eq, so those rows are lower bounds, and T=1 and T=1.5
+#                   never reach 16000 accepted moves at all (3000 and 8300 in 300000 moves).
 set -eu
 cd "$(dirname "$(readlink -f "$0")")"
 OUT=${1:-pten_natural}
@@ -27,3 +40,6 @@ done
 
 set -x
 python -u pten_k_sites.py compare --burn-in-frac 0.8 --runs $RUNS --out-dir "$OUT" "$@"
+mkdir -p "$OUT/matched16k"
+python -u pten_k_sites.py compare --match-accepted 16000 --runs $RUNS \
+	--out-dir "$OUT/matched16k" "$@"

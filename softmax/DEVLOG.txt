@@ -7626,3 +7626,89 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     under 0.5 nats are the P-loop H123 C124 G127 G129 R130 G132, all in K_natural, and 7 of
     its lowest 10 are UniRef90's; enrichment of those 10: recurrent tumour 8.4, P/LP 5.4
     (UniRef90 7.0, 4.8). Verdict unchanged: every source agrees on the catalytic core.
+
+2026-11-23  PTEN: the T = 6 maximum was window-length attenuation. It is a
+            plateau, and the plateau number is larger
+    T = 8 and T = 16 were extended on astaroth (150000 -> 300000 and
+    90000 -> 200000, two chains each, the pairs in sequence). The point was to
+    give the ladder's two thinnest windows some margin past t_eq, and the
+    expectation, stated in the PR, was that it would be worth "about 0.013".
+    It was worth 0.11. At --burn-in-frac 0.8, burial-removed family Spearman:
+
+      T = 8   +0.27/+0.29  ->  +0.38/+0.40
+      T = 16  +0.27/+0.24  ->  +0.38/+0.40
+
+    Both now EXCEED T = 6 (+0.34/+0.34), so the maximum at T = 6 reported on
+    2026-11-19 is gone. Worse, it was never there.
+
+    WHY. The per-site entropy is estimated from the accepted moves inside the
+    window. With few of them a site is seen in few distinct residues, its
+    entropy is noisy and biased low, the ranking across sites is compressed,
+    and the Spearman against ANY reference is attenuated. Measured on T = 8's
+    own 300001-move chain -- one equilibrium, three windows:
+
+      window        accepted in it   family | RSA
+      last  30000    6374/ 6379      +0.31/+0.32
+      last  60000   12755/12849      +0.38/+0.40
+      last 150000   31975/32465      +0.46/+0.46
+
+    Position past t_eq barely matters next to that: a 30000-move window sitting
+    150000 moves past t_eq gives +0.31/+0.32 against +0.27/+0.29 for a
+    30000-move window starting AT t_eq. So the "window length costs only 0.013"
+    figure in the doc was a T = 4 measurement wrongly generalised; at the hot
+    end it costs ~0.15.
+
+    At a fixed burn-in FRACTION the hot temperatures had the SHORTEST windows
+    (18000 moves at T = 16, 30000 at T = 8, against 130000 at T = 2 and 80000
+    at T = 4), so they were attenuated hardest and the dip after T = 6 looked
+    like a peak at T = 6. A fraction does not compare like with like.
+
+    THE FIX, so it cannot recur: `compare` takes --match-accepted N, which walks
+    the window start back from the end of each chain until it holds N accepted
+    moves. compare_ladder.sh now writes BOTH passes, 0.8 into pten_natural/ and
+    --match-accepted 16000 into pten_natural/matched16k/, and the log prints
+    each window's start so the t_eq check is visible.
+
+    WHAT IS ACTUALLY THERE, at a matched 16000 accepted moves:
+
+      T    family | RSA   margin over abundance
+      4    +0.26/+0.29    +0.13/+0.17
+      6    +0.41/+0.40    +0.25/+0.23
+      8    +0.40/+0.42    +0.27/+0.29
+      16   +0.41/+0.43    +0.22/+0.27
+
+    A PLATEAU from T = 6 up, the three temperatures indistinguishable. The
+    plateau is family +0.41 against abundance +0.16, a RATIO OF 2.6 -- larger
+    and better supported than the "+0.34, a factor of two, at T = 6" of
+    2026-11-19, which was attenuated. Quote this, with the count.
+
+    CAVEAT on the matched table: matching forces a cold chain to use a long
+    window, so at 16000 the windows of T = 2, 3 and 5 start BEFORE their t_eq
+    (329476 vs 440000; ~3000-5000 vs 100000; ~76000 vs 100000) and those rows
+    are LOWER BOUNDS. T = 1 and T = 1.5 cannot be matched at all: their whole
+    300001-move chains hold 3036 and 8279 accepted moves. Only T = 4, 6, 8, 16
+    are clean at 16000.
+
+    THE TEMPERATURE TREND ITSELF IS REAL, and this was checked rather than
+    assumed, since a trend in sample size could have manufactured it. At a
+    matched ~600 accepted moves, all T = 1 can offer: family | RSA is
+    -0.04/+0.01 at T = 1, +0.09/+0.00 at T = 2, +0.14/+0.17 at T = 4,
+    +0.22/+0.11 at T = 8, and the margin over abundance still flips from
+    negative to positive between T = 2 and T = 4. Every value is crushed at
+    that sample size, but the ordering survives.
+
+    THE ENERGY SIDE DOES NOT MOVE, which is the result that keeps surviving:
+    -mean_dU_kept is family +0.34/+0.31 vs abundance +0.38/+0.38 at T = 6 and
+    +0.29/+0.31 vs +0.35/+0.37 at T = 8. Everywhere on the plateau the SAMPLED
+    entropy prefers conservation 2.6:1 while the ENERGY prefers abundance.
+
+    Strict sampled K-sites unchanged at 0.8 (98 sites, defined by T = 1 and
+    T = 2, which did not change): 16/28 natural (8.5 expected, p = 0.002),
+    41/97 activity (29.3, p = 0.002), 38/108 abundance (32.7, p = 0.11). The
+    matched pass agrees and is sharper: 80 sites, 15/28 natural (6.9,
+    p = 0.0006), 36/97 activity (24.0, p = 0.0007), 31/108 abundance (26.7,
+    p = 0.15).
+
+    Doc sections 5.2 (both tables plus a new subsection on window length), 5.3,
+    and cautions 1, 3 and a new 4 in section 11. The old cautions 4-10 shift to
+    5-11.
