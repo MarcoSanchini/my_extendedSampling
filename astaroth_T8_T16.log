@@ -1,0 +1,79 @@
+nohup: ignoring input
+== host
+astaroth
+Sat 21 Nov 21:00:55 CET 2026
+name, memory.total [MiB], memory.used [MiB], memory.free [MiB]
+NVIDIA RTX 4500 Ada Generation, 24570 MiB, 852 MiB, 23228 MiB
+T=8 pten1d5r_study/equil_ref/T8/chain0 at 150000 moves -> 300000
+T=8 pten1d5r_study/equil_ref/T8/chain1 at 150000 moves -> 300000
+T=16 pten1d5r_study/equil_ref/T16/chain0 at 90000 moves -> 200000
+T=16 pten1d5r_study/equil_ref/T16/chain1 at 90000 moves -> 200000
+===== T=8 pten1d5r_study/equil_ref/T8/chain0  150000 -> 300000  seed 200  Sat 21 Nov 21:00:55 CET 2026
+===== T=8 pten1d5r_study/equil_ref/T8/chain1  150000 -> 300000  seed 201  Sat 21 Nov 21:00:55 CET 2026
+===== T=8 pair done rc=0  Sun 22 Nov 04:37:44 CET 2026
+--- pten1d5r_study/equil_ref/T8/chain0/run_info.txt
+# 2026-11-22 04:37:42  moves=300000  resume=True
+T 8.0
+n_sites 1
+dt 0.0571417
+grad_mode one_pass
+seed 200
+start resume
+ref pten_1d5r
+ref_len 324
+wall_total_s 27393.0
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 4313
+peak_reserved_MB 4340
+
+--- pten1d5r_study/equil_ref/T8/chain1/run_info.txt
+# 2026-11-22 04:37:44  moves=300000  resume=True
+T 8.0
+n_sites 1
+dt 0.0571417
+grad_mode one_pass
+seed 201
+start resume
+ref pten_1d5r
+ref_len 324
+wall_total_s 27394.4
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 4313
+peak_reserved_MB 4340
+
+===== T=16 pten1d5r_study/equil_ref/T16/chain0  90000 -> 200000  seed 200  Sun 22 Nov 04:37:51 CET 2026
+===== T=16 pten1d5r_study/equil_ref/T16/chain1  90000 -> 200000  seed 201  Sun 22 Nov 04:37:51 CET 2026
+===== T=16 pair done rc=0  Sun 22 Nov 10:12:59 CET 2026
+--- pten1d5r_study/equil_ref/T16/chain0/run_info.txt
+# 2026-11-22 10:12:59  moves=200000  resume=True
+T 16.0
+n_sites 1
+dt 0.0808105
+grad_mode one_pass
+seed 200
+start resume
+ref pten_1d5r
+ref_len 324
+wall_total_s 20092.6
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 4313
+peak_reserved_MB 4340
+
+--- pten1d5r_study/equil_ref/T16/chain1/run_info.txt
+# 2026-11-22 10:12:57  moves=200000  resume=True
+T 16.0
+n_sites 1
+dt 0.0808105
+grad_mode one_pass
+seed 201
+start resume
+ref pten_1d5r
+ref_len 324
+wall_total_s 20093.8
+gpu NVIDIA RTX 4500 Ada Generation
+peak_allocated_MB 4313
+peak_reserved_MB 4340
+
+
+T8 and T16 extended Sun 22 Nov 10:13:04 CET 2026
+Re-run the comparison afterwards:  bash compare_ladder.sh pten_natural --cold T1 T2
