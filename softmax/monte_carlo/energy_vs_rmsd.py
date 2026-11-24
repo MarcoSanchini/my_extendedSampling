@@ -530,6 +530,15 @@ def cmd_analyze(args):
 	s = pd.read_csv(args.scores)
 	ref_row = s[s.frame_id == "reference"]
 	d = s[s.frame_id != "reference"].copy()
+	if args.frames:
+		# scores.csv is resumable, so rows from an OLDER frames.tsv (e.g. before T8/T16 were
+		# extended on 2026-11-23) would otherwise stay in the analysis unnoticed.
+		ids = set(pd.read_csv(args.frames, sep="\t", usecols=["frame_id"]).frame_id)
+		stale = ~d.frame_id.isin(ids)
+		if stale.any():
+			print(f"# dropping {stale.sum()} scored frames not in {args.frames} (stale rows); "
+				f"{(~pd.Series(list(ids)).isin(d.frame_id)).sum()} frames of it are not scored yet", flush=True)
+		d = d[~stale]
 	d["T"] = d["T"].astype(float)
 	os.makedirs(args.out_dir, exist_ok=True)
 	energies = [e for e in ENERGIES if e in d and d[e].notna().any()]
@@ -672,6 +681,8 @@ def main():
 	a = sub.add_parser("analyze", help="CPU: correlations, subsets A/B/C, figure")
 	a.add_argument("--scores", required=True)
 	a.add_argument("--out-dir", required=True)
+	a.add_argument("--frames", default=os.path.join(MONTE_CARLO_DIR, "energy_rmsd", "frames.tsv"),
+		help="keep only scored frames listed here (pass '' to keep every row of --scores)")
 	a.add_argument("--target", default="rmsd_xtal", choices=["rmsd_xtal", "tm_xtal", "rmsd_ref"])
 	a.add_argument("--n-boot", type=int, default=500)
 	a.add_argument("--n-bins", type=int, default=25)
