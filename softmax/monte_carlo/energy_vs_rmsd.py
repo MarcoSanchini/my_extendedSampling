@@ -74,7 +74,12 @@ STUDY = "pten1d5r_study"
 # holds T = 1, 1.5, 2, 4, 8, 16; T = 3, 5, 6 only ever ran in equil. The hot 30000-move chains
 # of equil (T32..T316) have no measured t_eq and are left out on purpose.
 LADDER = [(T, f"{STUDY}/equil_ref/T{T}") for T in ("1", "1.5", "2", "4", "8", "16")] + \
-	[(T, f"{STUDY}/equil/T{T}") for T in ("3", "5", "6")]
+	[(T, f"{STUDY}/equil/T{T}") for T in ("3", "5", "6")] + \
+	[(T, f"{STUDY}/warm/T{T}") for T in ("2.5", "7")]
+# The warm/ chains are HOT-STARTED from an equilibrated neighbour (T2.5 from equil_ref/T2,
+# T7 from equil/T6) and ran one at a time on urano, so there is only a chain0 and their t_eq
+# is not the ladder's relaxation time from the reference. Taking the last 20% is safe either
+# way, and `frames` prints each chain's own tau_U next to it.
 
 FRAME_COLS = ["frame_id", "label", "T", "chain", "move", "U", "Hd", "tau_U", "spacing", "seq"]
 SCORE_COLS = ["frame_id", "label", "T", "chain", "move", "Hd", "tau_U", "spacing", "U_am", "U_am_calc",
@@ -90,7 +95,10 @@ def default_runs():
 	runs = []
 	for T, base in LADDER:
 		for c in (0, 1):
-			runs.append((f"T{T}" + ("" if c == 0 else ".c1"), os.path.join(MONTE_CARLO_DIR, base, f"chain{c}")))
+			path = os.path.join(MONTE_CARLO_DIR, base, f"chain{c}")
+			if c and not os.path.isdir(path):
+				continue                      # the warm/ chains have no second chain
+			runs.append((f"T{T}" + ("" if c == 0 else ".c1"), path))
 	return runs
 
 
@@ -524,6 +532,41 @@ def select_stratified(df, n_bins, per_bin, rng):
 	return d.loc[keep]
 
 
+def match_window(d, mode, n):
+	"""Trim every chain to a comparable window before correlating.
+
+	WHY this is needed for the within-T column, and why it is NOT the attenuation that
+	faked the T=6 entropy peak (docs/pten_k_sites_explained.md 5.2, --match-accepted).
+	There, the per-site entropy was ESTIMATED from the accepted moves in the window, so a
+	short window compressed the estimate itself. Here each frame's energy and RMSD are
+	exact for that sequence, so nothing is mis-estimated. What a short window does is
+	RANGE RESTRICTION: the chain explores less of its equilibrium spread of U, and a
+	Spearman over a narrower range is pulled toward zero. Both shrink rho at the hot end,
+	for different reasons, and both make a raw temperature trend untrustworthy.
+
+	mode "moves": the last n moves of every chain -- equal clock time.
+	mode "tau":   the last n * tau_U moves -- equal INDEPENDENT sampling, which is what
+	              range restriction actually scales with, since a chain with a long tau
+	              wanders less in the same number of moves.
+	n None means the largest value every chain can supply, so nothing is thrown away
+	beyond what matching demands.
+	"""
+	if mode == "none":
+		return d, None
+	span = d.groupby("label").move.agg(lambda m: m.max() - m.min())
+	if mode == "moves":
+		avail = span
+	else:
+		avail = span / d.groupby("label").tau_U.first()
+	n = float(avail.min()) if n is None else float(n)
+	keep = []
+	for lab, g in d.groupby("label"):
+		width = n if mode == "moves" else n * float(g.tau_U.iloc[0])
+		keep.append(g[g.move > g.move.max() - width])
+	import pandas as pd
+	return pd.concat(keep), n
+
+
 def cmd_analyze(args):
 	import pandas as pd
 	rng = np.random.default_rng(args.seed)
@@ -582,6 +625,18 @@ def cmd_analyze(args):
 	C = select_stratified(d, args.n_bins, args.per_bin, rng)
 	block(f"C pooled, {args.n_bins} log-U strata x up to {args.per_bin}", C, False)
 
+	say(f"\n## spread inside each chain's window: the interquartile range of every column. A chain that "
+		f"wanders less has a smaller spread and its rho is pulled toward zero by range restriction alone, "
+		f"so read the within-T rows below against this table, not against each other.")
+	say(f"{'T':>5s} {'moves':>8s} {'tau_U':>7s} {'win/tau':>8s} {target + ' IQR':>14s} "
+		+ " ".join(f"{e:>10s}" for e in energies))
+	for T, g in sorted(d.groupby("T"), key=lambda x: x[0]):
+		span = g.groupby("label").move.agg(lambda m: m.max() - m.min()).mean()
+		tau = g.groupby("label").tau_U.first().mean()
+		iqr = lambda c: g[c].quantile(.75) - g[c].quantile(.25)
+		say(f"{T:5g} {span:8.0f} {tau:7.0f} {span / tau:8.2f} {iqr(target):14.3g} "
+			+ " ".join(f"{iqr(e):10.3g}" for e in energies))
+
 	say(f"\n## within each temperature (both chains together), rho with {target}; B with interval, A point estimate")
 	say(f"{'T':>5s} {'n_B':>5s} {'n_A':>4s} {target + ' median':>14s} " + " ".join(f"{e:>22s}" for e in energies))
 	wt = {e: [] for e in energies}
@@ -597,6 +652,22 @@ def cmd_analyze(args):
 				"rho_hi": r[2], "rho_A": spearman(a[e], a[target]), "n_A": len(a)})
 		say(f"{T:5g} {len(g):5d} {len(a):4d} {g[target].median():14.2f} " + " ".join(f"{c:>22s}" for c in cells))
 	say(f"{'mean':>5s} {'':5s} {'':4s} {'':14s} " + " ".join(f"{np.nanmean(wt[e]):>+22.2f}" for e in energies))
+
+	m, width = match_window(d, args.match_window, args.match_n)
+	if width is not None:
+		unit = "moves" if args.match_window == "moves" else "x tau_U"
+		say(f"\n## within each temperature, MATCHED: every chain cut to its last {width:g} {unit} "
+			f"({len(m)} frames). THIS is the column to read as a trend across T; the raw one above is not, "
+			f"because its windows differ in how much of the equilibrium spread they cover.")
+		say(f"{'T':>5s} {'n':>5s} {target + ' IQR':>14s} " + " ".join(f"{e:>10s}" for e in energies))
+		for T, g in sorted(m.groupby("T"), key=lambda x: x[0]):
+			cells = []
+			for e in energies:
+				r = spearman(g[e], g[target])
+				cells.append(f"{r:+.2f}")
+				rows.append({"selection": f"matched within T={T:g}", "energy": e, "n": len(g), "rho": r})
+			say(f"{T:5g} {len(g):5d} {g[target].quantile(.75) - g[target].quantile(.25):14.3g} "
+				+ " ".join(f"{c:>10s}" for c in cells))
 
 	if "rmsd_xtal_n" in d and d.rmsd_xtal_n.notna().any():
 		n = d[d.rmsd_xtal_n.notna()]
@@ -688,6 +759,12 @@ def main():
 	a.add_argument("--n-bins", type=int, default=25)
 	a.add_argument("--per-bin", type=int, default=20)
 	a.add_argument("--seed", type=int, default=0)
+	a.add_argument("--match-window", default="tau", choices=["none", "moves", "tau"],
+		help="trim every chain to a comparable window for the matched within-T table: equal moves, or "
+			"equal multiples of its own tau_U (the default, since range restriction scales with the "
+			"number of independent samples, not with clock time)")
+	a.add_argument("--match-n", type=float, default=None,
+		help="the window width, in moves or in tau_U (default: the largest every chain can supply)")
 
 	args = ap.parse_args()
 	{"frames": cmd_frames, "score": cmd_score, "analyze": cmd_analyze}[args.cmd](args)
