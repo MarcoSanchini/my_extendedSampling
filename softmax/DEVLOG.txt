@@ -7800,3 +7800,30 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     needs data.dat, generator.npy, log.pt, start.txt and >= 4 eprot/*.pt, all gitignored.
     170000 more moves cost 51 h there against 5.3 h here after one rsync. The launcher skips
     it with a message until the directory appears, so no edit is needed either way.
+
+2026-11-24 (fourth entry)  RESULT: the energies vs the crystal RMSD -- the decode never
+            leaves the fold, so the target has no range
+    Marco ran `energy_vs_rmsd.py score` on astaroth: 4000 frames, 20 chains, 11 T, 15.4 min
+    at 0.231 s/frame, peak 6276 MB. Checks passed (U_ce_ref(ref) = 2.397402 as on 11-18,
+    decode deterministic, U_am recheck exact, encoder round trip 37.3%).
+    THE HEADLINE: median CA RMSD to 1D5R goes 2.01 A (T=1, Hd 10-28) to 2.30 A (T=16, Hd
+    232-268) against 1.98 A for the reference itself; 95% of frames below 2.42, 3.0% above
+    2.5, 14 of 4000 above 3. TM 0.940 -> 0.918, pLDDT 88.2 -> 83.2. So at 83% sequence
+    divergence ESM3 still decodes onto the PTEN fold. IQR of the target is 0.148 A overall
+    and 0.046 (T1) to 0.249 (T16) within a chain, while the 2-vs-8-step decode shift is
+    0.049 A: at the cold end the schedule noise is the whole signal.
+    POOLED: every energy lands within 0.03 of Hd's own +0.628 vs rmsd_xtal. Partial given
+    Hd: U_am +0.061, U_ce_ref +0.030 -- the two in-loop energies know nothing beyond the
+    mutation count. E_xtal +0.304 and Es_xtal +0.377 survive but are CIRCULAR (same decode,
+    same crystal). The honest survivor is Es_ref +0.229.
+    U_am and U_ce_ref agree at +0.992 on these frames, having been COMPLEMENTARY on the
+    single-mutant scan (11-18): at 50-270 mutations both are just distance. No case for
+    switching lambda_structure_ce on.
+    THE USABLE TARGET IS rmsd_ref (0.29-3.47 A, IQR 0.68 = 4.6x): Es_ref +0.952 pooled,
+    +0.597 given Hd; E_ref +0.939/+0.481; U_am +0.927/+0.189. Matched across T, Es_ref holds
+    +0.44..+0.77 with no trend. pLDDT target: Es_ref -0.340 given Hd vs U_am -0.107.
+    NEXT, AND IT GATES EVERYTHING: decode ~10 random and ~10 shuffled sequences
+    (bench_decode.py --random). If those also land at 2.3 A the flat band is ESM3's property,
+    not the sampler's, and every structural claim here is about the model.
+    Report: docs/energy_rmsd.tex/.pdf (also /mnt/project-files/energy_rmsd/), figure from
+    monte_carlo/plot_energy_rmsd.py. analyze gained --target plddt.

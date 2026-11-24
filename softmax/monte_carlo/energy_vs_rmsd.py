@@ -754,7 +754,10 @@ def main():
 	a.add_argument("--out-dir", required=True)
 	a.add_argument("--frames", default=os.path.join(MONTE_CARLO_DIR, "energy_rmsd", "frames.tsv"),
 		help="keep only scored frames listed here (pass '' to keep every row of --scores)")
-	a.add_argument("--target", default="rmsd_xtal", choices=["rmsd_xtal", "tm_xtal", "rmsd_ref"])
+	a.add_argument("--target", default="rmsd_xtal", choices=["rmsd_xtal", "tm_xtal", "rmsd_ref", "plddt"],
+		help="what the energies are correlated against. rmsd_xtal and rmsd_ref grow as the structure gets "
+			"worse, so a POSITIVE rho means the energy predicts it; tm_xtal and plddt grow as it gets "
+			"BETTER, so there the informative sign is negative")
 	a.add_argument("--n-boot", type=int, default=500)
 	a.add_argument("--n-bins", type=int, default=25)
 	a.add_argument("--per-bin", type=int, default=20)
