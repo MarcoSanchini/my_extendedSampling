@@ -7626,3 +7626,16 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     under 0.5 nats are the P-loop H123 C124 G127 G129 R130 G132, all in K_natural, and 7 of
     its lowest 10 are UniRef90's; enrichment of those 10: recurrent tumour 8.4, P/LP 5.4
     (UniRef90 7.0, 4.8). Verdict unchanged: every source agrees on the catalytic core.
+
+2026-11-21  PTEN: energies vs crystal RMSD on equilibrated frames (energy_vs_rmsd.py)
+    Plan of 2026-11-20, strategy B chosen by Marco: score a dense frame set once on the GPU,
+    pick subsets on CPU. `frames` replays the 18-chain ladder (compare_ladder.sh's chains,
+    burn-in 0.8) into 200 frames per chain = 3600 (monte_carlo/energy_rmsd/frames.tsv, 0
+    replay mismatches). tau_U in the window: 640-14080 moves, N_eff 8.5-50 per chain, ~320
+    independent frames in all; T1 has 186/190 distinct sequences of 200 (acc 1%).
+    `score` (GPU, not yet run): U_am, U_ce vs the reference's argmax tokens (= the sampler's
+    U_structure_ce) and vs 1D5R's VQ tokens (307 resolved residues), E and soft E vs the
+    reference's 2-step decode and vs the crystal map, CA RMSD and Kabsch-TM to 1D5R, a 50-frame
+    re-decode at 8 steps for the noise floor. `analyze`: pooled B with tau-block bootstrap, A
+    (one frame per tau), C (25 log-U strata), within-T, partial given Hd. Caveat: E_xtal and
+    rmsd_xtal read the same decode, so their correlation is partly built in.
