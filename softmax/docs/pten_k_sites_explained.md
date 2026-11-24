@@ -636,13 +636,18 @@ is measured that way, on the `equil_ref` chains, both replicas, each started fro
 reference. The contrast this section is about survives; its size does not — see the reading
 after the tables.
 
-The chains: 300,001 moves at T = 1 and 1.5, 650,001 at T = 2, 400,001 at T = 4, 150,001 at
-T = 8, 90,001 at T = 16, and 180,001 at each of T = 3, 5 and 6, with the last 20% of each
-kept. **T = 3, 5 and 6 were added on 19 November** and they change the reading: they live in
-`equil` rather than `equil_ref`, so the first pass left them out, and the ladder's maximum
-turns out to sit at one of them. They are 180,001-move chains against t_eq of 100,000,
-100,000 and 80,000, so 0.8 clears equilibration at all three, leaving a 36,000-move window
-— short, but shortness costs about 0.013 at these temperatures (measured below).
+The chains: 300,001 moves at T = 1, 1.5 and 8, 650,001 at T = 2, 400,001 at T = 4, 200,001
+at T = 16, and 180,001 at each of T = 3, 5 and 6. T = 8 and T = 16 were extended from
+150,001 and 90,001 on 22 November, which matters for the reading — see the two tables below
+and then the section on window length.
+
+**Two different windows are tabulated, and mixing them up caused a wrong result on 19
+November.** The first table keeps the last 20% of each chain (`--burn-in-frac 0.8`), which
+puts every window safely past that chain's own t_eq; quote it for a statement about one
+temperature. The second keeps, in each chain, the window holding its last 16,000 *accepted*
+moves (`--match-accepted 16000`); quote it for any statement *comparing* temperatures. Why
+the second exists is the subject of "The window length, and the maximum that was not there"
+below.
 
 Spearman rank correlation between the sampled entropy and each reference: +1 means the two
 rank the sites identically, 0 means no relation. With about 300 sites, values beyond 0.12
@@ -658,9 +663,34 @@ chains, which is the honest error bar here.
 | 3 | 71 / 77 | +0.41 / +0.42 | +0.32 / +0.39 | +0.43 / +0.42 | +0.21 / +0.21 | +0.11 / +0.16 | +0.25 / +0.21 |
 | 4 | 36 / 29 | +0.48 / +0.49 | +0.40 / +0.39 | +0.49 / +0.52 | +0.28 / +0.27 | +0.15 / +0.12 | +0.28 / +0.31 |
 | 5 | 26 / 21 | +0.50 / +0.44 | +0.41 / +0.31 | +0.47 / +0.43 | +0.32 / +0.24 | +0.18 / +0.09 | +0.26 / +0.22 |
-| **6** | 23 / 13 | **+0.53 / +0.52** | +0.41 / +0.39 | **+0.54 / +0.51** | **+0.34 / +0.34** | +0.15 / +0.18 | **+0.34 / +0.28** |
-| 8 | 13 / 15 | +0.48 / +0.50 | +0.43 / +0.39 | +0.51 / +0.47 | +0.27 / +0.29 | +0.18 / +0.16 | +0.27 / +0.23 |
-| 16 | 8 / 10 | +0.46 / +0.45 | +0.40 / +0.39 | +0.49 / +0.48 | +0.27 / +0.24 | +0.19 / +0.13 | +0.29 / +0.23 |
+| 6 | 23 / 13 | +0.53 / +0.52 | +0.41 / +0.39 | +0.54 / +0.51 | +0.34 / +0.34 | +0.15 / +0.18 | +0.34 / +0.28 |
+| 8 | 8 / 12 | +0.58 / +0.58 | +0.42 / +0.38 | +0.59 / +0.58 | +0.38 / +0.40 | +0.14 / +0.10 | +0.40 / +0.37 |
+| 16 | 7 / 7 | +0.56 / +0.57 | +0.42 / +0.41 | +0.56 / +0.52 | +0.38 / +0.40 | +0.15 / +0.15 | +0.32 / +0.28 |
+
+The same quantities with every window holding the last 16,000 accepted moves
+(`--match-accepted 16000`, `pten_natural/matched16k/`). This is the table to compare
+temperatures with, and the caveats under it are not optional:
+
+| T | family | abundance | activity | family, burial removed | abundance, burial removed | activity, burial removed |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | +0.15 / +0.14 | +0.21 / +0.23 | +0.21 / +0.22 | −0.01 / −0.02 | +0.07 / +0.07 | +0.06 / +0.07 |
+| 1.5 | +0.29 / +0.26 | +0.28 / +0.24 | +0.30 / +0.30 | +0.10 / +0.06 | +0.08 / +0.05 | +0.10 / +0.11 |
+| 2 | +0.36 / +0.38 | +0.31 / +0.30 | +0.36 / +0.39 | +0.15 / +0.16 | +0.11 / +0.07 | +0.17 / +0.21 |
+| 3 | +0.50 / +0.48 | +0.38 / +0.42 | +0.50 / +0.49 | +0.28 / +0.27 | +0.13 / +0.17 | +0.30 / +0.29 |
+| 4 | +0.48 / +0.51 | +0.40 / +0.39 | +0.52 / +0.54 | +0.26 / +0.29 | +0.13 / +0.12 | +0.31 / +0.32 |
+| 5 | +0.56 / +0.54 | +0.43 / +0.42 | +0.55 / +0.54 | +0.36 / +0.33 | +0.17 / +0.13 | +0.35 / +0.30 |
+| 6 | +0.59 / +0.59 | +0.43 / +0.44 | +0.59 / +0.59 | +0.41 / +0.40 | +0.15 / +0.18 | +0.40 / +0.37 |
+| 8 | +0.58 / +0.60 | +0.42 / +0.42 | +0.61 / +0.60 | +0.40 / +0.42 | +0.14 / +0.13 | +0.43 / +0.39 |
+| 16 | +0.60 / +0.60 | +0.46 / +0.43 | +0.58 / +0.57 | +0.41 / +0.43 | +0.18 / +0.16 | +0.33 / +0.35 |
+
+**Only the rows from T = 4 down the table are clean.** Matching the accepted count forces a
+cold chain to use a long window, and at 16,000 the windows of T = 2, 3 and 5 begin before
+their measured t_eq (329,476 against 440,000; about 3,000–5,000 against 100,000; about
+76,000 against 100,000), so those three rows are *lower bounds* — pre-t_eq moves pull these
+correlations down, by 0.104 where that was measured directly at T = 8. T = 1 and T = 1.5
+never reach 16,000 accepted moves at all: their whole 300,001-move chains contain 3,036 and
+8,279, so their windows are the entire chain and they cannot be put on this footing. The
+log prints each window's start, which is the check.
 
 Mean sampled entropy inside each K-like set divided by the mean outside it:
 
@@ -673,52 +703,89 @@ Mean sampled entropy inside each K-like set divided by the mean outside it:
 | 4 | 0.41 / 0.44 | 0.63 / 0.65 | 0.52 / 0.54 |
 | 5 | 0.48 / 0.38 | 0.62 / 0.70 | 0.61 / 0.63 |
 | 6 | 0.51 / 0.41 | 0.67 / 0.71 | 0.59 / 0.61 |
-| 8 | 0.53 / 0.52 | 0.72 / 0.74 | 0.65 / 0.65 |
-| 16 | 0.69 / 0.60 | 0.80 / 0.78 | 0.69 / 0.68 |
+| 8 | 0.49 / 0.52 | 0.76 / 0.75 | 0.63 / 0.63 |
+| 16 | 0.59 / 0.62 | 0.80 / 0.83 | 0.74 / 0.71 |
 
 A ratio of 1 would be the flat case: the sampler varying those sites as much as any other.
 Every ratio is well below 1.
 
-**What the burn-in correction cost, and what it did not.** The direction is unchanged: with
-burial removed, family conservation beats abundance at every T ≥ 2, in both chains, and the
-energy's own `-mean_dU` still prefers abundance (at T = 8, +0.31/+0.31 family against
-+0.39/+0.40 abundance). What shrank is the margin. The headline pair at T = 8 was
-"+0.45 family against +0.19 abundance", a factor of 2.4; it is now +0.27/+0.29 against
-+0.18/+0.16, a factor of 1.5 to 1.8. The loss is specifically the burn-in and not merely a
-shorter window, which was checked directly: at T = 4, where every window lies after t_eq,
-shrinking the kept part sixfold (180,000 moves down to 30,000) costs only 0.013, while at
-T = 8 dropping the 45,000 pre-t_eq moves costs 0.104. At T = 2 the window length does still
-matter (+0.160 at 210,000 moves kept against +0.111 at 29,900), so at low temperature a long
-window is needed as well as a late one.
+**What the burn-in correction of 18 November cost, and what it did not.** The direction was
+unchanged by it: with burial removed, family conservation beats abundance at every T ≥ 2 in
+both chains, and the energy's own `-mean_dU` still prefers abundance. What it moved was the
+size. Two things it was then said to establish have since been corrected and should not be
+quoted from here: the "factor of 1.5 to 1.8 at T = 8", which was an attenuated figure from a
+150,001-move chain and is about 3.0 on the 300,001-move one, and the claim that window
+length "costs only 0.013", which was measured at T = 4 and does not hold at the hot end,
+where it costs about 0.15. Both are dealt with in the next subsection.
 
-**The contrast has a maximum, and it is at T = 6 (19 November).** Filling in T = 3, 5 and 6
-turns the burial-removed margin from a plateau into a curve. Family conservation minus
-abundance, the two chains of each temperature:
+What does stand from that correction is the mechanism, which is separate: pre-t_eq moves
+come from a different distribution and pull the correlations down, by 0.104 at T = 8 where
+it was measured. A window must therefore clear t_eq *and* be long enough, and at T = 2 both
+bite at once (+0.160 at 210,000 moves kept against +0.111 at 29,900).
 
-| T | 1 | 1.5 | 2 | 3 | 4 | 5 | **6** | 8 | 16 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| raw | −0.13 / −0.09 | −0.05 / +0.04 | +0.06 / +0.07 | +0.09 / +0.04 | +0.09 / +0.10 | +0.09 / +0.13 | **+0.12 / +0.13** | +0.05 / +0.11 | +0.05 / +0.07 |
-| burial removed | −0.20 / −0.10 | −0.07 / +0.02 | +0.08 / +0.05 | +0.10 / +0.05 | +0.13 / +0.15 | +0.13 / +0.15 | **+0.19 / +0.17** | +0.09 / +0.13 | +0.08 / +0.10 |
+**The window length, and the maximum that was not there (23 November).** On 19 November
+this section reported a maximum at T = 6. It is not there. It was an artefact of comparing
+correlations computed from different numbers of accepted moves, and extending T = 8 and
+T = 16 exposed it: at a fixed `--burn-in-frac 0.8` their burial-removed family correlation
+rose from +0.27/+0.29 and +0.27/+0.24 to +0.38/+0.40 and +0.38/+0.40 purely by making the
+chains longer.
 
-T = 6 is the maximum of both rows, and it is also where the raw family correlation is
-largest anywhere on the ladder (+0.53 / +0.52) and where the activity correlation peaks
-(+0.54 / +0.51). As a ratio, with burial removed, family over abundance is 2.3 and 2.0 at
-T = 6, against 1.5 and 1.8 at T = 8. So the honest headline for the conservation claim is
-**about a factor of two, measured at T = 6**, not the 1.5 to 1.8 that T = 8 alone suggested
-— and not the 2.4 of the uncorrected run either, which reached that number for the wrong
-reason.
+The cause is estimation noise. The per-site entropy is built from the accepted moves inside
+the window; with few of them a site is seen in few distinct residues, so its entropy is
+noisy and biased low, the ranking across sites is compressed, and the Spearman correlation
+with *any* reference is attenuated. The attenuation is large, and it is a property of the
+window, not of the physics. Measured on T = 8's own 300,001-move chain, one equilibrium,
+three windows:
 
-Two things not to over-read. The ratios themselves are unstable because the denominator is
-small (T = 5's second chain gives 2.6 from an abundance partial of 0.09), so quote the
-differences, which agree between chains, rather than the ratios. And the apparent *reversal*
-at T = 1, where abundance beats family by 0.13, is not a physical result: 241 and 236 of 324
-sites have zero entropy there, so the ranking is mostly ties and the Spearman is measuring
-almost nothing. The curve is meaningful from T = 2 up.
+| window | accepted moves in it | family, burial removed |
+| --- | --- | --- |
+| last 30,000 moves (`0.9`) | 6,374 / 6,379 | +0.31 / +0.32 |
+| last 60,000 moves (`0.8`) | 12,755 / 12,849 | +0.38 / +0.40 |
+| last 150,000 moves (`0.5`) | 31,975 / 32,465 | +0.46 / +0.46 |
 
-The energy side is unchanged by the new temperatures: `-mean_dU_kept` at T = 6 gives family
-+0.34 / +0.31 against abundance +0.38 / +0.38, so the energy still prefers abundance even at
-the temperature where the sampled entropy most prefers conservation. That split is the
-result, and it is now measured across the whole ladder.
+Position past t_eq barely matters by comparison: a 30,000-move window sitting 150,000 moves
+past t_eq gives +0.31/+0.32 against the +0.27/+0.29 of a 30,000-move window starting *at*
+t_eq. So the earlier claim in this document that window length "costs about 0.013" was a
+measurement made at T = 4 and wrongly generalised. It costs about 0.15 here.
+
+At a fixed burn-in *fraction* the hot temperatures had the shortest windows — 18,000 moves
+at T = 16 and 30,000 at T = 8 against 130,000 at T = 2 and 80,000 at T = 4 — so they were
+attenuated hardest, and the resulting dip after T = 6 looked like a peak at T = 6.
+
+**What is actually there is a plateau.** At a matched 16,000 accepted moves, over the
+temperatures whose window clears t_eq:
+
+| T | family, burial removed | margin over abundance |
+| --- | --- | --- |
+| 4 | +0.26 / +0.29 | +0.13 / +0.17 |
+| 6 | +0.41 / +0.40 | +0.25 / +0.23 |
+| 8 | +0.40 / +0.42 | +0.27 / +0.29 |
+| 16 | +0.41 / +0.43 | +0.22 / +0.27 |
+
+T = 6, 8 and 16 are indistinguishable: the agreement rises through the transition and
+saturates near **+0.41**, with a margin over abundance near **+0.25** and a ratio of about
+2.6. That is the number to quote, and it is both larger and better supported than the
+"+0.34, a factor of two, at T = 6" this section claimed on 19 November, because that figure
+was attenuated.
+
+**The temperature trend itself is real**, and this was checked rather than assumed, since a
+trend in sample size could have produced it: at a matched ~600 accepted moves — all T = 1
+can offer — the burial-removed family correlation still runs −0.04/+0.01 at T = 1,
++0.09/+0.00 at T = 2, +0.14/+0.17 at T = 4 and +0.22/+0.11 at T = 8, and the margin over
+abundance still flips from negative to positive between T = 2 and T = 4. Every value is
+attenuated at that sample size, but the ordering survives.
+
+**The rule this leaves.** Compare temperatures only at a matched accepted-move count, never
+at a matched burn-in fraction, and say which was used. `compare_ladder.sh` now writes both
+passes, the matched one into `pten_natural/matched16k/`. The reversal at T = 1 is still not
+physics: 241 and 236 of 324 sites have zero entropy there, so the ranking is mostly ties.
+
+**The energy side does not move, which is the point of the whole comparison.**
+`-mean_dU_kept` gives family +0.34 / +0.31 against abundance +0.38 / +0.38 at T = 6, and
+family +0.29 / +0.31 against abundance +0.35 / +0.37 at T = 8. So everywhere on the plateau
+where the sampled entropy prefers conservation by a factor of about 2.6, the energy on its
+own still prefers abundance. That split survives every correction made to this section and
+is now measured across the whole ladder.
 
 **The significance test.** Neighbouring sites resemble each other (a buried strand, an
 exposed loop), so shuffling sites at random would exaggerate the significance. Instead the
@@ -732,7 +799,10 @@ and T = 2) there are 98. They contain 16 of the 28 natural sites (8.5 expected, 
 (29.3 expected, p = 0.002). The set is the same size as before the burn-in correction (it
 was 104) and the natural and activity overlaps survive; the abundance overlap does not, and
 that is the sharpest single statement of the result: the sites the sampler freezes are the
-conserved and the catalytically needed ones, not the ones abundance happens to flag.
+conserved and the catalytically needed ones, not the ones abundance happens to flag. The
+matched-window pass agrees and is slightly sharper: 80 sites, 15 of 28 natural (6.9
+expected, p = 0.0006), 36 of 97 activity (24.0, p = 0.0007), 31 of 108 abundance (26.7,
+p = 0.15).
 
 ## 5.3 The burial control
 
@@ -809,16 +879,18 @@ It therefore cannot contribute anything to a within-site ranking, and the within
 correlation needs no burial control at all — it has already conditioned on burial
 completely, along with every other per-site property, measured or not.
 
-### At T = 6, the best temperature on the ladder
+### On the plateau, T = 6 and above
 
-What remains after burial is removed is +0.34/+0.34 for the family entropy, +0.34/+0.28 for
-activity and +0.15/+0.18 for abundance, the two numbers being the two independent chains.
-(At T = 8, which this subsection quoted before T = 3, 5 and 6 were measured: +0.27/+0.29,
-+0.27/+0.23 and +0.18/+0.16. Same ordering, smaller gap.)
+At a matched 16,000 accepted moves, what remains after burial is removed is +0.41/+0.40 for
+the family entropy, +0.40/+0.37 for activity and +0.15/+0.18 for abundance at T = 6, and
++0.40/+0.42, +0.43/+0.39 and +0.14/+0.13 at T = 8 — the two numbers being the two
+independent chains. T = 16 matches both. (This subsection has quoted T = 8 alone, then T = 6
+alone as a maximum; neither was right. The agreement saturates from T = 6 up and the
+temperatures on the plateau are indistinguishable.)
 
 **Reading.** The sampler is not flat. But once burial is set aside it follows what the
-family conserves more than what keeps the protein abundant, by about a factor of two at the
-temperature where the contrast is largest. That is unexpected, because the energy contains no catalysis. Two explanations
+family conserves more than what keeps the protein abundant, by about a factor of 2.6
+anywhere on the plateau. That is unexpected, because the energy contains no catalysis. Two explanations
 are worth discussing with the supervisors. ESM3 was trained on natural sequences, so its
 attention map may encode family conservation directly, function included. Or the active
 site of PTEN is unusually well packed and RSA does not capture that. The single-mutant scan
@@ -2399,42 +2471,48 @@ and I will write it.
    (`--burn-in-frac 0.8`, section 5.2). What remains is that at T = 1, 241 and 236 of 324 sites
    have zero entropy in the measured window (188 and 184 never accept a move anywhere in the
    chain), because acceptance there is 0.011, so the sampled entropy at low T ranks
-   reachability as much as tolerance. The correlations at
-   T = 4 and above are the ones to quote, and T = 6 is the best of them (section 5.2).
-   Note also that the earlier `--burn-in-frac 0.5` default kept pre-t_eq moves at seven of
-   nine temperatures and inflated the conservation-over-abundance margin by about a third.
+   reachability as much as tolerance. The correlations at T = 6 and above are the ones to
+   quote, and they are a plateau, not a peak (section 5.2). Two superseded claims must not
+   be re-quoted from older notes: that the margin peaks at T = 6, and that it is a factor of
+   1.5 to 1.8. The cold end cannot be put on a matched-sample footing at all, because
+   T = 1's whole 300,001-move chain holds only 3,036 accepted moves.
 2. **One chain's time average underestimates the entropy of the ensemble.** Compare ratios
    and ranks, not absolute entropies.
 3. **Most of the agreement is burial**, and the remainder favours family conservation over
-   abundance, by about a factor of two at T = 6 where the contrast is largest (2.3 and 2.0
-   in the two chains), falling to 1.5 to 1.8 at T = 8 and 1.4 to 1.8 at T = 16 — not the 2.4
-   first quoted, which came from an unequilibrated window (sections 5.2 and 5.3).
-   Entropy against RSA alone is +0.46 to +0.54 at T = 4 to 16, against +0.45 to +0.53 for
-   the raw family correlation, which is why the partial column is the one to argue from.
-4. **The orthologs are few.** 92 sequences, N_eff 22. "Flat" for that tier partly means
+   abundance by about a factor of 2.6 anywhere on the plateau: at a matched 16,000 accepted
+   moves, +0.41 against +0.16 averaged over T = 6, 8 and 16, with the two chains of each
+   agreeing to 0.03 (sections 5.2 and 5.3). Entropy against RSA alone is +0.46 to +0.56 at
+   T = 4 to 16, against +0.48 to +0.60 for the raw family correlation, which is why the
+   partial column is the one to argue from.
+4. **Never compare temperatures at a matched burn-in fraction.** The per-site entropy is
+   estimated from the accepted moves in the window and is attenuated when there are few of
+   them, by about 0.15 between a 30,000 and a 150,000-move window at T = 8 on one chain. A
+   fixed fraction gives different window lengths at different temperatures, which invented a
+   maximum at T = 6 on 19 November. Use `--match-accepted` and state the count.
+5. **The orthologs are few.** 92 sequences, N_eff 22. "Flat" for that tier partly means
    "little data".
-5. **The set rules are choices**, and one conclusion depends on them: see section 4.4.
-6. **Sources.** The Matreyek summary is checked against the PubMed abstract, the paper's
+6. **The set rules are choices**, and one conclusion depends on them: see section 4.4.
+7. **Sources.** The Matreyek summary is checked against the PubMed abstract, the paper's
    data files and its analysis notebook. The Mighell summary is checked against the bioRxiv
    preprint of the paper and the data file, because the PMC page would not load from the
    cloud machine; numbers in the published version may differ slightly from the preprint.
    An earlier note said "7,244 high-confidence missense variants": 7,244 is all
    high-confidence variants, of which 6,564 are missense.
-7. **Statements made from memory or by reconstruction.** ConSurf's default thresholds
+8. **Statements made from memory or by reconstruction.** ConSurf's default thresholds
    (section 2.2) are from memory. The rule behind the authors' "intolerant" positions
    (section 4.1) is reconstructed from the data and reproduces their list at 98%, not 100%.
    The description of the catalytic pocket follows the 1D5R structure paper (Lee et al.,
    Cell 1999) as I remember it, checked against what the Mighell preprint says about it.
-8. **The Pfam step is untested against the live InterPro service** (section 7.3).
+9. **The Pfam step is untested against the live InterPro service** (section 7.3).
 
-9. **The single-mutant scan of section 6 has run, twice, and 6.4b is its exact output.**
+10. **The single-mutant scan of section 6 has run, twice, and 6.4b is its exact output.**
    What is *not* settled is the comparison with section 5: the energy's partial correlation
    with abundance is +0.12 against a 5% threshold of 0.12, so the contrast with the chains
    is the claim, not the individual number. A second reference — the same scan started from
    an equilibrated sequence rather than from PTEN — would say whether the energy's
    preference is a property of `U_am` or of this particular reference, and it costs five
    minutes.
-10. **One sign convention in the comparison was wrong on its first run** (the within-site
+11. **One sign convention in the comparison was wrong on its first run** (the within-site
    correlation and the AUC were oriented against the pooled correlation, making agreement
    look like inversion). It is fixed and verified against synthetic perfect-agreement and
    perfect-disagreement cases, but it is the kind of error that produces a plausible,

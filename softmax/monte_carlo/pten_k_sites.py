@@ -434,8 +434,20 @@ def cmd_build(args):
 
 # ---------------------------------------------------------------- compare --- #
 
-def chain_site_stats(run_dir, ref, burn_in_frac):
+def chain_site_stats(run_dir, ref, burn_in_frac, match_accepted=None):
 	"""Per-site statistics of one chain, rebuilt from start.txt and the accepted moves of data.dat.
+
+	`match_accepted` overrides `burn_in_frac`: the window start is moved back from the end of
+	the chain until the kept part holds about that many ACCEPTED moves. Use it for any
+	comparison ACROSS temperatures. A fixed burn-in fraction does not compare like with like,
+	because the per-site entropy is estimated from the accepted moves in the window and is
+	attenuated when there are few of them, so a chain with a longer window or a higher
+	acceptance rate scores higher for that reason alone. Measured on T=8's 300000-move chain,
+	family-entropy Spearman with RSA partialled out: 0.311 over a 30000-move window, 0.382
+	over 60000, 0.457 over 150000 -- same chain, same equilibrium, three different answers.
+	That attenuation is what produced the spurious "maximum at T=6" of 2026-11-19: at a fixed
+	0.8 the hot temperatures had 18000 to 36000-move windows while T=2 and T=4 had 130000 and
+	80000. At a matched 16000 accepted moves, T=6, T=8 and T=16 are indistinguishable.
 
 	entropy     Shannon entropy [nats] of the residue at the site over the kept moves (every move
 	            counts once, accepted or not, as a time average must)
@@ -464,7 +476,18 @@ def chain_site_stats(run_dir, ref, burn_in_frac):
 			seen.add(s[0])
 			rows.append((s[6], s[8], float(s[9]), s[13] == "1"))
 	L, N = len(ref), len(rows)
-	first = int(burn_in_frac * N)
+	if match_accepted is None:
+		first = int(burn_in_frac * N)
+	else:
+		# Walk back from the end until the window holds match_accepted accepted moves. A
+		# chain without that many in total keeps everything, and the caller is told so by
+		# the returned accepted_kept being short of the target.
+		seen_acc, first = 0, 0
+		for k in range(N - 1, -1, -1):
+			seen_acc += rows[k][3]
+			if seen_acc >= match_accepted:
+				first = k
+				break
 	seq = np.frombuffer(start.encode(), dtype=np.uint8).copy()
 	ref_b = np.frombuffer(ref.encode(), dtype=np.uint8)
 	counts = np.zeros((L, 256))
@@ -492,7 +515,7 @@ def chain_site_stats(run_dir, ref, burn_in_frac):
 		"proposals_kept": prop_k, "accepted_kept": acc_k,
 		"mean_dU_kept": np.where(prop_k > 0, dU_k / np.maximum(prop_k, 1), np.nan)}), {
 		"moves": N, "start_is_reference": start == ref, "final_Hd": int((seq != ref_b).sum()),
-		"accepted_kept": int(sum(r[3] for r in rows[first:]))}
+		"accepted_kept": int(sum(r[3] for r in rows[first:])), "window_start": first}
 
 
 def partial_spearman(x, y, z):
@@ -604,10 +627,14 @@ def cmd_compare(args):
 	stats, ent, ref_started = {}, pd.DataFrame(index=t.site), []
 	chain_cols = {}                 # collected and concatenated once below: inserting ~100
 	                                # columns one at a time fragments the frame and warns
-	print("chains (entropy over the last "
-		f"{1 - args.burn_in_frac:.0%} of the moves):")
+	if args.match_accepted:
+		print(f"chains (entropy over the window holding the last {args.match_accepted} ACCEPTED "
+			"moves, so the temperatures are comparable; check each window start clears t_eq):")
+	else:
+		print("chains (entropy over the last "
+			f"{1 - args.burn_in_frac:.0%} of the moves):")
 	for label, path in runs.items():
-		st, info = chain_site_stats(path, ref, args.burn_in_frac)
+		st, info = chain_site_stats(path, ref, args.burn_in_frac, args.match_accepted)
 		if args.reference_only and not info["start_is_reference"]:
 			print(f"  {label:6s} skipped: not started from the reference")
 			continue
@@ -619,7 +646,8 @@ def cmd_compare(args):
 				"proposals_kept", "accepted_kept", "mean_dU_kept"):
 			chain_cols[f"{label}_{c}"] = st[c].values
 		print(f"  {label:6s} {info['moves']:7d} moves, start {'reference' if info['start_is_reference'] else 'other'}, "
-			f"final Hd {info['final_Hd']:3d}, {info['accepted_kept']:5d} accepted in the kept part, "
+			f"final Hd {info['final_Hd']:3d}, window from {info['window_start']:6d}, "
+			f"{info['accepted_kept']:5d} accepted in the kept part, "
 			f"mean entropy {st.entropy.mean():.3f}, sites at entropy 0: {(st.entropy == 0).sum()}/{len(ref)}, "
 			f"sites never accepted: {(st.accepted == 0).sum()} anywhere / "
 			f"{(st.accepted_kept == 0).sum()} in the kept window")
@@ -1680,6 +1708,10 @@ def main():
 		"labelled T4, the others T4.c1, ...")
 	p.add_argument("--reference-only", action="store_true", help="leave out the chains that did not start from the reference")
 	p.add_argument("--burn-in-frac", type=float, default=0.5)
+	p.add_argument("--match-accepted", type=int, default=None,
+		help="instead of a fixed burn-in fraction, keep the window holding the last N ACCEPTED moves of "
+			"each chain. Required for comparing temperatures: see chain_site_stats' docstring for why a "
+			"fixed fraction does not compare like with like")
 	p.add_argument("--cold", nargs="+", help="labels whose entropy defines the sampled K-sites (default: the coldest)")
 	p.add_argument("--show", nargs="+", help="labels to draw (default: all)")
 	p.add_argument("--k-site-threshold", type=float, default=0.05)
