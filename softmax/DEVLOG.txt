@@ -7639,3 +7639,9 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     re-decode at 8 steps for the noise floor. `analyze`: pooled B with tau-block bootstrap, A
     (one frame per tau), C (25 log-U strata), within-T, partial given Hd. Caveat: E_xtal and
     rmsd_xtal read the same decode, so their correlation is partly built in.
+
+2026-11-24  energy_vs_rmsd: frames.tsv regenerated for the extended T8/T16 chains
+    b22b479 took T8 to 300000 and T16 to 200000 moves after PR #68 wrote frames.tsv, so its
+    T8/T16 frames came from the old 120-150k / 72-90k windows. Regenerated (still 200 per chain,
+    burn-in 0.8): T8 240-300k (tau_U 1036 / 5102), T16 160-200k (1561 / 1200). `analyze` now
+    drops scored rows not in frames.tsv, so a scores.csv begun on the old file cannot mix them.
