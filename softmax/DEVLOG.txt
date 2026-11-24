@@ -7653,3 +7653,15 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     T7 96-120k, tau_U 2480, Hd 201-230. Their t_eq is NOT the ladder's (hot start): read off
     their own U trace, T7 is flat from ~30% on, T2.5 wanders within +-80 at sd 30 as its long
     tau implies. The last 20% is the same window convention as the rest of the ladder.
+
+2026-11-24 (third entry)  energy_vs_rmsd analyze: matched windows and a spread table
+    Marco asked whether unequal window lengths bias the correlations. The pooled numbers are
+    safe: every chain contributes 200 frames whatever its window, and each frame's energy and
+    RMSD are exact for that sequence, so there is no estimator to compress -- unlike the
+    per-site entropy, whose attenuation faked the T=6 peak (5.2). What does bite the WITHIN-T
+    column is RANGE RESTRICTION: a chain that covers less of its equilibrium spread of U gives
+    a smaller |rho| for that reason alone. `analyze` now prints the IQR of every column per T
+    (with window/tau beside it) and a MATCHED within-T table, `--match-window tau|moves|none`
+    with `--match-n` (default: the most every chain can supply, in multiples of its own tau_U,
+    since range restriction scales with independent samples rather than clock time). Read the
+    matched table for any statement comparing temperatures; the raw one is per-temperature only.
