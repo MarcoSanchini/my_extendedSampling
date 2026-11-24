@@ -7731,3 +7731,52 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     T8/T16 frames came from the old 120-150k / 72-90k windows. Regenerated (still 200 per chain,
     burn-in 0.8): T8 240-300k (tau_U 1036 / 5102), T16 160-200k (1561 / 1200). `analyze` now
     drops scored rows not in frames.tsv, so a scores.csv begun on the old file cannot mix them.
+
+2026-11-24  The ladder's equilibrated-move inventory, and the top-up that matches it at 16000
+    Marco asked for equal, comprehensive K-site windows across the ladder, expecting a lot
+    more moves at low T. Measured accepted moves past t_eq, per chain, with the count of
+    sites holding NO accepted move in that window (which is exactly the sites at entropy 0):
+
+      T     moves    t_eq   rate   accepted past t_eq   frozen/324
+      1    300000  180000  0.0103   1235 /  1345        222 / 211
+      1.5  300000  140000  0.0276   4351 /  4501        126 / 131
+      2    650000  440000  0.0485  10309 / 10046         78 /  71
+      2.5  140000   80000  0.0733   4400                 78          (warm, 1 chain)
+      3    180000  100000  0.0928   7435 /  7407         48 /  47
+      4    400000  220000  0.1270  22729 / 22983         22 /  20
+      5    180000  100000  0.1540  12348 / 12299         18 /  14
+      6    180000   80000  0.1769  17857 / 17506         13 /   8
+      7    120000   40000  0.1990  15917                  9          (warm, 1 chain)
+      8    300000  120000  0.2147  38307 / 38985          6 /   5
+      16   200000   60000  0.2938  41107 / 41162          1 /   2
+
+    astaroth_match16k.sh resumes T = 2 to 790000, T = 3 to 280000 and T = 5 to 210000,
+    which those rates put at 16700-17000 accepted past t_eq: ~11.4 h, two chains at a time.
+    That turns the matched16k pass's lower bounds into real rows -- its window starts are
+    329476 (T = 2, t_eq 440000), 2944/5553 (T = 3, 100000), 76614/75704 (T = 5, 100000) and
+    0 (T = 2.5, 80000). T = 7 is already clean, window from 39608 against t_eq 40000.
+
+    T = 1 AND T = 1.5 ARE DELIBERATELY NOT BOUGHT, at 428000 and 1434000 extra moves per
+    chain (18 h and 60 h). Two independent reasons. (a) The correlation has flattened:
+    family | RSA at a matched accepted count is, at 1200, -0.04/-0.02 (T = 1), +0.11/+0.03
+    (T = 2), +0.20/+0.18 (T = 4), +0.21/+0.19 (T = 8); at 5000, +0.14/+0.14, +0.26/+0.24,
+    +0.29/+0.29; at 10000, +0.16/+0.15, +0.28/+0.27, +0.34/+0.37. T = 2 gains +0.05 for 8.3x
+    the data while T = 8 gains +0.13 and still climbs. (b) REACHABILITY, not sample size:
+    222/211 of 324 sites at T = 1 never accept a move in the whole post-t_eq window, so the
+    cold window cannot be made comprehensive by running longer. Any pass that must include
+    T = 1 has to drop to --match-accepted 1200, which costs the hot end a third of its
+    signal (T = 8 scores +0.21 there against +0.34 at 10000) and is worth quoting only for
+    the qualitative trend.
+
+    compare_ladder.sh gains urano's warm chains, so the ladder is eleven temperatures.
+    THEY ARE NOT EQUILIBRATED AT MOVE 0: both relax UPWARD, T = 2.5 from <U> 416 (first 20k)
+    to 473 and T = 7 from 1694 to 1790, against equilibrium 302.6 at T = 2, 687.0 at T = 3,
+    1560.3 at T = 6 and 1924.0 at T = 8. So t_eq is ~80000 and ~40000, and the usable counts
+    are 4400 and 15917, not the whole-chain 9965 and 23752. At 0.8 they land where the
+    ladder expects (family | RSA +0.11 at T = 2.5, +0.26 at T = 7, both attenuated by short
+    windows); at a matched 16000, T = 7 is +0.38, in the plateau with T = 6 and T = 8.
+
+    T = 2.5 cannot be topped up on astaroth without moving it: it ran on urano and --resume
+    needs data.dat, generator.npy, log.pt, start.txt and >= 4 eprot/*.pt, all gitignored.
+    170000 more moves cost 51 h there against 5.3 h here after one rsync. The launcher skips
+    it with a message until the directory appears, so no edit is needed either way.
