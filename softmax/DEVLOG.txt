@@ -7645,3 +7645,11 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     T8/T16 frames came from the old 120-150k / 72-90k windows. Regenerated (still 200 per chain,
     burn-in 0.8): T8 240-300k (tau_U 1036 / 5102), T16 160-200k (1561 / 1200). `analyze` now
     drops scored rows not in frames.tsv, so a scores.csv begun on the old file cannot mix them.
+
+2026-11-24 (second entry)  energy_vs_rmsd: urano's T=2.5 and T=7 added to the frame set
+    d1ba3a7 pushed the two hot-started warm/ chains. Added to LADDER in energy_vs_rmsd.py
+    (default_runs now skips a missing chain1, since urano ran one chain at a time), so the
+    frame set is 20 chains x 200 = 4000 frames. T2.5 window 112-140k, tau_U 1901, Hd 87-106;
+    T7 96-120k, tau_U 2480, Hd 201-230. Their t_eq is NOT the ladder's (hot start): read off
+    their own U trace, T7 is flat from ~30% on, T2.5 wanders within +-80 at sd 30 as its long
+    tau implies. The last 20% is the same window convention as the rest of the ladder.

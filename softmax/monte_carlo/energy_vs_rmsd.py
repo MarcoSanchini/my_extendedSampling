@@ -74,7 +74,12 @@ STUDY = "pten1d5r_study"
 # holds T = 1, 1.5, 2, 4, 8, 16; T = 3, 5, 6 only ever ran in equil. The hot 30000-move chains
 # of equil (T32..T316) have no measured t_eq and are left out on purpose.
 LADDER = [(T, f"{STUDY}/equil_ref/T{T}") for T in ("1", "1.5", "2", "4", "8", "16")] + \
-	[(T, f"{STUDY}/equil/T{T}") for T in ("3", "5", "6")]
+	[(T, f"{STUDY}/equil/T{T}") for T in ("3", "5", "6")] + \
+	[(T, f"{STUDY}/warm/T{T}") for T in ("2.5", "7")]
+# The warm/ chains are HOT-STARTED from an equilibrated neighbour (T2.5 from equil_ref/T2,
+# T7 from equil/T6) and ran one at a time on urano, so there is only a chain0 and their t_eq
+# is not the ladder's relaxation time from the reference. Taking the last 20% is safe either
+# way, and `frames` prints each chain's own tau_U next to it.
 
 FRAME_COLS = ["frame_id", "label", "T", "chain", "move", "U", "Hd", "tau_U", "spacing", "seq"]
 SCORE_COLS = ["frame_id", "label", "T", "chain", "move", "Hd", "tau_U", "spacing", "U_am", "U_am_calc",
@@ -90,7 +95,10 @@ def default_runs():
 	runs = []
 	for T, base in LADDER:
 		for c in (0, 1):
-			runs.append((f"T{T}" + ("" if c == 0 else ".c1"), os.path.join(MONTE_CARLO_DIR, base, f"chain{c}")))
+			path = os.path.join(MONTE_CARLO_DIR, base, f"chain{c}")
+			if c and not os.path.isdir(path):
+				continue                      # the warm/ chains have no second chain
+			runs.append((f"T{T}" + ("" if c == 0 else ".c1"), path))
 	return runs
 
 
