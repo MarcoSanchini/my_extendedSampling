@@ -630,16 +630,24 @@ once the ladder was equilibrated at every temperature the measured t_eq turned o
 *larger* fraction than 0.5 at seven of the nine temperatures: 0.60, 0.47, 0.68, 0.56, 0.55,
 0.56, 0.44, 0.80, 0.67 at T = 1, 1.5, 2, 3, 4, 5, 6, 8, 16 (T = 3 passes the R-hat
 criterion only at the last grid point, so its figure is the weakest of the nine, though it is
-equilibrated from 100,000 moves in practice). So the old averages contained
+equilibrated from 100,000 moves in practice). Those *fractions* are historical — the chains
+have since been lengthened three times and t_eq has not moved, so t_eq is now 0.56 of the
+chain at T = 2 and 0.36 at T = 3 — but the measured t_eq behind them is what everything
+below uses, and the lesson stands: a fraction is a convention, t_eq is a measurement. So the old averages contained
 pre-equilibration moves. `--burn-in-frac 0.8` clears t_eq everywhere, and everything below
 is measured that way, on the `equil_ref` chains, both replicas, each started from the
 reference. The contrast this section is about survives; its size does not — see the reading
 after the tables.
 
-The chains: 300,001 moves at T = 1, 1.5 and 8, 650,001 at T = 2, 400,001 at T = 4, 200,001
-at T = 16, and 180,001 at each of T = 3, 5 and 6. T = 8 and T = 16 were extended from
-150,001 and 90,001 on 22 November, which matters for the reading — see the two tables below
-and then the section on window length.
+The chains: 300,001 moves at T = 1, 1.5 and 8, 790,001 at T = 2, 140,001 at T = 2.5,
+280,001 at T = 3, 400,001 at T = 4, 210,001 at T = 5, 180,001 at T = 6, 120,001 at T = 7 and
+200,001 at T = 16. Two chains at every temperature except T = 2.5 and T = 7, which are
+urano's single hot-started chains in `pten1d5r_study/warm/` and are *not* equilibrated at
+move 0 — both relax upward, so their t_eq is about 80,000 and 40,000 rather than zero.
+Three rounds of extension matter for the reading: T = 8 and T = 16 from 150,001 and 90,001
+on 22 November, and T = 2, 3 and 5 from 650,001, 180,001 and 180,001 on 24 November, the
+latter so that their matched windows clear t_eq. See the two tables below and then the
+section on window length.
 
 **Two different windows are tabulated, and mixing them up caused a wrong result on 19
 November.** The first table keeps the last 20% of each chain (`--burn-in-frac 0.8`), which
@@ -659,11 +667,13 @@ chains, which is the honest error bar here.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 241 / 236 | +0.09 / +0.15 | +0.23 / +0.24 | +0.19 / +0.21 | −0.04 / +0.01 | +0.16 / +0.11 | +0.08 / +0.09 |
 | 1.5 | 170 / 175 | +0.21 / +0.29 | +0.27 / +0.25 | +0.28 / +0.30 | +0.04 / +0.10 | +0.12 / +0.08 | +0.11 / +0.13 |
-| 2 | 93 / 85 | +0.32 / +0.35 | +0.26 / +0.28 | +0.34 / +0.35 | +0.14 / +0.14 | +0.07 / +0.09 | +0.15 / +0.18 |
-| 3 | 71 / 77 | +0.41 / +0.42 | +0.32 / +0.39 | +0.43 / +0.42 | +0.21 / +0.21 | +0.11 / +0.16 | +0.25 / +0.21 |
+| 2 | 91 / 84 | +0.31 / +0.32 | +0.27 / +0.28 | +0.35 / +0.35 | +0.09 / +0.11 | +0.07 / +0.07 | +0.16 / +0.17 |
+| 2.5 | 116 | +0.31 | +0.26 | +0.34 | +0.11 | +0.07 | +0.18 |
+| 3 | 65 / 65 | +0.44 / +0.42 | +0.33 / +0.27 | +0.44 / +0.41 | +0.25 / +0.23 | +0.10 / +0.06 | +0.26 / +0.24 |
 | 4 | 36 / 29 | +0.48 / +0.49 | +0.40 / +0.39 | +0.49 / +0.52 | +0.28 / +0.27 | +0.15 / +0.12 | +0.28 / +0.31 |
-| 5 | 26 / 21 | +0.50 / +0.44 | +0.41 / +0.31 | +0.47 / +0.43 | +0.32 / +0.24 | +0.18 / +0.09 | +0.26 / +0.22 |
+| 5 | 21 / 24 | +0.49 / +0.53 | +0.41 / +0.38 | +0.54 / +0.52 | +0.29 / +0.32 | +0.15 / +0.09 | +0.36 / +0.29 |
 | 6 | 23 / 13 | +0.53 / +0.52 | +0.41 / +0.39 | +0.54 / +0.51 | +0.34 / +0.34 | +0.15 / +0.18 | +0.34 / +0.28 |
+| 7 | 22 | +0.46 | +0.39 | +0.50 | +0.26 | +0.14 | +0.30 |
 | 8 | 8 / 12 | +0.58 / +0.58 | +0.42 / +0.38 | +0.59 / +0.58 | +0.38 / +0.40 | +0.14 / +0.10 | +0.40 / +0.37 |
 | 16 | 7 / 7 | +0.56 / +0.57 | +0.42 / +0.41 | +0.56 / +0.52 | +0.38 / +0.40 | +0.15 / +0.15 | +0.32 / +0.28 |
 
@@ -675,22 +685,35 @@ temperatures with, and the caveats under it are not optional:
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | +0.15 / +0.14 | +0.21 / +0.23 | +0.21 / +0.22 | −0.01 / −0.02 | +0.07 / +0.07 | +0.06 / +0.07 |
 | 1.5 | +0.29 / +0.26 | +0.28 / +0.24 | +0.30 / +0.30 | +0.10 / +0.06 | +0.08 / +0.05 | +0.10 / +0.11 |
-| 2 | +0.36 / +0.38 | +0.31 / +0.30 | +0.36 / +0.39 | +0.15 / +0.16 | +0.11 / +0.07 | +0.17 / +0.21 |
-| 3 | +0.50 / +0.48 | +0.38 / +0.42 | +0.50 / +0.49 | +0.28 / +0.27 | +0.13 / +0.17 | +0.30 / +0.29 |
+| 2 | +0.34 / +0.35 | +0.29 / +0.30 | +0.36 / +0.37 | +0.13 / +0.14 | +0.08 / +0.08 | +0.17 / +0.19 |
+| 2.5 | +0.39 | +0.31 | +0.43 | +0.17 | +0.08 | +0.27 |
+| 3 | +0.50 / +0.48 | +0.37 / +0.38 | +0.49 / +0.48 | +0.30 / +0.26 | +0.13 / +0.11 | +0.30 / +0.25 |
 | 4 | +0.48 / +0.51 | +0.40 / +0.39 | +0.52 / +0.54 | +0.26 / +0.29 | +0.13 / +0.12 | +0.31 / +0.32 |
-| 5 | +0.56 / +0.54 | +0.43 / +0.42 | +0.55 / +0.54 | +0.36 / +0.33 | +0.17 / +0.13 | +0.35 / +0.30 |
+| 5 | +0.56 / +0.55 | +0.43 / +0.42 | +0.57 / +0.54 | +0.37 / +0.34 | +0.17 / +0.13 | +0.39 / +0.29 |
 | 6 | +0.59 / +0.59 | +0.43 / +0.44 | +0.59 / +0.59 | +0.41 / +0.40 | +0.15 / +0.18 | +0.40 / +0.37 |
-| 8 | +0.58 / +0.60 | +0.42 / +0.42 | +0.61 / +0.60 | +0.40 / +0.42 | +0.14 / +0.13 | +0.43 / +0.39 |
+| 7 | +0.58 | +0.45 | +0.58 | +0.38 | +0.19 | +0.38 |
+| 8 | +0.59 / +0.60 | +0.42 / +0.42 | +0.61 / +0.60 | +0.40 / +0.42 | +0.14 / +0.13 | +0.43 / +0.39 |
 | 16 | +0.60 / +0.60 | +0.46 / +0.43 | +0.58 / +0.57 | +0.41 / +0.43 | +0.18 / +0.16 | +0.33 / +0.35 |
 
-**Only the rows from T = 4 down the table are clean.** Matching the accepted count forces a
-cold chain to use a long window, and at 16,000 the windows of T = 2, 3 and 5 begin before
-their measured t_eq (329,476 against 440,000; about 3,000–5,000 against 100,000; about
-76,000 against 100,000), so those three rows are *lower bounds* — pre-t_eq moves pull these
-correlations down, by 0.104 where that was measured directly at T = 8. T = 1 and T = 1.5
-never reach 16,000 accepted moves at all: their whole 300,001-move chains contain 3,036 and
-8,279, so their windows are the entire chain and they cannot be put on this footing. The
-log prints each window's start, which is the check.
+**Every row from T = 2 up is now clean, and two are not.** Matching the accepted count
+forces a cold chain to use a long window, so on 24 November T = 2, 3 and 5 were extended to
+790,001, 280,001 and 210,001 moves (`astaroth_match16k.sh`, 14.4 h on astaroth) for exactly
+this reason: at 16,000 their windows used to begin *before* their measured t_eq and those
+rows were lower bounds. They now start at 466,524/460,475 (t_eq 440,000), 106,502/107,570
+(100,000) and 106,411/106,965 (100,000). T = 2.5 is still a lower bound — its window is its
+whole chain against a t_eq of about 80,000 — because it ran on urano and topping it up means
+moving its run directory first. T = 1 and T = 1.5 never reach 16,000 accepted moves at all:
+their whole 300,001-move chains contain 3,036 and 8,279, so their windows are the entire
+chain and they cannot be put on this footing, ever, since 222 and 126 of 324 sites never
+accept a move there at all. The log prints each window's start, which is the check.
+
+**The lower bounds turned out to be nearly tight**, which is worth knowing before spending
+GPU hours on the next one. Before the top-up those three rows read +0.15/+0.16, +0.28/+0.27
+and +0.36/+0.33; after it they read +0.13/+0.14, +0.30/+0.26 and +0.37/+0.34. Every change
+is within the 0.03 that the two independent chains of one temperature differ by anyway, and
+one of the three moved *down*. So pre-t_eq contamination is only severe when it dominates
+the window, as it did at T = 8 under `--burn-in-frac 0.5` where it cost 0.104; a window that
+reaches a little past t_eq is already most of the way to a clean one.
 
 Mean sampled entropy inside each K-like set divided by the mean outside it:
 
@@ -698,11 +721,13 @@ Mean sampled entropy inside each K-like set divided by the mean outside it:
 | --- | --- | --- | --- |
 | 1 | 0.28 / 0.22 | 0.22 / 0.27 | 0.31 / 0.42 |
 | 1.5 | 0.31 / 0.17 | 0.36 / 0.39 | 0.39 / 0.35 |
-| 2 | 0.35 / 0.26 | 0.47 / 0.47 | 0.43 / 0.42 |
-| 3 | 0.37 / 0.30 | 0.55 / 0.51 | 0.45 / 0.48 |
+| 2 | 0.32 / 0.31 | 0.51 / 0.46 | 0.47 / 0.45 |
+| 2.5 | 0.38 | 0.51 | 0.52 |
+| 3 | 0.33 / 0.35 | 0.57 / 0.60 | 0.48 / 0.50 |
 | 4 | 0.41 / 0.44 | 0.63 / 0.65 | 0.52 / 0.54 |
-| 5 | 0.48 / 0.38 | 0.62 / 0.70 | 0.61 / 0.63 |
+| 5 | 0.45 / 0.36 | 0.64 / 0.69 | 0.57 / 0.55 |
 | 6 | 0.51 / 0.41 | 0.67 / 0.71 | 0.59 / 0.61 |
+| 7 | 0.43 | 0.71 | 0.61 |
 | 8 | 0.49 / 0.52 | 0.76 / 0.75 | 0.63 / 0.63 |
 | 16 | 0.59 / 0.62 | 0.80 / 0.83 | 0.74 / 0.71 |
 
@@ -757,16 +782,27 @@ temperatures whose window clears t_eq:
 
 | T | family, burial removed | margin over abundance |
 | --- | --- | --- |
+| 2 | +0.13 / +0.14 | +0.05 / +0.06 |
+| 3 | +0.30 / +0.26 | +0.17 / +0.15 |
 | 4 | +0.26 / +0.29 | +0.13 / +0.17 |
+| 5 | +0.37 / +0.34 | +0.20 / +0.21 |
 | 6 | +0.41 / +0.40 | +0.25 / +0.23 |
+| 7 | +0.38 | +0.19 |
 | 8 | +0.40 / +0.42 | +0.27 / +0.29 |
 | 16 | +0.41 / +0.43 | +0.22 / +0.27 |
 
-T = 6, 8 and 16 are indistinguishable: the agreement rises through the transition and
-saturates near **+0.41**, with a margin over abundance near **+0.25** and a ratio of about
-2.6. That is the number to quote, and it is both larger and better supported than the
+T = 6, 7, 8 and 16 are indistinguishable: the agreement rises through the transition and
+saturates near **+0.41** against an abundance correlation of **+0.16**, a ratio of about
+**2.5**. That is the number to quote, and it is both larger and better supported than the
 "+0.34, a factor of two, at T = 6" this section claimed on 19 November, because that figure
-was attenuated.
+was attenuated. T = 5 at +0.37/+0.34 sits just under the plateau and is not clearly
+separable from it; T = 4 at +0.26/+0.29 clearly is below it. So the saturation sets in
+somewhere between T = 4 and T = 6, which brackets the transition temperature the ladder
+locates at T ≈ 3–5 by other means.
+
+This table is the state after 25 November, when T = 2, 3 and 5 were brought onto the matched
+footing; the rows for T = 2, 3 and 5 were lower bounds before that and moved by less than
+0.03 when they stopped being.
 
 **The temperature trend itself is real**, and this was checked rather than assumed, since a
 trend in sample size could have produced it: at a matched ~600 accepted moves — all T = 1
@@ -783,7 +819,7 @@ physics: 241 and 236 of 324 sites have zero entropy there, so the ranking is mos
 **The energy side does not move, which is the point of the whole comparison.**
 `-mean_dU_kept` gives family +0.34 / +0.31 against abundance +0.38 / +0.38 at T = 6, and
 family +0.29 / +0.31 against abundance +0.35 / +0.37 at T = 8. So everywhere on the plateau
-where the sampled entropy prefers conservation by a factor of about 2.6, the energy on its
+where the sampled entropy prefers conservation by a factor of about 2.5, the energy on its
 own still prefers abundance. That split survives every correction made to this section and
 is now measured across the whole ladder.
 
@@ -884,12 +920,15 @@ completely, along with every other per-site property, measured or not.
 At a matched 16,000 accepted moves, what remains after burial is removed is +0.41/+0.40 for
 the family entropy, +0.40/+0.37 for activity and +0.15/+0.18 for abundance at T = 6, and
 +0.40/+0.42, +0.43/+0.39 and +0.14/+0.13 at T = 8 — the two numbers being the two
-independent chains. T = 16 matches both. (This subsection has quoted T = 8 alone, then T = 6
-alone as a maximum; neither was right. The agreement saturates from T = 6 up and the
-temperatures on the plateau are indistinguishable.)
+independent chains. T = 16 matches both, and so does urano's single T = 7 chain at +0.38,
++0.38 and +0.19. (This subsection has quoted T = 8 alone, then T = 6 alone as a maximum;
+neither was right. The agreement saturates from T = 6 up and the temperatures on the plateau
+are indistinguishable.) T = 5, now on the same footing, is +0.37/+0.34 and cannot be cleanly
+separated from the plateau either, so the saturation may begin a temperature earlier than
+this heading says.
 
 **Reading.** The sampler is not flat. But once burial is set aside it follows what the
-family conserves more than what keeps the protein abundant, by about a factor of 2.6
+family conserves more than what keeps the protein abundant, by about a factor of 2.5
 anywhere on the plateau. That is unexpected, because the energy contains no catalysis. Two explanations
 are worth discussing with the supervisors. ESM3 was trained on natural sequences, so its
 attention map may encode family conservation directly, function included. Or the active
@@ -2479,8 +2518,8 @@ and I will write it.
 2. **One chain's time average underestimates the entropy of the ensemble.** Compare ratios
    and ranks, not absolute entropies.
 3. **Most of the agreement is burial**, and the remainder favours family conservation over
-   abundance by about a factor of 2.6 anywhere on the plateau: at a matched 16,000 accepted
-   moves, +0.41 against +0.16 averaged over T = 6, 8 and 16, with the two chains of each
+   abundance by about a factor of 2.5 anywhere on the plateau: at a matched 16,000 accepted
+   moves, +0.41 against +0.16 averaged over T = 6, 7, 8 and 16, with the two chains of each
    agreeing to 0.03 (sections 5.2 and 5.3). Entropy against RSA alone is +0.46 to +0.56 at
    T = 4 to 16, against +0.48 to +0.60 for the raw family correlation, which is why the
    partial column is the one to argue from.
