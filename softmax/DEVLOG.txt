@@ -7864,3 +7864,22 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
 
     Doc section 5.2 (both tables now eleven temperatures, the clean/lower-bound paragraph
     rewritten, K-set ratios refreshed), 5.3 (plateau table extended, 2.6 -> 2.5), caution 3.
+
+2026-11-25  pten_variants: second review of the report (Marco)
+    SAMPLED K-SET RULE CHANGED: "lowest 10% of native sites" -> entropy < median - 1.5 sigma,
+    sigma = 1.4826 MAD over the 322 native sites (pten_variants.py --sampled-k-sigma 1.5,
+    --sampled-k-scale mad; '--sampled-k-sigma none' restores the 10% rule). Sizes: EMPTY at
+    T<=3 (the bulk is frozen, median - 1.5 sigma < 0), 24/17/27/51/55 at T=4/5/6/8/16.
+    k=2 empties T<=5. Main tables T=4/T=8 on the new rule: recurrent tumour 3.79/2.76, P/LP
+    2.24/2.40, consensus damaging 2.33/2.32, gnomAD 0.74/0.78. With the sigma rule the
+    enrichment PEAKS at T=6 (recurrent 4.53 = K_natural's 4.32 on 27 vs 28 sites) where the
+    10% rule showed a plateau; the per-site Spearman (no cut) stays flat -0.40..-0.45 from T=4.
+    T=5/6 chains are about half as long as T=4/8, so the T=6 peak is a lead, not a result.
+    T8 numbers were STALE in the first version (150001-move chains; now 300001, mean entropy
+    1.84 not 1.61); all-T rerun also picks up the 2026-11-24 T=2/3/5 extensions.
+    Sites 0 and 279 (non-native): cost exactly one variant, E7D; no new crystal needed.
+    snv check: files and VAMP-seq agree on 7531 of 7532, the one exception M1V (start codon).
+    Figure 1 matrices now have colour bars and tint the 230 aa pairs no SNV can make.
+    Doc: 1.5 sigma rule, 1.6 reachability with/without codons + worked enrichment example +
+    AUC definition, 2.3 step by step, section 3 Venn/GRCh37-38/AC/cross-reference counting,
+    5.1 RSA and partial Spearman, 5.2 category glossary, 5.5 catalytic/fold/burial.

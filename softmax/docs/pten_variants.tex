@@ -36,7 +36,7 @@
 \title{PTEN missense variants in tumours, in patients and in the population:\\
 three databases, the K-sites, and the sampler's energies}
 \author{Marco Sanchini \\ \small\texttt{my\_extendedSampling} / \texttt{softmax}}
-\date{2026--11--18}
+\date{2026--11--18, revised 2026--11--25}
 
 \begin{document}
 \maketitle
@@ -48,10 +48,12 @@ and intersected: somatic mutations in tumours (cBioPortal, TCGA PanCancer
 Atlas), germline submissions (ClinVar) and population alleles (gnomAD). After
 cleaning they hold 1269 distinct changes on canonical PTEN, 1093 of them inside
 the 324-residue construct the sampler uses. Two questions were asked of them.
-\emph{Where do the variants land?} Variants from tumours and ClinVar
-pathogenic variants are 3.6--4.3 times more frequent than chance at the sites
+\emph{Where do the variants land?} Three disease categories were tested:
+tumour mutations seen in two or more patients, ClinVar pathogenic variants,
+and their union. Each figure below is given as a range over those three
+categories. They are 3.6--4.3 times more frequent than chance at the sites
 conserved across the PTEN family, 2.6--2.8 times at the sites where yeast
-activity is lost, 2.2--3.3 times at the sites the sampler itself keeps
+activity is lost, 2.2--3.8 times at the sites the sampler itself keeps
 conserved, and only 1.3--1.4 times at the sites that control abundance;
 population variants are spread uniformly. \emph{Do the sampler's energies
 recognise them?} The attention-map energy $\Uam$ separates disease from
@@ -113,7 +115,13 @@ already on astaroth since PR\,\#45, for its genetic-code column.
 Canonical PTEN: UniProt P60484, RefSeq NM\_000314, Ensembl ENST00000371953,
 403 residues. The construct \file{pten\_1d5r} is UniProt 7--285 and 310--353
 (the 286--309 loop deleted, as in crystal 1D5R), 324 sites; sites 0 and 279
-are not native. Domains: N-terminus 1--13, phosphatase 14--185, C2 186--351,
+are not native. Site 0 is the methionine the crystal construct starts with, in
+place of E7; site 279 is the residue that joins the two ends of the deleted
+loop. Between them they cost one variant, E7D (ClinVar), which has no native
+site to land on; no variant of any file falls at the junction. Every other
+variant inside 7--353 maps one to one onto a native site. The whole sampling
+study uses 1D5R, so the construct is kept; the full-length structure 7JVX
+serves only as the loop control of \file{pten\_k\_sites\_explained.md}. Domains: N-terminus 1--13, phosphatase 14--185, C2 186--351,
 C-tail 352--403.
 
 \subsection{The three energies}
@@ -151,14 +159,26 @@ with three external definitions of ``this site cannot change''
   alignment (2716 sequences, 59\% tensins; see below).
 \item[K\_abundance] (108) sites where VAMP-seq abundance collapses: the fold.
 \item[K\_activity] (97) sites where yeast activity is lost: largely catalysis.
-\item[K\_sampled\_T4, K\_sampled\_T8] (33 each) new here: the 10\% of native
-  sites with the lowest sampled entropy at $T=4$ and $T=8$. Entropy from the
-  \file{equil\_ref} chains 0 and 1 (400\,001 moves at $T=4$, 150\,001 at
-  $T=8$), averaged, with \texttt{--burn-in-frac 0.8}, which clears $t_{\mathrm{eq}}$
-  at every temperature. The cut-offs are 0.168 and 0.677 nats. A fixed
-  threshold near zero would leave a handful of sites at these temperatures.
-  Why these two temperatures, and what the other seven of the ladder give:
-  section~\ref{sec:allT}.
+\item[K\_sampled\_T4, K\_sampled\_T8] (24 and 51 sites) new here: the
+  native sites whose sampled entropy is an outlier on the low side,
+  \[
+    H_i \;<\; \mathrm{median}(H) - 1.5\,\sigma, \qquad
+    \sigma = 1.4826\cdot\mathrm{median}\,|H - \mathrm{median}(H)| ,
+  \]
+  with median and $\sigma$ taken over the 322 native sites at that
+  temperature. $\sigma$ is the median absolute deviation (MAD), rescaled by
+  1.4826 so that it equals the standard deviation for a normal distribution;
+  unlike the standard deviation it is not inflated by the very sites one is
+  looking for (the frozen ones at entropy 0). At $T=4$: median 1.447 nats,
+  $\sigma=0.943$, cut 0.032, so the set is essentially the 22 sites that never
+  change in the kept window plus two that barely do. At $T=8$: median 2.034,
+  $\sigma=0.623$, cut 1.100. Entropy from the \file{equil\_ref} chains 0 and 1
+  (400\,001 moves at $T=4$, 300\,001 at $T=8$), averaged, with
+  \texttt{--burn-in-frac 0.8}, which clears $t_{\mathrm{eq}}$ at every
+  temperature. An earlier version of this note used ``the 10\,\% of sites with
+  the lowest entropy'', which fixes the size of the set (33) instead of asking
+  which sites stand out; both rules, at every temperature, and the sensitivity
+  to the 1.5: section~\ref{sec:allT}.
 \end{description}
 
 \paragraph{What tensins are, and why they matter here.} PTEN's name is
@@ -194,18 +214,44 @@ representatives each, MGnify (environmental, mostly microbial) has almost none.
 \paragraph{SNV-reachable substitutions.} An SNV (single-nucleotide
 variant) changes one base of the DNA. Each amino acid is written by a codon of
 three bases, and one base change turns a codon into one of only nine
-neighbouring codons, some of which code for the same residue (synonymous) or
-for a stop. So from a given codon a single base change reaches only a few of
-the 19 other amino acids. Example: PTEN's R130 is written CGA (CDS bases
-388--390). Its nine one-base neighbours are AGA, GGA, TGA (C$\to$A, G, T at
-the first base), CAA, CCA, CTA (second base) and CGC, CGG, CGT (third base),
-i.e.\ R, G, stop, Q, P, L, R, R, R. The SNV-reachable substitutions of R130 are
-therefore \textbf{G, L, P, Q}: 4 of 19. R130C or R130W would need two base
-changes, and nobody carries them. Over the construct, sites have 2--9
-reachable substitutions, 1906 of the 6156 in all (31\,\%); across all residue
-pairs, only 150 of the 380 amino-acid changes can be made by one base change
-in the standard code. Section~\ref{sec:snv} explains how each site's codon is
-read from the three files.
+neighbouring codons (three positions, three other bases each), some of which
+code for the same residue (synonymous) or for a stop. So from a given codon a
+single base change reaches only a few of the 19 other amino acids.
+
+\emph{When the codon is known} the count is direct. For leucine written CTA
+(CUA in the mRNA), the nine neighbours are ATA, GTA, TTA at the first base
+(I, V, L), CAA, CCA, CGA at the second (Q, P, R) and CTC, CTG, CTT at the third
+(L, L, L): five distinct amino acids, I, V, Q, P, R, so the reachability of
+that site is 5. PTEN's R130 is written CGA (CDS bases 388--390); its nine
+neighbours are AGA, GGA, TGA, CAA, CCA, CTA, CGC, CGG, CGT, i.e.\ R, G, stop,
+Q, P, L, R, R, R, so its SNV-reachable substitutions are \textbf{G, L, P, Q}:
+4 of 19. R130C or R130W would need two base changes, and nobody carries them.
+
+\emph{When the codon is not known}, only the amino acid, there are two ways
+to define reachability, and they differ. (a) A substitution is reachable if
+\emph{some} codon of the wild type reaches it: this is the union over the
+synonymous codons, the most generous count. (b) It is reachable if \emph{every}
+candidate codon reaches it: the strict count. For PTEN neither guess is needed,
+because the actual codon of almost every site can be read from the variant
+files (section~\ref{sec:snv}); the codon-based count is the one used
+throughout. Where a few candidate codons remain, a substitution counts as
+reachable when every candidate reaches it and as unreachable when none does;
+the cases in between are taken from the VAMP-seq table.
+
+\emph{The two numbers ``150 of 380'' and ``1906 of 6156''} count different
+things. 380 is the number of ordered pairs of different amino acids
+(20$\times$19), counted once each over the whole genetic code, not per codon
+and not per site. Rule (a) applied to every amino acid gives 150 of them: for
+instance A$\to$C, D$\to$K or R$\to$Y cannot be made by one base change from any
+codon of the first residue, whereas L$\to$I can. That is a property of the
+genetic code, and it is why most cells of the substitution matrices in
+Figure~\ref{fig:overview} are tinted. It is true that every base change of
+every codon changes \emph{something}, but a large share of the changes either
+keep the same amino acid or give a stop, and the ones that do change the amino
+acid lead to a small, fixed set of neighbours. The second number is per site:
+at each of the 324 construct sites, with the codon actually used by PTEN,
+between 2 and 9 of the 19 substitutions are reachable, 1906 of the
+324$\times$19 = 6156 in all (31\,\%).
 
 \paragraph{Why it matters.} Human variants (germline or somatic) are almost
 all SNVs: two changes in the same codon of the same allele are vanishingly
@@ -220,18 +266,34 @@ the size of the effect: the AUC of $\Uam$ for ``observed in tumours'' against
 sides are restricted to reachable substitutions.
 
 \paragraph{How the comparison is done.} Everything below works inside the
-1906 reachable substitutions:
+1906 reachable substitutions of the construct.
 \begin{itemize}
-\item \textbf{densities}: observed reachable variants at a site divided by
-  the reachable substitutions of that site, so a site with 9 reachable
-  changes is not favoured over one with 2;
-\item \textbf{enrichment} in a K-set: the expected count is the category's
-  total times the share of the 1906 reachable substitutions that lie in the
-  set, so the null hypothesis is ``a reachable substitution is hit as often
-  inside the set as outside'';
-\item \textbf{AUCs}: both classes are reachable substitutions (``never
-  observed'' means reachable and in no database), and percentiles are also
-  given among the 1906 reachable mutants, not only among the 6156.
+\item \textbf{Density} at a site $i$: the number of a category's variants
+  observed at $i$, divided by the number of reachable substitutions of $i$
+  (between 2 and 9). A site with 9 reachable changes is not favoured over one
+  with 2.
+\item \textbf{Enrichment} of a category in a K-set: observed / expected.
+  Take a category with $N$ variants (for example the 275 consensus-damaging
+  variants, all reachable and inside the construct) and a K-set (for example
+  the 28 sites of K\_natural). The 28 sites carry $r=163$ of the 1906
+  reachable substitutions, i.e.\ a share $r/1906 = 8.55\,\%$. If the
+  category's variants fell on reachable substitutions with no preference for
+  the set, $N\cdot r/1906 = 275\times 0.0855 = 23.5$ of them would be inside
+  it: that is the \emph{expected} count. The \emph{observed} count is how many
+  actually are: 85. Enrichment $= 85/23.5 = 3.6$. A ratio of 1 means the set is
+  hit as often as its share of reachable substitutions predicts; above 1, more
+  often; below 1, less. The $p$-value is the two-sided binomial test of 85
+  successes in 275 draws with probability 0.0855.
+\item \textbf{AUC} (area under the ROC curve) of a score for a contrast
+  between two classes of variants, a ``damaging'' one (e.g.\ tumour) and a
+  ``tolerated'' one (e.g.\ population): the probability that a randomly
+  chosen variant of the damaging class has a higher score than a randomly
+  chosen one of the tolerated class (0.5 = no separation, 1 = perfect). The
+  scores are the three energies $\Uam$, $\Uce$, $\Etwo$, their site means,
+  the two experiments ($-$abundance, $-$activity) and two external predictors
+  (section~\ref{sec:rank}). Both classes contain only reachable substitutions
+  (``never observed'' means reachable and in no database), and percentiles
+  are also given among the 1906 reachable mutants, not only among the 6156.
 \end{itemize}
 What this does not control is how often each base change happens: C$\to$T at
 CpG dinucleotides is about ten times more frequent than average, which is
@@ -319,7 +381,9 @@ highest review status (expert panel $>$ multiple submitters $>$ single).
 Conditions grouped into PHTS, autism/macrocephaly, cancer. & 1164 \\[2pt]
 gnomAD & 1868 alleles, 469 missense, 235 on the canonical transcript. No
 duplicate; all pass the joint filter; 42 in segdup/lcr regions (flagged,
-kept). 146 singletons, 89 with AC $\ge 2$, one site with a homozygote. &
+kept). AC (allele count) = copies of the variant allele among the
+sequenced people, two per person: 146 singletons (AC = 1, one heterozygous
+person), 89 with AC $\ge 2$, one site with a homozygote. &
 Canonical transcript only; allele counts summed per protein change. & 235 \\
 \bottomrule
 \end{tabular}
@@ -330,19 +394,55 @@ class; gnomAD does.}
 
 \subsection{SNV reachability from the files' own codons}\label{sec:snv}
 
-Every single-nucleotide change written \texttt{c.N X>Y} on the canonical
-transcript (missense, synonymous and nonsense alike) names the reference base
-at CDS position $N$. The three files name 1065 of the 1212 CDS bases; with the
-protein sequence constraining the rest, 362 of 403 codons resolve to a single
-codon. A substitution is SNV-reachable when it is one base away from every
-candidate codon. On astaroth the \texttt{snv} column of
-\file{PTEN\_variant\_data.tsv} \textbf{agrees with this reconstruction on all
-7532 substitutions both define} and fills the remainder: 2397 of 7657
-substitutions are reachable, 5260 are not, 0 are unknown. Inside the construct
-1906 of 6156 are reachable, the same number the COSMIC look found
-independently. Check built into \file{clean}: all 1951 variants observed as
-SNVs come out reachable. The 12 observed but unreachable changes are ClinVar
-multi-nucleotide variants.
+Section~\ref{sec:gencode} needs, for each substitution, whether one base change
+can make it, and that depends on the actual codon PTEN uses at the site. The
+codons are not in any of the three files as such, but they can be read off
+them. Step by step:
+\begin{enumerate}
+\item \textbf{What is to be classified.} Canonical PTEN has 403 residues and
+  each can become any of 19 others: $403\times19 = 7657$ substitutions. Only
+  the 6156 of them inside the construct (the 324-site sequence of the 1D5R
+  crystal chain that the sampler and the energies use, section~1.3) enter the
+  analysis, but the classification is done on all 7657.
+\item \textbf{Where the bases come from.} The coding sequence (CDS) of
+  NM\_000314 is $403\times3 = 1209$ bases plus the stop codon, 1212 in all,
+  numbered from the A of the ATG start. Every DNA change in the files is
+  written in HGVS notation on that transcript, \texttt{c.N X>Y}: base $N$ of
+  the CDS, reference base X, new base Y (R130Q is \texttt{c.389G>A}). So each
+  row names one reference base, whatever its consequence: missense,
+  synonymous (same amino acid) and nonsense (stop) rows all count, which is
+  why the files name more bases than the missense variants alone would.
+  Together they name 1065 of the 1212 bases; all three bases of a codon are
+  named for 286 of the 403 codons.
+\item \textbf{Filling the gaps with the protein.} For a codon with one or two
+  bases unnamed, the candidates are the codons that encode the wild-type
+  residue and agree with the bases that are named. This leaves a single codon
+  for 362 of the 403 sites. For the other 41 two or more candidates remain
+  (e.g.\ L23 is TTA or TTG).
+\item \textbf{Classifying each substitution.} A substitution is reachable when
+  it is one base away from \emph{every} candidate codon, unreachable when it
+  is one base away from \emph{none}, and undecided otherwise. With a single
+  candidate this is exact. The files decide 7550 of the 7657 substitutions;
+  107 stay undecided.
+\item \textbf{The independent check.} The VAMP-seq table
+  \file{PTEN\_variant\_data.tsv} (on astaroth) has a column \texttt{snv} that
+  says, for each substitution, whether one base change of PTEN's cDNA makes
+  it; it gives a value for 7639 substitutions. The two sources both give a
+  value for 7532, and they agree on 7531. The one disagreement is M1V: ATG
+  $\to$ GTG makes valine with one base, but the table marks it not reachable,
+  presumably because a change of the start codon is not a missense change. It
+  is outside the construct. Where the files leave a substitution undecided,
+  the table's value is used.
+\item \textbf{Result.} 2397 of the 7657 substitutions are reachable, 5260 are
+  not, none is unknown. Inside the construct 1906 of 6156 are reachable, the
+  same number the earlier COSMIC look found with the table alone.
+\item \textbf{Sanity check in \file{clean}.} Every variant that a file
+  records as a single-base change (1951 records) must come out reachable, and
+  all of them do; otherwise the script stops. The 12 observed changes that are
+  \emph{not} reachable are ClinVar multi-nucleotide variants (MNVs: two or
+  three neighbouring bases changed in one event), which can make a
+  substitution that no single base change can.
+\end{enumerate}
 
 % ===========================================================================
 \section{Intersections}
@@ -367,14 +467,37 @@ union & 1269 & 1093 \\
 \end{tabular}
 \caption{Overlaps on the protein key (\file{merge.log}). Outside the
 construct: 93 in the C-tail, 60 in the 286--309 loop, 23 in the N-terminus.}
+\label{tab:overlap}
 \end{table}
 
-\paragraph{DNA level.} cBioPortal is on GRCh37, gnomAD on GRCh38, ClinVar on
-both. Over the PTEN locus GRCh37 $-$ GRCh38 $= 1\,759\,757$ for all 3000
-ClinVar SNVs that carry both coordinates, so cBioPortal is lifted by that
-constant (re-checked on every run; the script stops if it fails). On the DNA
-key: C$\cap$V 196, C$\cap$G 23, V$\cap$G 189, all three 20. Four protein
-changes are shared by cBioPortal and ClinVar through a different codon change.
+\paragraph{Reading the table.} Two variants are ``the same'' when they have
+the same protein key (R130Q), whatever DNA change made them. Each distinct
+protein change is counted in exactly one row, the one that names exactly the
+databases containing it: ``cBioPortal only'' is in cBioPortal and in neither
+of the others, ``cBioPortal + ClinVar'' is in those two and \emph{not} in
+gnomAD, ``all three'' is in all three. These are the seven \emph{exclusive}
+regions of a three-set Venn diagram, and so they add up to the union, 1269.
+A database's own total is the sum of the four rows that mention it:
+cBioPortal $64+174+3+22 = 263$, ClinVar $796+174+172+22 = 1164$, gnomAD
+$38+3+172+22 = 235$, the ``changes kept'' of the previous table. The second
+column repeats the count for the variants whose position lies inside the
+construct.
+
+\paragraph{DNA level.} A position in the genome is given as a chromosome
+and a coordinate on a \emph{reference assembly}, the agreed human genome
+sequence. Two versions are in use: GRCh37 (2009, also called hg19) and GRCh38
+(2013, hg38). The DNA is the same, but GRCh38 filled gaps and corrected
+errors, so the same base has a different number in the two. cBioPortal (TCGA)
+gives GRCh37 coordinates, gnomAD GRCh38, ClinVar both. Over the PTEN locus the
+difference is a constant: GRCh37 $-$ GRCh38 $= 1\,759\,757$ for all 3000
+ClinVar SNVs that carry both coordinates. cBioPortal's coordinates are
+shifted by that constant to GRCh38 (re-checked on every run; the script stops
+if it fails), and the DNA key \texttt{chr:pos:ref:alt} is then comparable
+across the three files. On the DNA key, pairwise intersections (not exclusive
+this time): cBioPortal $\cap$ ClinVar 196, cBioPortal $\cap$ gnomAD 23,
+ClinVar $\cap$ gnomAD 189, all three 20. Four protein changes are shared by
+cBioPortal and ClinVar through a different DNA change at the same codon: same
+protein key, different DNA key.
 
 \paragraph{What the overlaps say.}
 \begin{itemize}
@@ -387,19 +510,29 @@ changes are shared by cBioPortal and ClinVar through a different codon change.
   ``benign''; the population categories below exclude P/LP where it matters.
 \end{itemize}
 
-\paragraph{Cross-references.} cBioPortal's own ClinVar column labels 184 of
-the variants; 19 disagree with the ClinVar file (an older snapshot, mostly VUS
-$\leftrightarrow$ conflicting). gnomAD's labels 189; one disagrees (F241L,
-conflicting in gnomAD, P/LP in the file). The ClinVar file is used throughout;
-the list is in \file{merge.log}.
+\paragraph{Cross-references.} cBioPortal and gnomAD each carry a column
+with a ClinVar classification of their own variants, copied from ClinVar at
+some earlier date. For every variant that has such a label, the label is
+collapsed into the same four classes as the ClinVar file (P/LP, VUS,
+conflicting, B/LB) and compared with the class the ClinVar file gives the same
+protein key. cBioPortal labels 184 variants, all of them in the ClinVar file,
+and 19 labels differ: 8 between VUS and conflicting, 7 between P/LP and
+conflicting, 4 between P/LP and VUS (e.g.\ M35I is P/LP in cBioPortal's column
+and VUS in the file). gnomAD labels 189, and one differs (F241L, conflicting in
+gnomAD, P/LP in the file). Classifications in ClinVar change as submitters
+add evidence, so these are older snapshots, not errors; the ClinVar file,
+the most recent, is used throughout. The full list is in \file{merge.log}.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\linewidth]{figures/pten_var_overview.png}
 \caption{Top: distinct missense changes per position, per database, along
 canonical PTEN (shading: N-terminus, phosphatase, C2, the 286--309 loop absent
-from the construct, C-tail). Bottom: the overlaps, and the substitution
-matrices of tumour and population variants.}
+from the construct, C-tail). Bottom: the overlaps (table~\ref{tab:overlap}),
+and the substitution matrices of tumour and population variants: grey scale
+= number of distinct changes of that kind (colour bar); white = reachable by
+one base change but not observed; pale blue = not reachable by one base
+change from any codon, so empty by construction.}
 \label{fig:overview}
 \end{figure}
 
@@ -416,9 +549,11 @@ matrices of tumour and population variants.}
 \item \textbf{Middle and right, substitution matrices.} One cell per pair
   (wild-type residue, row; mutant residue, column), darker = more distinct
   changes of that kind anywhere in PTEN (each change counted once, not
-  weighted by patients or allele count). The diagonal is empty by definition,
-  and most cells are blank because only 150 of the 380 residue pairs can be
-  reached by one base change (section~\ref{sec:gencode}). The two matrices differ in which
+  weighted by patients or allele count; the colour bar gives the count). The
+  diagonal is empty by definition, and the pale blue cells are the 230 of the
+  380 residue pairs that no single base change can make
+  (section~\ref{sec:gencode}); only the 150 white-to-black cells can hold a
+  variant. The two matrices differ in which
   of the reachable pairs are used. Tumours: 263 changes over 112 cells, the
   darkest D$\to$N, F$\to$S (7 each), A$\to$V, Y$\to$C (6), G$\to$V, Y$\to$D (5),
   and by wild type mostly R, D, F, Y, G: charged, aromatic and glycine
@@ -473,8 +608,9 @@ variants would be reported as counts only; none fell below.}
 For each category and construct site $i$ (\file{profiles.log},
 \file{kset\_profiles.tsv}):
 \begin{itemize}
-\item \textbf{density} $\rho_i$ = observed SNV-reachable changes at $i$ /
-  SNV-reachable changes at $i$;
+\item \textbf{density} $\rho_i$ = observed changes at $i$ /
+  SNV-reachable changes at $i$ (every observed change of a category is
+  reachable by construction, section~\ref{sec:gencode});
 \item \textbf{substitution entropy} $H_i = -\sum_a p_a\log p_a$ (nats) of the
   observed mutant residues at $i$, weighted by patients (cBioPortal), allele
   count (gnomAD) or one per variation (ClinVar); same units as the sampled and
@@ -486,10 +622,63 @@ construct, so that a site with more reachable substitutions expects more
 variants; two-sided binomial $p$. A second $p$ comes from circular shifts of
 the set along the sequence (keeps the run structure of neighbouring sites;
 smallest value $1/324 = 0.0031$). Correlations: Spearman of $\rho_i$ with each
-per-site reference, raw and with the relative solvent accessibility (RSA) of
-1D5R regressed out.
+per-site reference, raw and with burial removed.
+
+\paragraph{Burial, and how it is removed.} The relative solvent
+accessibility (RSA) of a residue is the surface of its side chain that water
+can touch in the crystal structure, divided by the largest value that residue
+type can have (fully exposed, in an extended chain): 0\,\% = completely
+buried in the core, 100\,\% = fully on the surface. The values are those of
+1D5R, from the positional columns of the VAMP-seq table. Burial matters
+because almost everything correlates with it: buried sites are conserved in
+families, intolerant in abundance assays, frozen in the sampler, and also
+where many damaging mutations fall. To ask whether two quantities agree
+\emph{beyond} the fact that both follow burial, the partial Spearman is used
+(\texttt{partial\_spearman} in \file{pten\_k\_sites.py}): the two quantities
+and RSA are replaced by their ranks; each of the two rank vectors is fitted
+by a straight line in the rank of RSA (least squares) and replaced by its
+residual, what the line does not explain; the Pearson correlation of the two
+residual vectors is the result, written ``$|$RSA'' in the tables. If a
+correlation is all burial, it drops to about zero; if it survives, the two
+quantities share information that burial does not carry.
 
 \subsection{Enrichment}
+
+Each cell of table~\ref{tab:enrich} is the observed / expected ratio of
+section~\ref{sec:gencode}: of the category's variants (row), how many fall in
+the K-set (column), divided by how many would if they were spread over the
+1906 reachable substitutions without preference. 1 = no preference, 2 = twice
+as many as expected, 0.5 = half. The row names, with the categories of
+table~\ref{tab:cats}:
+\begin{description}
+\item[P/LP] ClinVar \emph{pathogenic} or \emph{likely pathogenic}: the
+  submitting laboratory judged the variant disease-causing, with high or
+  moderate confidence. \textbf{VUS}, \emph{variant of uncertain
+  significance}: not enough evidence either way. \textbf{Conflicting}:
+  different submitters disagree (e.g.\ one says VUS, another likely
+  pathogenic). \textbf{Expert panel}: classified by a ClinGen expert panel
+  (for PTEN, the PTEN Variant Curation Expert Panel), the highest review status.
+\item[PHTS] PTEN hamartoma tumour syndrome, the inherited condition caused by
+  germline loss of one PTEN copy (Cowden syndrome and related diagnoses:
+  benign overgrowths, high risk of breast, thyroid and endometrial cancer).
+  It is the condition most ClinVar PTEN submissions name.
+  \textbf{Autism/macrocephaly}: submissions naming autism spectrum disorder or
+  a large head, the other phenotype of germline PTEN variants.
+\item[AC$\ge$2] gnomAD variants seen in at least two copies (two people, or
+  one homozygote), as opposed to singletons (AC = 1). A variant carried by
+  several healthy people is more likely tolerated than one seen once.
+\item[merged, all] every variant in at least one of the three databases
+  (the union, 1081 inside the construct and reachable).
+\item[tumour-only / population-only / tumour and population] defined by
+  cBioPortal and gnomAD alone, whatever ClinVar says: in cBioPortal and not
+  gnomAD; in gnomAD and not cBioPortal; in both. ``Tumour and population''
+  is therefore the small intersection (24 variants), the variants that occur
+  as somatic mutations in tumours \emph{and} as inherited alleles in the
+  population, not the union of the two.
+\item[consensus damaging / tolerated] the two classes the three databases
+  agree on (table~\ref{tab:cats}): damaging = ClinVar P/LP or in two or more
+  tumours; tolerated = gnomAD AC$\ge$2, not P/LP and not damaging.
+\end{description}
 
 \begin{table}[H]
 \centering\small
@@ -497,41 +686,42 @@ per-site reference, raw and with the relative solvent accessibility (RSA) of
 \toprule
 Category & natural & abundance & activity & sampled T4 & sampled T8 \\
 \midrule
-tumour, all & 2.90 & 1.45 & 2.24 & 2.06 & 1.91 \\
-tumour, recurrent & \textbf{4.32} & 1.31 & 2.81 & 3.16 & 3.32 \\
-tumour, singleton & 2.33 & 1.50 & 2.01 & 1.62 & 1.34 \\
-tumour, non-hypermutated & 3.19 & 1.52 & 2.50 & 2.00 & 2.08 \\
-tumour, endometrial & 3.38 & 1.31 & 2.31 & 2.45 & 2.28 \\
-tumour, glioblastoma & 3.02 & 1.44 & 2.43 & 2.53 & 2.43 \\
-tumour, second hit & 3.87 & 1.33 & 2.52 & 2.53 & 2.20 \\
-ClinVar, all & 1.45 & 1.14 & 1.35 & 1.18 & 1.28 \\
-ClinVar P/LP & 3.69 & 1.38 & 2.67 & 2.16 & 2.61 \\
-ClinVar VUS & 0.52 & 1.01 & 0.74 & 0.77 & 0.73 \\
-ClinVar conflicting & 1.74 & 1.39 & 1.80 & 1.29 & 1.50 \\
-ClinVar expert panel & 3.40 & 1.28 & 2.24 & 2.51 & 2.41 \\
-ClinVar PHTS & 1.62 & 1.16 & 1.48 & 1.29 & 1.36 \\
-ClinVar autism/macrocephaly & 1.23 & 1.42 & 1.59 & 1.10 & 1.33 \\
-gnomAD, all & 0.93 & 0.87 & 0.82 & 0.83 & 0.86 \\
-gnomAD, singleton & 0.97 & 0.96 & 0.94 & 0.95 & 0.75 \\
-gnomAD, AC$\ge$2 & 0.85 & 0.65 & 0.55 & 0.57 & 1.10 \\
-merged, all & 1.40 & 1.14 & 1.32 & 1.15 & 1.20 \\
-tumour-only & 2.80 & 1.45 & 2.22 & 2.05 & 1.80 \\
-population-only & 0.46 & 0.79 & 0.58 & 0.62 & 0.53 \\
-tumour and population & 3.90 & 1.37 & 2.38 & 2.18 & 2.94 \\
-consensus damaging & 3.61 & 1.39 & 2.62 & 2.17 & 2.60 \\
-consensus tolerated & \textbf{0.25} & 0.51 & 0.21 & 0.67 & 0.86 \\
+tumour, all & 2.90 & 1.45 & 2.24 & 2.12 & 2.02 \\
+tumour, recurrent & \textbf{4.33} & 1.31 & 2.81 & 3.79 & 2.76 \\
+tumour, singleton & 2.33 & 1.50 & 2.01 & 1.45 & 1.73 \\
+tumour, non-hypermutated & 3.19 & 1.52 & 2.50 & 2.02 & 2.11 \\
+tumour, endometrial & 3.38 & 1.31 & 2.31 & 2.73 & 2.03 \\
+tumour, glioblastoma & 3.02 & 1.44 & 2.43 & 2.26 & 2.69 \\
+tumour, second hit & 3.87 & 1.32 & 2.52 & 2.35 & 2.52 \\
+ClinVar, all & 1.45 & 1.15 & 1.35 & 1.25 & 1.26 \\
+ClinVar P/LP & 3.69 & 1.38 & 2.67 & 2.24 & 2.40 \\
+ClinVar VUS & 0.52 & 1.01 & 0.74 & 0.82 & 0.79 \\
+ClinVar conflicting & 1.74 & 1.39 & 1.80 & 1.53 & 1.37 \\
+ClinVar expert panel & 3.40 & 1.28 & 2.24 & 2.49 & 2.33 \\
+ClinVar PHTS & 1.62 & 1.16 & 1.48 & 1.37 & 1.35 \\
+ClinVar autism/macrocephaly & 1.23 & 1.42 & 1.59 & 1.53 & 1.20 \\
+gnomAD, all & 0.93 & 0.87 & 0.82 & 0.74 & 0.78 \\
+gnomAD, singleton & 0.97 & 0.96 & 0.94 & 0.72 & 0.81 \\
+gnomAD, AC$\ge$2 & 0.85 & 0.65 & 0.55 & 0.79 & 0.71 \\
+merged, all & 1.40 & 1.14 & 1.31 & 1.20 & 1.23 \\
+tumour-only & 2.80 & 1.46 & 2.22 & 2.02 & 2.01 \\
+population-only & 0.46 & 0.79 & 0.57 & 0.38 & 0.56 \\
+tumour and population & 3.90 & 1.37 & 2.38 & 3.03 & 2.17 \\
+consensus damaging & 3.61 & 1.39 & 2.62 & 2.33 & 2.32 \\
+consensus tolerated & \textbf{0.25} & 0.51 & 0.21 & 0.93 & 0.55 \\
 \bottomrule
 \end{tabular}
 \caption{Variants inside each K-set, observed / expected
-(\file{kset\_enrichment.tsv}). Selected two-sided binomial $p$: consensus
-damaging $7\times10^{-26}$, $1\times10^{-5}$, $2\times10^{-60}$,
-$4\times10^{-8}$, $8\times10^{-14}$; tumour recurrent $4\times10^{-11}$,
-$0.08$, $4\times10^{-21}$, $1\times10^{-6}$, $1\times10^{-7}$; ClinVar P/LP
-$1\times10^{-24}$, $5\times10^{-5}$, $6\times10^{-58}$, $2\times10^{-7}$,
-$1\times10^{-12}$; gnomAD all $0.9$, $0.2$, $0.1$, $0.6$, $0.6$; autism $0.8$,
-$0.1$, $0.03$, $1.0$, $0.6$. The circular-shift $p$ is at most 0.015 for every enrichment above 2,
-and at its floor (0.0031) for all of them except the 24 tumour-and-population
-variants.}
+(\file{kset\_enrichment.tsv}); sampled K-sets by the median $-$ 1.5$\sigma$
+rule (24 sites at $T=4$, 51 at $T=8$). Selected two-sided binomial $p$, in
+column order: consensus damaging $7\times10^{-26}$, $1\times10^{-5}$,
+$2\times10^{-60}$, $3\times10^{-7}$, $3\times10^{-16}$; tumour recurrent
+$4\times10^{-11}$, $0.08$, $4\times10^{-21}$, $7\times10^{-7}$,
+$6\times10^{-8}$; ClinVar P/LP $1\times10^{-24}$, $5\times10^{-5}$,
+$6\times10^{-58}$, $6\times10^{-6}$, $3\times10^{-16}$; gnomAD all $0.9$,
+$0.2$, $0.1$, $0.4$, $0.2$; autism $0.8$, $0.1$, $0.03$, $0.5$, $0.7$. The
+circular-shift $p$ is at most 0.019 for every enrichment above 2, and at its
+floor (0.0031) for most of them.}
 \label{tab:enrich}
 \end{table}
 
@@ -551,7 +741,7 @@ variants.}
  \multicolumn{2}{c}{activity} & \multicolumn{2}{c}{sampled T4} \\
 Category & raw & $|$RSA & raw & $|$RSA & raw & $|$RSA & raw & $|$RSA \\
 \midrule
-tumour, all & $-0.46$ & $-0.36$ & $-0.30$ & $-0.11$ & $-0.56$ & $-0.47$ & $-0.35$ & $-0.22$ \\
+tumour, all & $-0.46$ & $-0.36$ & $-0.30$ & $-0.11$ & $-0.56$ & $-0.47$ & $-0.34$ & $-0.22$ \\
 tumour, recurrent & $-0.39$ & $-0.35$ & $-0.08$ & $+0.07$ & $-0.44$ & $-0.41$ & $-0.24$ & $-0.16$ \\
 ClinVar P/LP & $-0.61$ & $-0.55$ & $-0.28$ & $-0.00$ & $-0.65$ & $-0.56$ & $-0.39$ & $-0.23$ \\
 ClinVar VUS & $+0.25$ & $+0.22$ & $+0.05$ & $-0.15$ & $+0.22$ & $+0.18$ & $+0.12$ & $+0.06$ \\
@@ -564,8 +754,11 @@ consensus tolerated & $+0.21$ & $+0.14$ & $+0.18$ & $+0.11$ & $+0.20$ & $+0.14$ 
 \caption{Spearman of the per-site density with each reference, all oriented
 ``higher = more tolerant'', so a negative value means the variants land where
 the reference says the site cannot change. $|$RSA: burial regressed out.
-$|\rho|>0.11$ is beyond chance at 5\% for $n\approx 300$ sites. $T=8$ differs
-from $T=4$ by at most 0.08 (\file{kset\_density\_correlations.tsv}).}
+$|\rho|>0.11$ is beyond chance at 5\% for $n\approx 300$ sites. The
+sampled-entropy columns need no K-set cut, so they do not depend on the rule of
+section~1.5. $T=8$ differs from $T=4$ by at most 0.08 and is slightly stronger
+(consensus damaging $-0.45$, $-0.28$ given RSA;
+\file{kset\_density\_correlations.tsv}).}
 \label{tab:corr}
 \end{table}
 
@@ -603,9 +796,21 @@ K-sets. Profiles of all 23 categories: \file{monte\_carlo/pten\_variants/kset\_p
 
 \begin{enumerate}
 \item \textbf{Disease variants land on conserved, catalytic sites far more
-  than on fold-critical ones.} Tumour and P/LP variants are 3.6--4.3 times
-  enriched in K\_natural and 2.6--2.8 times in K\_activity, against 1.3--1.4 in
-  K\_abundance (table~\ref{tab:enrich}). Per site, the density of
+  than on fold-critical ones.} Here \emph{catalytic} sites are those where a
+  substitution kills the enzyme's activity in the yeast assay (K\_activity,
+  97 sites: the whole active-site P loop 123--130, D92 of the WPD loop, much
+  of the TI loop 160--171, and phosphatase-domain sites around them);
+  \emph{fold-critical} sites are those where a substitution makes the protein
+  unstable, so that little of it is left in the cell (K\_abundance, from
+  VAMP-seq); \emph{burial} is how deep in the core a residue sits, measured by
+  its RSA (section 5.1). The two sets overlap only partly: a residue can be
+  essential for the chemistry while sitting on the surface of a stable
+  protein, and a buried residue can be replaced without stopping catalysis if
+  the fold survives. The ranges are, as in the abstract, over the three
+  disease categories recurrent tumour, P/LP and consensus damaging: in
+  K\_natural 4.32, 3.69, 3.61, i.e.\ 3.6--4.3 times; in K\_activity 2.81,
+  2.67, 2.62, i.e.\ 2.6--2.8; in K\_abundance 1.31, 1.38, 1.39, i.e.\ 1.3--1.4
+  (table~\ref{tab:enrich}). Per site, the density of
   consensus-damaging variants follows activity ($-0.65$) and family entropy
   ($-0.62$), and both survive burial ($-0.56$, $-0.55$); its correlation with
   abundance ($-0.29$) is entirely burial ($-0.02$ given RSA). The contrast the
@@ -613,14 +818,15 @@ K-sets. Profiles of all 23 categories: \file{monte\_carlo/pten\_variants/kset\_p
   fold'' reappears in patients, and in patients the catalytic side is the
   one that matters.
 \item \textbf{The sampler's K-sites are disease sites.} Consensus-damaging
-  variants are 2.2 ($T=4$) and 2.6 ($T=8$) times enriched in them, recurrent
-  tumour variants 3.2--3.3 times; the per-site density correlates $-0.40$
-  with the sampled entropy, $-0.25$ after RSA. That is weaker than the family
-  alignment ($-0.55$ after RSA) and clearly stronger than abundance ($-0.02$).
+  variants are 2.3 times enriched in them at both $T=4$ and $T=8$, P/LP 2.2
+  and 2.4, recurrent tumour variants 3.8 and 2.8; the per-site density
+  correlates $-0.40$ ($T=4$) and $-0.45$ ($T=8$) with the sampled entropy,
+  $-0.25$ and $-0.28$ after RSA. That is weaker than the family alignment
+  ($-0.55$ after RSA) and clearly stronger than abundance ($-0.02$).
   The sampler's conserved core points at the sites where human disease
   mutations occur.
 \item \textbf{Population variants are spread uniformly.} gnomAD sits at
-  0.82--0.97 in every K-set, with no $p$ below 0.1; the stricter
+  0.74--0.97 in every K-set, with no $p$ below 0.1; the stricter
   ``consensus tolerated'' class is depleted (0.25 in K\_natural, 0.21 in
   K\_activity).
 \item \textbf{VUS sit where P/LP are not} (0.52 in K\_natural, positive
@@ -628,11 +834,11 @@ K-sets. Profiles of all 23 categories: \file{monte\_carlo/pten\_variants/kset\_p
   biology: a variant at a known critical site gets called pathogenic, and the
   uncertain ones are what remains elsewhere.
 \item \textbf{Autism/macrocephaly variants are not enriched in the natural or
-  sampled K-sites} (38 variants, $p\ge0.6$), only weakly in K\_activity (1.6,
+  sampled K-sites} (38 variants, $p\ge0.5$), only weakly in K\_activity (1.6,
   $p=0.03$). This fits the published picture of hypomorphic, partially active
   PTEN alleles in autism; with 38 variants it is a lead, not a result.
 \item \textbf{The tumour signal does not depend on hypermutated samples or on
-  cancer type}: non-hypermutated 3.19/2.50, endometrial 3.38/2.31,
+  cancer type}: non-hypermutated 3.20/2.50, endometrial 3.38/2.31,
   glioblastoma 3.02/2.43 (K\_natural / K\_activity). Variants with a
   second hit on the other allele are among the most enriched (3.87 in
   K\_natural), as expected of drivers.
@@ -649,66 +855,107 @@ side of the regime change, both with long, clean windows after $t_{\rm eq}$:
 \begin{itemize}
 \item $T=4$ sits just above the transition (heat-capacity peak at $T\approx
   2.5$, conservation still strong) and has the longest reference-started
-  chains, 400\,001 moves, kept from move 320\,000. It is also the coldest
-  temperature at which ``the lowest 10\,\%'' is a well-defined set: below it,
-  more than 10\,\% of the sites never change at all, so the cut falls inside a
-  block of ties at entropy 0.
-\item $T=8$ is in the melted regime (mean sampled entropy 1.61 nats against
-  1.36 at $T=4$), where only the most constrained sites still resist.
+  chains, 400\,001 moves, kept from move 320\,000.
+\item $T=8$ is in the melted regime (mean sampled entropy 1.84 nats against
+  1.36 at $T=4$), where only the most constrained sites still resist. Its
+  chains were extended to 300\,001 moves after the first version of this
+  note (which used 150\,001); every number here is from the longer chains.
 \end{itemize}
 
-\paragraph{The other temperatures, run for this question on 2026-11-20.} The
-same \texttt{profiles} step was run at all nine temperatures (same burn-in
-0.8, same 10\,\% rule; \file{kset\_enrichment\_all\_T.tsv}). Below $T=4$ the
-10\,\% set is not 33 sites but every site at entropy 0: 210, 145, 67 and 43
-sites at $T=1$, 1.5, 2, 3, since at $T=1$ 241 sites never move in the kept
-window. A larger set is a diluted set, so the per-site Spearman, which needs
-no cut, is the fairer measure there.
+\paragraph{The rule for the sampled K-set.} The first version took the 10\,\%
+of native sites with the lowest sampled entropy. That fixes the size of the
+set (33 sites) whatever the shape of the entropy profile, and below $T=4$ it
+is not even well defined: more than 10\,\% of the sites never change, so the
+cut falls inside a block of ties at entropy 0 and the set becomes every frozen
+site (210, 145, 69 and 46 sites at $T=1$, 1.5, 2, 3). The rule now used asks
+instead which sites are \emph{outliers} on the low side: entropy below the
+median minus $k$ robust standard deviations (section~1.5), with $k=1.5$.
+Its size follows the data:
+\begin{itemize}
+\item at $T\le3$ the set is \textbf{empty}. So many sites are frozen that the
+  median itself is low (0 at $T=1$, 0.88 nats at $T=3$) and the median minus
+  1.5$\sigma$ is negative: no site stands out from the bulk, because the bulk
+  is frozen. This is the correct answer at those temperatures: the sampler
+  does not single out a conserved core there; it conserves almost everything.
+\item at $T=4$, 5, 6, 8, 16 it holds 24, 17, 27, 51, 55 sites. As the chain
+  melts, the distribution narrows ($\sigma$ 0.94 at $T=4$, 0.62 at $T=8$,
+  0.43 at $T=16$) and more sites fall clearly below it.
+\item with $k=2$ the set is empty up to $T=5$ and holds 11, 34, 35 sites at
+  $T=6$, 8, 16, with the same direction of every result
+  (\file{kset\_enrichment\_all\_T.tsv}, rule \texttt{sigma2}).
+\end{itemize}
+The per-site Spearman, which needs no cut, is the same under any rule.
 
 \begin{table}[H]
 \centering\small
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}lrrrrrrrrr@{}}
 \toprule
 $T$ & 1 & 1.5 & 2 & 3 & 4 & 5 & 6 & 8 & 16 \\
 \midrule
-sites in the set & 210 & 145 & 67 & 43 & 33 & 33 & 33 & 33 & 33 \\
-\multicolumn{10}{@{}l}{\emph{enrichment in the sampled K-set (observed/expected)}}\\
-tumour, recurrent & 1.14 & 1.57 & 1.89 & 2.98 & 3.16 & 3.18 & \textbf{3.61} & 3.32 & 3.30 \\
-ClinVar P/LP & 1.07 & 1.34 & 1.52 & 2.05 & 2.16 & 2.20 & 2.52 & \textbf{2.61} & 2.56 \\
-consensus damaging & 1.07 & 1.35 & 1.49 & 2.08 & 2.17 & 2.20 & 2.45 & \textbf{2.60} & 2.48 \\
-gnomAD, all & 0.94 & 0.90 & 0.73 & 0.87 & 0.83 & 0.69 & 1.02 & 0.86 & 1.14 \\
+\multicolumn{10}{@{}l}{\emph{median $-$ 1.5$\sigma$ rule (used in this note)}}\\
+sites in the set & 0 & 0 & 0 & 0 & 24 & 17 & 27 & 51 & 55 \\
+tumour, recurrent & -- & -- & -- & -- & 3.79 & 4.35 & \textbf{4.53} & 2.76 & 2.22 \\
+ClinVar P/LP & -- & -- & -- & -- & 2.24 & 2.73 & \textbf{3.11} & 2.40 & 2.04 \\
+consensus damaging & -- & -- & -- & -- & 2.33 & 2.74 & \textbf{3.03} & 2.32 & 2.07 \\
+gnomAD, all & -- & -- & -- & -- & 0.74 & 0.79 & 1.20 & 0.78 & 0.85 \\
+\multicolumn{10}{@{}l}{\emph{lowest 10\,\% rule (first version)}}\\
+sites in the set & 210 & 145 & 69 & 46 & 33 & 33 & 33 & 33 & 33 \\
+tumour, recurrent & 1.14 & 1.57 & 2.04 & 2.64 & 3.16 & 3.09 & \textbf{3.61} & 3.30 & 3.07 \\
+ClinVar P/LP & 1.07 & 1.34 & 1.50 & 1.74 & 2.16 & 2.20 & 2.52 & 2.59 & \textbf{2.81} \\
+consensus damaging & 1.07 & 1.35 & 1.50 & 1.81 & 2.17 & 2.12 & 2.45 & 2.48 & \textbf{2.74} \\
+gnomAD, all & 0.94 & 0.90 & 0.85 & 0.80 & 0.83 & 0.76 & 1.02 & 0.89 & 0.75 \\
 \multicolumn{10}{@{}l}{\emph{Spearman, damaging-variant density vs sampled entropy (raw / given RSA)}}\\
-consensus damaging & $-0.10$ & $-0.23$ & $-0.27$ & $-0.34$ & $-0.40$ & $-0.38$ & $\mathbf{-0.42}$ & $-0.40$ & $-0.41$ \\
- & $-0.01$ & $-0.12$ & $-0.13$ & $-0.19$ & $-0.25$ & $-0.23$ & $\mathbf{-0.27}$ & $-0.22$ & $-0.23$ \\
+consensus damaging & $-0.10$ & $-0.23$ & $-0.27$ & $-0.33$ & $-0.40$ & $-0.41$ & $-0.42$ & $\mathbf{-0.45}$ & $-0.44$ \\
+ & $-0.01$ & $-0.12$ & $-0.14$ & $-0.19$ & $-0.25$ & $-0.26$ & $-0.26$ & $\mathbf{-0.28}$ & $-0.25$ \\
 \bottomrule
 \end{tabular}
-\caption{The sampled K-sets at every temperature of the ladder. Negative
-Spearman = damaging variants fall where the sampler keeps the sequence fixed.}
+\caption{The sampled K-sets at every temperature of the ladder, enrichment
+observed/expected (\file{kset\_enrichment\_all\_T.tsv},
+\file{kset\_density\_correlations\_all\_T.tsv}). Negative Spearman = damaging
+variants fall where the sampler keeps the sequence fixed. Chains: $T=1$, 1.5
+300\,001 moves; $T=2$ 790\,001; $T=3$ 280\,001; $T=4$ 400\,001; $T=5$
+210\,001; $T=6$ 180\,001; $T=8$ 300\,001; $T=16$ 200\,001 (the $T=2$, 3, 5
+chains as extended on 2026-11-24); all with burn-in fraction 0.8.}
 \label{tab:allT}
 \end{table}
 
 \begin{enumerate}
 \item \textbf{Cold chains say little.} At $T=1$ the sampler hardly moves
-  (acceptance 1\,\%), most sites are frozen, and the frozen set is two thirds
-  of the protein: enrichment 1.1, correlation $-0.10$, nothing after burial.
-  The signal builds up as the chain starts to explore, from $T=1.5$ to $T=3$.
-\item \textbf{From $T=4$ up it is flat.} Between $T=4$ and $T=16$ the
-  enrichments stay within 3.2--3.6 (recurrent tumour) and 2.2--2.6 (P/LP),
-  and the correlation within $-0.38$ to $-0.42$. The best value is at $T=6$
-  for tumours and the per-site correlation, at $T=8$ for P/LP, by margins of
-  0.1--0.3 in the ratio, inside what two chains resolve.
-\item $T=6$ is also where the K-site comparison found the sampled entropy
-  closest to family conservation (the ``maximum at $T=6$'' of the
-  2026-11-19 DEVLOG entry): the same temperature range does best on both
-  references.
-\item \textbf{So $T=4$ and $T=8$ represent the plateau}, and none of the
-  conclusions of this note change with another temperature at or above 4.
-  Below $T=3$ the sampler's K-sites are not a useful disease predictor,
-  because almost everything is frozen.
+  (acceptance 1\,\%) and 241 sites never change in the kept window: the
+  sigma rule finds no outlier, the 10\,\% rule takes two thirds of the
+  protein and gets enrichment 1.1, and the correlation is $-0.10$, nothing
+  after burial. The signal builds up as the chain starts to explore, from
+  $T=1.5$ to $T=3$.
+\item \textbf{The best temperature is $T=5$--6.} With the sigma rule the
+  enrichment rises from $T=4$ to a maximum at $T=6$ (recurrent tumour 4.5,
+  P/LP 3.1, consensus damaging 3.0, on 27 sites) and falls at $T=8$ and 16,
+  where the set doubles to 51--55 sites and so takes in less constrained
+  ones. At $T=6$ the sampled K-set matches the family K-set for recurrent
+  tumour variants (4.5 against 4.3, on 27 and 28 sites) and comes close for
+  P/LP (3.1 against 3.7). The 10\,\% rule, holding the size at 33, flattens
+  this into a plateau of 3.1--3.6 (tumour) and 2.2--2.8 (P/LP) from $T=4$ up.
+  A caution: $T=5$ and 6 have chains of 210\,001 and 180\,001 moves, about
+  half of $T=4$ and $T=8$, and the K-site work of 2026-11-23 showed that windows of
+  different length can make an apparent maximum where there is a plateau. The
+  peak at $T=6$ is a lead until the $T=5$, 6 chains are as long as the
+  others.
+\item \textbf{The per-site correlation is flat from $T=4$ up}, $-0.40$ to
+  $-0.45$ ($-0.25$ to $-0.28$ after RSA). The peak in the enrichment is
+  therefore a property of the \emph{cut} (which sites are the extreme ones),
+  not of the profile as a whole. Two chains per temperature, and the shorter
+  windows of $T=3$, 5, 6, do not resolve differences of a few hundredths in
+  $\rho$.
+\item \textbf{$T=4$ and $T=8$ stay as the two columns of the main tables}:
+  one sits just above the transition, the other in the melted regime, and
+  together they bracket the maximum. None of the conclusions of this note
+  changes with another temperature at or above 4. Below $T=4$ the sampler's
+  K-sites are not a useful disease predictor, because almost everything is
+  frozen.
 \end{enumerate}
 
 % ===========================================================================
-\section{Ranking by $\Uam$, $\Etwo$ and $\Uce$}
+\section{Ranking by $\Uam$, $\Etwo$ and $\Uce$}\label{sec:rank}
 % ===========================================================================
 
 \subsection{Method}
@@ -1262,7 +1509,7 @@ P-loop, which carries the disease enrichment.
   only 22 are in all three, and gnomAD is mostly inside ClinVar.
 \item Disease variants (tumour, ClinVar P/LP) concentrate on sites conserved
   in the family and required for activity, not on sites required for
-  abundance; the sampler's own K-sites are enriched 2.2--3.3 times for them.
+  abundance; the sampler's own K-sites are enriched 2.2--3.8 times for them.
   Population variants are uniform.
 \item $\Uam$ and $\Uce$ recognise disease variants at AUC 0.67--0.77, close to
   the abundance experiment; $\Uam$ does it by substitution, $\Uce$ by site. The
@@ -1289,7 +1536,9 @@ nohup python -u pten_variants.py score > pten_variants_score.log 2>&1 &   # GPU
 python pten_variants.py rank       # AUCs, percentiles, compounds -> rank.log
 \end{verbatim}
 Options worth knowing: \texttt{--hypermutated 500}, \texttt{--temperatures T4
-T8}, \texttt{--burn-in-frac 0.8}, \texttt{--sampled-k-frac 0.1},
+T8}, \texttt{--burn-in-frac 0.8}, \texttt{--sampled-k-sigma 1.5}
+(\texttt{--sampled-k-scale mad}; \texttt{--sampled-k-sigma none
+--sampled-k-frac 0.1} gives the first version's rule),
 \texttt{--min-category 20}, \texttt{--bootstrap 1000}; \texttt{score} takes
 \texttt{--num-steps 2} and \texttt{--repeat 50}. Outputs in
 \file{monte\_carlo/pten\_variants/}, described in its \file{README.md}.

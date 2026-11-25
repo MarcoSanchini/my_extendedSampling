@@ -534,6 +534,24 @@ def cmd_merge(args):
 	print(f"\nOutputs in {args.out_dir}: merge.log, pten_variants_merged.tsv, compound_sequences.tsv, variants_overview.png")
 
 
+def _snv_pair_mask():
+	"""20x20 boolean, True where wt -> mut can be made by one base change from SOME codon of wt
+	(standard code); the 150 reachable pairs of the 380."""
+	b = "TCAG"
+	aas = "FFLLSSSSYY**CC*WLLLLPPPPHHQQRRRRIIIMTTTTNNKKSSRRVVVVAAAADDEEGGGG"
+	code = {x + y + z: aas[16 * i + 4 * j + k] for i, x in enumerate(b) for j, y in enumerate(b) for k, z in enumerate(b)}
+	ok = np.zeros((20, 20), bool)
+	for c, a in code.items():
+		if a == "*":
+			continue
+		for p in range(3):
+			for n in b:
+				d = code[c[:p] + n + c[p + 1:]]
+				if d not in ("*", a):
+					ok[AA.index(a), AA.index(d)] = True
+	return ok
+
+
 def plot_overview(m, ov, names, path):
 	fig = plt.figure(figsize=(12, 7.5))
 	gs = fig.add_gridspec(3, 3, height_ratios=[1.3, 1, 1])
@@ -561,7 +579,13 @@ def plot_overview(m, ov, names, path):
 		ax3 = fig.add_subplot(gs[1:, 1 + j])
 		d = m[m[f"in_{db}"]]
 		mat = pd.crosstab(d.wt_aa, d.mut_aa).reindex(index=list(AA), columns=list(AA), fill_value=0)
-		ax3.imshow(mat.values, cmap="Greys")
+		reach = _snv_pair_mask()
+		ax3.imshow(np.where(reach, np.nan, 1.0), cmap="Blues", vmin=0, vmax=8)  # pale blue = no one-base change
+		im = ax3.imshow(np.ma.masked_where(~reach, mat.values), cmap="Greys", vmin=0,
+			vmax=max(1, int(mat.values.max())))
+		cb_ = fig.colorbar(im, ax=ax3, fraction=.046, pad=.03)
+		cb_.set_label("distinct changes in PTEN", fontsize=7)
+		cb_.ax.tick_params(labelsize=6)
 		ax3.set_xticks(range(20), list(AA), fontsize=6)
 		ax3.set_yticks(range(20), list(AA), fontsize=6)
 		ax3.set_xlabel("mutant", fontsize=8)
@@ -648,11 +672,25 @@ def cmd_profiles(args):
 	ksets = {"K_natural": t.K_natural, "K_abundance": t.K_abundance, "K_activity": t.K_activity}
 	for T in args.temperatures:
 		col = f"sampled_{T}"
-		cut = t.loc[t.native, col].quantile(args.sampled_k_frac)
-		t[f"K_sampled_{T}"] = t.native & (t[col] <= cut)
+		H = t.loc[t.native, col]
+		if args.sampled_k_sigma is None:
+			cut = H.quantile(args.sampled_k_frac)
+			t[f"K_sampled_{T}"] = t.native & (t[col] <= cut)
+			rule = f"lowest {args.sampled_k_frac:.0%} of the native sites"
+		else:
+			# A site is a sampler K-site when its entropy lies more than k standard deviations below
+			# the median of the native sites. 'mad' uses 1.4826 x the median absolute deviation, the
+			# standard deviation of a Gaussian with that MAD, robust to the skew of a quantity bounded
+			# at 0; 'sd' uses the plain standard deviation. Strict '<': when more than half of the
+			# sites are frozen at 0 (T <= 3) the median is about 0 and no site can lie below it.
+			med = H.median()
+			sig = 1.4826 * (H - med).abs().median() if args.sampled_k_scale == "mad" else H.std()
+			cut = med - args.sampled_k_sigma * sig
+			t[f"K_sampled_{T}"] = t.native & (t[col] < cut)
+			rule = (f"median {med:.3f} - {args.sampled_k_sigma:g} x sigma {sig:.3f} "
+				f"({args.sampled_k_scale}); frozen sites (entropy 0): {int((H == 0).sum())}")
 		ksets[f"K_sampled_{T}"] = t[f"K_sampled_{T}"]
-		log(fh, f"   K_sampled_{T}: {int(t[f'K_sampled_{T}'].sum())} sites at entropy <= {cut:.3f} "
-			f"(lowest {args.sampled_k_frac:.0%} of the native sites)")
+		log(fh, f"   K_sampled_{T}: {int(t[f'K_sampled_{T}'].sum())} sites at entropy below {cut:.3f} ({rule})")
 
 	# Per site: how many SNV-reachable substitutions exist (the denominator of every density).
 	nat = t[t.native].copy()
@@ -1185,7 +1223,14 @@ def main():
 	common.add_argument("--burn-in-frac", type=float, default=0.8,
 		help="share of each chain dropped before the entropy (0.8 clears t_eq at every T; see pten_k_sites)")
 	common.add_argument("--sampled-k-frac", type=float, default=0.1,
-		help="sampler K-sites = this lowest share of the native sites by sampled entropy (default 0.1)")
+		help="with --sampled-k-sigma none: sampler K-sites = this lowest share of the native sites by sampled "
+			"entropy (default 0.1)")
+	common.add_argument("--sampled-k-sigma", type=lambda s: None if s.lower() == "none" else float(s), default=1.5,
+		help="sampler K-sites = native sites whose entropy is more than this many standard deviations below the "
+			"median (default 1.5; 2 already empties T=4 and T=5). Empty when most sites are frozen (T <= 3). "
+			"'none' switches to --sampled-k-frac, the rule of the first version of the report")
+	common.add_argument("--sampled-k-scale", choices=["mad", "sd"], default="mad",
+		help="the standard deviation used by --sampled-k-sigma: 1.4826 x MAD (default, robust) or the plain SD")
 	common.add_argument("--min-category", type=int, default=20,
 		help="categories with fewer variants inside the construct get counts only (default 20)")
 	common.add_argument("--bootstrap", type=int, default=1000)
