@@ -69,6 +69,7 @@ for p in (MONTE_CARLO_DIR, CODE_DIR, CUSTOMS_DIR, os.path.join(CODE_DIR, "tests"
 	if p not in sys.path:
 		sys.path.insert(0, p)
 
+AA = "ACDEFGHIKLMNPQRSTVWY"        # the 20 canonical residues, as in scan_single_mutants.py
 STUDY = "pten1d5r_study"
 # The ladder whose t_eq has been measured, exactly as compare_ladder.sh names it: equil_ref
 # holds T = 1, 1.5, 2, 4, 8, 16; T = 3, 5, 6 only ever ran in equil. The hot 30000-move chains
@@ -416,14 +417,17 @@ def cmd_score(args):
 			if fr.frame_id in noise_ids:
 				sn = score(fr.seq, args.noise_steps)
 				s.update(rmsd_xtal_n=sn["rmsd_xtal"], E_ref_n=sn["E_ref"], E_xtal_n=sn["E_xtal"])
-			if k_am < args.recheck_am:
+			if k_am < args.recheck_am or not np.isfinite(float(fr.U)):
+				# A control sequence comes from no chain, so there is no logged U_am to copy:
+				# it is always recomputed, whatever --recheck-am says.
 				s["U_am_calc"] = U_am_of(fr.seq)
 				k_am += 1
 				if abs(s["U_am_calc"] - fr.U) > 1e-3 * max(1.0, abs(fr.U)):
 					print(f"WARNING: {fr.frame_id}: recomputed U_am {s['U_am_calc']:.3f} vs data.dat {fr.U:.3f}",
 						flush=True)
 			row = {"frame_id": fr.frame_id, "label": fr.label, "T": fr.T, "chain": fr.chain, "move": fr.move,
-				"Hd": fr.Hd, "tau_U": fr.tau_U, "spacing": fr.spacing, "U_am": float(fr.U), **s,
+				"Hd": fr.Hd, "tau_U": fr.tau_U, "spacing": fr.spacing,
+				"U_am": float(fr.U) if np.isfinite(float(fr.U)) else s.get("U_am_calc", float("nan")), **s,
 				"t": time.perf_counter() - t1}
 			out.write(",".join(fmt(row.get(c)) for c in SCORE_COLS) + "\n")
 			if k % 50 == 0 or k == len(todo):
@@ -720,6 +724,98 @@ def figure(d, energies, target, path):
 	plt.close(fig)
 
 
+
+# ------------------------------------------------------------------- controls (CPU + GPU)
+
+def cmd_controls(args):
+	"""Sequences that no sampler chose, written in the frame format so `score` runs on them
+	unchanged and every number is comparable with the ladder's, line for line.
+
+	THE QUESTION THEY SETTLE. The 4000 sampled frames decode 2.0-2.3 A from 1D5R over 10-268
+	mutations (docs/energy_rmsd.tex 2.1). Either the sampler keeps the fold at 83% sequence
+	divergence, or ESM3's structure head returns something PTEN-like for a wide class of
+	sequences and the flat band says nothing about the sampler. The three groups separate
+	those readings:
+
+	  rand    uniform over the 20 residues: no composition, no fold, no history.
+	  shuf    a permutation of the reference: the SAME composition, no fold.
+	  mutN    the reference with N random positions replaced by a random other residue:
+	          the same mutation count as a sampled frame, but the mutations chosen at
+	          random instead of by the energy. Compare these against the sampled frames
+	          at the same Hd -- that is the comparison that isolates WHICH mutations the
+	          sampler picks from HOW MANY it has made.
+	"""
+	from references import get_reference
+	_, ref = get_reference(args.ref)
+	L = len(ref)
+	rng = np.random.default_rng(args.seed)
+	rows = []
+
+	def add(fid, lab, seq):
+		rows.append([fid, lab, 0, "", len(rows), "", sum(a != b for a, b in zip(seq, ref)), "", "", seq])
+
+	for k in range(args.n_random):
+		add(f"rand{k}", "rand", "".join(rng.choice(list(AA), L)))
+	for k in range(args.n_shuffle):
+		add(f"shuf{k}", "shuf", "".join(rng.permutation(list(ref))))
+	for n in args.mut_levels:
+		n = min(int(n), L)
+		for k in range(args.n_per_level):
+			seq = list(ref)
+			for i in rng.choice(L, n, replace=False):
+				seq[i] = rng.choice([a for a in AA if a != ref[i]])
+			add(f"mut{n}_{k}", f"mut{n}", "".join(seq))
+
+	os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
+	with open(args.out, "w", newline="") as f:
+		w = csv.writer(f, delimiter="\t")
+		w.writerow(FRAME_COLS)
+		w.writerows(rows)
+	print(f"Saved {len(rows)} control sequences -> {args.out}")
+	print(f"  {args.n_random} uniform random, {args.n_shuffle} shuffles of the reference, "
+		f"{args.n_per_level} each at {len(args.mut_levels)} mutation levels "
+		+ ", ".join(str(min(int(n), L)) for n in args.mut_levels))
+	print(f"Next: python -u energy_vs_rmsd.py score --ref {args.ref} --frames {args.out} "
+		f"--out {os.path.splitext(args.out)[0]}_scores.csv --noise-frames 0")
+
+
+def cmd_controls_summary(args):
+	import pandas as pd
+	c = pd.read_csv(args.controls)
+	c = c[c.frame_id != "reference"]
+	d = pd.read_csv(args.sampled)
+	ref = d[d.frame_id == "reference"]
+	d = d[d.frame_id != "reference"].copy()
+	cols = ["rmsd_xtal", "tm_xtal", "plddt", "rmsd_ref", "U_am"]
+	hdr = f"{'group':>10s} {'n':>4s} {'Hd':>9s} " + " ".join(f"{c_:>10s}" for c_ in cols)
+	print("# Controls beside the sampled frames. Medians. The question is whether a sequence "
+		"NO sampler chose\n# also decodes onto the fold; if it does, the flat band in the "
+		"sampled set is ESM3's property, not the sampler's.")
+	print(hdr)
+	if len(ref):
+		r = ref.iloc[0]
+		print(f"{'reference':>10s} {1:>4d} {0:>9d} " + " ".join(f"{r[c_]:>10.3f}" for c_ in cols))
+	order = ["rand", "shuf"] + sorted((g for g in c.label.unique() if g.startswith("mut")),
+		key=lambda g: int(g[3:]))
+	for g in order:
+		sub = c[c.label == g]
+		if not len(sub):
+			continue
+		print(f"{g:>10s} {len(sub):>4d} {sub.Hd.median():>9.0f} "
+			+ " ".join(f"{sub[c_].median():>10.3f}" for c_ in cols))
+		# the sampled frames whose mutation count is closest to this group's
+		lo, hi = sub.Hd.min() - args.hd_tol, sub.Hd.max() + args.hd_tol
+		m = d[(d.Hd >= lo) & (d.Hd <= hi)]
+		if len(m) >= 10:
+			print(f"{'  sampled':>10s} {len(m):>4d} {m.Hd.median():>9.0f} "
+				+ " ".join(f"{m[c_].median():>10.3f}" for c_ in cols)
+				+ f"   <- same Hd band ({lo:.0f}-{hi:.0f}), T = "
+				+ ", ".join(f"{t:g}" for t in sorted(m["T"].astype(float).unique())))
+	print("\n# Read the mutN rows against the 'sampled' row beneath each one. If they match, the "
+		"sampler's\n# choice of mutations is doing nothing structural that the mutation count does "
+		"not already do.")
+
+
 # ----------------------------------------------------------------------------- main
 
 def main():
@@ -769,8 +865,23 @@ def main():
 	a.add_argument("--match-n", type=float, default=None,
 		help="the window width, in moves or in tau_U (default: the largest every chain can supply)")
 
+	c = sub.add_parser("controls", help="CPU: write random / shuffled / randomly-mutated sequences as a frame set")
+	c.add_argument("--ref", default="pten_1d5r")
+	c.add_argument("--out", required=True)
+	c.add_argument("--n-random", type=int, default=10)
+	c.add_argument("--n-shuffle", type=int, default=10)
+	c.add_argument("--mut-levels", type=int, nargs="+", default=[10, 25, 50, 100, 150, 200, 250, 300, 324])
+	c.add_argument("--n-per-level", type=int, default=5)
+	c.add_argument("--seed", type=int, default=0)
+
+	cs = sub.add_parser("controls-summary", help="CPU: the controls beside the sampled frames at the same Hd")
+	cs.add_argument("--controls", required=True, help="the SCORED controls csv")
+	cs.add_argument("--sampled", required=True, help="the scored ladder csv")
+	cs.add_argument("--hd-tol", type=int, default=8, help="how far a sampled frame's Hd may sit from the group's")
+
 	args = ap.parse_args()
-	{"frames": cmd_frames, "score": cmd_score, "analyze": cmd_analyze}[args.cmd](args)
+	{"frames": cmd_frames, "score": cmd_score, "analyze": cmd_analyze, "controls": cmd_controls,
+		"controls-summary": cmd_controls_summary}[args.cmd](args)
 
 
 if __name__ == "__main__":

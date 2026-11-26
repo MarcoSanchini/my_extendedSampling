@@ -7934,3 +7934,16 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     the log. kset_enrichment_all_T.tsv and kset_density_correlations_all_T.tsv gained a
     `window` column; tab:allT now has three panels. Main tables stay at burn-in 0.8, which is
     correct for a single temperature. Marco caught this.
+
+2026-11-26  energy_vs_rmsd: the control sequences, and the ladder's frames are stale again
+    Added `controls` (writes uniform-random, shuffled-reference and randomly-mutated
+    sequences in the frame format, so `score` runs on them unchanged and every number is
+    comparable line for line) and `controls-summary` (each control group beside the SAMPLED
+    frames in the same Hd band). Default set: 10 rand, 10 shuf, 5 each at Hd = 10, 25, 50,
+    100, 150, 200, 250, 300, 324 = 65 sequences, ~15 s on astaroth. `score` now always
+    recomputes U_am when the frame has none, since a control comes from no chain.
+    The mutN rows are the real control: they hold the mutation COUNT fixed and randomise
+    WHICH mutations, which is exactly what the sampled-vs-Hd confound needs.
+    ALSO: the match16k top-up (0514ea3) took T=2 to 790000, T=3 to 280000 and T=5 to 210000,
+    so energy_rmsd/frames.tsv is stale at those three temperatures. Regenerate and rescore
+    (~17 min); `analyze` would otherwise drop those 1200 rows as stale.
