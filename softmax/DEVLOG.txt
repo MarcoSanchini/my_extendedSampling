@@ -7990,3 +7990,15 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     Verified: regenerating with levels 10/100/150 at n=3 and then 10/100/120/150 at n=5
     changes 0 of the 29 shared sequences. One rescore from scratch is needed to cross over
     from the old draws (controls_scores.csv of 2026-11-26 morning must be moved aside).
+
+2026-11-26  Fine control levels 105-145 (20 sequences each, 18 levels, 380 in all) scored on
+astaroth. The collapse of random mutants is a BROAD CROSSOVER, not the cliff the first
+five-per-level pass suggested: fitting P(folded) = 1/(1+exp((N-N50)/w)) by ML over all 380
+gives N50 = 55 substitutions [48,64] with w = 9.5 at the 3 A criterion (10-90% span 42), and
+N50 = 83 [74,94], w = 16.5 at 5 A. Half the random mutants have left the fold at 17% of the
+sequence; none of twenty survives from N = 105 up. The earlier "between 100 and 150" was an
+n=5 artefact and is corrected throughout docs/energy_rmsd.tex. Against that, 99.6% of the
+4000 sampled frames stay under 3 A out to Hd 268, worst 4.00 A. U_am separation at matched
+Hd is still AUC 1.000 in all 16 bands (gaps x3.1 to x33); pLDDT separation is now 0.944 at
+N=25, perfect from 50 up. plot_energy_rmsd.py went 2x2 -> 2x3 with a new panel C (folded
+share, Wilson intervals, fitted logistic, midpoint) and a --folded-threshold flag.

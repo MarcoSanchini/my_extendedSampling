@@ -36,16 +36,19 @@
 
 \begin{abstract}
 \noindent
-Four thousand equilibrated sequences from the PTEN temperature ladder, and 65 sequences no
+Four thousand equilibrated sequences from the PTEN temperature ladder, and 400 sequences no
 sampler chose, were decoded with ESM3 and scored with every energy in the project against
 the RMSD of each decode to the 1D5R crystal. \textbf{The sampler holds the fold at a
 sequence divergence where random mutation has long since destroyed it.} Over 10 to 268
 mutations of 324 residues the sampled frames move from 2.01\,\AA{} to 2.30\,\AA{} from the
 crystal, against 1.98\,\AA{} for the reference itself; random mutants carrying the
-\emph{same number} of mutations reach 3.7\,\AA{} at 50 substitutions, 7.0\,\AA{} at 100 and
-22.4\,\AA{} -- no fold at all, pLDDT 32 -- at 150. At every matched mutation count $U_{am}$
+\emph{same number} of mutations reach 2.8\,\AA{} at 50 substitutions, 7.1\,\AA{} at 100 and
+21.4\,\AA{} -- no fold at all, pLDDT 33 -- at 150. Eighteen mutation levels at twenty
+sequences each put the midpoint of that collapse at \textbf{55 substitutions}, 17\% of the
+protein, with a 10--90\% crossover 42 substitutions wide; 99.6\% of the sampled frames stay
+under the same 3\,\AA{} threshold out to 268. At every matched mutation count $U_{am}$
 separates the two sets perfectly, the lowest random mutant scoring above the highest
-sampled frame, by factors of 14 to 78. A shuffle of the reference, same composition, is
+sampled frame, by factors of 3 to 33. A shuffle of the reference, same composition, is
 indistinguishable from a uniform random sequence, so composition explains none of it.
 The second half of the result is a ceiling: \emph{within} the sampled ensemble the crystal
 RMSD spans 0.144\,\AA{} between quartiles while the decoder's own schedule noise is
@@ -102,11 +105,15 @@ comparable line for line.
 \begin{itemize}
 \item \textbf{rand}, 10 sequences uniform over the 20 residues: no composition, no fold.
 \item \textbf{shuf}, 10 permutations of the reference: the \emph{same composition}, no fold.
-\item \textbf{mut$N$}, 5 each at $N = 10$, 25, 50, 100, 150, 200, 250, 300, 324: the
-reference with $N$ positions replaced by a random other residue. These are the ones that
-matter, because they hold the mutation count fixed and randomise \emph{which} mutations.
-Comparing them against the sampled frames at the same Hamming distance is what isolates the
-sampler's choice from the number of changes it has made.
+\item \textbf{mut$N$}, 20 each at $N = 10$, 25, 50, 100, 105, 110, 115, 120, 125, 130, 135,
+140, 145, 150, 200, 250, 300, 324 -- 360 sequences: the reference with $N$ positions
+replaced by a random other residue. These are the ones that matter, because they hold the
+mutation count fixed and randomise \emph{which} mutations. Comparing them against the
+sampled frames at the same Hamming distance is what isolates the sampler's choice from the
+number of changes it has made. The levels from 105 to 145 were added on 26 November to
+resolve the collapse; every draw is keyed by $(\text{seed}, \text{kind}, N, k)$ rather than
+taken from one stream in order, so adding a level or raising $k$ leaves every existing
+sequence byte-identical.
 \end{itemize}
 
 \subsection{What was computed for each sequence}
@@ -150,41 +157,76 @@ $n$.
 
 \begin{table}[h]
 \centering
-\begin{tabular}{lrrrr@{\hspace{2em}}rrr}
+\footnotesize
+\begin{tabular}{lrrrr@{\hspace{0.6em}}rr@{\hspace{1em}}rrr}
 \toprule
-& \multicolumn{4}{c}{random mutants, $N$ substitutions} & \multicolumn{3}{c}{sampled frames, same $H_d$ band} \\
-\cmidrule(lr){2-5}\cmidrule(lr){6-8}
-$N$ & RMSD & TM & pLDDT & $U_{am}$ & RMSD & pLDDT & $U_{am}$ \\
+& \multicolumn{6}{c}{random mutants, $N$ substitutions ($k=20$ each)} & \multicolumn{3}{c}{sampled frames, same $H_d$ band} \\
+\cmidrule(lr){2-7}\cmidrule(lr){8-10}
+$N$ & RMSD & TM & pLDDT & $U_{am}$ & $<3$\,\AA & $<5$\,\AA & RMSD & pLDDT & $U_{am}$ \\
 \midrule
-10  & 2.03  & 0.939 & 88.0 & 621    & 2.01 & 88.2 & 45 \\
-25  & 2.27  & 0.921 & 84.2 & 2\,029  & 2.01 & 88.2 & 57 \\
-50  & 3.69  & 0.840 & 77.4 & 8\,696  & 2.00 & 87.9 & 156 \\
-100 & 6.96  & 0.592 & 65.4 & 27\,895 & 2.02 & 87.7 & 459 \\
-150 & 22.36 & 0.142 & 31.7 & 68\,476 & 2.04 & 86.8 & 882 \\
-200 & 22.44 & 0.142 & 31.3 & 76\,008 & 2.08 & 86.0 & 1\,517 \\
-250 & 22.31 & 0.124 & 33.3 & 73\,850 & 2.31 & 83.2 & 2\,947 \\
-300 & 22.08 & 0.136 & 29.8 & 73\,639 & \multicolumn{3}{c}{\emph{the sampler never gets there}} \\
-324 & 25.58 & 0.108 & 36.4 & 73\,173 & \\
+10  & 2.01  & 0.939 & 87.5 & 476    & 1.00 & 1.00 & 2.01 & 88.2 & 45 \\
+25  & 2.05  & 0.938 & 86.5 & 1\,350  & 1.00 & 1.00 & 2.01 & 88.2 & 57 \\
+50  & 2.80  & 0.889 & 80.3 & 5\,162  & 0.55 & 0.80 & 2.00 & 87.9 & 156 \\
+100 & 7.09  & 0.669 & 64.4 & 23\,346 & 0.05 & 0.30 & 2.02 & 87.7 & 459 \\
+105 & 11.02 & 0.584 & 60.3 & 26\,406 & 0.00 & 0.10 & 2.02 & 87.7 & 461 \\
+110 & 11.04 & 0.584 & 60.5 & 26\,884 & 0.00 & 0.25 & 2.00 & 87.6 & 535 \\
+115 & 13.24 & 0.372 & 51.3 & 33\,958 & 0.00 & 0.15 & 2.00 & 87.4 & 596 \\
+120 & 10.31 & 0.424 & 51.3 & 33\,715 & 0.00 & 0.15 & 2.00 & 87.3 & 628 \\
+125 & 10.00 & 0.507 & 54.3 & 32\,784 & 0.00 & 0.10 & 2.00 & 87.4 & 655 \\
+130 & 16.15 & 0.387 & 53.9 & 39\,477 & 0.00 & 0.10 & 2.00 & 87.4 & 668 \\
+135 & 18.86 & 0.230 & 42.5 & 49\,625 & 0.00 & 0.00 & 2.00 & 87.4 & 680 \\
+140 & 17.29 & 0.222 & 38.5 & 54\,925 & 0.00 & 0.00 & 2.00 & 87.4 & 691 \\
+145 & 21.78 & 0.144 & 35.8 & 69\,180 & 0.00 & 0.00 & 2.02 & 87.3 & 717 \\
+150 & 21.35 & 0.157 & 32.5 & 68\,226 & 0.00 & 0.00 & 2.04 & 86.8 & 882 \\
+200 & 22.92 & 0.134 & 33.1 & 71\,651 & 0.00 & 0.00 & 2.08 & 86.0 & 1\,517 \\
+250 & 23.51 & 0.123 & 30.5 & 75\,012 & 0.00 & 0.00 & 2.31 & 83.2 & 2\,947 \\
+300 & 23.59 & 0.135 & 35.4 & 72\,254 & 0.00 & 0.00 & \multicolumn{3}{c}{\emph{the sampler never gets there}} \\
+324 & 23.86 & 0.134 & 32.7 & 75\,227 & 0.00 & 0.00 & \\
 \midrule
-\multicolumn{8}{l}{\emph{and for reference:}} \\
-shuffled reference & 22.10 & 0.146 & 32.8 & 74\,005 & \multicolumn{3}{l}{$H_d = 307$, same composition} \\
-uniform random     & 22.46 & 0.132 & 33.4 & 72\,613 & \multicolumn{3}{l}{$H_d = 308$} \\
-the reference      & 1.98  & 0.942 & 88.8 & 0       & \\
+\multicolumn{10}{l}{\emph{and for reference:}} \\
+shuffled reference & 22.72 & 0.128 & 31.9 & 76\,538 & 0.00 & 0.00 & \multicolumn{3}{l}{$H_d = 305$, same composition} \\
+uniform random     & 24.13 & 0.136 & 34.7 & 74\,477 & 0.00 & 0.00 & \multicolumn{3}{l}{$H_d = 307$} \\
+the reference      & 1.98  & 0.942 & 88.8 & 0       & 1.00 & 1.00 & \\
 \bottomrule
 \end{tabular}
-\caption{Medians. RMSD and TM are against 1D5R. Each sampled row pools the frames whose
-mutation count is within 8 of the control group's, 43 to 478 frames depending on the band.
-Random mutation destroys the fold between 100 and 150 substitutions, about a third of the
-protein; the sampler reaches 268 with the fold intact. A permutation of the reference is
-indistinguishable from a uniform random sequence, so none of this is composition.}
+\caption{Medians over 20 sequences per level, 380 in all. RMSD and TM are against 1D5R; the
+two fraction columns are the share of the 20 still within 3 and 5\,\AA{} of the crystal.
+Each sampled row pools the frames whose mutation count is within 8 of the control group's,
+40 to 478 frames depending on the band. The sampler reaches 268 substitutions with the fold
+intact while chance has lost it by 105. A permutation of the reference is indistinguishable
+from a uniform random sequence, so none of this is composition.}
 \label{tab:controls}
 \end{table}
 
 Table~\ref{tab:controls} is the result of the study. The comparison that carries it is
-row by row: at 150 substitutions a random mutant is 22.4\,\AA{} from the crystal with
-pLDDT 32, which is no structure at all, while sampled sequences carrying the same number of
+row by row: at 150 substitutions a random mutant is 21.4\,\AA{} from the crystal with
+pLDDT 33, which is no structure at all, while sampled sequences carrying the same number of
 substitutions are 2.04\,\AA{} away with pLDDT 87. Panel~A of Figure~\ref{fig:main} is the
 same thing drawn: an orange curve that leaves the fold, and a blue cloud that does not.
+
+\paragraph{The collapse is a broad crossover, not a cliff, and it starts earlier than the
+coarse scan suggested.} Eighteen levels at twenty sequences each place the midpoint well
+below the 100--150 window read off the first five-sequence pass. Fitting
+$P(\text{folded}) = [1 + \exp((N - N_{50})/w)]^{-1}$ by maximum likelihood over all 380
+sequences gives, with ``folded'' taken as a CA RMSD under 3\,\AA{} of the crystal,
+\[
+N_{50} = 55 \text{ substitutions} \quad [48,\,64] \text{, 200 bootstrap resamples,}
+\qquad w = 9.5,
+\]
+so the 10--90\% transition spans about 42 substitutions, an eighth of the protein. Half the
+random mutants have already left the fold at 55 substitutions -- 17\% of the sequence --
+and none of the twenty survives from 105 upwards. Relaxing the criterion to 5\,\AA{} moves
+the midpoint to roughly 83 $[74,94]$ and widens the crossover rather than sharpening it ($w = 16.5$). The earlier reading of
+``between 100 and 150'' was an artefact of five sequences per level: 100 was the last level
+at which any mutant happened to stay under 5\,\AA{}, not the point at which the fold is
+typically lost. Panel~C of Figure~\ref{fig:main} is the fit.
+
+This makes the contrast with the sampler sharper, not softer. 99.6\% of the 4000 sampled
+frames sit under 3\,\AA{} and the worst of them is 4.00\,\AA, at mutation counts up to 268,
+while chance crosses the same threshold at 55. The middle of the control curve is also
+visibly rough -- 115 and 130 are worse than 120 and 125 -- which is what twenty sequences
+buys in a regime where the outcome of a single draw is bimodal; it is the fitted midpoint,
+not any individual level, that should be quoted.
 
 This also settles the question left open on 24 November, and settles it the favourable way.
 The flat band is not ESM3 returning PTEN for anything it is shown -- shown a random sequence
@@ -196,10 +238,12 @@ flat band is the ensemble.
 \includegraphics[width=\textwidth]{../monte_carlo/energy_rmsd/energy_rmsd_fig.png}
 \caption{\textbf{A}: RMSD to 1D5R against the number of mutations, log scale; 4000 sampled
 frames coloured by temperature, against the random controls in orange. \textbf{B}: the same
-in mean pLDDT. \textbf{C}: the sampled frames alone, linear scale, with the decoder's own
-noise drawn to scale -- inside the ensemble there is almost nothing left to resolve.
-\textbf{D}: the soft contact energy against the RMSD to the reference's own decode, the
-coordinate that does have range inside the ensemble.}
+in mean pLDDT. \textbf{C}: the share of random mutants still within 3\,\AA{} of the crystal,
+with Wilson intervals, the fitted logistic and its midpoint at 55 substitutions; the blue
+line at 1.0 is the sampler, which never crosses. \textbf{D}: the sampled frames alone,
+linear scale, with the decoder's own noise drawn to scale -- inside the ensemble there is
+almost nothing left to resolve. \textbf{E}: the soft contact energy against the RMSD to the
+reference's own decode, the coordinate that does have range inside the ensemble.}
 \label{fig:main}
 \end{figure}
 
@@ -216,19 +260,23 @@ band, over 43 to 478 sampled frames each.
 \toprule
 $N$ & lowest random $U_{am}$ & highest sampled $U_{am}$ & gap & AUC & AUC on pLDDT \\
 \midrule
-10  & 253     & 64     & $\times3.9$  & 1.000 & 0.804 \\
-25  & 1\,186   & 82     & $\times14$   & 1.000 & 1.000 \\
-50  & 4\,143   & 242    & $\times17$   & 1.000 & 1.000 \\
-100 & 17\,202  & 518    & $\times33$   & 1.000 & 1.000 \\
-150 & 46\,683  & 990    & $\times47$   & 1.000 & 1.000 \\
-200 & 73\,072  & 2\,052  & $\times36$   & 1.000 & 1.000 \\
-250 & 64\,253  & 3\,380  & $\times19$   & 1.000 & 1.000 \\
+10  & 198     & 64     & $\times3.1$  & 1.000 & 0.814 \\
+25  & 733     & 82     & $\times9.0$  & 1.000 & 0.944 \\
+50  & 2\,550   & 242    & $\times10.5$ & 1.000 & 1.000 \\
+100 & 9\,417   & 518    & $\times18.2$ & 1.000 & 1.000 \\
+115 & 12\,033  & 679    & $\times17.7$ & 1.000 & 1.000 \\
+130 & 10\,182  & 757    & $\times13.4$ & 1.000 & 1.000 \\
+145 & 26\,764  & 949    & $\times28.2$ & 1.000 & 1.000 \\
+150 & 32\,616  & 990    & $\times32.9$ & 1.000 & 1.000 \\
+200 & 56\,590  & 2\,052  & $\times27.6$ & 1.000 & 1.000 \\
+250 & 64\,337  & 3\,380  & $\times19.0$ & 1.000 & 1.000 \\
 \bottomrule
 \end{tabular}
 \caption{Perfect separation at every matched mutation count, with a wide margin. The last
 column is the same AUC computed on the decode's mean pLDDT, which separates perfectly from
-25 substitutions up. Per mutation, a random substitution costs 62 to 457 units of $U_{am}$
-while a sampled one costs 2.7 to 11.7.}
+50 substitutions up. Per mutation, a random substitution costs 48 to 477 units of $U_{am}$
+while a sampled one costs 2.7 to 11.7. Rows for the remaining fine levels are omitted only
+for width; all sixteen matched bands give AUC 1.000.}
 \end{table}
 
 This is the strongest statement the project has about $U_{am}$: \textbf{among sequences at a
@@ -330,11 +378,11 @@ per-temperature spreads that justify the correction, are printed by
 \section{What needs to be done}
 
 \begin{enumerate}
-\item \textbf{Fill in the gap between 100 and 150 random substitutions.} That is where the
-fold collapses, and five sequences at each of two levels is all that currently brackets it.
-Levels at 110, 120, 130 and 140 with 20 sequences each cost about two minutes and would turn
-``between 100 and 150'' into a curve with a midpoint. Whether the collapse is sharp or
-gradual is interesting in itself, and it is the natural thing for a supervisor to ask.
+\item \textbf{Tighten the midpoint, if it is worth the two minutes.} Done once, at twenty
+sequences per level, which gives $N_{50} = 55$ with a bootstrap interval of $[48,64]$ and a
+visibly rough curve between 105 and 130. A hundred sequences at each of 40, 55, 70 and 85
+would halve that interval and smooth the crossover; nothing in the argument depends on it,
+so this is presentation rather than evidence.
 
 \item \textbf{Ask whether the sampler's advantage is the energy or the acceptance rule.} The
 present control randomises mutations uniformly. A stronger one draws the same number of
