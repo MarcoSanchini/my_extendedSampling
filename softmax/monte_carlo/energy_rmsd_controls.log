@@ -1,0 +1,17 @@
+nohup: ignoring input
+# pten_1d5r, L=324; crystal 1D5R.pdb resolves N/CA/C at 307 of 324 residues, 885 CA contacts at 8.0 A
+Fetching 22 files:   0%|          | 0/22 [00:00<?, ?it/s]Fetching 22 files: 100%|██████████| 22/22 [00:00<00:00, 24785.04it/s]
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/vqvae.py:286: FutureWarning: `torch.cuda.amp.autocast(args...)` is deprecated. Please use `torch.amp.autocast('cuda', args...)` instead.
+  with torch.no_grad(), torch.cuda.amp.autocast(enabled=False):  # type: ignore
+/home/marco.sanchini/my_project/extendedSampling/customs/custom_esm/models/vqvae.py:175: UserWarning: Using a non-tuple sequence for multidimensional indexing is deprecated and will be changed in pytorch 2.9; use x[tuple(seq)] instead of x[seq]. In pytorch 2.9 this will be interpreted as tensor index, x[torch.tensor(seq)], which will result either in an error or a different result (Triggered internally at /pytorch/torch/csrc/autograd/python_variable_indexing.cpp:347.)
+  return data[ranges]
+# reference: U_ce_ref 2.397402 (the sampler's U_structure_ce(reference), 2.397 on 2026-11-18), U_ce_xtal 4.480397
+# crystal VQ tokens equal the reference's argmax tokens at 12.1% of resolved residues
+# encoder round trip: re-encoding the reference's own 2-step decode recovers 37.3% of the tokens it was decoded from (a sanity check of the encoder call: far above 1/4096 = 0.02%)
+# same sequence decoded twice differs in 0 contacts (must be 0)
+# 65 frames, 0 already in energy_rmsd/controls_scores.csv, 65 to do; 65 distinct sequences; 0 re-decoded at 8 steps
+# reference decode: RMSD to 1D5R 1.98 A, TM 0.942, E_xtal 0.114, pLDDT 88.8
+# 50/65  0.3 min, 0.316 s/frame, 0.1 min left; mut200_4: RMSD 22.44 TM 0.134 U_ce_ref 8.2444 E_ref 0.813
+# 65/65  0.3 min, 0.317 s/frame, 0.0 min left; mut324_4: RMSD 25.56 TM 0.102 U_ce_ref 8.6505 E_ref 0.702
+# peak GPU memory 6276 MB
+Saved -> energy_rmsd/controls_scores.csv. Next: python -u energy_vs_rmsd.py analyze --scores energy_rmsd/controls_scores.csv
