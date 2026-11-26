@@ -7907,3 +7907,7 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     because the two sides are disjoint, while o/e compares the set with the whole construct,
     set included: consensus damaging is 3.61 enriched in K_natural but 4.8x denser there than
     outside; K_activity is the sharpest (0.379 vs 0.046, 8.3x); gnomAD flat at 0.7-0.9x.
+    6.3 point 2 (U_am ranks substitutions, U_ce ranks sites) now names every number it uses:
+    the five disease-vs-tolerated rows of tab:auc one by one (U_am 0.669/0.698/0.683/0.704/
+    0.698 vs its site mean 0.556/0.543/0.575/0.548/0.539; U_ce loses 0.005-0.030, 0.045 on
+    P/LP vs VUS) and the first row of tab:within.

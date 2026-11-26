@@ -1214,10 +1214,35 @@ ranking, wild-type abundance and activity.}
   0.5 in most contrasts. This is the decisive patient-level confirmation of the
   2026-11-17 verdict on the contact-map energy.
 \item \textbf{$\Uam$ ranks substitutions, $\Uce$ ranks sites} -- the same
-  split found against VAMP-seq. Replacing $\Uam$ by its site mean drops it
-  from 0.67--0.70 to 0.54--0.58; $\Uce$'s site mean loses at most 0.05. Within
-  a site, $\Uam$ separates P/LP from VUS at 0.710, level with abundance
-  (0.708) and above activity (0.690) and $\Uce$ (0.692) (table~\ref{tab:within}).
+  split found against VAMP-seq. Two comparisons say it, and both are read off
+  table~\ref{tab:auc} and table~\ref{tab:within}.
+
+  \emph{First, each energy against its own site mean} (the ``$\Uam$ site'' and
+  ``$\Uce$ site'' columns of table~\ref{tab:auc}, defined in section~6.1 as
+  the mean of the energy over the 19 mutants of the site, so it answers
+  \emph{where} the variant is and nothing about \emph{which} substitution it
+  is). If an energy's AUC survives that replacement, its information was in
+  the site; if it collapses towards 0.5, the energy was telling substitutions
+  at one site apart. Over the five disease-vs-tolerated rows (the first six
+  rows of table~\ref{tab:auc} except P/LP vs VUS), $\Uam$ gives 0.669, 0.698,
+  0.683, 0.704, 0.698 -- the ``0.67--0.70'' -- and its site mean gives 0.556,
+  0.543, 0.575, 0.548, 0.539, the ``0.54--0.58'': it loses about 0.15 and ends
+  just above chance. $\Uce$ on the same rows goes 0.710, 0.770, 0.724, 0.751,
+  0.762 to 0.699, 0.754, 0.719, 0.721, 0.742, a loss of 0.005--0.030 (0.045 on
+  the sixth row, P/LP vs VUS, hence ``at most 0.05''): essentially all of
+  $\Uce$'s separation is already in the site.
+
+  \emph{Second, the within-site AUCs} of table~\ref{tab:within}, which use
+  only pairs of variants at the \emph{same} site and so remove the site
+  entirely. On its first row, P/LP against VUS (232 pairs over 77 sites),
+  $\Uam$ scores 0.710, abundance 0.708, activity 0.690 and $\Uce$ 0.692: with
+  the site taken away $\Uam$ is the best of the four and is as good as it was
+  pooled, while $\Uce$ falls from 0.704 to 0.692 and below $\Uam$.
+
+  The two readings agree. $\Uam$, built on the attention map, carries residue
+  identity and so ranks substitutions; $\Uce$, a cross-entropy of predicted
+  structure tokens, asks how disturbed the local geometry is, which is mostly
+  a property of the position.
 \item \textbf{Tumour hotspots are stable and catalytically dead, and fold
   energies cannot see that.} Recurrent tumour variants are \emph{more}
   abundant than singleton ones (AUC of $-$abundance 0.386): R130Q has abundance
