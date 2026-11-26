@@ -238,7 +238,7 @@ throughout. Where a few candidate codons remain, a substitution counts as
 reachable when every candidate reaches it and as unreachable when none does;
 the cases in between are taken from the VAMP-seq table.
 
-\emph{The two numbers ``150 of 380'' and ``1906 of 6156''} count different
+\emph{The two numbers ``150 of 380'' and ``1906 of 6118''} count different
 things. 380 is the number of ordered pairs of different amino acids
 (20$\times$19), counted once each over the whole genetic code, not per codon
 and not per site. Rule (a) applied to every amino acid gives 150 of them: for
@@ -249,9 +249,12 @@ Figure~\ref{fig:overview} are tinted. It is true that every base change of
 every codon changes \emph{something}, but a large share of the changes either
 keep the same amino acid or give a stop, and the ones that do change the amino
 acid lead to a small, fixed set of neighbours. The second number is per site:
-at each of the 324 construct sites, with the codon actually used by PTEN,
-between 2 and 9 of the 19 substitutions are reachable, 1906 of the
-324$\times$19 = 6156 in all (31\,\%).
+at each construct site, with the codon actually used by PTEN, between 2 and 9
+of the 19 substitutions are reachable, 1906 of the $322\times19 = 6118$ in
+all (31\,\%). The count runs over the 322 \emph{native} sites, the ones with a
+codon in canonical PTEN: sites 0 and 279 have none (section~1.3), so the
+reachability denominator is 6118 and not the 6156 = $324\times19$ mutants the
+energies were computed on.
 
 \paragraph{Why it matters.} Human variants (germline or somatic) are almost
 all SNVs: two changes in the same codon of the same allele are vanishingly
@@ -401,8 +404,9 @@ them. Step by step:
 \begin{enumerate}
 \item \textbf{What is to be classified.} Canonical PTEN has 403 residues and
   each can become any of 19 others: $403\times19 = 7657$ substitutions. Only
-  the 6156 of them inside the construct (the 324-site sequence of the 1D5R
-  crystal chain that the sampler and the energies use, section~1.3) enter the
+  the 6118 of them at the 322 native sites of the construct (the 324-site
+  sequence of the 1D5R crystal chain that the sampler and the energies use,
+  section~1.3, less the two sites that have no canonical codon) enter the
   analysis, but the classification is done on all 7657.
 \item \textbf{Where the bases come from.} The coding sequence (CDS) of
   NM\_000314 is $403\times3 = 1209$ bases plus the stop codon, 1212 in all,
@@ -434,8 +438,11 @@ them. Step by step:
   is outside the construct. Where the files leave a substitution undecided,
   the table's value is used.
 \item \textbf{Result.} 2397 of the 7657 substitutions are reachable, 5260 are
-  not, none is unknown. Inside the construct 1906 of 6156 are reachable, the
-  same number the earlier COSMIC look found with the table alone.
+  not, none is unknown. At the construct's 322 native sites 1906 of 6118 are
+  reachable, the same number the earlier COSMIC look found with the table
+  alone. Of those 1906, 31 are substitutions the files leave undecided (at 20
+  of the 28 construct sites whose codon stays ambiguous) and the VAMP-seq
+  column decides, i.e.\ 1.6\,\%.
 \item \textbf{Sanity check in \file{clean}.} Every variant that a file
   records as a single-base change (1951 records) must come out reachable, and
   all of them do; otherwise the script stops. The 12 observed changes that are

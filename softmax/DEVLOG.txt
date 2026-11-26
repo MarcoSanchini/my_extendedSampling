@@ -7883,3 +7883,15 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     Doc: 1.5 sigma rule, 1.6 reachability with/without codons + worked enrichment example +
     AUC definition, 2.3 step by step, section 3 Venn/GRCh37-38/AC/cross-reference counting,
     5.1 RSA and partial Spearman, 5.2 category glossary, 5.5 catalytic/fold/burial.
+
+2026-11-26  pten_variants doc: reachability denominator corrected
+    "1906 of 6156" was wrong in 1.6 and 2.3: 1906 runs over the 322 NATIVE sites
+    (322x19 = 6118). 6156 = 324x19 includes sites 0 and 279, which have no canonical
+    codon; it stays the right denominator for the energy scans and the percentiles.
+    Also recorded: 28 of the 41 codon-ambiguous sites are inside the construct, and 31
+    of the 1906 reachable calls (1.6%) come from the VAMP-seq snv column, not our
+    codon reconstruction. Answers given in thread (not in the doc): multi-base changes
+    are 0/516 cBioPortal, 22/1223 ClinVar (all delins, 19 VUS), 0/235 gnomAD, i.e. 12
+    of the 1269 distinct changes (0.9%) are not SNV-reachable; reachability starts from
+    the REFERENCE codon only (139 synonymous gnomAD variants, 1 above AF 1e-3, so
+    carrier codons are negligible).
