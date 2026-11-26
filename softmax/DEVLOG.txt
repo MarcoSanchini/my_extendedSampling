@@ -7895,3 +7895,9 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     of the 1269 distinct changes (0.9%) are not SNV-reachable; reachability starts from
     the REFERENCE codon only (139 synonymous gnomAD variants, 1 above AF 1e-3, so
     carrier codons are negligible).
+    Later the same day: 5.1 gained the full explanation of the circular-shift p (why the
+    binomial p is too small when sites come in blocks, what the 323 shifts are, why 0.0031
+    is a floor and not a measurement, the 353-to-8 seam) and a spelled-out definition of
+    the substitution entropy's p_a (per-site share of the variant WEIGHT: patients for
+    cBioPortal, allele count for gnomAD, 1 per variation for ClinVar). tab:corr's caption
+    now states it correlates the DENSITY rho_i; H_i is only ever plotted, never correlated.

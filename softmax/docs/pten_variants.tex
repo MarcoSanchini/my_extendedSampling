@@ -618,18 +618,58 @@ For each category and construct site $i$ (\file{profiles.log},
 \item \textbf{density} $\rho_i$ = observed changes at $i$ /
   SNV-reachable changes at $i$ (every observed change of a category is
   reachable by construction, section~\ref{sec:gencode});
-\item \textbf{substitution entropy} $H_i = -\sum_a p_a\log p_a$ (nats) of the
-  observed mutant residues at $i$, weighted by patients (cBioPortal), allele
-  count (gnomAD) or one per variation (ClinVar); same units as the sampled and
-  natural entropies.
+\item \textbf{substitution entropy} $H_i = -\sum_a p_a\log p_a$ (nats),
+  which asks \emph{how varied} the changes at $i$ are, where $\rho_i$ asks how
+  many there are. The sum runs over the 19 possible mutant residues $a$, and
+  $p_a$ is the share of the site's observed variant weight that carries
+  residue $a$: $p_a = w_a / \sum_b w_b$, with $w_a$ the weight of the variant
+  that puts $a$ at site $i$ (0 if it was never seen). The weight is the number
+  of patients for cBioPortal, the allele count for gnomAD, and 1 per
+  variation for ClinVar, so that a change seen in 13 patients counts more
+  than one seen once. $H_i = 0$ when every observation at the site is the same
+  substitution, and $\log m$ when $m$ different ones are seen equally often.
+  Same units as the sampled and natural entropies, which are built the same
+  way from the chain's residues and the alignment's columns.
 \end{itemize}
-Enrichment in a K-set: the number of the category's variants inside the set
-against a uniform draw over the 1906 SNV-reachable substitutions of the
-construct, so that a site with more reachable substitutions expects more
-variants; two-sided binomial $p$. A second $p$ comes from circular shifts of
-the set along the sequence (keeps the run structure of neighbouring sites;
-smallest value $1/324 = 0.0031$). Correlations: Spearman of $\rho_i$ with each
-per-site reference, raw and with burial removed.
+Both quantities are per site, and both ignore sites with no observation
+($\rho_i = 0$, $H_i$ undefined and left out of the entropy panels).
+
+\paragraph{Enrichment and its two $p$-values.} Enrichment in a K-set is the
+observed / expected ratio of section~\ref{sec:gencode}: the category's
+variants inside the set, against a uniform draw over the 1906 SNV-reachable
+substitutions of the construct, so that a site with more reachable
+substitutions expects more variants. The first $p$ is the two-sided binomial
+test of that count.
+
+That test assumes every reachable substitution is an independent draw, and it
+is not: \textbf{neighbouring sites resemble each other}. A buried strand is a
+run of five or six intolerant sites in a row, an exposed loop a run of
+tolerant ones, so both the K-sets and the variant density come in blocks, and
+85 variants in 28 sites are really a handful of blocks rather than 85
+independent events. The binomial $p$ is therefore too small, by an amount
+that depends on how blocky the data are.
+
+The second $p$ keeps the blocks intact. Write the K-set as a string of 324
+yes/no flags along the sequence and take as statistic the mean density inside
+the set minus the mean density outside it, $d$. Now \emph{slide the flags
+along the sequence} by $k$ sites, with the end wrapping round to the start, for
+every $k = 1,\dots,323$: the densities stay where they are and only the labels
+move. Each shift gives a value of $d$ for a set that has the same size and the
+same run structure as the real one but sits in the wrong place, and the 323 of
+them are the null distribution. The $p$ is the share of shifts with
+$|d_{\rm shift}| \ge |d_{\rm obs}|$. So the question it answers is ``is this
+set in the \emph{right place}?'', not ``is this set unusual?'', and an
+enrichment that came only from both quantities being blocky does not pass it.
+There are 324 shifts in all (323 plus the observed arrangement), so the
+smallest value the test can report is $1/324 = 0.0031$: that is a floor
+meaning ``no shift matched'', not a measured $p$. One caveat of the wrap: it
+joins residue 353 to residue 8, which are far apart in the structure, so a few
+shifts split a block across that seam; with 324 sites the effect is small.
+Implementation: \texttt{shift\_p} in \file{pten\_k\_sites.py}.
+
+\paragraph{Correlations.} Spearman of the density $\rho_i$ (not the
+substitution entropy $H_i$) with each per-site reference, raw and with burial
+removed.
 
 \paragraph{Burial, and how it is removed.} The relative solvent
 accessibility (RSA) of a residue is the surface of its side chain that water
@@ -758,7 +798,9 @@ consensus damaging & $\mathbf{-0.62}$ & $-0.55$ & $-0.29$ & $\mathbf{-0.02}$ & $
 consensus tolerated & $+0.21$ & $+0.14$ & $+0.18$ & $+0.11$ & $+0.20$ & $+0.14$ & $+0.12$ & $+0.04$ \\
 \bottomrule
 \end{tabular}
-\caption{Spearman of the per-site density with each reference, all oriented
+\caption{Spearman of the per-site \emph{density} $\rho_i$ (the substitution
+entropy $H_i$ is shown only in the profile figures, never correlated here)
+with each reference, all oriented
 ``higher = more tolerant'', so a negative value means the variants land where
 the reference says the site cannot change. $|$RSA: burial regressed out.
 $|\rho|>0.11$ is beyond chance at 5\% for $n\approx 300$ sites. The
@@ -815,7 +857,7 @@ K-sets. Profiles of all 23 categories: \file{monte\_carlo/pten\_variants/kset\_p
   protein, and a buried residue can be replaced without stopping catalysis if
   the fold survives. The ranges are, as in the abstract, over the three
   disease categories recurrent tumour, P/LP and consensus damaging: in
-  K\_natural 4.32, 3.69, 3.61, i.e.\ 3.6--4.3 times; in K\_activity 2.81,
+  K\_natural 4.33, 3.69, 3.61, i.e.\ 3.6--4.3 times; in K\_activity 2.81,
   2.67, 2.62, i.e.\ 2.6--2.8; in K\_abundance 1.31, 1.38, 1.39, i.e.\ 1.3--1.4
   (table~\ref{tab:enrich}). Per site, the density of
   consensus-damaging variants follows activity ($-0.65$) and family entropy
@@ -845,7 +887,7 @@ K-sets. Profiles of all 23 categories: \file{monte\_carlo/pten\_variants/kset\_p
   $p=0.03$). This fits the published picture of hypomorphic, partially active
   PTEN alleles in autism; with 38 variants it is a lead, not a result.
 \item \textbf{The tumour signal does not depend on hypermutated samples or on
-  cancer type}: non-hypermutated 3.20/2.50, endometrial 3.38/2.31,
+  cancer type}: non-hypermutated 3.19/2.50, endometrial 3.38/2.31,
   glioblastoma 3.02/2.43 (K\_natural / K\_activity). Variants with a
   second hit on the other allele are among the most enriched (3.87 in
   K\_natural), as expected of drivers.
@@ -1391,7 +1433,7 @@ The cloud rerun reproduces Marco's astaroth table exactly.
   leave it above the gap cut-off.
 \item \textbf{Family tier} (2264 sequences, $N_{\rm eff}$ 288). Spearman 0.94
   with UniRef90; activity $\rho$ 0.72 (0.69); 23 of the 28 lowest sites shared;
-  enrichment of those 28: recurrent tumour 4.25 (4.32), ClinVar P/LP 3.95
+  enrichment of those 28: recurrent tumour 4.25 (4.33), ClinVar P/LP 3.95
   (3.69), gnomAD 0.91 (0.93). Being mostly PTEN it is less diverse, so the
   0.5-nat cut keeps 59 sites, twice UniRef90's 28: the absolute-threshold
   point again.
