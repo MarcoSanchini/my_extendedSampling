@@ -748,22 +748,30 @@ def cmd_controls(args):
 	from references import get_reference
 	_, ref = get_reference(args.ref)
 	L = len(ref)
-	rng = np.random.default_rng(args.seed)
 	rows = []
 
 	def add(fid, lab, seq):
 		rows.append([fid, lab, 0, "", len(rows), "", sum(a != b for a, b in zip(seq, ref)), "", "", seq])
 
+	def gen(kind, n, k):
+		"""Every sequence is drawn from a generator keyed by (seed, kind, n, k), NOT from one
+		stream consumed in order. That is what makes the set stable: adding a mutation level,
+		or more sequences at a level, leaves every sequence already scored byte for byte
+		identical, so `score` can resume into the existing csv instead of redoing it. A
+		single sequential stream would silently reshuffle everything -- the same frame_id
+		carrying a different sequence, which `score` skips by id and would never notice."""
+		return np.random.default_rng([args.seed, kind, int(n), int(k)])
+
 	for k in range(args.n_random):
-		add(f"rand{k}", "rand", "".join(rng.choice(list(AA), L)))
+		add(f"rand{k}", "rand", "".join(gen(1, 0, k).choice(list(AA), L)))
 	for k in range(args.n_shuffle):
-		add(f"shuf{k}", "shuf", "".join(rng.permutation(list(ref))))
-	for n in args.mut_levels:
-		n = min(int(n), L)
+		add(f"shuf{k}", "shuf", "".join(gen(2, 0, k).permutation(list(ref))))
+	for n in sorted({min(int(v), L) for v in args.mut_levels}):
 		for k in range(args.n_per_level):
+			r = gen(3, n, k)
 			seq = list(ref)
-			for i in rng.choice(L, n, replace=False):
-				seq[i] = rng.choice([a for a in AA if a != ref[i]])
+			for i in r.choice(L, n, replace=False):
+				seq[i] = r.choice([a for a in AA if a != ref[i]])
 			add(f"mut{n}_{k}", f"mut{n}", "".join(seq))
 
 	os.makedirs(os.path.dirname(os.path.abspath(args.out)) or ".", exist_ok=True)
@@ -775,6 +783,11 @@ def cmd_controls(args):
 	print(f"  {args.n_random} uniform random, {args.n_shuffle} shuffles of the reference, "
 		f"{args.n_per_level} each at {len(args.mut_levels)} mutation levels "
 		+ ", ".join(str(min(int(n), L)) for n in args.mut_levels))
+	done = os.path.splitext(args.out)[0] + "_scores.csv"
+	if os.path.exists(done):
+		print(f"NOTE: {done} already exists. `score` resumes into it by frame_id, which is safe here "
+			"because the draws are keyed per sequence -- the ones already scored are unchanged. "
+			"It was NOT safe before 2026-11-26, so if that file predates this message, move it aside.")
 	print(f"Next: python -u energy_vs_rmsd.py score --ref {args.ref} --frames {args.out} "
 		f"--out {os.path.splitext(args.out)[0]}_scores.csv --noise-frames 0")
 

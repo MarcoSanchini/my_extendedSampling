@@ -7978,3 +7978,15 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     draws mutations from the sampler's own PROPOSAL distribution but accepts them all, to
     separate "the energy knows which substitutions" from "the Metropolis filter removes the
     bad ones".
+
+2026-11-26 (third entry)  energy_vs_rmsd controls: draws keyed per sequence, so levels can
+            be added without redoing the set
+    To bracket the 100-150 collapse, `controls` now draws each sequence from a generator
+    keyed by (seed, kind, n, k) instead of consuming one sequential stream. Adding a level,
+    or more sequences at a level, leaves every sequence already scored byte for byte
+    identical, so `score` resumes into the existing csv. With the old sequential draw the
+    same frame_id would have carried a DIFFERENT sequence and `score`, which skips by id,
+    would never have noticed -- the same class of silent staleness as the frames.tsv windows.
+    Verified: regenerating with levels 10/100/150 at n=3 and then 10/100/120/150 at n=5
+    changes 0 of the 29 shared sequences. One rescore from scratch is needed to cross over
+    from the old draws (controls_scores.csv of 2026-11-26 morning must be moved aside).
