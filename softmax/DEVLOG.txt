@@ -7947,3 +7947,34 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     ALSO: the match16k top-up (0514ea3) took T=2 to 790000, T=3 to 280000 and T=5 to 210000,
     so energy_rmsd/frames.tsv is stale at those three temperatures. Regenerate and rescore
     (~17 min); `analyze` would otherwise drop those 1200 rows as stale.
+
+2026-11-26 (second entry)  RESULT: the control settles it -- the flat band is the SAMPLER's
+            doing. Report rewritten.
+    Marco ran `controls` + `controls-summary` on astaroth (21 s, 65 sequences) and rescored
+    the regenerated 4000-frame ladder (T2/T3/T5 windows now 632-790k, 224-280k, 168-210k).
+    CONTROLS, medians, RMSD to 1D5R / pLDDT / U_am, against the SAMPLED frames in the same
+    Hd band (+-8):
+      mut10  2.03 / 88.0 /   621   vs sampled 2.01 / 88.2 /   45
+      mut25  2.27 / 84.2 /  2029   vs         2.01 / 88.2 /   57
+      mut50  3.69 / 77.4 /  8696   vs         2.00 / 87.9 /  156
+      mut100 6.96 / 65.4 / 27895   vs         2.02 / 87.7 /  459
+      mut150 22.36/ 31.7 / 68476   vs         2.04 / 86.8 /  882
+      mut200 22.44/ 31.3 / 76008   vs         2.08 / 86.0 / 1517
+      mut250 22.31/ 33.3 / 73850   vs         2.31 / 83.2 / 2947
+      shuf (same composition!) 22.10 / 32.8 ; uniform random 22.46 / 33.4
+    RANDOM MUTATION DESTROYS THE FOLD BETWEEN 100 AND 150 SUBSTITUTIONS; THE SAMPLER REACHES
+    268 WITH THE FOLD INTACT. Composition explains none of it (shuf == rand).
+    U_am SEPARATES THE TWO SETS PERFECTLY AT EVERY MATCHED Hd: AUC exactly 1.000, lowest
+    random above highest sampled, gap x3.9 (Hd10) to x47 (Hd150). pLDDT AUC 1.000 from Hd 25.
+    Per mutation a random substitution costs 62-457 units of U_am, a sampled one 2.7-11.7.
+    SO THE 11-24 NULL IS A CEILING, NOT A FAILURE: inside the ensemble rmsd_xtal spans
+    0.144 A between quartiles (0.046 at T=1) against 0.056 A of decode noise, and no energy
+    beats Hd's +0.621 (U_am +0.054 given Hd). Both halves must be quoted together.
+    Rescored pooled numbers barely moved; U_am vs U_ce_ref +0.9923. rmsd_ref: Es_ref +0.953
+    pooled / +0.620 given Hd; matched across T, +0.35..+0.65, no trend.
+    docs/energy_rmsd.tex/.pdf rewritten around the control (7 pages, new Tables 1-2 and a
+    4-panel figure with the control overlay). Copy in /mnt/project-files/energy_rmsd/.
+    NEXT: bracket the collapse (levels 110-140, 20 each, ~2 min), and a second control that
+    draws mutations from the sampler's own PROPOSAL distribution but accepts them all, to
+    separate "the energy knows which substitutions" from "the Metropolis filter removes the
+    bad ones".

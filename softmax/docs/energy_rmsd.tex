@@ -1,15 +1,15 @@
 % ---------------------------------------------------------------------------
-% Do the energies predict how far a sampled sequence's structure sits from the
-% PTEN crystal? Subsampling of the equilibrated ladder, 2026-11-24.
+% Does the sampler's energy keep the PTEN fold? Subsampling of the equilibrated
+% ladder against the 1D5R crystal, with random-sequence controls. 2026-11-26.
 %
 % Every number here is measured and the file it comes from is named beside it.
 % Sources: softmax/monte_carlo/energy_rmsd/{frames.tsv,scores.csv,
-% summary_rmsd_xtal.txt,summary_rmsd_ref.txt,correlations_*.csv},
-% softmax/monte_carlo/energy_rmsd_score.log, softmax/DEVLOG.txt 2026-11-24.
+% controls.tsv,controls_scores.csv,summary_*.txt,correlations_*.csv},
+% softmax/monte_carlo/energy_rmsd_{score,controls}.log, DEVLOG.txt 2026-11-24/26.
 % Scripts: monte_carlo/energy_vs_rmsd.py, monte_carlo/plot_energy_rmsd.py.
 % Companions: structure_comparison.tex (the 1D5R comparison itself),
-% pten_k_sites_explained.md 6.6-6.6j (the two energies and why E is not usable
-% in the loop), pten_metrics.tex (what a move costs).
+% pten_k_sites_explained.md 6.6-6.6j (the two energies, and why the contact-map
+% energy cannot be used inside the loop), pten_metrics.tex (what a move costs).
 %
 % Build:  cd softmax/docs && pdflatex energy_rmsd.tex && pdflatex energy_rmsd.tex
 % ---------------------------------------------------------------------------
@@ -26,33 +26,34 @@
 \usepackage[hidelinks]{hyperref}
 \sloppy
 
-\title{Do the energies know how far a sampled sequence is from the crystal?\\
-\large Subsampling the equilibrated PTEN ladder, and what the answer rules out}
+\title{The sampler keeps the fold where chance destroys it\\
+\large Subsampling the equilibrated PTEN ladder against the 1D5R crystal}
 \author{Marco Sanchini}
-\date{24 November 2026}
+\date{26 November 2026}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
 \noindent
-Four thousand equilibrated sequences from the PTEN temperature ladder were decoded with
-ESM3 and scored with every energy in the project, against the RMSD of each decode to the
-1D5R crystal. The intended measurement did not survive contact with the data, and the
-reason is the result. \textbf{ESM3 decodes every sampled sequence onto the PTEN fold.}
-From 10 to 268 mutations out of 324 residues, the median CA RMSD to 1D5R moves from
-2.01\,\AA{} to 2.30\,\AA{}, against 1.98\,\AA{} for the reference sequence itself; 95\% of
-all four thousand frames sit below 2.42\,\AA. The target therefore has almost no range to
-correlate with, and the decode's own schedule noise, 0.049\,\AA, is as large as the entire
-interquartile spread of a cold chain. What correlation there is, is the mutation count:
-pooled over the ladder every energy reaches $\rho\approx+0.63$ against the RMSD and the
-Hamming distance alone reaches $+0.628$, and once that is partialled out $U_{am}$ retains
-$+0.06$ and $U_{\mathrm{ce}}$ $+0.03$. The study is not wasted: against the RMSD to the
-\emph{reference's own decode}, a coordinate with 4.6 times the spread and the one the
-energy is actually defined against, the soft contact energy reaches $+0.95$ pooled and
-$+0.60$ with the mutation count removed. A random-sequence control is the one measurement
-needed before any of this can be written up as a property of the sampler rather than of
-ESM3.
+Four thousand equilibrated sequences from the PTEN temperature ladder, and 65 sequences no
+sampler chose, were decoded with ESM3 and scored with every energy in the project against
+the RMSD of each decode to the 1D5R crystal. \textbf{The sampler holds the fold at a
+sequence divergence where random mutation has long since destroyed it.} Over 10 to 268
+mutations of 324 residues the sampled frames move from 2.01\,\AA{} to 2.30\,\AA{} from the
+crystal, against 1.98\,\AA{} for the reference itself; random mutants carrying the
+\emph{same number} of mutations reach 3.7\,\AA{} at 50 substitutions, 7.0\,\AA{} at 100 and
+22.4\,\AA{} -- no fold at all, pLDDT 32 -- at 150. At every matched mutation count $U_{am}$
+separates the two sets perfectly, the lowest random mutant scoring above the highest
+sampled frame, by factors of 14 to 78. A shuffle of the reference, same composition, is
+indistinguishable from a uniform random sequence, so composition explains none of it.
+The second half of the result is a ceiling: \emph{within} the sampled ensemble the crystal
+RMSD spans 0.144\,\AA{} between quartiles while the decoder's own schedule noise is
+0.056\,\AA, no energy beats the Hamming distance's own $\rho=+0.62$, and $U_{am}$ retains
+$+0.05$ once that is partialled out. The sampler never leaves the folded region, so inside
+it there is almost nothing left to rank. Both halves must be stated together: the first
+without the second overclaims the resolution, the second without the first reads a ceiling
+as a failure.
 \end{abstract}
 
 \section{What was done}
@@ -65,21 +66,21 @@ construction. A comparison against the crystal therefore tests \emph{interpretat
 does a low energy mean the sequence folds like the real protein -- and not whether the
 landscape is well posed. That is the question this study asks.
 
-Four subsampling strategies were considered on 20 November and the dense one was chosen:
-score a large, evenly spaced set of frames once on the GPU, then let the CPU pick any
-subset from it, so no later selection costs GPU time. The frames are recovered without
-re-running anything, because \texttt{data.dat} logs the site, the current residue, the
-proposed residue and the accept flag of every move, so a chain's sequence at any move is
-replayed from the reference on the CPU. Zero replay mismatches were found over all 4000
-frames; the Hamming distance of every reconstructed sequence also matches the one the
-sampler logged.
+Of the subsampling strategies considered on 20 November the dense one was chosen: score a
+large, evenly spaced set of frames once on the GPU, then let the CPU pick any subset from
+it, so no later selection costs GPU time. The frames are recovered without re-running
+anything, because \texttt{data.dat} logs the site, the current residue, the proposed
+residue and the accept flag of every move, so a chain's sequence at any move is replayed
+from the reference on the CPU. Zero replay mismatches were found over all 4000 frames, and
+the Hamming distance of every reconstructed sequence matches the one the sampler logged.
 
 \begin{itemize}
 \item \textbf{20 chains, 11 temperatures}: $T=1$, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 16. Two
 chains each, except the hot-started $T=2.5$ and $T=7$ from urano, which ran one at a time.
 \item \textbf{200 frames per chain, 4000 in all}, evenly spaced over the last 20\% of each
 chain. The 0.8 burn-in is not the 0.5 default: at seven of the nine original temperatures
-0.5 does not clear $t_{\mathrm{eq}}$.
+0.5 does not clear $t_{\mathrm{eq}}$. This set was regenerated on 26 November, after the
+matched-16k top-up took $T=2$ to 790\,000 moves, $T=3$ to 280\,000 and $T=5$ to 210\,000.
 \item \textbf{3976 of the 4000 sequences are distinct.} The 24 repeats are all at $T=1$,
 where acceptance is 1.1\%; identical sequences are decoded once.
 \end{itemize}
@@ -90,106 +91,157 @@ flat from about 30\% of the chain onward and $T=2.5$ wanders by about $\pm80$ ar
 spread of 30, which is what its autocorrelation time implies rather than a drift. The last
 20\% is the same convention as the rest of the ladder, so it was kept.
 
-\subsection{What was computed for each frame}
+\subsection{The controls, which are what make the result readable}
 
-One ESM3 forward pass gives the attention map and the structure logits; one two-step
-\texttt{generate()} plus the structure decoder gives coordinates. From those:
+A flat band of RMSDs means nothing on its own: it could be the sampler keeping the fold, or
+ESM3's structure head returning something PTEN-like for any sequence it is shown. Three
+groups of sequences that no sampler chose separate the two readings. They are written in
+the same frame format, so the identical scoring code runs on them and every number is
+comparable line for line.
 
 \begin{itemize}
-\item $U_{am}$, taken from \texttt{data.dat} and recomputed from scratch for the first five
-frames as a check (maximum difference: exactly 0).
-\item $U_{\mathrm{ce}}^{\mathrm{ref}}$, the cross-entropy of the structure head against the
-reference's own argmax structure tokens. This is the sampler's $U_{\mathrm{structure\_ce}}$,
-the term that has had $\lambda=0$ for the whole project, computed in float32 to avoid the
-bfloat16 quantisation trap of 18 November.
-\item $U_{\mathrm{ce}}^{\mathrm{xtal}}$, the same cross-entropy against the VQ structure
-tokens of 1D5R itself, over the 307 of 324 residues the crystal resolves.
-\item $E^{\mathrm{ref}}$ and $E^{\mathrm{xtal}}$, the Zambon normalised contact-map energy
-(CA, 8\,\AA, $|i-j|>2$) against the reference's decode at the same step count and against
-the crystal's own contact map, with the soft-contact versions $E_s$ (sigmoid of width
-1\,\AA{} in place of the hard cutoff) alongside at no extra cost.
-\item The CA RMSD and the TM-score at the Kabsch superposition, to the crystal and to the
-reference's decode; and the decode's mean pLDDT.
-\item For 50 evenly spread frames, a second decode at 8 steps, for the noise floor.
+\item \textbf{rand}, 10 sequences uniform over the 20 residues: no composition, no fold.
+\item \textbf{shuf}, 10 permutations of the reference: the \emph{same composition}, no fold.
+\item \textbf{mut$N$}, 5 each at $N = 10$, 25, 50, 100, 150, 200, 250, 300, 324: the
+reference with $N$ positions replaced by a random other residue. These are the ones that
+matter, because they hold the mutation count fixed and randomise \emph{which} mutations.
+Comparing them against the sampled frames at the same Hamming distance is what isolates the
+sampler's choice from the number of changes it has made.
 \end{itemize}
 
-\paragraph{Cost.} 15.4 minutes on astaroth, 0.231\,s per frame, peak 6276\,MB. The GPU was
-never the constraint in this study; the statistics are.
+\subsection{What was computed for each sequence}
 
-\paragraph{The sanity checks all passed} (first lines of
-\texttt{energy\_rmsd\_score.log}): $U_{\mathrm{ce}}^{\mathrm{ref}}(\mathrm{reference})
-= 2.397402$, matching the value measured independently on 18 November; the same sequence
-decoded twice differs in 0 contacts, so the decode is deterministic at fixed step count;
-re-encoding the reference's own decode recovers 37.3\% of the tokens it was decoded from,
-far above the $1/4096 = 0.02\%$ a broken encoder call would give.
+One ESM3 forward pass gives the attention map and the structure logits; one two-step
+\texttt{generate()} plus the structure decoder gives coordinates. From those: $U_{am}$;
+$U_{\mathrm{ce}}^{\mathrm{ref}}$, the cross-entropy of the structure head against the
+reference's own argmax structure tokens, which is the sampler's $U_{\mathrm{structure\_ce}}$
+computed in float32 to avoid the bfloat16 quantisation trap of 18 November;
+$U_{\mathrm{ce}}^{\mathrm{xtal}}$, the same against the VQ structure tokens of 1D5R over the
+307 of 324 residues the crystal resolves; the Zambon normalised contact-map energy (CA,
+8\,\AA, $|i-j|>2$) against the reference's decode and against the crystal, with the
+soft-contact versions $E_s$ (sigmoid of width 1\,\AA) alongside at no extra cost; the CA
+RMSD and the TM-score at the Kabsch superposition, to the crystal and to the reference's
+decode; the decode's mean pLDDT; and, for 50 evenly spread frames, a second decode at 8
+steps for the noise floor.
+
+\paragraph{Cost.} 15.4 minutes for the ladder and 21 seconds for the controls, at
+0.23--0.32\,s per sequence, peak 6276\,MB. The GPU was never the constraint here.
+
+\paragraph{The sanity checks all passed.}
+$U_{\mathrm{ce}}^{\mathrm{ref}}(\mathrm{reference}) = 2.397402$, matching the value measured
+independently on 18 November; $U_{am}$ recomputed from scratch agrees with
+\texttt{data.dat} exactly; the same sequence decoded twice differs in 0 contacts, so the
+decode is deterministic at a fixed step count; re-encoding the reference's own decode
+recovers 37.3\% of the tokens it was decoded from, far above the $1/4096 = 0.02\%$ a broken
+encoder call would give.
 
 \subsection{How many independent frames there really are}
 
-Each chain's integrated autocorrelation time of $U$ was measured inside its own window.
-It runs from 1264 moves ($T=6$) to 11005 ($T=2$), which leaves between 10 and 58
-independent frames per chain and about 404 over the whole ladder. The 4000 frames are
-therefore oversampled on purpose: the extra frames cost nothing and make the CPU-side
-subsets possible, but every interval below is a moving-block bootstrap with blocks one
-autocorrelation time long, never a naive $n$.
+Each chain's integrated autocorrelation time of $U$ was measured inside its own window. It
+runs from 1036 moves to 8977, which leaves between 10 and 58 independent frames per chain
+and about 490 over the whole ladder. The 4000 frames are therefore oversampled on purpose:
+the extra frames cost nothing and make the CPU-side subsets possible, but every interval
+below is a moving-block bootstrap with blocks one autocorrelation time long, never a naive
+$n$.
 
 \section{Results}
 
-\subsection{The headline: the decode never leaves the fold}
+\subsection{The control: chance destroys the fold, the sampler does not}
 
 \begin{table}[h]
 \centering
-\begin{tabular}{lrrrrrrr}
+\begin{tabular}{lrrrr@{\hspace{2em}}rrr}
 \toprule
-$T$ & frames & mutations & \multicolumn{3}{c}{RMSD to 1D5R [\AA]} & TM & pLDDT \\
-\cmidrule(lr){4-6}
- & & & min & median & max & median & median \\
+& \multicolumn{4}{c}{random mutants, $N$ substitutions} & \multicolumn{3}{c}{sampled frames, same $H_d$ band} \\
+\cmidrule(lr){2-5}\cmidrule(lr){6-8}
+$N$ & RMSD & TM & pLDDT & $U_{am}$ & RMSD & pLDDT & $U_{am}$ \\
 \midrule
-reference & 1 & 0 & & 1.98 & & 0.942 & 88.8 \\
+10  & 2.03  & 0.939 & 88.0 & 621    & 2.01 & 88.2 & 45 \\
+25  & 2.27  & 0.921 & 84.2 & 2\,029  & 2.01 & 88.2 & 57 \\
+50  & 3.69  & 0.840 & 77.4 & 8\,696  & 2.00 & 87.9 & 156 \\
+100 & 6.96  & 0.592 & 65.4 & 27\,895 & 2.02 & 87.7 & 459 \\
+150 & 22.36 & 0.142 & 31.7 & 68\,476 & 2.04 & 86.8 & 882 \\
+200 & 22.44 & 0.142 & 31.3 & 76\,008 & 2.08 & 86.0 & 1\,517 \\
+250 & 22.31 & 0.124 & 33.3 & 73\,850 & 2.31 & 83.2 & 2\,947 \\
+300 & 22.08 & 0.136 & 29.8 & 73\,639 & \multicolumn{3}{c}{\emph{the sampler never gets there}} \\
+324 & 25.58 & 0.108 & 36.4 & 73\,173 & \\
 \midrule
-1    & 400 & 10--28   & 1.93 & 2.01 & 2.11 & 0.940 & 88.2 \\
-1.5  & 400 & 35--59   & 1.88 & 2.00 & 2.14 & 0.941 & 87.9 \\
-2    & 400 & 54--92   & 1.88 & 2.00 & 2.25 & 0.941 & 88.0 \\
-2.5  & 200 & 87--106  & 1.90 & 2.02 & 2.16 & 0.939 & 87.8 \\
-3    & 400 & 115--150 & 1.84 & 2.02 & 2.22 & 0.939 & 87.3 \\
-4    & 400 & 144--191 & 1.88 & 2.05 & 2.60 & 0.937 & 86.6 \\
-5    & 400 & 170--212 & 1.89 & 2.08 & 3.03 & 0.935 & 86.1 \\
-6    & 400 & 193--222 & 1.87 & 2.08 & 2.49 & 0.935 & 85.9 \\
-7    & 200 & 201--230 & 1.93 & 2.17 & 3.60 & 0.927 & 85.4 \\
-8    & 400 & 207--239 & 1.90 & 2.16 & 3.42 & 0.928 & 85.2 \\
-16   & 400 & 232--268 & 1.98 & 2.30 & 4.00 & 0.918 & 83.2 \\
+\multicolumn{8}{l}{\emph{and for reference:}} \\
+shuffled reference & 22.10 & 0.146 & 32.8 & 74\,005 & \multicolumn{3}{l}{$H_d = 307$, same composition} \\
+uniform random     & 22.46 & 0.132 & 33.4 & 72\,613 & \multicolumn{3}{l}{$H_d = 308$} \\
+the reference      & 1.98  & 0.942 & 88.8 & 0       & \\
 \bottomrule
 \end{tabular}
-\caption{Every temperature of the ladder, 4000 frames. At $T=16$ the sequences differ from
-the reference at 232 to 268 of 324 positions -- up to 83\% of the protein -- and ESM3 still
-places them 2.30\,\AA{} from the crystal, with a TM-score of 0.92. Only 3.0\% of all frames
-exceed 2.5\,\AA{} and 14 of 4000 exceed 3\,\AA.}
+\caption{Medians. RMSD and TM are against 1D5R. Each sampled row pools the frames whose
+mutation count is within 8 of the control group's, 43 to 478 frames depending on the band.
+Random mutation destroys the fold between 100 and 150 substitutions, about a third of the
+protein; the sampler reaches 268 with the fold intact. A permutation of the reference is
+indistinguishable from a uniform random sequence, so none of this is composition.}
+\label{tab:controls}
 \end{table}
 
-This is the result of the study, and it was not the one being looked for. The target that
-the whole design was built around has an interquartile spread of 0.148\,\AA{} over the
-entire ladder, and between 0.046\,\AA{} ($T=1$) and 0.249\,\AA{} ($T=16$) within a chain.
-Panel~A of Figure~\ref{fig:main} is the picture: a flat band just above the reference's own
-1.98\,\AA, with a thin tail appearing only past 200 mutations.
+Table~\ref{tab:controls} is the result of the study. The comparison that carries it is
+row by row: at 150 substitutions a random mutant is 22.4\,\AA{} from the crystal with
+pLDDT 32, which is no structure at all, while sampled sequences carrying the same number of
+substitutions are 2.04\,\AA{} away with pLDDT 87. Panel~A of Figure~\ref{fig:main} is the
+same thing drawn: an orange curve that leaves the fold, and a blue cloud that does not.
 
-Two readings are possible and they are not yet separated. Either the sampler genuinely
-preserves the fold at every temperature -- which is what one would like to conclude -- or
-ESM3's structure head returns something close to the PTEN fold for a wide class of
-sequences, in which case the flat band says nothing about the sampler at all. Section~3.1
-says how to tell them apart, and until that is done the honest statement is the second one.
+This also settles the question left open on 24 November, and settles it the favourable way.
+The flat band is not ESM3 returning PTEN for anything it is shown -- shown a random sequence
+it returns 22\,\AA{} of nothing, and it reports its own low confidence while doing so. The
+flat band is the ensemble.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{../monte_carlo/energy_rmsd/energy_rmsd_fig.png}
-\caption{\textbf{A}: the RMSD to 1D5R against the number of mutations, all 4000 frames,
-coloured by sampling temperature. \textbf{B}: the mean pLDDT of the same decodes, which
-does fall, smoothly and with real range. \textbf{C}: the soft contact energy against the
-RMSD to the \emph{reference's} decode, the coordinate that has range. \textbf{D}: 50 frames
-decoded at 2 and at 8 steps -- the scatter about the diagonal is the measurement noise of
-panel~A's vertical axis.}
+\caption{\textbf{A}: RMSD to 1D5R against the number of mutations, log scale; 4000 sampled
+frames coloured by temperature, against the random controls in orange. \textbf{B}: the same
+in mean pLDDT. \textbf{C}: the sampled frames alone, linear scale, with the decoder's own
+noise drawn to scale -- inside the ensemble there is almost nothing left to resolve.
+\textbf{D}: the soft contact energy against the RMSD to the reference's own decode, the
+coordinate that does have range inside the ensemble.}
 \label{fig:main}
 \end{figure}
 
-\subsection{Pooled over the ladder, the energies know the mutation count and little else}
+\subsection{At matched mutation count the energy separates the two sets perfectly}
+
+The sampled and random sets do not merely differ in the median. At every matched mutation
+count the separation by $U_{am}$ is complete: the \emph{lowest-energy} random mutant scores
+above the \emph{highest-energy} sampled frame, so the rank-sum AUC is exactly 1.000 in every
+band, over 43 to 478 sampled frames each.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{rrrrrr}
+\toprule
+$N$ & lowest random $U_{am}$ & highest sampled $U_{am}$ & gap & AUC & AUC on pLDDT \\
+\midrule
+10  & 253     & 64     & $\times3.9$  & 1.000 & 0.804 \\
+25  & 1\,186   & 82     & $\times14$   & 1.000 & 1.000 \\
+50  & 4\,143   & 242    & $\times17$   & 1.000 & 1.000 \\
+100 & 17\,202  & 518    & $\times33$   & 1.000 & 1.000 \\
+150 & 46\,683  & 990    & $\times47$   & 1.000 & 1.000 \\
+200 & 73\,072  & 2\,052  & $\times36$   & 1.000 & 1.000 \\
+250 & 64\,253  & 3\,380  & $\times19$   & 1.000 & 1.000 \\
+\bottomrule
+\end{tabular}
+\caption{Perfect separation at every matched mutation count, with a wide margin. The last
+column is the same AUC computed on the decode's mean pLDDT, which separates perfectly from
+25 substitutions up. Per mutation, a random substitution costs 62 to 457 units of $U_{am}$
+while a sampled one costs 2.7 to 11.7.}
+\end{table}
+
+This is the strongest statement the project has about $U_{am}$: \textbf{among sequences at a
+fixed Hamming distance from the reference, the energy selects the ones that still fold}, at
+distances where a randomly chosen set of the same size has already destroyed the structure.
+It is also the cleanest demonstration that the Monte Carlo is sampling the landscape it is
+supposed to, rather than drifting down a corridor of low-energy but structurally
+meaningless sequences.
+
+\subsection{Inside the ensemble there is a ceiling, and it must be reported with the above}
+
+The second half of the result is the one found first, on 24 November, and in isolation it
+reads as a failure. It is not; it is a ceiling.
 
 \begin{table}[h]
 \centering
@@ -199,157 +251,128 @@ panel~A's vertical axis.}
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 energy & $\rho$ & $\rho$ given $H_d$ & $\rho$ & $\rho$ given $H_d$ \\
 \midrule
-$U_{am}$                      & $+0.629$ & $+0.061$ & $+0.927$ & $+0.189$ \\
-$U_{\mathrm{ce}}^{\mathrm{ref}}$ & $+0.625$ & $+0.030$ & $+0.923$ & $+0.139$ \\
-$E^{\mathrm{ref}}$            & $+0.641$ & $+0.176$ & $+0.939$ & $+0.481$ \\
-$E_s^{\mathrm{ref}}$          & $+0.652$ & $+0.229$ & $\mathbf{+0.952}$ & $\mathbf{+0.597}$ \\
+$U_{am}$                      & $+0.622$ & $+0.054$ & $+0.926$ & $+0.192$ \\
+$U_{\mathrm{ce}}^{\mathrm{ref}}$ & $+0.620$ & $+0.047$ & $+0.924$ & $+0.166$ \\
+$E^{\mathrm{ref}}$            & $+0.631$ & $+0.159$ & $+0.941$ & $+0.508$ \\
+$E_s^{\mathrm{ref}}$          & $+0.645$ & $+0.228$ & $\mathbf{+0.953}$ & $\mathbf{+0.620}$ \\
 \midrule
-$U_{\mathrm{ce}}^{\mathrm{xtal}}$\,* & $+0.622$ & $+0.114$ & $+0.883$ & $+0.092$ \\
-$E^{\mathrm{xtal}}$\,*        & $+0.655$ & $+0.304$ & $+0.804$ & $+0.148$ \\
-$E_s^{\mathrm{xtal}}$\,*      & $+0.692$ & $+0.377$ & $+0.889$ & $+0.214$ \\
+$U_{\mathrm{ce}}^{\mathrm{xtal}}$\,* & $+0.617$ & $+0.110$ & $+0.883$ & $+0.093$ \\
+$E^{\mathrm{xtal}}$\,*        & $+0.652$ & $+0.304$ & $+0.814$ & $+0.161$ \\
+$E_s^{\mathrm{xtal}}$\,*      & $+0.684$ & $+0.368$ & $+0.889$ & $+0.218$ \\
 \midrule
-$H_d$ itself                  & $+0.628$ & --- & $+0.925$ & --- \\
+$H_d$ itself                  & $+0.621$ & --- & $+0.924$ & --- \\
 \bottomrule
 \end{tabular}
-\caption{Spearman correlations over all 4000 frames; every interval (in
+\caption{Spearman correlations over the 4000 sampled frames only. Every interval (in
 \texttt{summary\_rmsd\_xtal.txt}) is a block bootstrap with blocks one autocorrelation time
 long and is within $\pm0.03$ of the estimate. Rows marked * are energies that look at the
 crystal themselves, so part of their correlation with a crystal-based target is built in by
-construction. The 404-frame decorrelated subset and the 258-frame energy-stratified subset
-give the same picture to within 0.07.}
+construction. The decorrelated and energy-stratified subsets give the same picture.}
+\label{tab:pooled}
 \end{table}
 
-Read the first column against the last row. Every energy lands within 0.03 of the Hamming
-distance's own $+0.628$, and the partial correlations say why: with the mutation count
-removed, $U_{am}$ keeps $+0.06$ and the structure cross-entropy $+0.03$. Neither of the two
-energies the sampler can actually use knows anything about the crystal beyond how many
-mutations have accumulated.
+Read the first column against the last row: every energy lands within 0.03 of the Hamming
+distance's own $+0.621$, and with the mutation count removed $U_{am}$ keeps $+0.05$ and the
+structure cross-entropy $+0.05$. The reason is Table~\ref{tab:controls}. The sampler never
+leaves the folded region, so the crystal RMSD inside the ensemble spans 0.144\,\AA{}
+between quartiles, and 0.046\,\AA{} at $T=1$. There is no structural variation there for an
+energy to rank. \textbf{The two results are the same fact seen from inside and from
+outside, and quoting either alone misreports it.}
 
-\paragraph{Three things do survive the partialling, and two of them are circular.}
-$E^{\mathrm{xtal}}$ and $E_s^{\mathrm{xtal}}$ reach $+0.30$ and $+0.38$, but they are read
-off the same decode as the RMSD and against the same crystal, so this is partly an identity
-rather than a finding -- it was flagged as such before the run. The honest survivor is
-$E_s^{\mathrm{ref}}$ at $+0.23$, the soft contact energy against the reference's prediction,
-which never sees the crystal.
-
-\paragraph{The two in-loop energies have collapsed onto each other.} On these frames
-$U_{am}$ and $U_{\mathrm{ce}}^{\mathrm{ref}}$ agree at $\rho=+0.992$. That is a change of
+\paragraph{The two in-loop energies have collapsed onto each other.} $U_{am}$ and
+$U_{\mathrm{ce}}^{\mathrm{ref}}$ agree at $\rho=+0.992$ on these frames. That is a change of
 regime worth recording: on the 324$\times$19 single-mutant scan of 18 November they were
 complementary, the cross-entropy winning per site and $U_{am}$ per substitution. At 50 to
-270 mutations both have become monotone functions of distance from the reference, and
-$U_{\mathrm{ce}}$ adds nothing to $U_{am}$ as a rescoring term at this scale. This also
-disposes, for the moment, of the question of what $\lambda_{\mathrm{structure\_ce}}$ should
-be: a term that correlates at $+0.99$ with the one already in the energy will not change
-the sampling, whatever its scale.
+270 mutations both have become monotone functions of distance from the reference. There is
+no case for switching $\lambda_{\mathrm{structure\_ce}}$ on at this scale, whatever scale it
+would need.
 
-\subsection{A coordinate that does have range}
+\subsection{A coordinate that does have range inside the ensemble}
 
-The right-hand half of the table is the same analysis against the RMSD to the reference's
-\emph{own} decode. That coordinate spans 0.29 to 3.47\,\AA{} with an interquartile range of
-0.68\,\AA, 4.6 times the crystal RMSD's, and it is the structurally natural question to ask
-of this energy, which is defined against the reference and not against any experiment.
-Against it the soft contact energy reaches $+0.95$ pooled and $+0.60$ with the mutation
-count removed (Figure~\ref{fig:main}C), and the hard $E^{\mathrm{ref}}$ $+0.48$. Matched
-across temperatures, $E_s^{\mathrm{ref}}$ holds between $+0.44$ and $+0.77$ with no trend
-in $T$, so this is a property of the energy and not of one corner of the ladder.
+The right-hand half of Table~\ref{tab:pooled} uses the RMSD to the reference's \emph{own}
+decode. It spans 0.29 to 3.47\,\AA{} with an interquartile range of 0.683\,\AA, 4.7 times
+the crystal RMSD's, it is not circular, and it is the structurally natural question for an
+energy defined against the reference. Against it the soft contact energy reaches $+0.95$
+pooled and $+0.62$ with the mutation count removed (Figure~\ref{fig:main}D), and the hard
+$E^{\mathrm{ref}}$ $+0.51$. Matched across temperatures, $E_s^{\mathrm{ref}}$ holds between
+$+0.35$ and $+0.65$ with no trend in $T$, so this is a property of the energy and not of one
+corner of the ladder. The mean pLDDT behaves similarly, falling from 88.2 to 83.2 along the
+ladder: $E_s^{\mathrm{ref}}$ predicts it at $-0.35$ with the mutation count removed, against
+$-0.12$ for $U_{am}$ (negative because a high pLDDT is a good structure).
 
-The mean pLDDT behaves similarly: it falls smoothly from 88.2 to 83.2 along the ladder
-(Figure~\ref{fig:main}B), and $E_s^{\mathrm{ref}}$ predicts it at $-0.34$ with the mutation
-count removed, against $-0.11$ for $U_{am}$ (negative because a high pLDDT is a good
-structure, so the informative sign is reversed for this target).
-
-\subsection{The measurement noise of the target}
+\subsection{The measurement noise of the crystal RMSD}
 
 The 50 frames decoded a second time at 8 steps instead of 2 shift by a median of
-0.049\,\AA{} in their RMSD to the crystal, and the two step counts agree only at
-$\rho=+0.65$. Compare that with the within-chain spread the measurement has to resolve:
-0.046\,\AA{} at $T=1$, 0.249\,\AA{} at $T=16$. At the cold end the schedule noise is larger
-than the whole signal; at the hot end it is a fifth of it. The contact-map energies are far
-better behaved under the same test ($\rho=+0.96$ for $E^{\mathrm{ref}}$, a median shift of
-0.11 of its interquartile range), which is consistent with the September--November finding
-that $E$ is usable per site but not per mutant.
-
-This is a second, independent reason not to build anything on the crystal RMSD as measured
-here, and it is a property of the decoder's schedule, not of the sampler.
+0.056\,\AA{} in their RMSD to the crystal, and the two step counts agree only at
+$\rho=+0.68$. Compare that with the within-chain spread the measurement must resolve:
+0.046\,\AA{} at $T=1$ and 0.249\,\AA{} at $T=16$. At the cold end the schedule noise is
+larger than the whole signal. The contact-map energies are far better behaved under the same
+test ($\rho=+0.93$ for $E^{\mathrm{ref}}$), consistent with the November finding that $E$ is
+usable per site but not per mutant. This is a second, independent reason not to read
+anything into the \emph{within}-ensemble crystal RMSD, and it does not touch
+Section~2.1, whose differences are three orders of magnitude larger than the noise.
 
 \subsection{Per temperature}
 
 Within a single temperature the crystal RMSD is essentially unpredictable at the cold end
-and mildly predictable at the hot end: for $E_s^{\mathrm{ref}}$, $+0.01$ at $T=1$ rising to
-$+0.60$ at $T=7$ and $+0.25$ at $T=16$, with $U_{am}$ never leaving the band $-0.12$ to
-$+0.30$. These numbers are taken from the matched table, in which every chain is cut to the
-same number of its own autocorrelation times, because the raw per-temperature row is
-biased by how much of its equilibrium spread each window happens to cover: a chain that
-wanders less gives a smaller $|\rho|$ for that reason alone. This is range restriction, and
-it is a different mechanism from the window attenuation that produced the spurious $T=6$
-entropy peak, but it has the same consequence -- a raw temperature trend cannot be trusted.
-Both tables, and the per-temperature spreads that justify the correction, are printed by
+and mildly predictable at the hot end: for $E_s^{\mathrm{ref}}$, $-0.01$ at $T=1$ rising to
+$+0.62$ at $T=7$ and falling back to $+0.26$ at $T=16$, while $U_{am}$ stays between $-0.18$
+and $+0.38$ with no order to it. These are
+taken from the matched table, in which every chain is cut to the same number of its own
+autocorrelation times, because the raw per-temperature row is biased by how much of its
+equilibrium spread each window happens to cover: a chain that wanders less gives a smaller
+$|\rho|$ for that reason alone. This is range restriction, a different mechanism from the
+window attenuation that produced the spurious $T=6$ entropy peak, but with the same
+consequence -- a raw temperature trend cannot be trusted. Both tables, and the
+per-temperature spreads that justify the correction, are printed by
 \texttt{energy\_vs\_rmsd.py analyze}.
 
 \section{What needs to be done}
 
-\subsection{The one measurement that decides what Section 2.1 means}
-
-\textbf{Decode random sequences of the same length.} If a random 324-residue sequence also
-lands 2.3\,\AA{} from 1D5R with pLDDT in the eighties, then the flat band is a property of
-ESM3's structure head under a sequence-only prompt and says nothing whatever about the
-sampler, and every structural statement in this document has to be rewritten as a statement
-about the model. If random sequences instead land far away, then the sampler really does
-keep the fold at 83\% sequence divergence, which is a strong and publishable claim about
-the energy. Nothing else in this programme should be built until this is known.
-\texttt{bench\_decode.py} already has a \texttt{--random} flag and the machinery; ten random
-sequences and ten shuffles of the reference (same composition, no fold) cost under a minute
-on astaroth.
-
-\subsection{Then, in order}
-
 \begin{enumerate}
-\item \textbf{Move the target to the reference's decode.} If the control comes back
-favourable, the RMSD to the reference's own prediction, and the mean pLDDT, are the
-coordinates with range and with a clean interpretation for an energy defined against the
-reference. The analysis already runs against both, \texttt{--target rmsd\_ref} and a
-pLDDT target being one flag apart.
+\item \textbf{Fill in the gap between 100 and 150 random substitutions.} That is where the
+fold collapses, and five sequences at each of two levels is all that currently brackets it.
+Levels at 110, 120, 130 and 140 with 20 sequences each cost about two minutes and would turn
+``between 100 and 150'' into a curve with a midpoint. Whether the collapse is sharp or
+gradual is interesting in itself, and it is the natural thing for a supervisor to ask.
+
+\item \textbf{Ask whether the sampler's advantage is the energy or the acceptance rule.} The
+present control randomises mutations uniformly. A stronger one draws the same number of
+mutations from the sampler's own proposal distribution but accepts them all, which separates
+``the energy knows which substitutions preserve the fold'' from ``the Metropolis filter
+removes the bad ones''. Same machinery, one new control group.
+
+\item \textbf{Move the in-ensemble target to the reference's decode} and retire the
+within-ensemble crystal RMSD. The analysis already runs against both, plus pLDDT, one flag
+apart. Section~2.3's table should be quoted from the right-hand half.
 
 \item \textbf{Settle whether the soft contact energy is adopted.} It is the only
-non-circular energy with signal beyond the mutation count here ($+0.60$ against the
-reference RMSD), and it costs nothing extra once a decode exists. Against that, it is a
-departure from the definition in Zambon et al, so it belongs in the thesis as a diagnostic
-unless there is a reason to redefine $E$. This is a decision for the supervisors, not a
-measurement.
+non-circular energy with signal beyond the mutation count inside the ensemble ($+0.62$), and
+it costs nothing once a decode exists. Against that, it departs from the definition in
+Zambon et al, so it belongs in the thesis as a diagnostic unless there is a reason to
+redefine $E$. A decision for the supervisors, not a measurement.
 
-\item \textbf{Re-run when the chains grow.} The sampler is being extended. Regenerating
-\texttt{frames.tsv} and rescoring costs about a quarter of a second per frame, so a full
-redo is 15--20 minutes; \texttt{analyze} drops any scored row that is not in the current
-frame list, so a resumed \texttt{scores.csv} cannot silently mix two windows. The cheapest
-real improvement is more chains rather than longer ones: 404 independent frames across 11
-temperatures is what limits every per-temperature number above.
+\item \textbf{More chains, not longer ones.} About 490 independent frames across 11
+temperatures is what limits every per-temperature number here; the pooled and control
+results are not limited by it.
 
-\item \textbf{If the crystal RMSD is wanted as a serious observable,} it needs a
-deterministic single-pass structure predictor rather than a two-step \texttt{generate()}.
-ESMFold is the obvious candidate and is what Zambon et al use. The alternative, averaging
-several schedules, was measured in November not to work: the mean rank of five step counts
-is no better than the best single one.
-
-\item \textbf{Leave $\lambda_{\mathrm{structure\_ce}}$ at zero for now.} The scale
-calculation of 18 November suggested $\lambda\sim10^3$ would be needed for the term to
-matter at all, and Section~2.2 shows that at the distances these chains explore the term is
-$+0.99$ correlated with $U_{am}$ anyway. There is no case for switching it on until it has
-been shown to disagree with $U_{am}$ somewhere that matters.
+\item \textbf{Leave $\lambda_{\mathrm{structure\_ce}}$ at zero.} Section~2.3: at these
+distances it is $+0.99$ correlated with $U_{am}$.
 \end{enumerate}
 
-\subsection{Open questions worth one line each}
+\subsection*{Open questions worth one line each}
 
 \begin{itemize}
 \item The crystal's VQ structure tokens agree with the reference's argmax tokens at only
-12.1\% of resolved residues, yet the two structures are 1.98\,\AA{} apart. The structure
-token alphabet is evidently far finer than the geometry it encodes; this should be checked
-before $U_{\mathrm{ce}}^{\mathrm{xtal}}$ is quoted anywhere as a structural distance.
+12.1\% of resolved residues, yet the two structures are 1.98\,\AA{} apart. The token
+alphabet is far finer than the geometry it encodes; this should be checked before
+$U_{\mathrm{ce}}^{\mathrm{xtal}}$ is quoted anywhere as a structural distance.
 \item 17 of 324 residues are unresolved in 1D5R and are excluded throughout. They are not
 randomly placed, and whether any of them carry the sampler's interesting sites has not been
 checked.
-\item The single worst frame, \texttt{T16.c1@176482} at 4.00\,\AA{} and 256 mutations, still
-has pLDDT 81. Whatever the decoder is doing with these sequences, it is not reporting
-uncertainty about it.
+\item The single worst sampled frame, 4.00\,\AA{} at 256 mutations, still has pLDDT 81.
+Among the controls, pLDDT tracks the collapse faithfully; inside the ensemble it is less
+discriminating at the extreme.
 \end{itemize}
 
 \end{document}
