@@ -662,7 +662,12 @@ set in the \emph{right place}?'', not ``is this set unusual?'', and an
 enrichment that came only from both quantities being blocky does not pass it.
 There are 324 shifts in all (323 plus the observed arrangement), so the
 smallest value the test can report is $1/324 = 0.0031$: that is a floor
-meaning ``no shift matched'', not a measured $p$. One caveat of the wrap: it
+meaning ``no shift matched'', not a measured $p$. The device is standard: it
+is a generalized Monte Carlo test in the sense of Besag and Clifford [5], the
+null being built by a transformation that preserves what one does not want to
+test, and it is the ``circular randomization that maintains the relative
+distances between the regions'' of the genomic-interval literature [6], with
+K-sites along a sequence in place of intervals along a genome. One caveat of the wrap: it
 joins residue 353 to residue 8, which are far apart in the structure, so a few
 shifts split a block across that seam; with 324 sites the effect is small.
 Implementation: \texttt{shift\_p} in \file{pten\_k\_sites.py}.
@@ -1073,8 +1078,9 @@ that take one variant from each and count the fraction in which the damaging
 one has the higher score, a tie counting one half. 0.5 is chance, 1 is perfect
 separation, and below 0.5 means the score is systematically inverted, so
 $|\mathrm{AUC}-0.5|$ is the useful quantity. No curve is drawn: the equivalent
-rank formula (the Mann--Whitney statistic) is used instead, since counting the
-pairs costs $n_1 n_0$ operations while ranking costs $n\log n$,
+rank formula (the Mann--Whitney statistic [1], shown equal to the ROC area by
+Hanley and McNeil [2]) is used instead, since counting the pairs costs
+$n_1 n_0$ operations while ranking costs $n\log n$,
 \[
   \mathrm{AUC} \;=\;
   \frac{\sum_{i \in \text{damaging}} r_i \;-\; n_1(n_1+1)/2}{n_1 n_0},
@@ -1083,7 +1089,8 @@ where $r_i$ is the rank of variant $i$ when the scores of both classes are
 ranked together from 1 upwards. Tied scores get their average rank, which is
 exactly the ``half a pair'' convention. Variants with no value for that score
 are dropped first, and a contrast is reported only when at least two remain on
-each side (\texttt{auc} in \file{pten\_k\_sites.py}).
+each side (\texttt{auc} in \file{pten\_k\_sites.py}; Fawcett [3] is the
+textbook treatment, including ties).
 
 Orientation matters: the energies are oriented ``higher = more costly'', so
 the damaging class is expected to score higher, while the two experiments run
@@ -1095,7 +1102,8 @@ perfect-agreement frame.
 The 95\,\% interval is a bootstrap: resample $n_1$ damaging and $n_0$
 tolerated variants with replacement, independently within each class,
 recompute the AUC, and repeat 1000 times ($\texttt{--bootstrap}$); the
-interval is the 2.5th to 97.5th percentile of those values. It measures only
+interval is the 2.5th to 97.5th percentile of those values (the percentile
+bootstrap, Efron [4]). It measures only
 the noise from having few variants, so it widens when a class is small, which
 is why the contrasts resting on 47 tolerated or 12 autism variants carry the
 widest intervals (\file{rank.log}, \file{rank\_auc.tsv}).
@@ -1707,5 +1715,45 @@ T8}, \texttt{--burn-in-frac 0.8}, \texttt{--sampled-k-sigma 1.5}
 \texttt{--min-category 20}, \texttt{--bootstrap 1000}; \texttt{score} takes
 \texttt{--num-steps 2} and \texttt{--repeat 50}. Outputs in
 \file{monte\_carlo/pten\_variants/}, described in its \file{README.md}.
+
+% ===========================================================================
+\section{References for the statistics}\label{sec:refs}
+% ===========================================================================
+
+Only the statistical procedures are listed; the data sources and the
+biological literature are cited where they are used.
+
+\begin{enumerate}
+\item[{[1]}] H.~B. Mann and D.~R. Whitney, ``On a test of whether one of two
+  random variables is stochastically larger than the other'', \emph{Annals of
+  Mathematical Statistics} \textbf{18} (1947) 50--60.
+  \texttt{doi:10.1214/aoms/1177730491}. The rank statistic used for every AUC
+  in section~\ref{sec:rank}.
+\item[{[2]}] J.~A. Hanley and B.~J. McNeil, ``The meaning and use of the area
+  under a receiver operating characteristic (ROC) curve'', \emph{Radiology}
+  \textbf{143}:1 (1982) 29--36. States the equivalence this note relies on:
+  the area ``represents the probability that a randomly chosen diseased
+  subject is (correctly) rated or ranked with greater suspicion than a
+  randomly chosen non-diseased subject'', and that this ``is the same quantity
+  that is estimated by the already well-studied nonparametric Wilcoxon
+  statistic''.
+\item[{[3]}] T. Fawcett, ``An introduction to ROC analysis'', \emph{Pattern
+  Recognition Letters} \textbf{27}:8 (2006) 861--874. The modern textbook
+  treatment, including the rank formula and the handling of ties.
+\item[{[4]}] B. Efron, ``Bootstrap methods: another look at the jackknife'',
+  \emph{Annals of Statistics} \textbf{7}:1 (1979) 1--26. The resampling behind
+  every interval quoted here (percentile method, 1000 resamples).
+\item[{[5]}] J. Besag and P. Clifford, ``Generalized Monte Carlo significance
+  tests'', \emph{Biometrika} \textbf{76}:4 (1989) 633--642. The principle
+  behind the shift test of section~5.1: build the null by applying to the data
+  a transformation that preserves the structure one does not want to test.
+\item[{[6]}] B. Gel \emph{et al.}, ``regioneR: an R/Bioconductor package for
+  the association analysis of genomic regions based on permutation tests'',
+  \emph{Bioinformatics} \textbf{32}:2 (2016) 289--291.
+  \texttt{doi:10.1093/bioinformatics/btv562}. The same device in genomics,
+  there called ``a circular randomization that maintains the relative
+  distances between the regions''; here the regions are K-sites along a
+  sequence instead of intervals along a genome.
+\end{enumerate}
 
 \end{document}

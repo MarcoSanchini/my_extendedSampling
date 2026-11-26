@@ -7914,3 +7914,11 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     6.1 now states how the AUC is actually computed: the pair definition, the equivalent
     Mann-Whitney rank formula with average ranks for ties, the orientation convention (and
     the +0.32/-0.33 sign trap), the bootstrap interval, and the within-site restriction.
+    Appendix B "References for the statistics" added, all six VERIFIED against the sources
+    2026-11-26: Mann & Whitney, Ann. Math. Statist. 18 (1947) 50-60, doi:10.1214/aoms/1177730491;
+    Hanley & McNeil, Radiology 143:1 (1982) 29-36 (quotes the AUC = Wilcoxon equivalence from
+    its own abstract); Fawcett, Pattern Recognit. Lett. 27:8 (2006) 861-874; Efron, Ann.
+    Statist. 7:1 (1979) 1-26; Besag & Clifford, Biometrika 76:4 (1989) 633-642; Gel et al.,
+    Bioinformatics 32:2 (2016) 289-291, whose "circular randomization that maintains the
+    relative distances between the regions" is our shift test in genomic-interval form.
+    Cited at the point of use in 5.1 and 6.1.
