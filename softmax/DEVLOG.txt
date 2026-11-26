@@ -7901,3 +7901,9 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     the substitution entropy's p_a (per-site share of the variant WEIGHT: patients for
     cBioPortal, allele count for gnomAD, 1 per variation for ClinVar). tab:corr's caption
     now states it correlates the DENSITY rho_i; H_i is only ever plotted, never correlated.
+    And: `profiles` now also writes density_in / density_out / density_ratio per category and
+    K-set (the contrast the shift p actually tests, in density units), printed in profiles.log
+    and tabulated in the report as the new table 5. Ratios are LARGER than observed/expected
+    because the two sides are disjoint, while o/e compares the set with the whole construct,
+    set included: consensus damaging is 3.61 enriched in K_natural but 4.8x denser there than
+    outside; K_activity is the sharpest (0.379 vs 0.046, 8.3x); gnomAD flat at 0.7-0.9x.

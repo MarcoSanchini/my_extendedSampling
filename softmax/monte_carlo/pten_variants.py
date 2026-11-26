@@ -729,14 +729,22 @@ def cmd_profiles(args):
 		N = int(n_obs_r.sum())
 		for kname, kmask in ksets.items():
 			kmask = np.asarray(kmask, bool)
-			frac = t.n_reachable[kmask].sum() / t.n_reachable.sum()
+			r_in, r_out = t.n_reachable[kmask].sum(), t.n_reachable[~kmask].sum()
+			frac = r_in / t.n_reachable.sum()
 			k = int(n_obs_r[kmask].sum())
 			exp = N * frac
 			p_hi, p_lo = binom.sf(k - 1, N, frac), binom.cdf(k, N, frac)
 			ok = np.isfinite(dens)
+			# The same contrast the shift p tests, in the units of the density: variants per reachable
+			# substitution inside the set against outside it. Bigger than observed/expected, whose
+			# denominator is the whole construct, the set included.
+			d_in = k / r_in if r_in else np.nan
+			d_out = (N - k) / r_out if r_out else np.nan
 			enr.append({"category": name, "group": group, "n_variants": len(d), "n_snv_in_construct": N,
 				"kset": kname, "kset_sites": int(kmask.sum()), "observed": k, "expected": exp,
 				"ratio": k / exp if exp else np.nan, "p_two_sided": min(1.0, 2 * min(p_hi, p_lo)),
+				"density_in": d_in, "density_out": d_out,
+				"density_ratio": d_in / d_out if d_out else np.nan,
 				"density_shift_p": shift_p(np.where(ok, dens, 0.0), kmask)})
 		row = {"category": name, "group": group, "n_variants": len(d)}
 		for rname, rv in refs.items():
@@ -753,6 +761,11 @@ def cmd_profiles(args):
 	log(fh, "\n== variants in each K-set: observed / expected under a uniform draw over the SNV-reachable substitutions")
 	piv = enr.dropna(subset=["kset"]).pivot_table(index="category", columns="kset", values="ratio", sort=False)
 	log(fh, piv.to_string(float_format=lambda x: f"{x:.2f}"))
+	log(fh, "\n   the same contrast as densities (variants per reachable substitution) inside / outside the set:")
+	ein = enr.dropna(subset=["kset"])
+	log(fh, ein.assign(cell=[f"{a:.3f}/{b:.3f} ({r:.1f}x)" for a, b, r in
+		zip(ein.density_in, ein.density_out, ein.density_ratio)]).pivot_table(
+		index="category", columns="kset", values="cell", aggfunc="first", sort=False).to_string())
 	log(fh, "\n   two-sided binomial p:")
 	log(fh, enr.dropna(subset=["kset"]).pivot_table(index="category", columns="kset", values="p_two_sided",
 		sort=False).to_string(float_format=lambda x: f"{x:.1e}"))

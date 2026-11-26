@@ -772,6 +772,57 @@ floor (0.0031) for most of them.}
 \label{tab:enrich}
 \end{table}
 
+\paragraph{The same contrast as densities.} Observed / expected compares the
+set against the construct as a whole, and the whole \emph{includes} the set.
+Table~\ref{tab:inout} asks the question the other way, in the units of
+section~5.1: the density inside the set (the category's variants per
+reachable substitution there) against the density outside it. This is the
+contrast the circular-shift $p$ tests, and because the two sides are now
+disjoint the ratios come out larger than the enrichments of
+table~\ref{tab:enrich}: consensus damaging is 3.6 times enriched in
+K\_natural but 4.8 times denser there than elsewhere. The two tables say the
+same thing and rank the sets in the same order; this one is easier to read
+against the question ``how much more often does a site inside the set get
+hit?''.
+
+\begin{table}[H]
+\centering\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Category & natural & abundance & activity & sampled T4 & sampled T8 \\
+\midrule
+tumour, all & 0.387/0.110 & 0.193/0.103 & 0.298/0.063 & 0.282/0.122 & 0.270/0.108 \\
+ & {\scriptsize 3.5$\times$} & {\scriptsize 1.9$\times$} & {\scriptsize 4.7$\times$} & {\scriptsize 2.3$\times$} & {\scriptsize 2.5$\times$} \\[2pt]
+tumour, recurrent & 0.166/0.026 & 0.050/0.032 & 0.108/0.009 & 0.145/0.030 & 0.106/0.026 \\
+ & {\scriptsize 6.3$\times$} & {\scriptsize 1.6$\times$} & {\scriptsize 12.0$\times$} & {\scriptsize 4.8$\times$} & {\scriptsize 4.1$\times$} \\[2pt]
+tumour, singleton & 0.221/0.083 & 0.143/0.071 & 0.191/0.055 & 0.137/0.092 & 0.164/0.082 \\
+ & {\scriptsize 2.7$\times$} & {\scriptsize 2.0$\times$} & {\scriptsize 3.5$\times$} & {\scriptsize 1.5$\times$} & {\scriptsize 2.0$\times$} \\[2pt]
+tumour, non-hypermutated & 0.325/0.081 & 0.155/0.075 & 0.254/0.037 & 0.206/0.094 & 0.215/0.081 \\
+ & {\scriptsize 4.0$\times$} & {\scriptsize 2.1$\times$} & {\scriptsize 6.8$\times$} & {\scriptsize 2.2$\times$} & {\scriptsize 2.6$\times$} \\[2pt]
+ClinVar P/LP & 0.478/0.097 & 0.179/0.105 & 0.346/0.038 & 0.290/0.118 & 0.311/0.097 \\
+ & {\scriptsize 4.9$\times$} & {\scriptsize 1.7$\times$} & {\scriptsize 9.1$\times$} & {\scriptsize 2.5$\times$} & {\scriptsize 3.2$\times$} \\[2pt]
+ClinVar VUS & 0.172/0.342 & 0.331/0.326 & 0.243/0.363 & 0.267/0.332 & 0.259/0.340 \\
+ & {\scriptsize 0.5$\times$} & {\scriptsize 1.0$\times$} & {\scriptsize 0.7$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.8$\times$} \\[2pt]
+gnomAD, all & 0.086/0.093 & 0.080/0.099 & 0.076/0.099 & 0.069/0.094 & 0.072/0.096 \\
+ & {\scriptsize 0.9$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.7$\times$} & {\scriptsize 0.7$\times$} \\[2pt]
+population-only & 0.037/0.084 & 0.063/0.088 & 0.046/0.094 & 0.031/0.083 & 0.044/0.086 \\
+ & {\scriptsize 0.4$\times$} & {\scriptsize 0.7$\times$} & {\scriptsize 0.5$\times$} & {\scriptsize 0.4$\times$} & {\scriptsize 0.5$\times$} \\[2pt]
+consensus damaging & 0.521/0.109 & 0.201/0.116 & 0.377/0.046 & 0.336/0.130 & 0.335/0.110 \\
+ & {\scriptsize 4.8$\times$} & {\scriptsize 1.7$\times$} & {\scriptsize 8.3$\times$} & {\scriptsize 2.6$\times$} & {\scriptsize 3.0$\times$} \\[2pt]
+consensus tolerated & 0.006/0.026 & 0.013/0.031 & 0.005/0.033 & 0.023/0.025 & 0.014/0.027 \\
+ & {\scriptsize 0.2$\times$} & {\scriptsize 0.4$\times$} & {\scriptsize 0.2$\times$} & {\scriptsize 0.9$\times$} & {\scriptsize 0.5$\times$} \\[2pt]
+\bottomrule
+\end{tabular}
+\caption{Density of the category inside / outside each K-set, in variants per
+SNV-reachable substitution, with their ratio underneath
+(\file{kset\_enrichment.tsv}, columns \texttt{density\_in},
+\texttt{density\_out}, \texttt{density\_ratio}; all 23 categories are there).
+The sharpest contrast is K\_activity, whose outside density is very low
+(consensus damaging 0.379 against 0.046). gnomAD is flat, slightly below 1 in
+every set.}
+\label{tab:inout}
+\end{table}
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=.8\linewidth]{figures/pten_var_kset_enrichment.png}
