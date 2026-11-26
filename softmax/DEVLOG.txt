@@ -7911,3 +7911,6 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     the five disease-vs-tolerated rows of tab:auc one by one (U_am 0.669/0.698/0.683/0.704/
     0.698 vs its site mean 0.556/0.543/0.575/0.548/0.539; U_ce loses 0.005-0.030, 0.045 on
     P/LP vs VUS) and the first row of tab:within.
+    6.1 now states how the AUC is actually computed: the pair definition, the equivalent
+    Mann-Whitney rank formula with average ranks for ties, the orientation convention (and
+    the +0.32/-0.33 sign trap), the bootstrap interval, and the within-site restriction.

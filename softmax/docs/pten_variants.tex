@@ -1063,10 +1063,44 @@ chains as extended on 2026-11-24); all with burn-in fraction 0.8.}
 Each variant inside the construct is looked up in the three scans
 (\file{pten\_variants\_ranked.tsv}): its value, its percentile among all 6156
 single mutants and among the 1906 SNV-reachable ones, and its rank within its
-site. For each contrast between two categories, the AUC is the probability
-that a variant of the first (damaging) class scores higher than one of the
-second, with a 95\% bootstrap interval (1000 resamples within each class;
-\file{rank.log}, \file{rank\_auc.tsv}). Alongside each energy:
+site.
+
+\paragraph{How the AUC is computed.} For each contrast between two
+categories, the AUC is the probability that a variant of the first (damaging)
+class scores higher than one of the second. Concretely, with $n_1$ variants in
+the damaging class and $n_0$ in the tolerated one, form all $n_1 n_0$ pairs
+that take one variant from each and count the fraction in which the damaging
+one has the higher score, a tie counting one half. 0.5 is chance, 1 is perfect
+separation, and below 0.5 means the score is systematically inverted, so
+$|\mathrm{AUC}-0.5|$ is the useful quantity. No curve is drawn: the equivalent
+rank formula (the Mann--Whitney statistic) is used instead, since counting the
+pairs costs $n_1 n_0$ operations while ranking costs $n\log n$,
+\[
+  \mathrm{AUC} \;=\;
+  \frac{\sum_{i \in \text{damaging}} r_i \;-\; n_1(n_1+1)/2}{n_1 n_0},
+\]
+where $r_i$ is the rank of variant $i$ when the scores of both classes are
+ranked together from 1 upwards. Tied scores get their average rank, which is
+exactly the ``half a pair'' convention. Variants with no value for that score
+are dropped first, and a contrast is reported only when at least two remain on
+each side (\texttt{auc} in \file{pten\_k\_sites.py}).
+
+Orientation matters: the energies are oriented ``higher = more costly'', so
+the damaging class is expected to score higher, while the two experiments run
+the other way and therefore enter as $-$abundance and $-$activity. Mixing the
+two conventions once turned a $+0.32$ agreement into a $-0.33$ inversion on
+the single-mutant scan, so the sign is checked against a synthetic
+perfect-agreement frame.
+
+The 95\,\% interval is a bootstrap: resample $n_1$ damaging and $n_0$
+tolerated variants with replacement, independently within each class,
+recompute the AUC, and repeat 1000 times ($\texttt{--bootstrap}$); the
+interval is the 2.5th to 97.5th percentile of those values. It measures only
+the noise from having few variants, so it widens when a class is small, which
+is why the contrasts resting on 47 tolerated or 12 autism variants carry the
+widest intervals (\file{rank.log}, \file{rank\_auc.tsv}).
+
+\paragraph{What is ranked.} Alongside each energy:
 \begin{itemize}
 \item its \textbf{site mean} (the mean over the 19 mutants of the site), i.e.\
   what the energy knows about the site alone. The gap between the two is what
@@ -1078,8 +1112,14 @@ second, with a 95\% bootstrap interval (1000 resamples within each class;
 \item AlphaMissense, available for the tumour rows only, and so reported only
   where both classes have at least 10 scored variants.
 \end{itemize}
-A \textbf{within-site AUC} uses only pairs of variants at the same site, one in
-each class, so that burial and every other site property cancel.
+A \textbf{within-site AUC} is the same statistic with the pairs restricted:
+only pairs whose two variants sit at the \emph{same} site are formed, and the
+concordant fraction is pooled over all sites that contribute at least one
+variant of each class (ties again counting half; \texttt{within\_site\_auc} in
+\file{pten\_variants.py}). Burial and every other property of the position
+cancels, so what is left is whether the score can tell substitutions apart.
+The tables give the number of pairs and of sites behind each value, which is
+much smaller than $n_1 n_0$.
 
 \subsection{Results}
 
