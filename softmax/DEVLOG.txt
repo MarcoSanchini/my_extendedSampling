@@ -7922,3 +7922,15 @@ counts), and its gate wording is rewritten accordingly. 17 pages.
     Bioinformatics 32:2 (2016) 289-291, whose "circular randomization that maintains the
     relative distances between the regions" is our shift test in genomic-interval form.
     Cited at the point of use in 5.1 and 6.1.
+    CORRECTION, same day: the all-T pass was still comparing temperatures at a fixed burn-in
+    fraction, the exact mistake PR #69 fixed for the K-sites. `pten_variants.py profiles` now
+    takes --match-accepted (plumbed into chain_site_stats, which already had it) and logs the
+    accepted count per window, warning when a chain cannot reach the target. AT A MATCHED
+    16000 THE T=6 PEAK IS GONE: sets are empty up to T=4 then 26/40/48/52 sites at T=5/6/8/16,
+    enrichment falls monotonically 3.81 -> 2.18 (recurrent) as the set grows, and the cut-free
+    Spearman is a PLATEAU from T=6: -0.47/-0.46/-0.47 (-0.32/-0.28/-0.29 given RSA) vs -0.41
+    at T=4. Same shape and same saturation point as the family-conservation plateau. T=1 and
+    T=1.5 cannot reach 16000 (3040 and 8320 accepted in the whole chain) and are flagged in
+    the log. kset_enrichment_all_T.tsv and kset_density_correlations_all_T.tsv gained a
+    `window` column; tab:allT now has three panels. Main tables stay at burn-in 0.8, which is
+    correct for a single temperature. Marco caught this.

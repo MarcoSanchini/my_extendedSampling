@@ -635,7 +635,14 @@ def categories(m):
 # ---------------------------------------------------------------- profiles --- #
 
 def sampled_entropy(args, t, fh):
-	"""Mean per-site entropy over the chains of each temperature, kept window = last 1 - burn_in."""
+	"""Mean per-site entropy over the chains of each temperature.
+
+	Window = the last 1 - burn_in of the chain, or, with --match-accepted N, the window holding
+	the last N ACCEPTED moves. Use the second for ANY comparison across temperatures: the
+	per-site entropy is estimated from the accepted moves in the window, so a chain with more of
+	them scores higher for that reason alone, and at a fixed burn-in fraction the hot chains have
+	the fewest. That attenuation produced a spurious "maximum at T=6" in the K-site work
+	(PR #69); see chain_site_stats in pten_k_sites.py."""
 	ref = "".join(t.ref_aa)
 	out = pd.DataFrame(index=t.site)
 	for T in args.temperatures:
@@ -644,11 +651,17 @@ def sampled_entropy(args, t, fh):
 			path = os.path.join(args.runs_dir, T, c)
 			if not os.path.isfile(os.path.join(path, "start.txt")):
 				continue
-			st, info = chain_site_stats(path, ref, args.burn_in_frac)
+			st, info = chain_site_stats(path, ref, args.burn_in_frac, args.match_accepted)
 			cols.append(st.entropy.values)
+			acc = int(st.accepted_kept.sum())
+			window = (f"window holding the last {acc} accepted moves" if args.match_accepted
+				else f"kept from move {int(args.burn_in_frac * info['moves'])}, {acc} accepted in it")
 			log(fh, f"   {T}/{c}: {info['moves']} moves, start {'reference' if info['start_is_reference'] else 'other'}, "
-				f"kept from move {int(args.burn_in_frac * info['moves'])}, mean entropy {st.entropy.mean():.3f}, "
-				f"sites at 0: {int((st.entropy == 0).sum())}")
+				f"{window}, mean entropy {st.entropy.mean():.3f}, sites at 0: {int((st.entropy == 0).sum())}")
+			if args.match_accepted and acc < args.match_accepted:
+				log(fh, f"      WARNING: {T}/{c} holds only {acc} accepted moves in all, short of the "
+					f"{args.match_accepted} asked for; its entropy is attenuated and must not be compared "
+					"with the others")
 		out[f"sampled_{T}"] = np.mean(cols, axis=0)
 	return out
 
@@ -1233,6 +1246,9 @@ def main():
 		help="a tumour sample with more mutations than this counts as hypermutated (default 500)")
 	common.add_argument("--runs-dir", default=os.path.join(MONTE_CARLO_DIR, "pten1d5r_study", "equil_ref"))
 	common.add_argument("--temperatures", nargs="+", default=["T4", "T8"])
+	common.add_argument("--match-accepted", type=int, default=None,
+		help="entropy over the window holding the last N ACCEPTED moves instead of --burn-in-frac; "
+			"required for any comparison ACROSS temperatures (16000 is the ladder's matched count)")
 	common.add_argument("--burn-in-frac", type=float, default=0.8,
 		help="share of each chain dropped before the entropy (0.8 clears t_eq at every T; see pten_k_sites)")
 	common.add_argument("--sampled-k-frac", type=float, default=0.1,

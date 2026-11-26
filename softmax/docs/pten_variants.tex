@@ -991,6 +991,20 @@ Its size follows the data:
 \end{itemize}
 The per-site Spearman, which needs no cut, is the same under any rule.
 
+\paragraph{Windows must be matched before temperatures are compared.} The
+per-site entropy is estimated from the \emph{accepted} moves inside the
+window, and it is attenuated when there are few of them, so a chain with more
+accepted moves scores higher for that reason alone. At a fixed burn-in
+fraction the hot chains have the fewest (16\,000 accepted at $T=16$ against
+60\,000 at $T=4$ in the 0.8 window), and that attenuation already produced one
+spurious maximum at $T=6$ in the K-site work, corrected in PR\,\#69. Every
+comparison across temperatures below therefore uses
+\texttt{--match-accepted 16000}: the window is walked back from the end of
+each chain until it holds the last 16\,000 accepted moves, the ladder's
+matched count since the $T=2$, 3 and 5 chains were extended on 2026-11-24.
+The main tables of this note quote one temperature at a time and keep the
+burn-in-0.8 window, which is the right choice there.
+
 \begin{table}[H]
 \centering\small
 \setlength{\tabcolsep}{4pt}
@@ -998,65 +1012,64 @@ The per-site Spearman, which needs no cut, is the same under any rule.
 \toprule
 $T$ & 1 & 1.5 & 2 & 3 & 4 & 5 & 6 & 8 & 16 \\
 \midrule
-\multicolumn{10}{@{}l}{\emph{median $-$ 1.5$\sigma$ rule (used in this note)}}\\
+\multicolumn{10}{@{}l}{\emph{(a) matched 16\,000 accepted moves --- the pass to compare temperatures with}}\\
+sites in the set & 0 & 0 & 0 & 0 & 0 & 26 & 40 & 48 & 52 \\
+tumour, recurrent & -- & -- & -- & -- & -- & 3.81 & 3.43 & 2.86 & 2.18 \\
+ClinVar P/LP & -- & -- & -- & -- & -- & 2.73 & 2.41 & 2.45 & 2.04 \\
+consensus damaging & -- & -- & -- & -- & -- & 2.65 & 2.42 & 2.38 & 2.04 \\
+gnomAD, all & -- & -- & -- & -- & -- & 0.83 & 0.93 & 0.83 & 0.83 \\
+Spearman, damaging & $-0.12$ & $-0.22$ & $-0.28$ & $-0.37$ & $-0.41$ & $-0.44$ & $\mathbf{-0.47}$ & $-0.46$ & $\mathbf{-0.47}$ \\
+\quad given RSA & $-0.01$ & $-0.10$ & $-0.14$ & $-0.22$ & $-0.25$ & $-0.28$ & $\mathbf{-0.32}$ & $-0.28$ & $-0.29$ \\
+\midrule
+\multicolumn{10}{@{}l}{\emph{(b) burn-in fraction 0.8, median $-$ 1.5$\sigma$ --- single-temperature pass, used in the main tables}}\\
 sites in the set & 0 & 0 & 0 & 0 & 24 & 17 & 27 & 51 & 55 \\
-tumour, recurrent & -- & -- & -- & -- & 3.79 & 4.35 & \textbf{4.53} & 2.76 & 2.22 \\
-ClinVar P/LP & -- & -- & -- & -- & 2.24 & 2.73 & \textbf{3.11} & 2.40 & 2.04 \\
-consensus damaging & -- & -- & -- & -- & 2.33 & 2.74 & \textbf{3.03} & 2.32 & 2.07 \\
-gnomAD, all & -- & -- & -- & -- & 0.74 & 0.79 & 1.20 & 0.78 & 0.85 \\
-\multicolumn{10}{@{}l}{\emph{lowest 10\,\% rule (first version)}}\\
+tumour, recurrent & -- & -- & -- & -- & 3.79 & 4.35 & 4.53 & 2.76 & 2.22 \\
+ClinVar P/LP & -- & -- & -- & -- & 2.24 & 2.73 & 3.11 & 2.40 & 2.04 \\
+consensus damaging & -- & -- & -- & -- & 2.33 & 2.74 & 3.03 & 2.32 & 2.07 \\
+Spearman, damaging & $-0.10$ & $-0.23$ & $-0.27$ & $-0.33$ & $-0.40$ & $-0.41$ & $-0.42$ & $-0.45$ & $-0.44$ \\
+\midrule
+\multicolumn{10}{@{}l}{\emph{(c) burn-in 0.8, lowest 10\,\% rule --- the first version of this note}}\\
 sites in the set & 210 & 145 & 69 & 46 & 33 & 33 & 33 & 33 & 33 \\
-tumour, recurrent & 1.14 & 1.57 & 2.04 & 2.64 & 3.16 & 3.09 & \textbf{3.61} & 3.30 & 3.07 \\
-ClinVar P/LP & 1.07 & 1.34 & 1.50 & 1.74 & 2.16 & 2.20 & 2.52 & 2.59 & \textbf{2.81} \\
-consensus damaging & 1.07 & 1.35 & 1.50 & 1.81 & 2.17 & 2.12 & 2.45 & 2.48 & \textbf{2.74} \\
-gnomAD, all & 0.94 & 0.90 & 0.85 & 0.80 & 0.83 & 0.76 & 1.02 & 0.89 & 0.75 \\
-\multicolumn{10}{@{}l}{\emph{Spearman, damaging-variant density vs sampled entropy (raw / given RSA)}}\\
-consensus damaging & $-0.10$ & $-0.23$ & $-0.27$ & $-0.33$ & $-0.40$ & $-0.41$ & $-0.42$ & $\mathbf{-0.45}$ & $-0.44$ \\
- & $-0.01$ & $-0.12$ & $-0.14$ & $-0.19$ & $-0.25$ & $-0.26$ & $-0.26$ & $\mathbf{-0.28}$ & $-0.25$ \\
+tumour, recurrent & 1.14 & 1.57 & 2.04 & 2.64 & 3.16 & 3.09 & 3.61 & 3.30 & 3.07 \\
+consensus damaging & 1.07 & 1.35 & 1.50 & 1.81 & 2.17 & 2.12 & 2.45 & 2.48 & 2.74 \\
 \bottomrule
 \end{tabular}
-\caption{The sampled K-sets at every temperature of the ladder, enrichment
-observed/expected (\file{kset\_enrichment\_all\_T.tsv},
+\caption{The sampled K-sets at every temperature, enrichment observed/expected
+and the per-site Spearman of the damaging-variant density against the sampled
+entropy (\file{kset\_enrichment\_all\_T.tsv}, column \texttt{window};
 \file{kset\_density\_correlations\_all\_T.tsv}). Negative Spearman = damaging
-variants fall where the sampler keeps the sequence fixed. Chains: $T=1$, 1.5
-300\,001 moves; $T=2$ 790\,001; $T=3$ 280\,001; $T=4$ 400\,001; $T=5$
-210\,001; $T=6$ 180\,001; $T=8$ 300\,001; $T=16$ 200\,001 (the $T=2$, 3, 5
-chains as extended on 2026-11-24); all with burn-in fraction 0.8.}
+variants fall where the sampler keeps the sequence fixed. In (a) $T=1$ and
+$T=1.5$ cannot reach 16\,000 accepted moves at all (3040 and 8320 in the whole
+chain) and are attenuated, as the log says; their values are upper bounds on
+the attenuation, not comparable rows.}
 \label{tab:allT}
 \end{table}
 
 \begin{enumerate}
 \item \textbf{Cold chains say little.} At $T=1$ the sampler hardly moves
-  (acceptance 1\,\%) and 241 sites never change in the kept window: the
-  sigma rule finds no outlier, the 10\,\% rule takes two thirds of the
-  protein and gets enrichment 1.1, and the correlation is $-0.10$, nothing
-  after burial. The signal builds up as the chain starts to explore, from
-  $T=1.5$ to $T=3$.
-\item \textbf{The best temperature is $T=5$--6.} With the sigma rule the
-  enrichment rises from $T=4$ to a maximum at $T=6$ (recurrent tumour 4.5,
-  P/LP 3.1, consensus damaging 3.0, on 27 sites) and falls at $T=8$ and 16,
-  where the set doubles to 51--55 sites and so takes in less constrained
-  ones. At $T=6$ the sampled K-set matches the family K-set for recurrent
-  tumour variants (4.5 against 4.3, on 27 and 28 sites) and comes close for
-  P/LP (3.1 against 3.7). The 10\,\% rule, holding the size at 33, flattens
-  this into a plateau of 3.1--3.6 (tumour) and 2.2--2.8 (P/LP) from $T=4$ up.
-  A caution: $T=5$ and 6 have chains of 210\,001 and 180\,001 moves, about
-  half of $T=4$ and $T=8$, and the K-site work of 2026-11-23 showed that windows of
-  different length can make an apparent maximum where there is a plateau. The
-  peak at $T=6$ is a lead until the $T=5$, 6 chains are as long as the
-  others.
-\item \textbf{The per-site correlation is flat from $T=4$ up}, $-0.40$ to
-  $-0.45$ ($-0.25$ to $-0.28$ after RSA). The peak in the enrichment is
-  therefore a property of the \emph{cut} (which sites are the extreme ones),
-  not of the profile as a whole. Two chains per temperature, and the shorter
-  windows of $T=3$, 5, 6, do not resolve differences of a few hundredths in
-  $\rho$.
-\item \textbf{$T=4$ and $T=8$ stay as the two columns of the main tables}:
-  one sits just above the transition, the other in the melted regime, and
-  together they bracket the maximum. None of the conclusions of this note
-  changes with another temperature at or above 4. Below $T=4$ the sampler's
+  (acceptance 1\,\%) and most sites never change: the sigma rule finds no
+  outlier at any temperature below 5 once the windows are matched, the
+  correlation is $-0.12$ and nothing survives burial. The signal builds up as
+  the chain starts to explore, from $T=1.5$ to $T=4$.
+\item \textbf{From $T=6$ up the per-site correlation is a plateau}, $-0.47$,
+  $-0.46$, $-0.47$ at $T=6$, 8, 16 ($-0.32$, $-0.28$, $-0.29$ after RSA),
+  against $-0.41$ at $T=4$ and $-0.44$ at $T=5$. This is the same shape the
+  K-site comparison found against family conservation, and at the same place:
+  saturation between $T=4$ and $T=6$, then nothing to choose between the hot
+  temperatures.
+\item \textbf{There is no maximum at $T=6$.} Panel (b) shows one, with
+  recurrent tumour variants at 4.53; it is the window-length artefact
+  described above, and it disappears in (a), where the enrichment falls
+  monotonically from $T=5$ (3.81) to $T=16$ (2.18) as the set grows from 26 to
+  52 sites. That fall is the set's size, not the temperature: a larger set
+  reaches past the most constrained sites. The cut-free Spearman, which cannot
+  be diluted this way, is flat.
+\item \textbf{$T=4$ and $T=8$ remain the two columns of the main tables},
+  one just above the transition and one in the melted regime. Nothing in this
+  note changes with another temperature at or above 4. Below it the sampler's
   K-sites are not a useful disease predictor, because almost everything is
-  frozen.
+  frozen: at $T=1$, 222 of 324 sites see no accepted move after
+  $t_{\mathrm{eq}}$, which is reachability rather than too short a run.
 \end{enumerate}
 
 % ===========================================================================
@@ -1709,7 +1722,9 @@ nohup python -u pten_variants.py score > pten_variants_score.log 2>&1 &   # GPU
 python pten_variants.py rank       # AUCs, percentiles, compounds -> rank.log
 \end{verbatim}
 Options worth knowing: \texttt{--hypermutated 500}, \texttt{--temperatures T4
-T8}, \texttt{--burn-in-frac 0.8}, \texttt{--sampled-k-sigma 1.5}
+T8}, \texttt{--burn-in-frac 0.8} (one temperature at a time) or
+\texttt{--match-accepted 16000} (any comparison across temperatures),
+\texttt{--sampled-k-sigma 1.5}
 (\texttt{--sampled-k-scale mad}; \texttt{--sampled-k-sigma none
 --sampled-k-frac 0.1} gives the first version's rule),
 \texttt{--min-category 20}, \texttt{--bootstrap 1000}; \texttt{score} takes
