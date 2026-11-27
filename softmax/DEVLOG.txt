@@ -8019,3 +8019,11 @@ share, Wilson intervals, fitted logistic, midpoint) and a --folded-threshold fla
   2.88 (p 3e-7), P/LP 1.86 (3e-6), consensus damaging 1.92 (1e-7), gnomAD 0.84 (n.s.).
   Overlaps: 11/28 K_natural (3.8 expected, p 3e-4), 22/97 K_activity (13.3, p 0.002),
   18/108 K_abundance (14.8, p 0.17), and it contains 23 of the 24 K_sampled_T4 sites.
+
+2026-11-27  pten_variants.tex: K_zambon as a column in the main tables
+  New section 5.6 "The K-sites of Zambon et al. 2024, by their own rule"
+  (\label{sec:zambon}): the quoted definition, how it was applied to PTEN, the
+  T2/T2.5/T3-alone check, what it finds and how it overlaps the other sets.
+  Tables tab:enrich and tab:inout gained a "Zambon" column; captions, the K-set
+  list in 1.2 and the option list in the appendix updated. 32 pages, copy in
+  /mnt/project-files/pten_variants/.

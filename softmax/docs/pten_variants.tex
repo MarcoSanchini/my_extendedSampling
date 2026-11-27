@@ -159,6 +159,10 @@ with three external definitions of ``this site cannot change''
   alignment (2716 sequences, 59\% tensins; see below).
 \item[K\_abundance] (108) sites where VAMP-seq abundance collapses: the fold.
 \item[K\_activity] (97) sites where yeast activity is lost: largely catalysis.
+\item[K\_zambon] (44 sites) the K-sites of Zambon \emph{et al.} 2024 by
+  that paper's own rule, rather than by the one below:
+  \emph{zero} entropy at the coldest temperature and still conserved at
+  \emph{every} temperature under the structural transition. Section~\ref{sec:zambon}.
 \item[K\_sampled\_T4, K\_sampled\_T8] (24 and 51 sites) new here: the
   native sites whose sampled entropy is an outlier on the low side,
   \[
@@ -734,44 +738,45 @@ table~\ref{tab:cats}:
 
 \begin{table}[H]
 \centering\small
-\begin{tabular}{@{}lrrrrr@{}}
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
-Category & natural & abundance & activity & sampled T4 & sampled T8 \\
+Category & natural & abundance & activity & Zambon & sampled T4 & sampled T8 \\
 \midrule
-tumour, all & 2.90 & 1.45 & 2.24 & 2.12 & 2.02 \\
-tumour, recurrent & \textbf{4.33} & 1.31 & 2.81 & 3.79 & 2.76 \\
-tumour, singleton & 2.33 & 1.50 & 2.01 & 1.45 & 1.73 \\
-tumour, non-hypermutated & 3.19 & 1.52 & 2.50 & 2.02 & 2.11 \\
-tumour, endometrial & 3.38 & 1.31 & 2.31 & 2.73 & 2.03 \\
-tumour, glioblastoma & 3.02 & 1.44 & 2.43 & 2.26 & 2.69 \\
-tumour, second hit & 3.87 & 1.32 & 2.52 & 2.35 & 2.52 \\
-ClinVar, all & 1.45 & 1.15 & 1.35 & 1.25 & 1.26 \\
-ClinVar P/LP & 3.69 & 1.38 & 2.67 & 2.24 & 2.40 \\
-ClinVar VUS & 0.52 & 1.01 & 0.74 & 0.82 & 0.79 \\
-ClinVar conflicting & 1.74 & 1.39 & 1.80 & 1.53 & 1.37 \\
-ClinVar expert panel & 3.40 & 1.28 & 2.24 & 2.49 & 2.33 \\
-ClinVar PHTS & 1.62 & 1.16 & 1.48 & 1.37 & 1.35 \\
-ClinVar autism/macrocephaly & 1.23 & 1.42 & 1.59 & 1.53 & 1.20 \\
-gnomAD, all & 0.93 & 0.87 & 0.82 & 0.74 & 0.78 \\
-gnomAD, singleton & 0.97 & 0.96 & 0.94 & 0.72 & 0.81 \\
-gnomAD, AC$\ge$2 & 0.85 & 0.65 & 0.55 & 0.79 & 0.71 \\
-merged, all & 1.40 & 1.14 & 1.31 & 1.20 & 1.23 \\
-tumour-only & 2.80 & 1.46 & 2.22 & 2.02 & 2.01 \\
-population-only & 0.46 & 0.79 & 0.57 & 0.38 & 0.56 \\
-tumour and population & 3.90 & 1.37 & 2.38 & 3.03 & 2.17 \\
-consensus damaging & 3.61 & 1.39 & 2.62 & 2.33 & 2.32 \\
-consensus tolerated & \textbf{0.25} & 0.51 & 0.21 & 0.93 & 0.55 \\
+tumour, all & 2.90 & 1.45 & 2.24 & 1.84 & 2.12 & 2.02 \\
+tumour, recurrent & \textbf{4.33} & 1.31 & 2.81 & 2.88 & 3.79 & 2.76 \\
+tumour, singleton & 2.33 & 1.50 & 2.01 & 1.42 & 1.45 & 1.73 \\
+tumour, non-hypermutated & 3.19 & 1.52 & 2.50 & 1.84 & 2.02 & 2.11 \\
+tumour, endometrial & 3.38 & 1.31 & 2.31 & 2.07 & 2.73 & 2.03 \\
+tumour, glioblastoma & 3.02 & 1.44 & 2.43 & 2.28 & 2.26 & 2.69 \\
+tumour, second hit & 3.87 & 1.32 & 2.52 & 2.07 & 2.35 & 2.52 \\
+ClinVar, all & 1.45 & 1.15 & 1.35 & 1.18 & 1.25 & 1.26 \\
+ClinVar P/LP & 3.69 & 1.38 & 2.67 & 1.86 & 2.24 & 2.40 \\
+ClinVar VUS & 0.52 & 1.01 & 0.74 & 0.92 & 0.82 & 0.79 \\
+ClinVar conflicting & 1.74 & 1.39 & 1.80 & 1.16 & 1.53 & 1.37 \\
+ClinVar expert panel & 3.40 & 1.28 & 2.24 & 1.79 & 2.49 & 2.33 \\
+ClinVar PHTS & 1.62 & 1.16 & 1.48 & 1.21 & 1.37 & 1.35 \\
+ClinVar autism/macrocephaly & 1.23 & 1.42 & 1.59 & 0.82 & 1.53 & 1.20 \\
+gnomAD, all & 0.93 & 0.87 & 0.82 & 0.84 & 0.74 & 0.78 \\
+gnomAD, singleton & 0.97 & 0.96 & 0.94 & 0.96 & 0.72 & 0.81 \\
+gnomAD, AC$\ge$2 & 0.85 & 0.65 & 0.55 & 0.57 & 0.79 & 0.71 \\
+merged, all & 1.40 & 1.14 & 1.31 & 1.17 & 1.20 & 1.23 \\
+tumour-only & 2.80 & 1.46 & 2.22 & 1.83 & 2.02 & 2.01 \\
+population-only & 0.46 & 0.79 & 0.57 & 0.67 & 0.38 & 0.56 \\
+tumour and population & 3.90 & 1.37 & 2.38 & 1.95 & 3.03 & 2.17 \\
+consensus damaging & 3.61 & 1.39 & 2.62 & 1.92 & 2.33 & 2.32 \\
+consensus tolerated & \textbf{0.25} & 0.51 & 0.21 & 0.50 & 0.93 & 0.55 \\
 \bottomrule
 \end{tabular}
 \caption{Variants inside each K-set, observed / expected
-(\file{kset\_enrichment.tsv}); sampled K-sets by the median $-$ 1.5$\sigma$
+(\file{kset\_enrichment.tsv}); Zambon by the paper's own rule (44 sites,
+section~\ref{sec:zambon}), sampled K-sets by the median $-$ 1.5$\sigma$
 rule (24 sites at $T=4$, 51 at $T=8$). Selected two-sided binomial $p$, in
 column order: consensus damaging $7\times10^{-26}$, $1\times10^{-5}$,
-$2\times10^{-60}$, $3\times10^{-7}$, $3\times10^{-16}$; tumour recurrent
-$4\times10^{-11}$, $0.08$, $4\times10^{-21}$, $7\times10^{-7}$,
+$2\times10^{-60}$, $1\times10^{-7}$, $3\times10^{-7}$, $3\times10^{-16}$; tumour recurrent
+$4\times10^{-11}$, $0.08$, $4\times10^{-21}$, $3\times10^{-7}$, $7\times10^{-7}$,
 $6\times10^{-8}$; ClinVar P/LP $1\times10^{-24}$, $5\times10^{-5}$,
-$6\times10^{-58}$, $6\times10^{-6}$, $3\times10^{-16}$; gnomAD all $0.9$,
-$0.2$, $0.1$, $0.4$, $0.2$; autism $0.8$, $0.1$, $0.03$, $0.5$, $0.7$. The
+$6\times10^{-58}$, $3\times10^{-6}$, $6\times10^{-6}$, $3\times10^{-16}$; gnomAD all $0.9$,
+$0.2$, $0.1$, $0.5$, $0.4$, $0.2$; autism $0.8$, $0.1$, $0.03$, $0.9$, $0.5$, $0.7$. The
 circular-shift $p$ is at most 0.019 for every enrichment above 2, and at its
 floor (0.0031) for most of them.}
 \label{tab:enrich}
@@ -791,31 +796,31 @@ against the question ``how much more often does a site inside the set get
 hit?''.
 
 \begin{table}[H]
-\centering\small
-\begin{tabular}{@{}lrrrrr@{}}
+\centering\small\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lrrrrrr@{}}
 \toprule
-Category & natural & abundance & activity & sampled T4 & sampled T8 \\
+Category & natural & abundance & activity & Zambon & sampled T4 & sampled T8 \\
 \midrule
-tumour, all & 0.387/0.110 & 0.193/0.103 & 0.298/0.063 & 0.282/0.122 & 0.270/0.108 \\
- & {\scriptsize 3.5$\times$} & {\scriptsize 1.9$\times$} & {\scriptsize 4.7$\times$} & {\scriptsize 2.3$\times$} & {\scriptsize 2.5$\times$} \\[2pt]
-tumour, recurrent & 0.166/0.026 & 0.050/0.032 & 0.108/0.009 & 0.145/0.030 & 0.106/0.026 \\
- & {\scriptsize 6.3$\times$} & {\scriptsize 1.6$\times$} & {\scriptsize 12.0$\times$} & {\scriptsize 4.8$\times$} & {\scriptsize 4.1$\times$} \\[2pt]
-tumour, singleton & 0.221/0.083 & 0.143/0.071 & 0.191/0.055 & 0.137/0.092 & 0.164/0.082 \\
- & {\scriptsize 2.7$\times$} & {\scriptsize 2.0$\times$} & {\scriptsize 3.5$\times$} & {\scriptsize 1.5$\times$} & {\scriptsize 2.0$\times$} \\[2pt]
-tumour, non-hypermutated & 0.325/0.081 & 0.155/0.075 & 0.254/0.037 & 0.206/0.094 & 0.215/0.081 \\
- & {\scriptsize 4.0$\times$} & {\scriptsize 2.1$\times$} & {\scriptsize 6.8$\times$} & {\scriptsize 2.2$\times$} & {\scriptsize 2.6$\times$} \\[2pt]
-ClinVar P/LP & 0.478/0.097 & 0.179/0.105 & 0.346/0.038 & 0.290/0.118 & 0.311/0.097 \\
- & {\scriptsize 4.9$\times$} & {\scriptsize 1.7$\times$} & {\scriptsize 9.1$\times$} & {\scriptsize 2.5$\times$} & {\scriptsize 3.2$\times$} \\[2pt]
-ClinVar VUS & 0.172/0.342 & 0.331/0.326 & 0.243/0.363 & 0.267/0.332 & 0.259/0.340 \\
- & {\scriptsize 0.5$\times$} & {\scriptsize 1.0$\times$} & {\scriptsize 0.7$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.8$\times$} \\[2pt]
-gnomAD, all & 0.086/0.093 & 0.080/0.099 & 0.076/0.099 & 0.069/0.094 & 0.072/0.096 \\
- & {\scriptsize 0.9$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.7$\times$} & {\scriptsize 0.7$\times$} \\[2pt]
-population-only & 0.037/0.084 & 0.063/0.088 & 0.046/0.094 & 0.031/0.083 & 0.044/0.086 \\
- & {\scriptsize 0.4$\times$} & {\scriptsize 0.7$\times$} & {\scriptsize 0.5$\times$} & {\scriptsize 0.4$\times$} & {\scriptsize 0.5$\times$} \\[2pt]
-consensus damaging & 0.521/0.109 & 0.201/0.116 & 0.377/0.046 & 0.336/0.130 & 0.335/0.110 \\
- & {\scriptsize 4.8$\times$} & {\scriptsize 1.7$\times$} & {\scriptsize 8.3$\times$} & {\scriptsize 2.6$\times$} & {\scriptsize 3.0$\times$} \\[2pt]
-consensus tolerated & 0.006/0.026 & 0.013/0.031 & 0.005/0.033 & 0.023/0.025 & 0.014/0.027 \\
- & {\scriptsize 0.2$\times$} & {\scriptsize 0.4$\times$} & {\scriptsize 0.2$\times$} & {\scriptsize 0.9$\times$} & {\scriptsize 0.5$\times$} \\[2pt]
+tumour, all & 0.387/0.110 & 0.193/0.103 & 0.298/0.063 & 0.245/0.117 & 0.282/0.122 & 0.270/0.108 \\
+ & {\scriptsize 3.5$\times$} & {\scriptsize 1.9$\times$} & {\scriptsize 4.7$\times$} & {\scriptsize 2.1$\times$} & {\scriptsize 2.3$\times$} & {\scriptsize 2.5$\times$} \\[2pt]
+tumour, recurrent & 0.166/0.026 & 0.050/0.032 & 0.108/0.009 & 0.110/0.028 & 0.145/0.030 & 0.106/0.026 \\
+ & {\scriptsize 6.3$\times$} & {\scriptsize 1.6$\times$} & {\scriptsize 12.0$\times$} & {\scriptsize 4.0$\times$} & {\scriptsize 4.8$\times$} & {\scriptsize 4.1$\times$} \\[2pt]
+tumour, singleton & 0.221/0.083 & 0.143/0.071 & 0.191/0.055 & 0.135/0.089 & 0.137/0.092 & 0.164/0.082 \\
+ & {\scriptsize 2.7$\times$} & {\scriptsize 2.0$\times$} & {\scriptsize 3.5$\times$} & {\scriptsize 1.5$\times$} & {\scriptsize 1.5$\times$} & {\scriptsize 2.0$\times$} \\[2pt]
+tumour, non-hypermutated & 0.325/0.081 & 0.155/0.075 & 0.254/0.037 & 0.188/0.089 & 0.206/0.094 & 0.215/0.081 \\
+ & {\scriptsize 4.0$\times$} & {\scriptsize 2.1$\times$} & {\scriptsize 6.8$\times$} & {\scriptsize 2.1$\times$} & {\scriptsize 2.2$\times$} & {\scriptsize 2.6$\times$} \\[2pt]
+ClinVar P/LP & 0.478/0.097 & 0.179/0.105 & 0.346/0.038 & 0.241/0.113 & 0.290/0.118 & 0.311/0.097 \\
+ & {\scriptsize 4.9$\times$} & {\scriptsize 1.7$\times$} & {\scriptsize 9.1$\times$} & {\scriptsize 2.1$\times$} & {\scriptsize 2.5$\times$} & {\scriptsize 3.2$\times$} \\[2pt]
+ClinVar VUS & 0.172/0.342 & 0.331/0.326 & 0.243/0.363 & 0.302/0.331 & 0.267/0.332 & 0.259/0.340 \\
+ & {\scriptsize 0.5$\times$} & {\scriptsize 1.0$\times$} & {\scriptsize 0.7$\times$} & {\scriptsize 0.9$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.8$\times$} \\[2pt]
+gnomAD, all & 0.086/0.093 & 0.080/0.099 & 0.076/0.099 & 0.078/0.095 & 0.069/0.094 & 0.072/0.096 \\
+ & {\scriptsize 0.9$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.8$\times$} & {\scriptsize 0.7$\times$} & {\scriptsize 0.7$\times$} \\[2pt]
+population-only & 0.037/0.084 & 0.063/0.088 & 0.046/0.094 & 0.053/0.084 & 0.031/0.083 & 0.044/0.086 \\
+ & {\scriptsize 0.4$\times$} & {\scriptsize 0.7$\times$} & {\scriptsize 0.5$\times$} & {\scriptsize 0.6$\times$} & {\scriptsize 0.4$\times$} & {\scriptsize 0.5$\times$} \\[2pt]
+consensus damaging & 0.521/0.109 & 0.201/0.116 & 0.377/0.046 & 0.278/0.125 & 0.336/0.130 & 0.335/0.110 \\
+ & {\scriptsize 4.8$\times$} & {\scriptsize 1.7$\times$} & {\scriptsize 8.3$\times$} & {\scriptsize 2.2$\times$} & {\scriptsize 2.6$\times$} & {\scriptsize 3.0$\times$} \\[2pt]
+consensus tolerated & 0.006/0.026 & 0.013/0.031 & 0.005/0.033 & 0.012/0.026 & 0.023/0.025 & 0.014/0.027 \\
+ & {\scriptsize 0.2$\times$} & {\scriptsize 0.4$\times$} & {\scriptsize 0.2$\times$} & {\scriptsize 0.5$\times$} & {\scriptsize 0.9$\times$} & {\scriptsize 0.5$\times$} \\[2pt]
 \bottomrule
 \end{tabular}
 \caption{Density of the category inside / outside each K-set, in variants per
@@ -874,7 +879,7 @@ section~1.5. $T=8$ differs from $T=4$ by at most 0.08 and is slightly stronger
 \includegraphics[width=\linewidth]{figures/pten_var_profile_consensus_damaging.png}
 \caption{Consensus-damaging variants (275). From top: sampled entropy at $T=4$
 and $T=8$ and the family entropy; variant density; substitution entropy; the
-five K-sets. The P loop (123--130) is saturated: almost every reachable
+K-sets. The P loop (123--130) is saturated: almost every reachable
 substitution there is in the category.}
 \end{figure}
 
@@ -949,6 +954,59 @@ K-sets. Profiles of all 23 categories: \file{monte\_carlo/pten\_variants/kset\_p
   K\_natural), as expected of drivers.
 \end{enumerate}
 
+
+\subsection{The K-sites of Zambon et al.\ 2024, by their own rule}\label{sec:zambon}
+
+The sampled K-sets above are defined one temperature at a time, by a cut at
+median $-$ 1.5$\sigma$. That is not the rule of the paper this project
+continues. Zambon, Zecchina and Tiana (\emph{Phys.\ Biol.} \textbf{21} (2024)
+026002, p.~6) write: ``there are some sites, i.e.\ 5, 14, 26, 30, 41, 43 and
+54, that are completely conserved at the lowest temperature
+$T_s=8\times10^{-4}$ \ldots\ and are remarkably conserved at all
+$T_s<T_s^{x}$. We call them K-sites.'' Two clauses, then: \emph{zero} site
+entropy, and it must hold at \emph{every} temperature below the structural
+transition. No quantile and no $\sigma$. The paper notes nine further sites
+with entropy ``lower than 1'' at the coldest temperature and explicitly does
+not call those K-sites; they are a secondary tier. For protein G that gives 7
+K-sites out of 56, 12.5\,\% of the chain.
+
+\paragraph{The same rule on PTEN.} \file{identify\_k\_sites.py} already
+formalises it for the protein-G-scale sweeps, reading ``completely
+conserved'' as entropy below 0.05 nats at every cold temperature, and
+\texttt{pten\_variants.py profiles} now evaluates the same thing on the PTEN
+ladder (\texttt{--zambon-runs}, \texttt{--zambon-threshold},
+\texttt{--zambon-secondary}). The transition of this system sits at
+$T\simeq3$--5, so the cold ladder is $T=1$, 1.5, 2, 2.5, 3. The result is
+\textbf{44 of the 322 native sites, 13.6\,\%} --- close to the paper's
+12.5\,\%, which is a coincidence worth noting rather than a prediction. The
+softer tier (entropy below 1 everywhere, not K) holds 117 more.
+
+\paragraph{Why this is not just the frozen cold chains.} At $T=1$ only about
+600 moves are accepted in the kept window and 219 sites sit at entropy 0 for
+want of sampling, so the obvious objection is that the rule is measuring the
+chain's acceptance rate rather than the protein. It is not: $T=2$, 2.5 and 3
+\emph{on their own} return the identical 44 sites. The two coldest chains
+neither add a site nor remove one, and the set is fixed entirely by the part
+of the ladder that is well sampled. What does remain inside it by
+construction are the 22 sites of the construct that no accepted move ever
+touches at any temperature, which is reachability, not selection.
+
+\paragraph{What it finds.} Column ``Zambon'' of tables~\ref{tab:enrich}
+and~\ref{tab:inout}: recurrent tumour variants 2.88 times chance
+($p=3\times10^{-7}$), ClinVar P/LP 1.86 ($3\times10^{-6}$), consensus
+damaging 1.92 ($1\times10^{-7}$), and gnomAD 0.84, not significant --- the
+control behaves. Against the sigma sets at a comparable size it is slightly
+the better of the two on recurrent variants (2.88 on 44 sites against 2.76 on
+the 51 of $T=8$) and clearly the worse on P/LP (1.86 against 2.40).
+
+\paragraph{How it sits among the other sets.} It holds 11 of the 28
+K\_natural sites (3.8 expected, hypergeometric $p=3\times10^{-4}$) and 22 of
+the 97 K\_activity sites (13.3 expected, $p=0.002$), but only 18 of the 108
+K\_abundance sites (14.8 expected, $p=0.17$, i.e.\ chance). That is the
+ordering every other measurement in this project gives: what the sampler
+keeps frozen follows conservation and catalysis, not the stability of the
+fold. It also contains 23 of the 24 sites of K\_sampled\_T4, so that set is
+essentially this one seen through a single temperature.
 
 \subsection{Why $T=4$ and $T=8$, and the rest of the ladder}\label{sec:allT}
 
@@ -1727,6 +1785,9 @@ T8}, \texttt{--burn-in-frac 0.8} (one temperature at a time) or
 \texttt{--sampled-k-sigma 1.5}
 (\texttt{--sampled-k-scale mad}; \texttt{--sampled-k-sigma none
 --sampled-k-frac 0.1} gives the first version's rule),
+\texttt{--zambon-runs} / \texttt{--zambon-threshold 0.05} /
+\texttt{--zambon-secondary 1.0} (the paper's own K-site rule,
+section~\ref{sec:zambon}; an empty \texttt{--zambon-runs} switches that set off),
 \texttt{--min-category 20}, \texttt{--bootstrap 1000}; \texttt{score} takes
 \texttt{--num-steps 2} and \texttt{--repeat 50}. Outputs in
 \file{monte\_carlo/pten\_variants/}, described in its \file{README.md}.
