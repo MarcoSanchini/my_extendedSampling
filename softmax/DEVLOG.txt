@@ -8027,3 +8027,10 @@ share, Wilson intervals, fitted logistic, midpoint) and a --folded-threshold fla
   Tables tab:enrich and tab:inout gained a "Zambon" column; captions, the K-set
   list in 1.2 and the option list in the appendix updated. 32 pages, copy in
   /mnt/project-files/pten_variants/.
+
+2026-11-27  pten_variants.tex: the gnomAD row of the database table said "1868 alleles"
+  Marco read it as 1868 codon changes. It is 1868 distinct DNA variants of every
+  consequence (861 intronic, 469 missense, 246 synonymous, ...), the 469 missense are
+  spread over four transcripts (235 canonical, 232 PTEN-L, 2 KLLN), the 235 canonical
+  carry 1115 allele copies, and 176 of them are inside the construct. Row rewritten to
+  say all of that; 33 pages.

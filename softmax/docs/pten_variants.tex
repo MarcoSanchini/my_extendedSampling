@@ -386,12 +386,17 @@ missense rows. No duplicate VariationID or SPDI. 55 protein changes carried by
 One row per protein change; class = most severe call among the rows with the
 highest review status (expert panel $>$ multiple submitters $>$ single).
 Conditions grouped into PHTS, autism/macrocephaly, cancer. & 1164 \\[2pt]
-gnomAD & 1868 alleles, 469 missense, 235 on the canonical transcript. No
+gnomAD & 1868 distinct DNA variants of every consequence (861 intronic, 469
+missense, 246 synonymous, 76 3$'$UTR, 56 5$'$UTR, 44 splice region, 37
+frameshift, 25 stop gained, rest smaller); the 469 missense are spread over
+four transcripts, 235 canonical, 232 PTEN-L, 2 KLLN. No
 duplicate; all pass the joint filter; 42 in segdup/lcr regions (flagged,
 kept). AC (allele count) = copies of the variant allele among the
 sequenced people, two per person: 146 singletons (AC = 1, one heterozygous
-person), 89 with AC $\ge 2$, one site with a homozygote. &
-Canonical transcript only; allele counts summed per protein change. & 235 \\
+person), 89 with AC $\ge 2$, one site with a homozygote; 1115 allele copies
+in all. &
+Canonical transcript only; allele counts summed per protein change. 176 of
+the 235 are inside the construct. & 235 \\
 \bottomrule
 \end{tabular}
 \caption{What each file holds and the rule applied. ClinVar has only 10
