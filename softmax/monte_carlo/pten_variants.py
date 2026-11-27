@@ -666,6 +666,52 @@ def sampled_entropy(args, t, fh):
 	return out
 
 
+def zambon_kset(args, t, fh):
+	"""K-sites exactly as Zambon, Zecchina and Tiana 2024 define them (Phys. Biol. 21 026002, p.6).
+
+	Their words: "there are some sites, i.e. 5, 14, 26, 30, 41, 43 and 54, that are completely
+	conserved at the lowest temperature T_s = 8e-4 and are remarkably conserved at all
+	T_s < T_s^x. We call them K-sites." So the rule has two clauses: ZERO site entropy, and it
+	holds at EVERY temperature below the structural transition -- not a quantile and not a
+	sigma below the median. The paper separately notes 9 further sites with entropy "lower than
+	1" at the same coldest temperature; those it does NOT call K-sites, and they are reported
+	here as a secondary tier only. `identify_k_sites.py` formalises the same rule for the
+	protein-G-scale sweeps; this is its PTEN counterpart on the entropy columns.
+
+	"Completely conserved" is read as entropy < --zambon-threshold (default 0.05 nats) rather
+	than exactly 0, because the entropy here is the mean over the two chains of a temperature.
+	The cold ladder is given by --zambon-runs; PTEN's transition sits at T ~ 3-5, so the
+	default stops at T = 3."""
+	ref = "".join(t.ref_aa)
+	cols = {}
+	for rel in args.zambon_runs:
+		d = rel if os.path.isabs(rel) else os.path.join(MONTE_CARLO_DIR, "pten1d5r_study", rel)
+		lab = os.path.basename(d.rstrip("/"))
+		if not os.path.isdir(d):
+			log(fh, f"   WARNING: {rel} does not exist, left out of the Zambon ladder")
+			continue
+		per_chain = []
+		for c in sorted(os.listdir(d)):
+			p = os.path.join(d, c)
+			if not os.path.isfile(os.path.join(p, "start.txt")):
+				continue
+			st, info = chain_site_stats(p, ref, args.burn_in_frac, None)
+			per_chain.append(st.entropy.values)
+			log(fh, f"   zambon {lab}/{c}: {info['moves']} moves, {int(st.accepted_kept.sum())} accepted "
+				f"in the kept window, {int((st.entropy == 0).sum())} sites at entropy 0")
+		if per_chain:
+			cols[lab] = np.mean(per_chain, axis=0)
+	if not cols:
+		return pd.Series(False, index=t.index), pd.Series(False, index=t.index)
+	E = pd.DataFrame(cols, index=t.index)
+	k = t.native & (E < args.zambon_threshold).all(axis=1)
+	sec = t.native & (E < args.zambon_secondary).all(axis=1) & ~k
+	log(fh, f"   K_zambon: {int(k.sum())} sites with entropy < {args.zambon_threshold} at every one of "
+		f"{', '.join(cols)}; secondary tier (< {args.zambon_secondary}, not K): {int(sec.sum())}")
+	log(fh, f"   K_zambon sites (UniProt numbering): {', '.join(str(x) for x in t.uniprot_pos[k])}")
+	return k, sec
+
+
 def entropy_of(counts):
 	p = np.asarray(counts, float)
 	p = p[p > 0] / p.sum() if p.sum() > 0 else p[:0]
@@ -683,6 +729,11 @@ def cmd_profiles(args):
 	# Sampler K-sites: the least variable --sampled-k-frac of the native sites at each temperature
 	# (at T >= 4 almost no site sits at exactly 0, so a threshold at 0 would leave a handful).
 	ksets = {"K_natural": t.K_natural, "K_abundance": t.K_abundance, "K_activity": t.K_activity}
+	if args.zambon_runs:
+		log(fh, "== K-sites by the Zambon 2024 rule (zero entropy at every temperature below the transition)")
+		kz, kz_sec = zambon_kset(args, t, fh)
+		t["K_zambon"], t["K_zambon_secondary"] = kz, kz_sec
+		ksets["K_zambon"] = kz
 	for T in args.temperatures:
 		col = f"sampled_{T}"
 		H = t.loc[t.native, col]
@@ -1260,6 +1311,15 @@ def main():
 			"'none' switches to --sampled-k-frac, the rule of the first version of the report")
 	common.add_argument("--sampled-k-scale", choices=["mad", "sd"], default="mad",
 		help="the standard deviation used by --sampled-k-sigma: 1.4826 x MAD (default, robust) or the plain SD")
+	common.add_argument("--zambon-runs", nargs="*",
+		default=["equil_ref/T1", "equil_ref/T1.5", "equil_ref/T2", "warm/T2.5", "equil/T3"],
+		help="the cold ladder (paths under pten1d5r_study, or absolute) on which the Zambon 2024 "
+			"K-site rule is evaluated: a site is a K-site when its entropy stays below "
+			"--zambon-threshold at EVERY one of them. Empty switches the set off")
+	common.add_argument("--zambon-threshold", type=float, default=0.05,
+		help="'completely conserved' in nats, the same 0.05 as identify_k_sites.py (default)")
+	common.add_argument("--zambon-secondary", type=float, default=1.0,
+		help="the paper's own softer 'entropy lower than 1' tier, reported but not called K")
 	common.add_argument("--min-category", type=int, default=20,
 		help="categories with fewer variants inside the construct get counts only (default 20)")
 	common.add_argument("--bootstrap", type=int, default=1000)

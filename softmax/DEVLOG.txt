@@ -8002,3 +8002,20 @@ n=5 artefact and is corrected throughout docs/energy_rmsd.tex. Against that, 99.
 Hd is still AUC 1.000 in all 16 bands (gaps x3.1 to x33); pLDDT separation is now 0.944 at
 N=25, perfect from 50 up. plot_energy_rmsd.py went 2x2 -> 2x3 with a new panel C (folded
 share, Wilson intervals, fitted logistic, midpoint) and a --folded-threshold flag.
+
+2026-11-27  pten_variants.py: K-sites by the ORIGINAL Zambon 2024 definition
+  Read Phys. Biol. 21 026002 p.6: K-sites are the sites "completely conserved at the
+  lowest temperature ... and remarkably conserved at all T_s < T_s^x" (7 of 56 for
+  protein G), i.e. ZERO site entropy at EVERY temperature below the transition -- not a
+  quantile and not a sigma below the median. identify_k_sites.py already formalises this
+  for the protein-G-scale sweeps; `profiles` now evaluates the same rule on PTEN via
+  --zambon-runs (default equil_ref/T1 T1.5 T2, warm/T2.5, equil/T3; PTEN's transition is
+  T ~ 3-5), --zambon-threshold 0.05 and --zambon-secondary 1.0.
+  K_zambon = 44 of 322 native sites (13.6%, against 7/56 = 12.5% in the paper). The set
+  is identical whether or not T1 and T1.5 are included: T2/T2.5/T3 alone give the same 44
+  sites, so the frozen cold chains (600 accepted moves at T=1, 219 sites at entropy 0)
+  contribute nothing and the set is not a sample-size artefact.
+  Enrichment (observed/expected over the 1906 reachable substitutions): recurrent tumour
+  2.88 (p 3e-7), P/LP 1.86 (3e-6), consensus damaging 1.92 (1e-7), gnomAD 0.84 (n.s.).
+  Overlaps: 11/28 K_natural (3.8 expected, p 3e-4), 22/97 K_activity (13.3, p 0.002),
+  18/108 K_abundance (14.8, p 0.17), and it contains 23 of the 24 K_sampled_T4 sites.
